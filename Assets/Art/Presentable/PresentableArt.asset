@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e694afe036a16446a4de8ba137a4d44, type: 3}
+  m_Name: PresentableArt
+  m_EditorClassIdentifier: Assembly-CSharp::ChemicalSafety.Presentable.PresentableArt
+  ring: {fileID: 21300000, guid: ed8256062a2b3bf419664e3235b4c7d8, type: 3}
+  ringDashed: {fileID: 21300000, guid: e20e03dea78ace542a7b60741ece30bd, type: 3}
+  radialGlow: {fileID: 21300000, guid: b70dd45626b208e4299a4c3207a0d23a, type: 3}
+  beam: {fileID: 21300000, guid: 1678c0615f546ab418faca951c38dacf, type: 3}
+  arrowDown: {fileID: 21300000, guid: 411be65a3463fa446988df0e71717f21, type: 3}
+  speaker: {fileID: 21300000, guid: b531c62605e84b24cb2f7824eb1a7aaf, type: 3}
+  check: {fileID: 21300000, guid: c89e50db7fe7a4249a0f03514b0e744d, type: 3}
+  cross: {fileID: 21300000, guid: 121838493d1f95e47b62db6258ed511a, type: 3}
+  circle: {fileID: 21300000, guid: 13713f47392a7b54b843aaadef27bf85, type: 3}
+  dot: {fileID: 21300000, guid: 2c328acbaa3c5e94c986e6ab6888f76f, type: 3}
+  iconGhs: {fileID: 21300000, guid: 56114bde10f371f41bb1067768fadcf2, type: 3}
+  iconSds: {fileID: 21300000, guid: 2abd3dd4805ffd240b4baa4ccafa1c9a, type: 3}
+  roundedPanel: {fileID: 21300000, guid: bb4535854083b0a4eb4cc85bd17d926f, type: 3}
+  roundedSolid: {fileID: 21300000, guid: 2be5a388e6a22204285016ce5579134a, type: 3}
+  softGlow: {fileID: 21300000, guid: bfa907de8108c704cb99ab372521a3dc, type: 3}
+  popupFrame: {fileID: 21300000, guid: 0dcf4ce76ec129e4fb79e7f6eb5d7505, type: 3}
+  answerBox: {fileID: 21300000, guid: 46e141001204f8f46a1f394c9fd44c8d, type: 3}
+  pop02: {fileID: 21300000, guid: f58cf1654a18e6b47877f4fd0b936945, type: 3}
+  thumbFaded: {fileID: 21300000, guid: 8c7c90446cb402a4eb2596fc56dad716, type: 3}
+  thumbNoLabel: {fileID: 21300000, guid: 01d04fb8dccaa954ea2cfba6b5182e54, type: 3}
+  thumbMismatch: {fileID: 21300000, guid: 32c26334510ce014c943c3570b9e4bf3, type: 3}
+  thumbCorrect: {fileID: 21300000, guid: 15a995943b316694a8831489451dee58, type: 3}
+  sdsClipboard: {fileID: 21300000, guid: 75fd1df417c177f44bc117783be32f2a, type: 3}
+  bnSalam: {fileID: 21300000, guid: 9e2011f2a3e4a4b4f8acfc78a4a5d4f8, type: 3}
+  bnWelcomeSub: {fileID: 21300000, guid: 6a4079b75df08264ab370789700935ba, type: 3}
+  bnInstructionSub: {fileID: 21300000, guid: b2aedd7790fb06549a306a6634a65808, type: 3}
+  bnInstructionPanel: {fileID: 21300000, guid: 08c99c80ad1cc13499048164209ede96, type: 3}
+  bnStandHere: {fileID: 21300000, guid: cfefa1447a607274486ea3d0e4f5fd2e, type: 3}
+  bnCorrectSub: {fileID: 21300000, guid: 1709159aae6d42149a5b79a6f74f505f, type: 3}
+  bnWrongSub: {fileID: 21300000, guid: 894b0b3c037bb4b4aad9d0f7c280b552, type: 3}
+  bnClipboardHint: {fileID: 21300000, guid: 96f9feaf7639c7e4a965215b3bc94d47, type: 3}
+  bnZoomHint: {fileID: 21300000, guid: 9e20a7e9f4a20134aaf9477cc9a3aa18, type: 3}
+  bnNextZone: {fileID: 21300000, guid: c104921e0ce735d4d8056d03f2a4a77e, type: 3}
+  voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
+  voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
+  voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
+  voWrong: {fileID: 8300000, guid: 43e8f576f2817f74e8e01cf2d33512a4, type: 3}
+  englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

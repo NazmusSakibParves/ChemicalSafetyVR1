@@ -1,6 +1,6 @@
 # ChemicalSafetyVR1 — Project Handoff & Memory
 
-**Last updated:** 2026-10-14  
+**Last updated:** 2026-10-15  
 **Purpose:** Take this folder to another PC / new Cursor chat and recover full context: what was built, how to run it, what was planned, and what remains.
 
 **Project path (authoring machine):** `E:\WorkArea\VR\ChemicalSafetyVR1`  
@@ -39,6 +39,26 @@ Content source for scenarios: GIZ / NOSHTRI HTML training material (22 scenarios
 **OpenXR Android:** Meta Quest Feature should be **enabled** (`Assets/XR/Settings/OpenXR Package Settings.asset`).
 
 ---
+
+## 2b. Two scenes (do not merge)
+
+| Scene | Purpose | APK menu | Output |
+|-------|---------|----------|--------|
+| `Assets/Scenes/ChemicalSafety_Demo.unity` | **Learning demo** (SO-driven `TrainingFlowController`, keep for study) | `Chemical Safety/Build Quest APK (Learning)` | `Builds/Android/ChemicalSafetyVR.apk` |
+| `Assets/Scenes/ChemicalSafety_Presentable.unity` | **Client demo** (designer art, animated, gameable) | `Chemical Safety/Build Quest APK (Presentable)` | `Builds/Android/ChemicalSafetyVR_Presentable.apk` |
+
+Each APK contains **only** its own scene. Git tag `learning-demo-baseline` = state before Presentable work.
+
+### Presentable scene
+
+- **Generated** by menu `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs`). Re-run after changing builder code; do not hand-edit the scene (it is overwritten).
+- Art references collected in `Assets/Art/Presentable/PresentableArt.asset`; generated mats/meshes in `Assets/Art/Presentable/Generated/`.
+- Runtime scripts: `Assets/Scripts/ChemicalSafety/Presentable/` — `PresentableSequenceDirector` (whole flow, questions hardcoded), `PresentableMcqPanel` (step05/06/07 states), `FloorHotspot`, `DrumCallout`, `WorldSubtitle`, `InstructionPanelView`, `SdsClipboardController`, `RigZoomController`, `GlovedHandPose`, `ScreenFader`, `DeskCameraFallback`, `PresentableFx` (procedural SFX, haptics, frame-counted `Wait`).
+- Flow: fade in → instruction panel + salam VO → 2 s → instruction VO (BN) → glide to drum view (callouts 1–4) → yellow-line floor hotspot → MCQ (correct = 4 "Correctly Labelled") → wrong = red popup + X retry; correct = green popup + NEXT → SC02 zone hotspot → MCQ (correct = 2) → FINISH → "Module complete".
+- SC02 here uses `PresentableMcqPanel`, **not** the SO-based `TrainingFlowController`.
+- Controls: Quest A/B = zoom in/out, left X = SDS clipboard show/hide, trigger on hotspot / options. Desk: W/S zoom, C clipboard, E/Space hotspot.
+- Bangla text is pre-rendered PNG: `Tools/render_bangla_text.py` (Noto Bengali + Segoe UI for Latin runs). UI sprites: `Tools/generate_ui_sprites.py`.
+- Hands: generic XR Hands glove mesh with static poses (no designer hand animations).
 
 ## 3. How to open & test (desk)
 
@@ -273,6 +293,12 @@ When copying this project to another PC:
 - **Intro panel inactive at edit time:** `Intro_InstructionPanel` starts disabled; `GameObject.Find` won’t see it — use inactive-inclusive search.
 - **Link incompatible PC:** do not assume Air Link works; use APK.
 - **AI / fal keys:** configure in Unity MCP secure store before expecting `generate_model` / `generate_audio` to work.
+- **Open issue (2026-10-15):** the learning scene shows static white speckle noise in the Game View while the editor is on the Android target (Mobile_RPAsset). The Presentable scene renders cleanly. Not investigated yet, and not checked on the headset.
+- **Never edit scripts during Play.** A domain reload kills coroutines and the Presentable director looks "stuck". EditorPrefs `ScriptCompilationDuringPlay = 1` (recompile after play) is set on the authoring PC; set it on new machines (Preferences → General → Script Changes While Playing).
+- **Play-mode logs** don't show in MCP `read_console`; read `Logs/Editor.log`.
+- **XR Origin has a CharacterController** — call `Physics.SyncTransforms()` after moving the rig directly.
+- **GLB roots carry scale** (~0.01) — multiply, don't overwrite `localScale`.
+- **`UI_RoundedPanel` is a 23 %-alpha frame**; use `UI_RoundedSolid` for any fill that must be opaque.
 
 ---
 
@@ -304,6 +330,7 @@ Quest APK (manual):
 | Mid | Close→Next + key 2 dual path |
 | 2026-10-14 | 10s intro director, Bangla greeting, warehouse shell, user murals, world MCQ, SC03 dead-end cleared, Quest package/feature prep |
 | 2026-10-14 | This handoff document added under `Docs/` |
+| 2026-10-15 | Separate `ChemicalSafety_Presentable` client scene (designer art, VO, hotspot, step05/06/07 MCQ, SC02, gloves, SDS clipboard, zoom) + two APK menus |
 
 ---
 

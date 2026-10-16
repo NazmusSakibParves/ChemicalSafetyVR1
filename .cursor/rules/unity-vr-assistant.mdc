@@ -32,6 +32,23 @@ You are the **Unity VR assistant** for this project. Act as a hands-on Unity/XR 
 - Quest: authoring PC Link may be incompatible → prefer **Android APK**; package `com.chemicalsafety.vrtraining`
 - Content: SC01 + SC02 from GIZ; SC03–22 not built; AI 3D/TTS pending API keys
 
+### Two scenes (keep both; never merge)
+
+- **Learning:** `ChemicalSafety_Demo` → menu `Chemical Safety/Build Quest APK (Learning)` → `Builds/Android/ChemicalSafetyVR.apk`
+- **Presentable (client demo):** `ChemicalSafety_Presentable` → menu `Chemical Safety/Build Quest APK (Presentable)` → `Builds/Android/ChemicalSafetyVR_Presentable.apk` (built 2026-10-15, 78 MB, desk-tested end to end)
+- Presentable scene is **generated** by `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs`) — change the builder, then re-run; don't hand-edit the scene
+- Presentable flow: salam VO → 2 s → BN instruction VO → glide to drums → yellow-line hotspot → MCQ (answer 4 "Correctly Labelled"; wrong = red popup + X retry) → NEXT → SC02 hotspot → MCQ (answer 2) → FINISH
+- Presentable controls: Quest A/B zoom, left X SDS clipboard, trigger select; desk W/S zoom, C clipboard, E/Space hotspot
+- Git tag `learning-demo-baseline` = state before Presentable work
+
+### Gotchas learned
+
+- Never edit scripts during Play (domain reload kills coroutines); EditorPrefs `ScriptCompilationDuringPlay=1`
+- Play-mode logs: read `Logs/Editor.log` (MCP `read_console` misses them)
+- MCP `execute_code` needs `action:"execute"`, `compiler:"codedom"` (C# 6)
+- APK build blocks Unity ~20–30 min first time (shader variants); MCP disconnects meanwhile — poll for the APK file
+- Open issue: learning scene shows static white speckle noise in Game View under the Android/Mobile URP asset — not yet investigated
+
 ## Handoff memory (travels with the repo)
 
 **Always read first:** [`Docs/PROJECT_HANDOFF.md`](../../Docs/PROJECT_HANDOFF.md)  
