@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f72d6e6b0275ef4ba8d0ce521801e69, type: 3}
+  m_Name: SC01_DrumTransfer
+  m_EditorClassIdentifier: Assembly-CSharp::ChemicalSafety.Data.ScenarioDefinition
+  scenarioId: SC01
+  title: "Drum Transfer \u2014 Label & SDS Verification"
+  locationHint: "Chemical Warehouse \u2192 Production Floor"
+  bloomLevel: 4
+  taskType: Select
+  nextScenarioId: SC02
+  questions:
+  - questionId: MCS 1.1
+    prompt: Which drum should you transfer?
+    options:
+    - The drum with a faded label
+    - The drum with no label at all
+    - The drum whose GHS label does not match the SDS
+    - The drum with a GHS label matching the SDS
+    correctOptionIndex: 3
+    rationales:
+    - "Cannot verify contents \u2014 unidentifiable. Never move unidentified chemicals."
+    - No hazard information = highest risk. Report to supervisor.
+    - "Discrepancy signals mislabelled or contaminated chemical \u2014 stop and report."
+    - "Verified identification matches documentation \u2014 safe to transfer."

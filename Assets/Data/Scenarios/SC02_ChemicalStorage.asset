@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f72d6e6b0275ef4ba8d0ce521801e69, type: 3}
+  m_Name: SC02_ChemicalStorage
+  m_EditorClassIdentifier: Assembly-CSharp::ChemicalSafety.Data.ScenarioDefinition
+  scenarioId: SC02
+  title: "Chemical Storage \u2014 Compatibility Segregation"
+  locationHint: Chemical Store Zone
+  bloomLevel: 3
+  taskType: Select + Place
+  nextScenarioId: 
+  questions:
+  - questionId: MCS 2.1
+    prompt: Where does the flammable solvent go?
+    options:
+    - With the oxidizers
+    - In the flammable-rated compartment, away from oxidizers and acids
+    - With the acids
+    - In any open compartment
+    correctOptionIndex: 1
+    rationales:
+    - Flammable + oxidizer = fire/explosion risk. Never co-store.
+    - Matches compatibility chart. Flammables stored separately with fire-rated shelving.
+    - Acid + flammable solvent = potential ignition on contact.
+    - Ignoring segregation defeats the entire storage system.
