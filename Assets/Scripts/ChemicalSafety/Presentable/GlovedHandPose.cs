@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace ChemicalSafety.Presentable
@@ -25,6 +26,18 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float scale = 1.06f;
 
         private Transform _hand;
+        private Transform[] _indexBones;
+        private Quaternion[] _indexBase;
+        private Coroutine _curl;
+
+        /// <summary>The gloved right hand (null until it has spawned).</summary>
+        public static GlovedHandPose Right { get; private set; }
+        public static GlovedHandPose Left { get; private set; }
+
+        /// <summary>Palm bone of the spawned glove (null until Start has run).</summary>
+        public Transform Palm { get; private set; }
+
+        public Transform PokePoint => pokePoint;
 
         private void Start()
         {
@@ -48,6 +61,61 @@ namespace ChemicalSafety.Presentable
 
             ApplyPose();
             AlignToPokePoint();
+            CaptureIndex();
+            Palm = FindDeep(_hand, (isRight ? "R_" : "L_") + "Palm");
+            if (isRight)
+                Right = this;
+            else
+                Left = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Right == this)
+                Right = null;
+            if (Left == this)
+                Left = null;
+        }
+
+        private void CaptureIndex()
+        {
+            var p = isRight ? "R_" : "L_";
+            _indexBones = new[]
+            {
+                FindDeep(_hand, p + "IndexProximal"), FindDeep(_hand, p + "IndexIntermediate"),
+                FindDeep(_hand, p + "IndexDistal")
+            };
+            _indexBase = new Quaternion[_indexBones.Length];
+            for (var i = 0; i < _indexBones.Length; i++)
+                _indexBase[i] = _indexBones[i] != null ? _indexBones[i].localRotation : Quaternion.identity;
+        }
+
+        /// <summary>Briefly curls the index finger (poke feedback), then straightens it again.</summary>
+        public void PlayPokeCurl()
+        {
+            if (_indexBones == null)
+                return;
+            if (_curl != null)
+                StopCoroutine(_curl);
+            _curl = StartCoroutine(CurlRoutine());
+        }
+
+        private IEnumerator CurlRoutine()
+        {
+            var extra = new[] { 55f, 65f, 45f };
+            yield return PresentableFx.Tween(0.09f, t => SetIndexCurl(t, extra));
+            yield return PresentableFx.Wait(0.05f);
+            yield return PresentableFx.Tween(0.18f, t => SetIndexCurl(1f - t, extra));
+            _curl = null;
+        }
+
+        private void SetIndexCurl(float k, float[] extra)
+        {
+            for (var i = 0; i < _indexBones.Length; i++)
+            {
+                if (_indexBones[i] != null)
+                    _indexBones[i].localRotation = _indexBase[i] * Quaternion.Euler(extra[i] * k, 0f, 0f);
+            }
         }
 
         private void ApplyPose()

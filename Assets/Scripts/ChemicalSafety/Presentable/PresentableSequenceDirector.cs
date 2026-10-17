@@ -30,6 +30,16 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableMcqPanel mcqSc01;
         [SerializeField] private DrumCallout[] drums = new DrumCallout[4];
 
+        [Header("Drum labels + trolley")]
+        [SerializeField] private LabelPickPopup labelPopup;
+        [SerializeField] private PokeTarget[] drumPokes = new PokeTarget[4];
+        [Tooltip("Where the learner is glided to so the drums are within arm's reach.")]
+        [SerializeField] private Transform drumPokeStand;
+        [SerializeField] private GameObject trolley;
+        [SerializeField] private PokeTarget trolleyPoke;
+        [SerializeField] private FloorHotspot hotspotTrolley;
+        [SerializeField] private Transform trolleyStand;
+
         [Header("SC02")]
         [SerializeField] private Transform spawnSc02;
         [SerializeField] private FloorHotspot hotspotSc02;
@@ -44,6 +54,33 @@ namespace ChemicalSafety.Presentable
         private Transform _cam;
         private bool _hotspotHit;
         private bool _nextPressed;
+        private bool _continuePressed;
+        private Coroutine _replay;
+
+        private void OnContinueClicked() => _continuePressed = true;
+
+        private void OnSpeakerClicked()
+        {
+            StopVoice();
+            if (_replay != null)
+                StopCoroutine(_replay);
+            _replay = StartCoroutine(ReplayInstruction());
+        }
+
+        private IEnumerator ReplayInstruction()
+        {
+            instructionPanel.SetSpeaking(true);
+            yield return PlayVoice(art.voInstruction);
+            instructionPanel.SetSpeaking(false);
+            _replay = null;
+        }
+
+        private void StopAllVoiceCoroutines()
+        {
+            if (_replay != null)
+                StopCoroutine(_replay);
+            _replay = null;
+        }
 
         private void Awake()
         {
@@ -65,9 +102,10 @@ namespace ChemicalSafety.Presentable
 
             Stage("salam");
 
-            // 1. Salam
+            // 1. Salam (panel floats within poking distance so the speaker / Continue can be touched)
+            PlaceInFrontOfHead(instructionPanel.transform, XRSettings.isDeviceActive ? 0.7f : 0.95f);
+            subtitle.SetHeightOffset(-0.9f);
             yield return instructionPanel.Show();
-            instructionPanel.SetSalamVisible(true);
             instructionPanel.SetSpeaking(true);
             subtitle.Show(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.");
             yield return PlayVoice(art.voSalam);
@@ -83,8 +121,24 @@ namespace ChemicalSafety.Presentable
                 "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).");
             yield return PlayVoice(art.voInstruction);
             instructionPanel.SetSpeaking(false);
-            yield return PresentableFx.Wait(1.2f);
+
+            // 2b. Voice-over finished: Continue appears (+ hint VO). Speaker replays the instruction any time.
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            subtitle.Show(art.bnContinueHint,
+                "Click the speaker to hear the instructions again, or Continue to go on.");
+            yield return instructionPanel.ShowContinue();
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
             subtitle.Hide();
+            subtitle.SetHeightOffset(-0.38f);
             yield return instructionPanel.Hide();
 
             Stage("transition");
@@ -94,8 +148,6 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(1f, 0.4f);
             var viewFwd = Flat(spawnDrumView.forward);
             PlaceRig(spawnDrumView.position - viewFwd * glideBackDistance, viewFwd);
-            foreach (var d in drums)
-                d?.SetCalloutVisible(true, 0.8f);
             yield return fader.FadeTo(0f, 0.5f);
             yield return Glide(spawnDrumView.position, 1.8f);
 
@@ -104,9 +156,19 @@ namespace ChemicalSafety.Presentable
             // 4. Explore + hotspot
             zoom.Configure(rig, rackFocus);
             zoom.ZoomEnabled = true;
-            subtitle.Show(art.bnZoomHint, "A / B: zoom in / out    X: SDS clipboard    Step on the green hotspot", 7f);
             yield return WaitHotspot(hotspotSc01);
             zoom.ZoomEnabled = false;
+
+            Stage("pickLabel");
+
+            // 4b. Voice prompt (once), step up to the drums, then poke each drum and name its label.
+            subtitle.Show(art.bnPickLabel, "Select the correct label for each drum.", 6f);
+            StartCoroutine(PlayVoice(art.voPickLabel));
+            yield return Glide(drumPokeStand.position, 1.2f);
+            yield return RunDrumPicking();
+
+            Stage("trolley");
+            yield return RunTrolley();
 
             Stage("mcq1");
 
@@ -120,6 +182,8 @@ namespace ChemicalSafety.Presentable
             // 6. SC02
             foreach (var d in drums)
                 d?.SetCalloutVisible(false);
+            if (trolley != null)
+                trolley.SetActive(false);
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
             PlaceRig(spawnSc02.position, spawnSc02.forward);
@@ -133,6 +197,113 @@ namespace ChemicalSafety.Presentable
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
             subtitle.Show(null, "Module complete. Well done!", 8f);
+        }
+
+        private int _pokedDrum;
+        private int _pickedLabel;
+        private bool _popupClosed;
+
+        private IEnumerator RunDrumPicking()
+        {
+            var done = new bool[drums.Length];
+            var remaining = drums.Length;
+            for (var i = 0; i < drumPokes.Length; i++)
+            {
+                var index = i;
+                drumPokes[i].Poked += _ => _pokedDrum = index;
+            }
+
+            void OnChosen(int label) => _pickedLabel = label;
+            void OnClosed() => _popupClosed = true;
+            labelPopup.Chosen += OnChosen;
+            labelPopup.Closed += OnClosed;
+
+            while (remaining > 0)
+            {
+                for (var i = 0; i < drumPokes.Length; i++)
+                    drumPokes[i].SetInteractable(!done[i]);
+                _pokedDrum = -1;
+                while (_pokedDrum < 0)
+                    yield return null;
+
+                var drum = _pokedDrum;
+                foreach (var p in drumPokes)
+                    p.SetInteractable(false);
+
+                PlaceInFrontOfHead(labelPopup.transform, 0.48f); // the rack front is only ~0.6 m from the poke stand
+                _pickedLabel = -1;
+                _popupClosed = false;
+                labelPopup.Open();
+                var correct = false;
+                while (!correct && !_popupClosed)
+                {
+                    yield return null;
+                    if (_pickedLabel < 0)
+                        continue;
+
+                    var picked = _pickedLabel;
+                    _pickedLabel = -1;
+                    if (picked == drum)
+                    {
+                        correct = true;
+                        continue;
+                    }
+
+                    labelPopup.SetWrong(true);
+                    PresentableFx.Play(PresentableFx.Error, 0.7f);
+                    PresentableFx.Haptic(true, 0.8f, 0.2f);
+                    StopVoice();
+                    subtitle.Show(art.bnWrongLabel,
+                        "Wrong label for this drum. Select the correct label again.", 6f);
+                    StartCoroutine(PlayVoice(art.voWrongLabel));
+                }
+
+                labelPopup.Close();
+                if (!correct)
+                    continue;
+
+                done[drum] = true;
+                remaining--;
+                StopVoice();
+                subtitle.Hide();
+                PresentableFx.Play(PresentableFx.Success, 0.8f);
+                PresentableFx.Haptic(true, 0.5f, 0.12f);
+                drums[drum].Highlight(PresentableUi.Green, false);
+                drums[drum].RevealPlate();
+                yield return PresentableFx.Wait(0.5f);
+            }
+
+            labelPopup.Chosen -= OnChosen;
+            labelPopup.Closed -= OnClosed;
+        }
+
+        private IEnumerator RunTrolley()
+        {
+            foreach (var d in drums)
+                d?.ClearHighlight();
+
+            trolley.SetActive(true);
+            PresentableFx.Play(PresentableFx.Chime, 0.8f);
+            var baseScale = trolley.transform.localScale;
+            yield return PresentableFx.Tween(0.5f, t => trolley.transform.localScale =
+                baseScale * Mathf.LerpUnclamped(0.5f, 1f, t), PresentableFx.EaseOutBack);
+
+            void OnPoked(PokeTarget _) => hotspotTrolley.Activate();
+            trolleyPoke.Poked += OnPoked;
+            yield return Glide(trolleyStand.position, 1.2f);
+            trolleyPoke.SetInteractable(true);
+            yield return WaitHotspot(hotspotTrolley);
+            trolleyPoke.SetInteractable(false);
+            trolleyPoke.Poked -= OnPoked;
+        }
+
+        private void PlaceInFrontOfHead(Transform t, float distance)
+        {
+            if (_cam == null)
+                return;
+            var fwd = Flat(_cam.forward);
+            t.position = new Vector3(_cam.position.x, _cam.position.y - 0.12f, _cam.position.z) + fwd * distance;
+            t.rotation = Quaternion.LookRotation(fwd, Vector3.up) * Quaternion.Euler(8f, 0f, 0f);
         }
 
         private IEnumerator RunQuestion(PresentableMcqPanel panel, PresentableMcqPanel.Question q, bool useDrums)
@@ -309,7 +480,8 @@ namespace ChemicalSafety.Presentable
                     {
                         label = "1. Faded label",
                         wrongLabel = "1. Faded label (Acetone)",
-                        icons = new[] { art.thumbFaded },
+                        icons = new[] { art.thumbNoLabel },
+                        overlays = new[] { art.labelFaded },
                         feedback = "You cannot verify the contents or specific hazards of a drum with a faded or " +
                                    "unreadable label. Never move unidentified chemicals."
                     },
@@ -325,14 +497,16 @@ namespace ChemicalSafety.Presentable
                     {
                         label = "3. Mismatched\nGHS vs SDS",
                         wrongLabel = "3. Mismatched (Methanol)",
-                        icons = new[] { art.iconGhs, art.iconSds, art.thumbMismatch },
+                        icons = new[] { art.iconGhs, art.iconSds, art.thumbNoLabel },
+                        overlays = new Sprite[] { null, null, art.labelMethanol },
                         feedback = "The drum label (Methanol) does not match the SDS (Isopropanol). If the label " +
                                    "does not match the SDS: DO NOT USE. Isolate and report."
                     },
                     new PresentableMcqPanel.Option
                     {
                         label = "4. Correctly Labelled",
-                        icons = new[] { art.thumbCorrect },
+                        icons = new[] { art.thumbNoLabel },
+                        overlays = new[] { art.labelIsopropanol },
                         feedback = "Well done! You have correctly identified the standard GHS label configuration. " +
                                    "The selected drum's GHS pictograms, UN number, and name match the Safety Data " +
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."

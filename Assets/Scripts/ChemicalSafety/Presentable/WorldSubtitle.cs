@@ -82,6 +82,9 @@ namespace ChemicalSafety.Presentable
             StartFade(1f, 0.3f, seconds);
         }
 
+        /// <summary>Lowers / raises the subtitle bar (kept clear of the Instructions panel while it is open).</summary>
+        public void SetHeightOffset(float offset) => heightOffset = offset;
+
         public void Hide()
         {
             StartFade(0f, 0.3f, 0f);

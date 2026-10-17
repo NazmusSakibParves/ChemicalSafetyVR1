@@ -42,6 +42,7 @@ namespace ChemicalSafety.Editor
             }
 
             Directory.CreateDirectory(GenDir);
+            GenerateRedVariants();
             ConfigureImports();
             var artPath = AssetDatabase.GetAssetPath(BuildArtAsset());
             Mats.Clear();
@@ -55,8 +56,9 @@ namespace ChemicalSafety.Editor
             BuildFloorMarkings(env);
             BuildSideRacks(env);
             BuildSigns(env, art);
+            BuildDressing(env);
 
-            var drums = BuildHeroRack(env, art, out var rackFocus);
+            var drums = BuildHeroRack(env, art, out var rackFocus, out var drumPokes);
             BuildSc02Zone(env);
 
             var rig = BuildRig(art, out var leftController);
@@ -76,8 +78,23 @@ namespace ChemicalSafety.Editor
             rig.transform.SetPositionAndRotation(spawnStart.position, spawnStart.rotation);
 
             var flow = new GameObject("PresentableFlow").transform;
-            var hotspot1 = Hotspot("Hotspot_SC01", flow, art, new Vector3(2.0f, 0f, 4.5f));
+            // Centre of the yellow floor box in front of the hero rack.
+            var hotspot1 = Hotspot("Hotspot_SC01", flow, art, new Vector3(0f, 0f, 4.5f));
             var hotspot2 = Hotspot("Hotspot_SC02", flow, art, new Vector3(0f, 0f, -9.3f));
+
+            var trolleyPos = new Vector3(1.95f, 0f, 5.7f);
+            var trolley = BuildTrolley(env, trolleyPos);
+            var hotspotTrolley = Hotspot("Hotspot_Trolley", flow, art, trolleyPos);
+            var htSo = new SerializedObject(hotspotTrolley);
+            htSo.FindProperty("activateOnStand").boolValue = false;
+            htSo.FindProperty("showBanglaLabel").boolValue = false;
+            htSo.FindProperty("englishLabel").stringValue = "Poke the trolley";
+            htSo.ApplyModifiedPropertiesWithoutUndo();
+            var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 5.2f), 0f);
+            var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(1.35f, 0f, 5.1f), 0f);
+
+            var labelPopup = Child("LabelPickPopup", flow).AddComponent<LabelPickPopup>();
+            SetRef(labelPopup, "art", art);
 
             var instruction = new GameObject("InstructionPanel");
             instruction.transform.SetParent(flow);
@@ -103,6 +120,7 @@ namespace ChemicalSafety.Editor
             voice.spatialBlend = 0f;
             voice.volume = 1f;
             var zoom = directorGo.AddComponent<RigZoomController>();
+            directorGo.AddComponent<RayVisualSuppressor>();
             var director = directorGo.AddComponent<PresentableSequenceDirector>();
 
             var so = new SerializedObject(director);
@@ -122,6 +140,16 @@ namespace ChemicalSafety.Editor
             so.FindProperty("spawnSc02").objectReferenceValue = spawnSc02;
             so.FindProperty("hotspotSc02").objectReferenceValue = hotspot2;
             so.FindProperty("mcqSc02").objectReferenceValue = mcq2;
+            so.FindProperty("labelPopup").objectReferenceValue = labelPopup;
+            so.FindProperty("drumPokeStand").objectReferenceValue = drumPokeStand;
+            so.FindProperty("trolley").objectReferenceValue = trolley;
+            so.FindProperty("trolleyPoke").objectReferenceValue = trolley.GetComponent<PokeTarget>();
+            so.FindProperty("hotspotTrolley").objectReferenceValue = hotspotTrolley;
+            so.FindProperty("trolleyStand").objectReferenceValue = trolleyStand;
+            var pokesProp = so.FindProperty("drumPokes");
+            pokesProp.arraySize = drumPokes.Length;
+            for (var i = 0; i < drumPokes.Length; i++)
+                pokesProp.GetArrayElementAtIndex(i).objectReferenceValue = drumPokes[i];
             var drumsProp = so.FindProperty("drums");
             drumsProp.arraySize = drums.Length;
             for (var i = 0; i < drums.Length; i++)
@@ -136,9 +164,48 @@ namespace ChemicalSafety.Editor
 
         // ---------------------------------------------------------------- imports / art
 
+        private const string DesignerDir = ArtRoot + "/2D/Designer";
+
+        // Designer frames are cyan; a red twin (R and B swapped) is generated for wrong states because
+        // tinting a cyan sprite red just makes it dark.
+        private static void GenerateRedVariants()
+        {
+            MakeRed("pop up screen", "UI_Red_PopupScreen");
+            MakeRed("answer box", "UI_Red_AnswerBox");
+            MakeRed("button", "UI_Red_Button");
+        }
+
+        private static void MakeRed(string srcName, string outName)
+        {
+            var src = DesignerDir + "/" + srcName + ".png";
+            var dst = ArtRoot + "/2D/Generated/" + outName + ".png";
+            if (!File.Exists(src))
+            {
+                Debug.LogWarning("[Presentable] Missing " + src);
+                return;
+            }
+
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            tex.LoadImage(File.ReadAllBytes(src));
+            var px = tex.GetPixels32();
+            for (var i = 0; i < px.Length; i++)
+            {
+                var c = px[i];
+                px[i] = new Color32(c.b, (byte)(c.g * 0.2f), (byte)(c.r * 0.6f), c.a);
+            }
+
+            tex.SetPixels32(px);
+            var bytes = tex.EncodeToPNG();
+            Object.DestroyImmediate(tex);
+            if (File.Exists(dst) && File.ReadAllBytes(dst).Length == bytes.Length)
+                return;
+            File.WriteAllBytes(dst, bytes);
+            AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceSynchronousImport);
+        }
+
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/UI", "2D/Labels" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -146,12 +213,18 @@ namespace ChemicalSafety.Editor
                     var ti = AssetImporter.GetAtPath(path) as TextureImporter;
                     if (ti == null)
                         continue;
-                    var sprite = !dir.EndsWith("Labels");
                     var changed = false;
-                    if (sprite && ti.textureType != TextureImporterType.Sprite)
+                    if (ti.textureType != TextureImporterType.Sprite)
                     {
                         ti.textureType = TextureImporterType.Sprite;
                         ti.spriteImportMode = SpriteImportMode.Single;
+                        changed = true;
+                    }
+
+                    var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096 : path.EndsWith("Background.png") ? 2048 : 1024;
+                    if (ti.maxTextureSize != maxSize)
+                    {
+                        ti.maxTextureSize = maxSize;
                         changed = true;
                     }
 
@@ -196,6 +269,7 @@ namespace ChemicalSafety.Editor
 
             Sprite G(string n) => LoadSprite("2D/Generated/" + n);
             Sprite B(string n) => LoadSprite("2D/BanglaText/" + n);
+            Sprite D(string n) => LoadSprite("2D/Designer/" + n);
             AudioClip V(string n)
             {
                 var p = "Assets/Art/Audio/VO/" + n;
@@ -209,7 +283,6 @@ namespace ChemicalSafety.Editor
             art.radialGlow = G("FX_RadialGlow");
             art.beam = G("FX_Beam");
             art.arrowDown = G("FX_ArrowDown");
-            art.speaker = G("ICON_Speaker");
             art.check = G("ICON_Check");
             art.cross = G("ICON_Cross");
             art.circle = G("ICON_Circle");
@@ -219,14 +292,19 @@ namespace ChemicalSafety.Editor
             art.roundedPanel = G("UI_RoundedPanel");
             art.roundedSolid = G("UI_RoundedSolid");
             art.softGlow = G("UI_SoftGlow");
-            art.popupFrame = G("UI_PopupScreen_Tint");
-            art.answerBox = G("UI_AnswerBox_Tint");
-            art.pop02 = G("UI_Pop02_Tint");
-            art.thumbFaded = G("THUMB_Drum_Faded");
+            art.popupFrame = D("pop up screen");
+            art.answerBox = D("answer box");
+            art.pop02 = D("pop02");
+            art.button = D("button");
+            art.popupFrameRed = G("UI_Red_PopupScreen");
+            art.answerBoxRed = G("UI_Red_AnswerBox");
+            art.buttonRed = G("UI_Red_Button");
+            art.speaker = D("speaker button");
             art.thumbNoLabel = G("THUMB_Drum_NoLabel");
-            art.thumbMismatch = G("THUMB_Drum_Mismatch");
-            art.thumbCorrect = G("THUMB_Drum_Correct");
-            art.sdsClipboard = LoadSprite("2D/UI/SDS_Clipboard");
+            art.labelFaded = D("Drum label/faded");
+            art.labelMethanol = D("Drum label/Methanol");
+            art.labelIsopropanol = D("Drum label/Isopropanol");
+            art.sdsClipboard = D("SDS in Clipboard");
             art.bnSalam = B("BN_Salam");
             art.bnWelcomeSub = B("BN_WelcomeSub");
             art.bnInstructionSub = B("BN_InstructionSub");
@@ -237,10 +315,27 @@ namespace ChemicalSafety.Editor
             art.bnClipboardHint = B("BN_ClipboardHint");
             art.bnZoomHint = B("BN_ZoomHint");
             art.bnNextZone = B("BN_NextZone");
+            art.bnPickLabel = B("BN_PickLabel");
+            art.bnWrongLabel = B("BN_WrongLabel");
+            art.bnContinueHint = B("BN_ContinueHint");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
             art.voCorrect = V("VO_Correct_bn.mp3");
             art.voWrong = V("VO_Wrong_bn.mp3");
+            // Not recorded yet: keep whatever is already in the slot (null) until the mp3 is dropped in.
+            var pick = V("VO_PickLabel_bn.mp3");
+            if (pick != null)
+                art.voPickLabel = pick;
+            var wrongLabel = V("VO_WrongLabel_bn.mp3");
+            if (wrongLabel != null)
+                art.voWrongLabel = wrongLabel;
+            var cont = V("VO_ContinueHint_bn.mp3");
+            if (cont != null)
+                art.voContinueHint = cont;
+            if (art.voPickLabel == null)
+                Debug.LogWarning("[Presentable] VO_PickLabel_bn.mp3 is missing - AudioClip slot left empty.");
+            if (art.voWrongLabel == null)
+                Debug.LogWarning("[Presentable] VO_WrongLabel_bn.mp3 is missing - AudioClip slot left empty.");
 
             foreach (var guid in AssetDatabase.FindAssets("LiberationSans SDF t:TMP_FontAsset"))
             {
@@ -318,7 +413,7 @@ namespace ChemicalSafety.Editor
         {
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.78f, 0.82f, 0.88f);
-            RenderSettings.ambientEquatorColor = new Color(0.52f, 0.55f, 0.58f);
+            RenderSettings.ambientEquatorColor = new Color(0.62f, 0.65f, 0.68f);
             RenderSettings.ambientGroundColor = new Color(0.3f, 0.3f, 0.3f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
@@ -331,17 +426,9 @@ namespace ChemicalSafety.Editor
             l.type = LightType.Directional;
             l.color = new Color(1f, 0.96f, 0.9f);
             l.intensity = 1.15f;
-            l.shadows = LightShadows.Soft;
+            l.shadows = LightShadows.Hard;
             l.shadowStrength = 0.6f;
             sun.transform.rotation = Quaternion.Euler(58f, -28f, 0f);
-
-            var fill = new GameObject("Fill Light");
-            var f = fill.AddComponent<Light>();
-            f.type = LightType.Directional;
-            f.color = new Color(0.75f, 0.85f, 1f);
-            f.intensity = 0.35f;
-            f.shadows = LightShadows.None;
-            fill.transform.rotation = Quaternion.Euler(30f, 160f, 0f);
         }
 
         private static void BuildShell(Transform env)
@@ -349,7 +436,7 @@ namespace ChemicalSafety.Editor
             var concrete = Mat("Concrete", new Color(0.62f, 0.63f, 0.64f), 0.28f);
             var wall = Mat("WallPanel", new Color(0.46f, 0.5f, 0.55f), 0.25f, 0.3f);
             var roof = Mat("Roof", new Color(0.28f, 0.3f, 0.33f), 0.2f, 0.4f);
-            var skylight = Mat("Skylight", Color.white, 0f, 0f, null, new Color(2.2f, 2.2f, 2.1f));
+            var skylight = Mat("Skylight", new Color(1f, 1f, 0.95f), 0f, 0f, null, null, true);
             var steel = Mat("SteelBeam", new Color(0.35f, 0.38f, 0.42f), 0.45f, 0.7f);
 
             var floor = Box("Floor", env, new Vector3(0f, -0.05f, 1f), new Vector3(14f, 0.1f, 30f), concrete);
@@ -368,7 +455,9 @@ namespace ChemicalSafety.Editor
                 Box("RoofBeam", env, new Vector3(0f, 7.2f, z + 2f), new Vector3(14f, 0.25f, 0.18f), steel);
             }
 
-            var muralTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Env_Background.png");
+            BuildCeilingFans(env);
+
+            var muralTex = AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Background.png");
             var mural = GameObject.CreatePrimitive(PrimitiveType.Quad);
             mural.name = "Mural_Warehouse";
             mural.transform.SetParent(env);
@@ -379,64 +468,391 @@ namespace ChemicalSafety.Editor
                 Mat("Mural", new Color(0.92f, 0.92f, 0.92f), 0f, 0f, muralTex, null, true);
         }
 
+        // The whole floor (polished concrete, joints, scuffs, light reflections and the worn yellow safety
+        // paint) is baked into one texture by Tools/generate_floor.py and laid over the collision floor.
         private static void BuildFloorMarkings(Transform env)
         {
-            var yellow = Mat("FloorYellow", new Color(1f, 0.78f, 0.08f), 0.5f, 0f, null,
-                new Color(0.25f, 0.18f, 0f));
-            const float y = 0.006f;
-            const float h = 0.012f;
-            const float w = 0.12f;
-
-            Box("Line_Right", env, new Vector3(2.0f, y, -4.4f), new Vector3(w, h, 19.4f), yellow, false);
-            Box("Line_Left", env, new Vector3(-2.0f, y, -4.4f), new Vector3(w, h, 19.4f), yellow, false);
-            Box("Line_RackFront", env, new Vector3(0f, y, 5.3f), new Vector3(4.12f, h, w), yellow, false);
-            Box("Line_ZoneSC02", env, new Vector3(0f, y, -10.6f), new Vector3(4.12f, h, w), yellow, false);
-
-            for (var i = 0; i < 6; i++)
-            {
-                var chevron = Box("Chevron", env, new Vector3(3.1f + i * 0.45f, y, 0.4f),
-                    new Vector3(0.12f, h, 0.9f), yellow, false);
-                chevron.transform.rotation = Quaternion.Euler(0f, 35f, 0f);
-            }
+            var mat = Mat("FloorBaked", Color.white, 0.6f, 0f, EnvTex("FLOOR_Baked"));
+            QuadObj("Floor_Baked", env, new Vector3(0f, 0.004f, 1f), new Vector3(90f, 0f, 0f), new Vector2(14f, 30f),
+                mat);
         }
 
+        // ---------------------------------------------------------------- racks / dressing
+
+        private const float RackX = 4.3f;
+        private const float RackStartZ = 1.8f;
+        private const float BayLen = 2.6f;
+        private const int RackBays = 2;
+
+        private static void MarkStatic(Transform root)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject, StaticEditorFlags.BatchingStatic);
+        }
+
+        // Light 12-sided drum (side + lid): ~36 triangles, so hundreds of rack drums stay cheap on Quest.
+        private static Mesh LowPolyDrumMesh()
+        {
+            var path = GenDir + "/Mesh_LowPolyDrum.asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = new Mesh { name = "LowPolyDrum" };
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+
+            const int seg = 12;
+            var verts = new List<Vector3>();
+            var norms = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            for (var i = 0; i <= seg; i++)
+            {
+                var a = i / (float)seg * Mathf.PI * 2f;
+                var n = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                verts.Add(n * 0.5f + Vector3.down * 0.5f);
+                verts.Add(n * 0.5f + Vector3.up * 0.5f);
+                norms.Add(n);
+                norms.Add(n);
+                uvs.Add(new Vector2(i / (float)seg, 0f));
+                uvs.Add(new Vector2(i / (float)seg, 1f));
+            }
+
+            for (var i = 0; i < seg; i++)
+            {
+                var b = i * 2;
+                tris.AddRange(new[] { b, b + 1, b + 3, b, b + 3, b + 2 });
+            }
+
+            var capStart = verts.Count;
+            verts.Add(Vector3.up * 0.5f);
+            norms.Add(Vector3.up);
+            uvs.Add(new Vector2(0.5f, 0.5f));
+            for (var i = 0; i <= seg; i++)
+            {
+                var a = i / (float)seg * Mathf.PI * 2f;
+                verts.Add(new Vector3(Mathf.Cos(a) * 0.5f, 0.5f, Mathf.Sin(a) * 0.5f));
+                norms.Add(Vector3.up);
+                uvs.Add(new Vector2(0.5f, 0.5f));
+            }
+
+            for (var i = 0; i < seg; i++)
+                tris.AddRange(new[] { capStart, capStart + 2 + i, capStart + 1 + i });
+
+            mesh.Clear();
+            mesh.SetVertices(verts);
+            mesh.SetNormals(norms);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
+        private static GameObject MeshObj(string name, Transform parent, Mesh mesh, Vector3 pos, Vector3 scale,
+            Material mat)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = pos;
+            go.transform.localScale = scale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
+        }
+
+        private static Material MatAlpha(string name, Texture tex, Color color, bool additive)
+        {
+            if (Mats.TryGetValue(name, out var cached))
+                return cached;
+
+            var path = GenDir + "/M_" + name + ".mat";
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null)
+            {
+                m = new Material(shader);
+                AssetDatabase.CreateAsset(m, path);
+            }
+            else
+            {
+                m.shader = shader;
+            }
+
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", additive ? 2f : 0f);
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", additive ? (float)BlendMode.One : (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.renderQueue = (int)RenderQueue.Transparent;
+            m.SetColor("_BaseColor", color);
+            if (tex != null)
+                m.SetTexture("_BaseMap", tex);
+            EditorUtility.SetDirty(m);
+            Mats[name] = m;
+            return m;
+        }
+
+        private static GameObject QuadObj(string name, Transform parent, Vector3 pos, Vector3 euler, Vector2 size,
+            Material mat)
+        {
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            q.name = name;
+            q.transform.SetParent(parent, false);
+            q.transform.localPosition = pos;
+            q.transform.localRotation = Quaternion.Euler(euler);
+            q.transform.localScale = new Vector3(size.x, size.y, 1f);
+            Object.DestroyImmediate(q.GetComponent<Collider>());
+            var r = q.GetComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return q;
+        }
+
+        private static Texture2D EnvTex(string n) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Env/" + n + ".png");
+
+        private static Mesh LoadObjMesh(string path)
+        {
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                if (o is Mesh m)
+                    return m;
+            }
+
+            Debug.LogError("[Presentable] No mesh in " + path);
+            return null;
+        }
+
+        // Two aisles built from the designer shelf model (shelve.glb) stretched along the aisle, every shelf
+        // loaded with 8 drums (~1 in 4 red). Drums are 12-sided meshes so the extra rows stay cheap.
         private static void BuildSideRacks(Transform env)
         {
-            PlaceModel("3D/ShelfWithDrums", "Rack_Left", env, new Vector3(-4.6f, 0f, 6.2f), 90f);
-            PlaceModel("3D/ShelfWithDrums", "Rack_Right", env, new Vector3(4.6f, 0f, 6.2f), -90f);
+            var racks = new GameObject("Racks").transform;
+            racks.SetParent(env, false);
+            var rackBlue = Mat("RackUpright", new Color(0.08f, 0.26f, 0.7f), 0.4f, 0.4f);
+            var rackOrange = Mat("RackBeam", new Color(0.95f, 0.4f, 0.05f), 0.4f, 0.3f);
+            var wood = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
+            var blue = Mat("DrumBlue", new Color(0.05f, 0.23f, 0.66f), 0.5f, 0.4f);
+            var red = Mat("DrumRed", new Color(0.8f, 0.09f, 0.06f), 0.55f, 0.35f);
+            var drum = LowPolyDrumMesh();
+            // Same rack as Shelf.glb, decimated from 88k to ~13k triangles (Tools: see Docs); sized in metres.
+            var uprightMesh = LoadObjMesh(ArtRoot + "/3D/ShelfLite_Uprights.obj");
+            var beamMesh = LoadObjMesh(ArtRoot + "/3D/ShelfLite_Beams.obj");
 
-            var pallet = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
-            var spots = new[]
+            var labelMats = new[]
             {
-                new Vector3(-5.6f, 0f, 1.4f), new Vector3(-5.0f, 0f, 1.4f), new Vector3(-5.3f, 0f, 0.85f),
-                new Vector3(5.6f, 0f, 10.6f), new Vector3(5.0f, 0f, 10.6f), new Vector3(-5.6f, 0f, 10.9f)
+                LabelMat("RackLabel_Faded", "faded"), LabelMat("RackLabel_Methanol", "Methanol"),
+                LabelMat("RackLabel_Isopropanol", "Isopropanol"), LabelMat("RackLabel_Methanol2", "Methanol"),
+                LabelMat("RackLabel_Isopropanol2", "Isopropanol")
             };
-            Box("Pallet_A", env, new Vector3(-5.3f, 0.06f, 1.15f), new Vector3(1.3f, 0.12f, 1.2f), pallet);
-            for (var i = 0; i < spots.Length; i++)
+
+            const float stretch = 1.75f;
+            const float modelLength = 2.92f;
+            var rackLen = modelLength * stretch;
+            const float surface = 0.135f; // top of the shelf's bottom beam (measured on the hero rack)
+
+            foreach (var side in new[] { -1f, 1f })
             {
-                var p = spots[i];
-                if (i < 3)
-                    p.y = 0.12f;
-                PlaceModel("3D/Drum", "FloorDrum_" + i, env, p, i * 47f);
+                var x = side * RackX;
+                var rnd = new System.Random(side < 0f ? 7 : 19);
+                for (var n = 0; n < RackBays; n++)
+                {
+                    var zc = RackStartZ + rackLen * (n + 0.5f);
+                    var rack = new GameObject("SideRack").transform;
+                    rack.SetParent(racks, false);
+                    rack.SetPositionAndRotation(new Vector3(x, 0f, zc), Quaternion.Euler(0f, 90f, 0f));
+                    rack.localScale = new Vector3(stretch, 1f, 1f);
+                    MeshObj("Uprights", rack, uprightMesh, Vector3.zero, Vector3.one, rackBlue);
+                    MeshObj("Beams", rack, beamMesh, Vector3.zero, Vector3.one, rackOrange);
+
+                    for (var level = 0; level < 3; level++)
+                    {
+                        var y = surface + level * 1.4f;
+                        Prim("Pallet", PrimitiveType.Cube, racks, new Vector3(x, y + 0.06f, zc),
+                            new Vector3(0.7f, 0.12f, rackLen - 0.2f), wood);
+                        var count = 8;
+                        for (var k = 0; k < count; k++)
+                        {
+                            if (rnd.NextDouble() < 0.04)
+                                continue;
+                            var along = (k - (count - 1) * 0.5f) * ((rackLen - 0.5f) / count);
+                            var dpos = new Vector3(x, y + 0.12f + 0.44f, zc + along);
+                            MeshObj("Drum", racks, drum, dpos, new Vector3(0.58f, 0.88f, 0.58f),
+                                rnd.NextDouble() < 0.27 ? red : blue);
+                            if (rnd.NextDouble() < 0.38)
+                                AddDrumLabel(racks, dpos, side, labelMats[rnd.Next(labelMats.Length)], rnd);
+                        }
+                    }
+                }
+
+                // Yellow end guards at the aisle end of each run.
+                var yellow = Mat("GuardYellow", new Color(0.98f, 0.8f, 0.05f), 0.4f);
+                Prim("Guard", PrimitiveType.Cube, racks, new Vector3(x, 0.3f, RackStartZ - 0.55f),
+                    new Vector3(1.5f, 0.12f, 0.12f), yellow);
+                foreach (var sx in new[] { -0.75f, 0.75f })
+                    Prim("GuardPost", PrimitiveType.Cube, racks, new Vector3(x + sx, 0.3f, RackStartZ - 0.55f),
+                        new Vector3(0.12f, 0.6f, 0.12f), yellow);
+
+                // Floor pallets with drums beside the aisle.
+                foreach (var z in new[] { -2.0f, -6.5f })
+                {
+                    var px = side * 2.95f;
+                    Prim("FloorPallet", PrimitiveType.Cube, racks, new Vector3(px, 0.07f, z),
+                        new Vector3(1.2f, 0.14f, 1.2f), wood);
+                    for (var i = 0; i < 4; i++)
+                        MeshObj("FloorDrum", racks, drum,
+                            new Vector3(px + (i % 2 - 0.5f) * 0.58f, 0.14f + 0.44f, z + (i / 2 - 0.5f) * 0.58f),
+                            new Vector3(0.56f, 0.88f, 0.56f), rnd.NextDouble() < 0.3 ? red : blue);
+                    for (var i = 0; i < 4; i++)
+                    {
+                        if (rnd.NextDouble() < 0.55)
+                            AddDrumLabel(racks, new Vector3(px + (i % 2 - 0.5f) * 0.58f, 0.58f, z + (i / 2 - 0.5f) * 0.58f),
+                                side, labelMats[rnd.Next(labelMats.Length)], rnd);
+                    }
+                }
             }
 
-            var red = Mat("ExtinguisherRed", new Color(0.8f, 0.07f, 0.05f), 0.6f);
-            foreach (var pos in new[] { new Vector3(-6.85f, 0.35f, -1.5f), new Vector3(6.85f, 0.35f, 3.2f) })
-            {
-                var ext = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                ext.name = "FireExtinguisher";
-                ext.transform.SetParent(env);
-                ext.transform.position = pos;
-                ext.transform.localScale = new Vector3(0.18f, 0.32f, 0.18f);
-                ext.GetComponent<MeshRenderer>().sharedMaterial = red;
-            }
+            // Safety boards on the near end of each run, like Background.png.
+            BuildRackSign(racks, "SIGN_SafetyEquipment", new Vector3(-RackX - 0.4f, 2.55f, RackStartZ - 0.2f), new Vector2(0.72f, 0.98f));
+            BuildRackSign(racks, "SIGN_SafetyFirst", new Vector3(-RackX + 0.42f, 2.55f, RackStartZ - 0.2f), new Vector2(0.72f, 0.98f));
+            BuildRackSign(racks, "SIGN_WarningHazardous", new Vector3(-RackX - 0.4f, 1.2f, RackStartZ - 0.2f), new Vector2(0.78f, 0.34f));
+            BuildRackSign(racks, "SIGN_CautionHazardous", new Vector3(-RackX + 0.42f, 1.2f, RackStartZ - 0.2f), new Vector2(0.78f, 0.34f));
+            BuildRackSign(racks, "SIGN_DangerHazard", new Vector3(RackX, 2.55f, RackStartZ - 0.2f), new Vector2(0.8f, 1.1f));
+            BuildRackSign(racks, "SIGN_SafetyStart", new Vector3(RackX, 1.2f, RackStartZ - 0.2f), new Vector2(0.98f, 0.42f));
+            MarkStatic(racks);
         }
 
-        private static DrumCallout[] BuildHeroRack(Transform env, PresentableArt art, out Transform focus)
+        private static Material LabelMat(string name, string file)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/" + file + ".png");
+            return Mat(name, Color.white, 0.35f, 0f, tex, null, false, true);
+        }
+
+        // Small GHS sticker on the aisle-facing side of a rack drum.
+        private static void AddDrumLabel(Transform parent, Vector3 drumCentre, float side, Material mat,
+            System.Random rnd)
+        {
+            var pos = drumCentre + new Vector3(-side * 0.287f, (float)(rnd.NextDouble() - 0.5) * 0.12f,
+                (float)(rnd.NextDouble() - 0.5) * 0.08f);
+            QuadObj("Label", parent, pos, new Vector3(0f, 90f * side, (float)(rnd.NextDouble() - 0.5) * 8f),
+                new Vector2(0.34f, 0.37f), mat);
+        }
+
+        private static void BuildRackSign(Transform parent, string tex, Vector3 pos, Vector2 size)
+        {
+            var mat = Mat(tex, Color.white, 0f, 0f, EnvTex(tex), null, true, true);
+            QuadObj(tex, parent, pos, Vector3.zero, size, mat);
+        }
+
+        // Floor stains, hanging lamps, sky-light shafts, wall extinguishers.
+        private static void BuildDressing(Transform env)
+        {
+            var dress = new GameObject("Dressing").transform;
+            dress.SetParent(env, false);
+
+            var stains = new[]
+            {
+                ("STAIN_Blood", new Vector3(2.7f, 0.016f, 1.0f), 1.3f, 20f),
+                ("STAIN_Rust", new Vector3(-0.9f, 0.016f, 2.9f), 1.9f, 80f),
+                ("STAIN_Oil", new Vector3(-2.6f, 0.016f, -5.4f), 1.5f, 140f),
+                ("STAIN_Rust", new Vector3(1.4f, 0.016f, -8.2f), 1.2f, 30f)
+            };
+            var i = 0;
+            foreach (var (tex, pos, size, yaw) in stains)
+            {
+                var m = MatAlpha("Stain_" + tex, EnvTex(tex), Color.white, false);
+                QuadObj("Stain" + i++, dress, pos, new Vector3(90f, yaw, 0f), new Vector2(size, size), m);
+            }
+
+            // Hanging industrial lamps on the roof beams.
+            var shade = Mat("LampShade", new Color(0.16f, 0.17f, 0.19f), 0.4f, 0.7f);
+            var tube = Mat("LampTube", new Color(1f, 0.98f, 0.9f), 0f, 0f, null, new Color(2.6f, 2.5f, 2.3f), true);
+            var cable = Mat("LampCable", new Color(0.1f, 0.1f, 0.1f), 0.2f);
+            foreach (var z in new[] { -10f, -6f, -2f, 2f, 6f, 10f, 14f })
+            {
+                foreach (var x in new[] { -3.2f, 3.2f })
+                {
+                    Prim("LampCable", PrimitiveType.Cylinder, dress, new Vector3(x, 6.7f, z),
+                        new Vector3(0.015f, 0.38f, 0.015f), cable);
+                    Prim("LampShade", PrimitiveType.Cube, dress, new Vector3(x, 6.32f, z),
+                        new Vector3(0.34f, 0.08f, 1.3f), shade);
+                    Prim("LampTube", PrimitiveType.Cube, dress, new Vector3(x, 6.26f, z),
+                        new Vector3(0.18f, 0.04f, 1.1f), tube);
+                }
+            }
+
+            // Soft shafts of daylight under some sky-lights (two crossed quads each, additive).
+            var shaftTex = EnvTex("FX_Shaft");
+            var shaft = MatAlpha("Shaft", shaftTex, new Color(1f, 0.97f, 0.88f, 0.16f), true);
+            foreach (var z in new[] { -4f, 4f, 12f })
+            {
+                foreach (var x in new[] { -3f, 3f })
+                {
+                    QuadObj("Shaft", dress, new Vector3(x, 3.9f, z), Vector3.zero, new Vector2(2.0f, 7.2f), shaft);
+                    QuadObj("Shaft", dress, new Vector3(x, 3.9f, z), new Vector3(0f, 90f, 0f), new Vector2(2.4f, 7.2f), shaft);
+                }
+            }
+
+            // Wall extinguishers (+ yellow pillars at the far wall).
+            var pillar = Mat("PillarYellow", new Color(0.98f, 0.8f, 0.08f), 0.35f);
+            foreach (var px in new[] { -2.4f, 2.4f })
+                Box("Pillar", dress, new Vector3(px, 1.6f, 15.65f), new Vector3(0.45f, 3.2f, 0.45f), pillar);
+            BuildExtinguisher(dress, new Vector3(-2.4f, 0f, 15.38f), 180f);
+            BuildExtinguisher(dress, new Vector3(2.4f, 0f, 15.38f), 180f);
+            BuildExtinguisher(dress, new Vector3(-6.97f, 0f, 0.4f), 90f);
+            BuildExtinguisher(dress, new Vector3(6.97f, 0f, 0.4f), -90f);
+            BuildExtinguisher(dress, new Vector3(-6.97f, 0f, 14.6f), 90f);
+            BuildExtinguisher(dress, new Vector3(6.97f, 0f, 14.6f), -90f);
+            BuildExtinguisher(dress, new Vector3(-6.97f, 0f, -7.0f), 90f);
+            BuildExtinguisher(dress, new Vector3(6.97f, 0f, -7.0f), -90f);
+            MarkStatic(dress);
+        }
+
+        // yaw = direction the extinguisher faces (0 = +z).
+        private static void BuildExtinguisher(Transform parent, Vector3 pos, float yaw)
+        {
+            var red = Mat("ExtinguisherRed", new Color(0.8f, 0.07f, 0.05f), 0.6f);
+            var black = Mat("ExtinguisherBlack", new Color(0.06f, 0.06f, 0.06f), 0.3f);
+            var steel = Mat("TrolleySteel", new Color(0.6f, 0.62f, 0.65f), 0.5f, 0.8f);
+            var white = Mat("SignWhite", Color.white, 0.2f);
+            var holder = new GameObject("Extinguisher").transform;
+            holder.SetParent(parent, false);
+            holder.position = pos;
+            holder.rotation = Quaternion.Euler(0f, yaw, 0f);
+
+            Prim("Body", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.1f, 0.12f), new Vector3(0.17f, 0.26f, 0.17f), red);
+            Prim("Neck", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.4f, 0.12f), new Vector3(0.07f, 0.05f, 0.07f), black);
+            Prim("Handle", PrimitiveType.Cube, holder, new Vector3(0f, 1.47f, 0.12f), new Vector3(0.05f, 0.03f, 0.16f), black);
+            Prim("Hose", PrimitiveType.Cube, holder, new Vector3(0.09f, 1.22f, 0.04f), new Vector3(0.025f, 0.28f, 0.025f), black);
+            Prim("Strap", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.2f, 0.12f), new Vector3(0.19f, 0.015f, 0.19f), steel);
+            Prim("SignBack", PrimitiveType.Cube, holder, new Vector3(0f, 1.85f, 0.01f), new Vector3(0.34f, 0.34f, 0.015f), red);
+            Prim("SignMark", PrimitiveType.Cube, holder, new Vector3(0f, 1.85f, 0.002f), new Vector3(0.09f, 0.22f, 0.015f), white);
+        }
+
+        private static DrumCallout[] BuildHeroRack(Transform env, PresentableArt art, out Transform focus,
+            out PokeTarget[] pokes)
         {
             const float rackZ = 6.2f;
             var rack = PlaceModel("3D/Shelf", "HeroRack", env, new Vector3(0f, 0f, rackZ), 0f);
             var surface = FindBottomSurface(rack, rackZ);
+            var rackBlue = Mat("RackUpright", new Color(0.08f, 0.26f, 0.7f), 0.4f, 0.4f);
+            var rackOrange = Mat("RackBeam", new Color(0.95f, 0.4f, 0.05f), 0.4f, 0.3f);
+            foreach (var r in rack.GetComponentsInChildren<MeshRenderer>())
+            {
+                if (r.name.StartsWith("Shelves_Brushed metal_0.001"))
+                    r.sharedMaterial = rackOrange;
+                else if (r.name.StartsWith("Shelves_Brushed metal_0"))
+                    r.sharedMaterial = rackBlue;
+            }
+
 
             var pallet = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
             const float palletH = 0.12f;
@@ -446,14 +862,15 @@ namespace ChemicalSafety.Editor
             var labelMesh = CurvedLabelMesh(0.3f, 0.36f);
             var labels = new[]
             {
-                AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Labels/Label_Acetone_Faded.png"),
+                AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/faded.png"),
                 null,
-                AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Labels/Label_Methanol.png"),
-                AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Labels/Label_Isopropanol.png")
+                AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/Methanol.png"),
+                AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/Isopropanol.png")
             };
             var captions = new[] { "Faded Label", "No Label", "Mismatched GHS vs SDS", "Correctly Labelled" };
 
             var callouts = new DrumCallout[4];
+            pokes = new PokeTarget[4];
             for (var i = 0; i < 4; i++)
             {
                 var x = -1.02f + i * 0.68f;
@@ -472,6 +889,14 @@ namespace ChemicalSafety.Editor
                         Mat("Label_" + (i + 1), Color.white, 0.35f, 0f, labels[i], null, false, true);
                 }
 
+                // Trigger volume a little fatter than the drum so a gloved fingertip cannot slip past.
+                var cap = drum.AddComponent<CapsuleCollider>();
+                cap.isTrigger = true;
+                cap.radius = radius + 0.05f;
+                cap.height = height + 0.04f;
+                cap.center = new Vector3(0f, height * 0.5f, 0f);
+                pokes[i] = drum.AddComponent<PokeTarget>();
+
                 var callout = drum.AddComponent<DrumCallout>();
                 var so = new SerializedObject(callout);
                 so.FindProperty("art").objectReferenceValue = art;
@@ -479,6 +904,7 @@ namespace ChemicalSafety.Editor
                 so.FindProperty("caption").stringValue = captions[i];
                 so.FindProperty("bubbleHeight").floatValue = height + 0.1f;
                 so.FindProperty("bubbleOffset").vector3Value = new Vector3(0f, 0f, -0.42f);
+                so.FindProperty("numberColor").colorValue = i == 3 ? PresentableUi.Green : Color.white;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 callouts[i] = callout;
             }
@@ -522,38 +948,131 @@ namespace ChemicalSafety.Editor
 
         private static void BuildSigns(Transform env, PresentableArt art)
         {
-            var signs = new[]
-            {
-                ("2D/BanglaText/BN_Sign_Danger", new Vector3(-3.6f, 2.3f, 4.6f), 0f, 0.0018f,
-                    new Color(0.95f, 0.72f, 0.05f)),
-                ("2D/BanglaText/BN_Sign_SafetyFirst", new Vector3(-6.95f, 2.4f, -1.0f), 90f, 0.0022f,
-                    new Color(0.05f, 0.5f, 0.25f)),
-                ("2D/BanglaText/BN_Sign_Equipment", new Vector3(3.6f, 2.3f, 4.6f), 0f, 0.0018f,
-                    new Color(0.05f, 0.5f, 0.25f))
-            };
-
-            foreach (var (path, pos, yaw, scale, board) in signs)
-            {
-                var sprite = LoadSprite(path);
-                if (sprite == null)
-                    continue;
-                var size = new Vector2(sprite.rect.width + 80f, sprite.rect.height + 60f);
-                var canvas = PresentableUi.WorldCanvas("Sign_" + Path.GetFileName(path), env, size, scale, false, 2);
-                canvas.transform.position = pos;
-                canvas.transform.rotation = Quaternion.Euler(0f, -yaw, 0f);
-                PresentableUi.Img(PresentableUi.Rect("Board", canvas.transform, Vector2.zero, Vector2.one),
-                    art.roundedPanel, board);
-                PresentableUi.Img(PresentableUi.Rect("Img", canvas.transform, Vector2.zero, Vector2.one,
-                    new Vector2(40f, 30f), new Vector2(-40f, -30f)), sprite, Color.white);
-            }
-
             var exit = PresentableUi.WorldCanvas("Sign_ProductionFloor", env, new Vector2(900f, 220f), 0.0022f, false, 2);
-            exit.transform.position = new Vector3(5.2f, 3.1f, 12f);
+            exit.transform.position = new Vector3(4.4f, 3.5f, 15.9f);
             var bgRt = PresentableUi.Rect("Bg", exit.transform, Vector2.zero, Vector2.one);
             PresentableUi.Img(bgRt, art.roundedPanel, new Color(0.98f, 0.8f, 0.1f));
             PresentableUi.Text("Text", exit.transform, new Vector2(0.04f, 0f), new Vector2(0.96f, 1f),
                 "Production Floor A1  \u2192", 96f, new Color(0.08f, 0.08f, 0.08f), bold: true,
                 font: art.englishFont);
+        }
+
+        // ---------------------------------------------------------------- fans / trolley
+
+        // Large 3-blade industrial fans hung from the roof beams. Big, low enough to be seen from the
+        // aisle, with one painted blade tip so the slow spin reads at a glance.
+        private static void BuildCeilingFans(Transform env)
+        {
+            var hubMat = Mat("FanHub", new Color(0.16f, 0.17f, 0.19f), 0.4f, 0.8f);
+            var rodMat = Mat("FanRod", new Color(0.22f, 0.23f, 0.25f), 0.35f, 0.8f);
+            var tipMat = Mat("FanTip", new Color(0.9f, 0.35f, 0.05f), 0.3f, 0.3f);
+            var blades = new[]
+            {
+                Mat("FanBlade_A", new Color(0.55f, 0.57f, 0.6f), 0.32f, 0.85f),
+                Mat("FanBlade_B", new Color(0.46f, 0.48f, 0.5f), 0.28f, 0.85f),
+                Mat("FanBlade_C", new Color(0.6f, 0.58f, 0.55f), 0.36f, 0.8f)
+            };
+
+            const float beamBottom = 7.075f;
+            const float hubY = 5.4f;
+            var rodLength = beamBottom - hubY - 0.22f;
+            foreach (var z in new[] { -10f, -2f, 6f, 14f })
+            {
+                var fan = new GameObject("CeilingFan").transform;
+                fan.SetParent(env, false);
+                fan.position = new Vector3(0f, beamBottom, z);
+
+                Prim("MountPlate", PrimitiveType.Cylinder, fan, new Vector3(0f, -0.02f, 0f),
+                    new Vector3(0.3f, 0.02f, 0.3f), hubMat);
+                Prim("DownRod", PrimitiveType.Cylinder, fan, new Vector3(0f, -rodLength * 0.5f, 0f),
+                    new Vector3(0.07f, rodLength * 0.5f, 0.07f), rodMat);
+                Prim("Canopy", PrimitiveType.Cylinder, fan, new Vector3(0f, -rodLength - 0.05f, 0f),
+                    new Vector3(0.36f, 0.07f, 0.36f), hubMat);
+
+                var rotor = new GameObject("Rotor").transform;
+                rotor.SetParent(fan, false);
+                rotor.localPosition = new Vector3(0f, -rodLength - 0.22f, 0f);
+                Prim("Motor", PrimitiveType.Cylinder, rotor, Vector3.zero, new Vector3(0.44f, 0.12f, 0.44f), hubMat);
+                for (var k = 0; k < 3; k++)
+                {
+                    var pivot = new GameObject("Blade" + k).transform;
+                    pivot.SetParent(rotor, false);
+                    pivot.localRotation = Quaternion.Euler(0f, k * 120f, 0f);
+                    Prim("Arm", PrimitiveType.Cube, pivot, new Vector3(0.45f, -0.01f, 0f),
+                        new Vector3(0.5f, 0.035f, 0.11f), hubMat);
+                    var blade = Prim("Paddle", PrimitiveType.Cube, pivot, new Vector3(1.2f, -0.02f, 0f),
+                        new Vector3(1.4f, 0.014f, 0.3f), blades[k]);
+                    blade.transform.localRotation = Quaternion.Euler(11f, 0f, 0f);
+                    if (k == 0)
+                    {
+                        var tip = Prim("Tip", PrimitiveType.Cube, pivot, new Vector3(1.8f, -0.02f, 0f),
+                            new Vector3(0.22f, 0.016f, 0.3f), tipMat);
+                        tip.transform.localRotation = Quaternion.Euler(11f, 0f, 0f);
+                    }
+                }
+
+                var spin = rotor.gameObject.AddComponent<CeilingFanSpin>();
+                var so = new SerializedObject(spin);
+                so.FindProperty("degreesPerSecond").floatValue = 140f;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        // Simple two-wheel hand trolley; starts hidden and is revealed by the director.
+        private static GameObject BuildTrolley(Transform env, Vector3 floorPos)
+        {
+            var paint = Mat("TrolleyBlue", new Color(0.1f, 0.3f, 0.78f), 0.5f, 0.3f);
+            var rubber = Mat("TrolleyRubber", new Color(0.05f, 0.05f, 0.05f), 0.2f);
+            var steel = Mat("TrolleySteel", new Color(0.6f, 0.62f, 0.65f), 0.5f, 0.8f);
+
+            var root = new GameObject("HandTrolley").transform;
+            root.SetParent(env, false);
+            root.position = floorPos;
+
+            var frame = new GameObject("Frame").transform;
+            frame.SetParent(root, false);
+            frame.localPosition = new Vector3(0f, 0.14f, -0.08f);
+            frame.localRotation = Quaternion.Euler(-14f, 0f, 0f);
+            foreach (var x in new[] { -0.2f, 0.2f })
+                Prim("Rail", PrimitiveType.Cube, frame, new Vector3(x, 0.5f, 0f), new Vector3(0.035f, 1.0f, 0.035f), paint);
+            foreach (var y in new[] { 0.12f, 0.45f, 0.75f })
+                Prim("Cross", PrimitiveType.Cube, frame, new Vector3(0f, y, 0f), new Vector3(0.4f, 0.025f, 0.025f), paint);
+            var handle = Prim("Handle", PrimitiveType.Cylinder, frame, new Vector3(0f, 1.02f, -0.02f),
+                new Vector3(0.03f, 0.24f, 0.03f), rubber);
+            handle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+            Prim("NosePlate", PrimitiveType.Cube, root, new Vector3(0f, 0.06f, 0.2f), new Vector3(0.44f, 0.02f, 0.38f),
+                steel);
+            foreach (var x in new[] { -0.26f, 0.26f })
+            {
+                var wheel = Prim("Wheel", PrimitiveType.Cylinder, root, new Vector3(x, 0.11f, -0.05f),
+                    new Vector3(0.22f, 0.035f, 0.22f), rubber);
+                wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            }
+
+            var col = root.gameObject.AddComponent<BoxCollider>();
+            col.isTrigger = true;
+            col.center = new Vector3(0f, 0.65f, 0.05f);
+            col.size = new Vector3(0.95f, 1.3f, 0.95f);
+            root.gameObject.AddComponent<PokeTarget>();
+            root.gameObject.SetActive(false);
+            return root.gameObject;
+        }
+
+        private static GameObject Prim(string name, PrimitiveType type, Transform parent, Vector3 localPos,
+            Vector3 localScale, Material mat)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            var r = go.GetComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
         }
 
         // ---------------------------------------------------------------- rig / hands

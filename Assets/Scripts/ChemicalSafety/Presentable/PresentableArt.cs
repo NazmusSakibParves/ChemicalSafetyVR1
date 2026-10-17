@@ -32,12 +32,18 @@ namespace ChemicalSafety.Presentable
         public Sprite popupFrame;
         public Sprite answerBox;
         public Sprite pop02;
+        public Sprite button;
+        [Header("Red variants (generated from the designer frames)")]
+        public Sprite popupFrameRed;
+        public Sprite answerBoxRed;
+        public Sprite buttonRed;
 
         [Header("Drum thumbnails")]
-        public Sprite thumbFaded;
+        [Tooltip("Blank drum body; label sprites are layered on top.")]
         public Sprite thumbNoLabel;
-        public Sprite thumbMismatch;
-        public Sprite thumbCorrect;
+        public Sprite labelFaded;
+        public Sprite labelMethanol;
+        public Sprite labelIsopropanol;
 
         [Header("Props")]
         public Sprite sdsClipboard;
@@ -53,12 +59,21 @@ namespace ChemicalSafety.Presentable
         public Sprite bnClipboardHint;
         public Sprite bnZoomHint;
         public Sprite bnNextZone;
+        public Sprite bnPickLabel;
+        public Sprite bnWrongLabel;
+        public Sprite bnContinueHint;
 
         [Header("Voice")]
         public AudioClip voSalam;
         public AudioClip voInstruction;
         public AudioClip voCorrect;
         public AudioClip voWrong;
+        [Tooltip("VO_PickLabel_bn.mp3 - drop the clip here if it is added after the scene build.")]
+        public AudioClip voPickLabel;
+        [Tooltip("VO_ContinueHint_bn.mp3 - played when the Continue button appears.")]
+        public AudioClip voContinueHint;
+        [Tooltip("VO_WrongLabel_bn.mp3")]
+        public AudioClip voWrongLabel;
 
         [Header("Fonts")]
         public TMP_FontAsset englishFont;

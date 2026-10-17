@@ -20,6 +20,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Color color = new Color(0.3f, 1f, 0.55f, 1f);
         [SerializeField] private float standRadius = 0.55f;
         [SerializeField] private string englishLabel = "Stand here";
+        [Tooltip("Off for pokeable markers (the trolley): only Activate() or a ray select triggers them.")]
+        [SerializeField] private bool activateOnStand = true;
+        [SerializeField] private bool showBanglaLabel = true;
 
         private Transform _cam;
         private XRSimpleInteractable _interactable;
@@ -74,8 +77,9 @@ namespace ChemicalSafety.Presentable
             _arrow = PresentableUi.Centered("Arrow", stand.transform, new Vector2(0f, 200f), new Vector2(170f, 170f));
             PresentableUi.Img(_arrow, art.arrowDown, color, preserveAspect: true);
 
-            PresentableUi.BanglaLine("LabelBn", stand.transform, art.bnStandHere, new Vector2(0f, 420f), 110f,
-                Color.white);
+            if (showBanglaLabel)
+                PresentableUi.BanglaLine("LabelBn", stand.transform, art.bnStandHere, new Vector2(0f, 420f), 110f,
+                    Color.white);
             PresentableUi.Text("LabelEn", stand.transform, new Vector2(0f, 0.86f), new Vector2(1f, 0.93f),
                 englishLabel, 64f, color, bold: true, font: art.englishFont);
 
@@ -104,12 +108,12 @@ namespace ChemicalSafety.Presentable
 
                 var d = _cam.position - transform.position;
                 d.y = 0f;
-                if (d.magnitude < standRadius)
+                if (activateOnStand && d.magnitude < standRadius)
                     Activate();
             }
 
             var kb = Keyboard.current;
-            if (kb != null && (kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
+            if (activateOnStand && kb != null && (kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
                 Activate();
         }
 

@@ -6,8 +6,8 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// step04-style numbered bubble + caption above a drum, plus a floor glow used for
-    /// intro pulses and correct / wrong feedback.
+    /// step04-style dark name pill ("1. Faded Label") that appears above a drum once its label has been
+    /// chosen correctly, plus a floor glow for correct / wrong feedback. Hidden until revealed.
     /// </summary>
     public sealed class DrumCallout : MonoBehaviour
     {
@@ -15,8 +15,12 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private int number = 1;
         [SerializeField] private string caption = "Faded Label";
         [SerializeField] private float bubbleHeight = 1.15f;
-        [Tooltip("World offset so the bubble floats in front of rack beams.")]
+        [Tooltip("World offset so the pill floats in front of rack beams.")]
         [SerializeField] private Vector3 bubbleOffset = Vector3.zero;
+        [SerializeField] private Color numberColor = Color.white;
+
+        private static readonly Color PillFill = new Color(0.02f, 0.09f, 0.17f, 0.96f);
+        private static readonly Color PillBorder = new Color(0.3f, 0.78f, 1f, 1f);
 
         private Transform _cam;
         private Transform _bubble;
@@ -38,28 +42,35 @@ namespace ChemicalSafety.Presentable
             _cam = Camera.main != null ? Camera.main.transform : null;
             var font = art.englishFont;
 
-            var bubble = PresentableUi.WorldCanvas("Callout", transform, new Vector2(620f, 300f), 0.00085f, false, 20);
+            var width = Mathf.Max(300f, caption.Length * 25f + 120f);
+            var bubble = PresentableUi.WorldCanvas("Callout", transform, new Vector2(width + 20f, 150f), 0.0009f,
+                false, 20);
             _bubble = bubble.transform;
             _bubble.position = transform.position + Vector3.up * bubbleHeight + bubbleOffset;
             _bubbleGroup = bubble.gameObject.AddComponent<CanvasGroup>();
+            _bubbleGroup.alpha = 0f;
 
-            var circleRt = PresentableUi.Centered("Number", _bubble, new Vector2(0f, 70f), new Vector2(140f, 140f));
-            PresentableUi.Img(circleRt, art.dot, new Color(0.1f, 0.45f, 0.95f, 1f), preserveAspect: true);
-            PresentableUi.Img(PresentableUi.Rect("Ring", circleRt, Vector2.zero, Vector2.one), art.circle,
-                Color.white, preserveAspect: true);
-            PresentableUi.Text(PresentableUi.Rect("Digit", circleRt, Vector2.zero, Vector2.one), number.ToString(), 84f,
-                Color.white, bold: true, font: font);
+            // Tail notch (a rotated square, half hidden behind the pill body).
+            var tail = PresentableUi.Centered("Tail", _bubble, new Vector2(0f, -50f), new Vector2(34f, 34f));
+            tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            PresentableUi.Img(tail, art.roundedSolid, PillBorder);
+            var tailIn = PresentableUi.Rect("Fill", tail, Vector2.zero, Vector2.one, new Vector2(4f, 4f),
+                new Vector2(-4f, -4f));
+            PresentableUi.Img(tailIn, art.roundedSolid, PillFill);
 
-            var capRt = PresentableUi.Centered("Caption", _bubble, new Vector2(0f, -70f), new Vector2(620f, 110f));
-            PresentableUi.Img(capRt, art.answerBox, PresentableUi.Cyan);
-            PresentableUi.Img(PresentableUi.Rect("Fill", capRt, Vector2.zero, Vector2.one, new Vector2(10f, 10f),
-                new Vector2(-10f, -10f)), art.roundedSolid, new Color(0.03f, 0.16f, 0.32f, 0.92f));
-            var capText = PresentableUi.Text(PresentableUi.Rect("Text", capRt, new Vector2(0.04f, 0f),
-                new Vector2(0.96f, 1f)), caption, 46f, Color.white, bold: true, font: font);
-            capText.textWrappingMode = TextWrappingModes.NoWrap;
-            capText.enableAutoSizing = true;
-            capText.fontSizeMin = 28f;
-            capText.fontSizeMax = 46f;
+            var body = PresentableUi.Centered("Pill", _bubble, new Vector2(0f, 8f), new Vector2(width, 88f));
+            PresentableUi.Img(body, art.roundedSolid, PillBorder);
+            PresentableUi.Img(PresentableUi.Rect("Fill", body, Vector2.zero, Vector2.one, new Vector2(5f, 5f),
+                new Vector2(-5f, -5f)), art.roundedSolid, PillFill);
+
+            var hex = ColorUtility.ToHtmlStringRGB(numberColor);
+            var text = PresentableUi.Text(PresentableUi.Rect("Text", body, new Vector2(0.03f, 0f),
+                new Vector2(0.97f, 1f)), "<color=#" + hex + ">" + number + ".</color> " + caption, 44f, Color.white,
+                bold: true, font: font);
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 26f;
+            text.fontSizeMax = 44f;
 
             var floor = PresentableUi.WorldCanvas("FloorGlow", transform, new Vector2(400f, 400f), 0.0024f, false, 5);
             floor.transform.position = new Vector3(transform.position.x, transform.position.y + 0.01f,
@@ -78,7 +89,7 @@ namespace ChemicalSafety.Presentable
                 if (look.sqrMagnitude > 0.001f)
                     _bubble.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
                 _bubble.position = transform.position + bubbleOffset +
-                                   Vector3.up * (bubbleHeight + Mathf.Sin(Time.time * 1.6f + number) * 0.015f);
+                                   Vector3.up * (bubbleHeight + Mathf.Sin(Time.time * 1.6f + number) * 0.012f);
             }
 
             if (_glow != null)
@@ -95,6 +106,9 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(FadeBubble(visible ? 1f : 0f, duration));
         }
 
+        /// <summary>Pops the name pill in above the drum.</summary>
+        public void RevealPlate() => StartCoroutine(PopPlate());
+
         public void Highlight(Color color, bool pulse)
         {
             _glowColor = color;
@@ -106,6 +120,15 @@ namespace ChemicalSafety.Presentable
         {
             _glowStrength = 0f;
             _pulse = false;
+        }
+
+        private IEnumerator PopPlate()
+        {
+            yield return PresentableFx.Tween(0.4f, t =>
+            {
+                _bubbleGroup.alpha = Mathf.Clamp01(t * 2f);
+                _bubble.localScale = Vector3.one * 0.0009f * Mathf.LerpUnclamped(0.6f, 1f, t);
+            }, PresentableFx.EaseOutBack);
         }
 
         private IEnumerator FadeBubble(float target, float duration)
