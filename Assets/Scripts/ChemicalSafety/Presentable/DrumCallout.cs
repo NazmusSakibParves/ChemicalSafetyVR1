@@ -116,6 +116,14 @@ namespace ChemicalSafety.Presentable
             _pulse = pulse;
         }
 
+        public void SetHover(bool on)
+        {
+            if (on)
+                Highlight(PresentableUi.Cyan, true);
+            else
+                ClearHighlight();
+        }
+
         public void ClearHighlight()
         {
             _glowStrength = 0f;

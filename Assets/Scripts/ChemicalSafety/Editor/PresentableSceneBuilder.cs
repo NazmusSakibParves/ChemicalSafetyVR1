@@ -43,6 +43,7 @@ namespace ChemicalSafety.Editor
 
             Directory.CreateDirectory(GenDir);
             GenerateRedVariants();
+            SolidLayer = EnsureLayer("SolidProps");
             ConfigureImports();
             var artPath = AssetDatabase.GetAssetPath(BuildArtAsset());
             Mats.Clear();
@@ -82,16 +83,20 @@ namespace ChemicalSafety.Editor
             var hotspot1 = Hotspot("Hotspot_SC01", flow, art, new Vector3(0f, 0f, 4.5f));
             var hotspot2 = Hotspot("Hotspot_SC02", flow, art, new Vector3(0f, 0f, -9.3f));
 
-            var trolleyPos = new Vector3(1.95f, 0f, 5.7f);
-            var trolley = BuildTrolley(env, trolleyPos);
-            var hotspotTrolley = Hotspot("Hotspot_Trolley", flow, art, trolleyPos);
-            var htSo = new SerializedObject(hotspotTrolley);
-            htSo.FindProperty("activateOnStand").boolValue = false;
-            htSo.FindProperty("showBanglaLabel").boolValue = false;
-            htSo.FindProperty("englishLabel").stringValue = "Poke the trolley";
-            htSo.ApplyModifiedPropertiesWithoutUndo();
-            var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 5.2f), 0f);
-            var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(1.35f, 0f, 5.1f), 0f);
+            var trolley = BuildCarrier(env, art, new Vector3(1.95f, 0f, 5.7f), out var carrierButton, out var carrierLoad);
+            var drumButtons = new FloatingTouchButton[4];
+            for (var i = 0; i < 4; i++)
+            {
+                var tbGo = new GameObject("TouchButton_" + (i + 1));
+                tbGo.transform.SetParent(flow, false);
+                tbGo.transform.position = new Vector3(drums[i].transform.position.x, 1.12f, 5.35f);
+                drumButtons[i] = tbGo.AddComponent<FloatingTouchButton>();
+                SetRef(drumButtons[i], "art", art);
+            }
+
+            // about a metre from the rack face: the floating Touch buttons are within arm's reach
+            var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 4.8f), 0f);
+            var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(1.3f, 0f, 5.0f), 0f);
 
             var labelPopup = Child("LabelPickPopup", flow).AddComponent<LabelPickPopup>();
             SetRef(labelPopup, "art", art);
@@ -121,6 +126,9 @@ namespace ChemicalSafety.Editor
             voice.volume = 1f;
             var zoom = directorGo.AddComponent<RigZoomController>();
             directorGo.AddComponent<RayVisualSuppressor>();
+            directorGo.AddComponent<QuestRenderTuning>();
+            SetRef(directorGo.AddComponent<FingerPokeSystem>(), "art", art);
+            SetRef(directorGo.AddComponent<HeadSolidGuard>(), "fader", fader);
             var director = directorGo.AddComponent<PresentableSequenceDirector>();
 
             var so = new SerializedObject(director);
@@ -143,8 +151,12 @@ namespace ChemicalSafety.Editor
             so.FindProperty("labelPopup").objectReferenceValue = labelPopup;
             so.FindProperty("drumPokeStand").objectReferenceValue = drumPokeStand;
             so.FindProperty("trolley").objectReferenceValue = trolley;
-            so.FindProperty("trolleyPoke").objectReferenceValue = trolley.GetComponent<PokeTarget>();
-            so.FindProperty("hotspotTrolley").objectReferenceValue = hotspotTrolley;
+            so.FindProperty("carrierButton").objectReferenceValue = carrierButton;
+            so.FindProperty("carrierLoad").objectReferenceValue = carrierLoad;
+            var btnProp = so.FindProperty("drumButtons");
+            btnProp.arraySize = drumButtons.Length;
+            for (var i = 0; i < drumButtons.Length; i++)
+                btnProp.GetArrayElementAtIndex(i).objectReferenceValue = drumButtons[i];
             so.FindProperty("trolleyStand").objectReferenceValue = trolleyStand;
             var pokesProp = so.FindProperty("drumPokes");
             pokesProp.arraySize = drumPokes.Length;
@@ -221,10 +233,20 @@ namespace ChemicalSafety.Editor
                         changed = true;
                     }
 
-                    var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096 : path.EndsWith("Background.png") ? 2048 : 1024;
+                    var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096
+                        : path.EndsWith("Background.png") || path.Contains("/BanglaText/") || path.Contains("/Designer/")
+                            ? 2048
+                            : 1024;
                     if (ti.maxTextureSize != maxSize)
                     {
                         ti.maxTextureSize = maxSize;
+                        changed = true;
+                    }
+
+                    if (path.Contains("/Env/") && (ti.anisoLevel != 4 || ti.filterMode != FilterMode.Trilinear))
+                    {
+                        ti.anisoLevel = 4;
+                        ti.filterMode = FilterMode.Trilinear;
                         changed = true;
                     }
 
@@ -318,6 +340,9 @@ namespace ChemicalSafety.Editor
             art.bnPickLabel = B("BN_PickLabel");
             art.bnWrongLabel = B("BN_WrongLabel");
             art.bnContinueHint = B("BN_ContinueHint");
+            art.bnTouchDrum = B("BN_TouchDrum");
+            art.bnCarrier = B("BN_Carrier");
+            art.iconTouch = LoadSprite("2D/Env/ICON_Touch");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
             art.voCorrect = V("VO_Correct_bn.mp3");
@@ -329,6 +354,12 @@ namespace ChemicalSafety.Editor
             var wrongLabel = V("VO_WrongLabel_bn.mp3");
             if (wrongLabel != null)
                 art.voWrongLabel = wrongLabel;
+            var touch = V("VO_TouchDrum_bn.mp3");
+            if (touch != null)
+                art.voTouchDrum = touch;
+            var carrierVo = V("VO_Carrier_bn.mp3");
+            if (carrierVo != null)
+                art.voCarrier = carrierVo;
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;
@@ -426,7 +457,7 @@ namespace ChemicalSafety.Editor
             l.type = LightType.Directional;
             l.color = new Color(1f, 0.96f, 0.9f);
             l.intensity = 1.15f;
-            l.shadows = LightShadows.Hard;
+            l.shadows = LightShadows.None;
             l.shadowStrength = 0.6f;
             sun.transform.rotation = Quaternion.Euler(58f, -28f, 0f);
         }
@@ -631,20 +662,134 @@ namespace ChemicalSafety.Editor
             return null;
         }
 
-        // Two aisles built from the designer shelf model (shelve.glb) stretched along the aisle, every shelf
-        // loaded with 8 drums (~1 in 4 red). Drums are 12-sided meshes so the extra rows stay cheap.
+        private static int SolidLayer;
+
+        private static int EnsureLayer(string layerName)
+        {
+            var idx = LayerMask.NameToLayer(layerName);
+            if (idx >= 0)
+                return idx;
+            var tm = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var layers = tm.FindProperty("layers");
+            for (var i = 8; i < layers.arraySize; i++)
+            {
+                var p = layers.GetArrayElementAtIndex(i);
+                if (string.IsNullOrEmpty(p.stringValue))
+                {
+                    p.stringValue = layerName;
+                    tm.ApplyModifiedProperties();
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private static void AddSolidBox(Transform parent, string name, Vector3 center, Vector3 size)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = center;
+            go.layer = SolidLayer;
+            go.AddComponent<BoxCollider>().size = size;
+        }
+
+        // Detailed 12-sided drum revolved from a profile: chime rims, two rolling hoops, recessed lid (~360 tris).
+        private static Mesh RealisticDrumMesh()
+        {
+            var path = GenDir + "/Mesh_RealisticDrum.asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = new Mesh { name = "RealisticDrum" };
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+
+            var profile = new[]
+            {
+                new Vector2(0.47f, -0.5f), new Vector2(0.50f, -0.47f), new Vector2(0.49f, -0.42f),
+                new Vector2(0.49f, -0.19f), new Vector2(0.505f, -0.175f), new Vector2(0.505f, -0.155f),
+                new Vector2(0.49f, -0.14f), new Vector2(0.49f, 0.14f), new Vector2(0.505f, 0.155f),
+                new Vector2(0.505f, 0.175f), new Vector2(0.49f, 0.19f), new Vector2(0.49f, 0.42f),
+                new Vector2(0.50f, 0.47f), new Vector2(0.47f, 0.5f), new Vector2(0.44f, 0.485f), new Vector2(0f, 0.485f)
+            };
+            const int seg = 12;
+            var verts = new List<Vector3>();
+            var norms = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            for (var p = 0; p < profile.Length; p++)
+            {
+                var prev = profile[Mathf.Max(p - 1, 0)];
+                var next = profile[Mathf.Min(p + 1, profile.Length - 1)];
+                var t = next - prev;
+                var n2 = new Vector2(t.y, -t.x).normalized;
+                if (p == profile.Length - 1)
+                    n2 = new Vector2(0f, 1f);
+                for (var i = 0; i <= seg; i++)
+                {
+                    var a = i / (float)seg * Mathf.PI * 2f;
+                    var dir = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                    verts.Add(dir * profile[p].x + Vector3.up * profile[p].y);
+                    norms.Add((dir * n2.x + Vector3.up * n2.y).normalized);
+                    uvs.Add(new Vector2(i / (float)seg, profile[p].y + 0.5f));
+                }
+            }
+
+            const int w = seg + 1;
+            for (var p = 0; p < profile.Length - 1; p++)
+            {
+                for (var i = 0; i < seg; i++)
+                {
+                    var a = p * w + i;
+                    tris.AddRange(new[] { a, a + w, a + w + 1, a, a + w + 1, a + 1 });
+                }
+            }
+
+            mesh.Clear();
+            mesh.SetVertices(verts);
+            mesh.SetNormals(norms);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
+        private static void Brace(Transform parent, Vector3 a, Vector3 b, float thickness, Material mat)
+        {
+            var go = Prim("Brace", PrimitiveType.Cube, parent, (a + b) * 0.5f, new Vector3(thickness, thickness, (b - a).magnitude), mat);
+            go.transform.localRotation = Quaternion.LookRotation((b - a).normalized);
+        }
+
+        // Two aisles of racks: perforated blue posts every bay with rear cross-bracing, orange beams (from the
+        // designer shelf model) and every shelf loaded with detailed blue / red drums, some with GHS stickers.
         private static void BuildSideRacks(Transform env)
         {
             var racks = new GameObject("Racks").transform;
             racks.SetParent(env, false);
-            var rackBlue = Mat("RackUpright", new Color(0.08f, 0.26f, 0.7f), 0.4f, 0.4f);
             var rackOrange = Mat("RackBeam", new Color(0.95f, 0.4f, 0.05f), 0.4f, 0.3f);
+            var postMat = Mat("RackPost", Color.white, 0.4f, 0.4f, EnvTex("RACK_Upright"));
+            var braceMat = Mat("RackBrace", new Color(0.07f, 0.2f, 0.55f), 0.4f, 0.4f);
             var wood = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
-            var blue = Mat("DrumBlue", new Color(0.05f, 0.23f, 0.66f), 0.5f, 0.4f);
-            var red = Mat("DrumRed", new Color(0.8f, 0.09f, 0.06f), 0.55f, 0.35f);
-            var drum = LowPolyDrumMesh();
-            // Same rack as Shelf.glb, decimated from 88k to ~13k triangles (Tools: see Docs); sized in metres.
-            var uprightMesh = LoadObjMesh(ArtRoot + "/3D/ShelfLite_Uprights.obj");
+            var detail = EnvTex("DRUM_Detail");
+            var blues = new[]
+            {
+                Mat("DrumBlueA", new Color(0.05f, 0.23f, 0.66f), 0.55f, 0.45f, detail),
+                Mat("DrumBlueB", new Color(0.07f, 0.28f, 0.72f), 0.55f, 0.45f, detail),
+                Mat("DrumBlueC", new Color(0.04f, 0.18f, 0.52f), 0.5f, 0.45f, detail)
+            };
+            var reds = new[]
+            {
+                Mat("DrumRedA", new Color(0.78f, 0.09f, 0.06f), 0.55f, 0.45f, detail),
+                Mat("DrumRedB", new Color(0.62f, 0.07f, 0.05f), 0.5f, 0.45f, detail)
+            };
+            var others = new[]
+            {
+                Mat("DrumYellow", new Color(0.85f, 0.65f, 0.05f), 0.5f, 0.4f, detail),
+                Mat("DrumGrey", new Color(0.55f, 0.57f, 0.6f), 0.5f, 0.5f, detail)
+            };
+            var drum = RealisticDrumMesh();
             var beamMesh = LoadObjMesh(ArtRoot + "/3D/ShelfLite_Beams.obj");
 
             var labelMats = new[]
@@ -656,42 +801,82 @@ namespace ChemicalSafety.Editor
 
             const float stretch = 1.75f;
             const float modelLength = 2.92f;
-            var rackLen = modelLength * stretch;
             const float surface = 0.135f; // top of the shelf's bottom beam (measured on the hero rack)
+            var rackLen = modelLength * stretch;
+            var runLen = rackLen * RackBays;
+            var postStep = rackLen / 4f;
+
+            Material PickDrum(System.Random r)
+            {
+                var v = r.NextDouble();
+                if (v < 0.25)
+                    return reds[r.Next(reds.Length)];
+                if (v < 0.31)
+                    return others[r.Next(others.Length)];
+                return blues[r.Next(blues.Length)];
+            }
 
             foreach (var side in new[] { -1f, 1f })
             {
                 var x = side * RackX;
                 var rnd = new System.Random(side < 0f ? 7 : 19);
+
+                // posts every bay (front + rear), rear cross-braces between the shelves
+                for (var k = 0; k <= RackBays * 4; k++)
+                {
+                    var z = RackStartZ + k * postStep;
+                    foreach (var dx in new[] { -0.37f, 0.37f })
+                        Prim("Post", PrimitiveType.Cube, racks, new Vector3(x + dx, 1.975f, z), new Vector3(0.08f, 3.95f, 0.08f), postMat);
+                }
+
+                for (var k = 0; k < RackBays * 4; k++)
+                {
+                    var za = RackStartZ + k * postStep;
+                    var zb = za + postStep;
+                    for (var level = 0; level < 2; level++)
+                    {
+                        var y0 = surface + level * 1.4f + 0.1f;
+                        var y1 = y0 + 1.2f;
+                        var even = (k + level) % 2 == 0;
+                        Brace(racks, new Vector3(x + side * 0.37f, y0, even ? za : zb),
+                            new Vector3(x + side * 0.37f, y1, even ? zb : za), 0.03f, braceMat);
+                    }
+                }
+
+                // orange beams (designer model, front + rear, stretched along the aisle)
                 for (var n = 0; n < RackBays; n++)
                 {
                     var zc = RackStartZ + rackLen * (n + 0.5f);
-                    var rack = new GameObject("SideRack").transform;
-                    rack.SetParent(racks, false);
-                    rack.SetPositionAndRotation(new Vector3(x, 0f, zc), Quaternion.Euler(0f, 90f, 0f));
-                    rack.localScale = new Vector3(stretch, 1f, 1f);
-                    MeshObj("Uprights", rack, uprightMesh, Vector3.zero, Vector3.one, rackBlue);
-                    MeshObj("Beams", rack, beamMesh, Vector3.zero, Vector3.one, rackOrange);
+                    var holder = new GameObject("RackBeams").transform;
+                    holder.SetParent(racks, false);
+                    holder.SetPositionAndRotation(new Vector3(x, 0f, zc), Quaternion.Euler(0f, 90f, 0f));
+                    holder.localScale = new Vector3(stretch, 1f, 1f);
+                    MeshObj("Beams", holder, beamMesh, Vector3.zero, Vector3.one, rackOrange);
 
                     for (var level = 0; level < 3; level++)
                     {
                         var y = surface + level * 1.4f;
                         Prim("Pallet", PrimitiveType.Cube, racks, new Vector3(x, y + 0.06f, zc),
                             new Vector3(0.7f, 0.12f, rackLen - 0.2f), wood);
-                        var count = 8;
+                        const int count = 8;
                         for (var k = 0; k < count; k++)
                         {
                             if (rnd.NextDouble() < 0.04)
                                 continue;
                             var along = (k - (count - 1) * 0.5f) * ((rackLen - 0.5f) / count);
-                            var dpos = new Vector3(x, y + 0.12f + 0.44f, zc + along);
-                            MeshObj("Drum", racks, drum, dpos, new Vector3(0.58f, 0.88f, 0.58f),
-                                rnd.NextDouble() < 0.27 ? red : blue);
+                            var dpos = new Vector3(x + ((float)rnd.NextDouble() - 0.5f) * 0.03f, y + 0.12f + 0.44f,
+                                zc + along + ((float)rnd.NextDouble() - 0.5f) * 0.03f);
+                            var go = MeshObj("Drum", racks, drum, dpos, new Vector3(0.58f, 0.88f, 0.58f), PickDrum(rnd));
+                            go.transform.localRotation = Quaternion.Euler(((float)rnd.NextDouble() - 0.5f) * 2f,
+                                (float)rnd.NextDouble() * 360f, ((float)rnd.NextDouble() - 0.5f) * 2f);
                             if (rnd.NextDouble() < 0.38)
                                 AddDrumLabel(racks, dpos, side, labelMats[rnd.Next(labelMats.Length)], rnd);
                         }
                     }
                 }
+
+                // solid volume for the whole run: hands stop at it, the walking body is blocked
+                AddSolidBox(racks, "RackSolid", new Vector3(x, 2.0f, RackStartZ + runLen * 0.5f), new Vector3(0.9f, 4f, runLen));
 
                 // Yellow end guards at the aisle end of each run.
                 var yellow = Mat("GuardYellow", new Color(0.98f, 0.8f, 0.05f), 0.4f);
@@ -708,15 +893,15 @@ namespace ChemicalSafety.Editor
                     Prim("FloorPallet", PrimitiveType.Cube, racks, new Vector3(px, 0.07f, z),
                         new Vector3(1.2f, 0.14f, 1.2f), wood);
                     for (var i = 0; i < 4; i++)
-                        MeshObj("FloorDrum", racks, drum,
-                            new Vector3(px + (i % 2 - 0.5f) * 0.58f, 0.14f + 0.44f, z + (i / 2 - 0.5f) * 0.58f),
-                            new Vector3(0.56f, 0.88f, 0.56f), rnd.NextDouble() < 0.3 ? red : blue);
-                    for (var i = 0; i < 4; i++)
                     {
+                        var fpos = new Vector3(px + (i % 2 - 0.5f) * 0.58f, 0.14f + 0.44f, z + (i / 2 - 0.5f) * 0.58f);
+                        var fd = MeshObj("FloorDrum", racks, drum, fpos, new Vector3(0.56f, 0.88f, 0.56f), PickDrum(rnd));
+                        fd.transform.localRotation = Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f);
                         if (rnd.NextDouble() < 0.55)
-                            AddDrumLabel(racks, new Vector3(px + (i % 2 - 0.5f) * 0.58f, 0.58f, z + (i / 2 - 0.5f) * 0.58f),
-                                side, labelMats[rnd.Next(labelMats.Length)], rnd);
+                            AddDrumLabel(racks, fpos, side, labelMats[rnd.Next(labelMats.Length)], rnd);
                     }
+
+                    AddSolidBox(racks, "PalletSolid", new Vector3(px, 0.5f, z), new Vector3(1.2f, 1.0f, 1.2f));
                 }
             }
 
@@ -856,8 +1041,11 @@ namespace ChemicalSafety.Editor
 
             var pallet = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
             const float palletH = 0.12f;
-            Box("HeroPallet", rack.transform, new Vector3(0f, surface + palletH * 0.5f, rackZ),
+            var heroPallet = Box("HeroPallet", rack.transform, new Vector3(0f, surface + palletH * 0.5f, rackZ),
                 new Vector3(2.75f, palletH, 0.7f), pallet);
+            heroPallet.layer = SolidLayer;
+            foreach (var ux in new[] { -1.43f, 1.43f })
+                AddSolidBox(rack.transform, "HeroUpright", new Vector3(ux, 1.97f, rackZ), new Vector3(0.1f, 3.95f, 0.78f));
 
             var labelMesh = CurvedLabelMesh(0.3f, 0.36f);
             var labels = new[]
@@ -896,6 +1084,15 @@ namespace ChemicalSafety.Editor
                 cap.height = height + 0.04f;
                 cap.center = new Vector3(0f, height * 0.5f, 0f);
                 pokes[i] = drum.AddComponent<PokeTarget>();
+
+                // solid body so the glove (and the walking user) stops at the drum surface
+                var solid = new GameObject("Solid");
+                solid.transform.SetParent(drum.transform, false);
+                solid.layer = SolidLayer;
+                var sc = solid.AddComponent<CapsuleCollider>();
+                sc.radius = radius * 0.98f;
+                sc.height = height;
+                sc.center = new Vector3(0f, height * 0.5f, 0f);
 
                 var callout = drum.AddComponent<DrumCallout>();
                 var so = new SerializedObject(callout);
@@ -960,7 +1157,7 @@ namespace ChemicalSafety.Editor
         // ---------------------------------------------------------------- fans / trolley
 
         // Large 3-blade industrial fans hung from the roof beams. Big, low enough to be seen from the
-        // aisle, with one painted blade tip so the slow spin reads at a glance.
+        // aisle, with one painted blade tip so the spin reads at a glance.
         private static void BuildCeilingFans(Transform env)
         {
             var hubMat = Mat("FanHub", new Color(0.16f, 0.17f, 0.19f), 0.4f, 0.8f);
@@ -1013,48 +1210,79 @@ namespace ChemicalSafety.Editor
 
                 var spin = rotor.gameObject.AddComponent<CeilingFanSpin>();
                 var so = new SerializedObject(spin);
-                so.FindProperty("degreesPerSecond").floatValue = 140f;
+                so.FindProperty("degreesPerSecond").floatValue = 240f;
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
         }
 
-        // Simple two-wheel hand trolley; starts hidden and is revealed by the director.
-        private static GameObject BuildTrolley(Transform env, Vector3 floorPos)
+        // The designer drum carrier (drum-carrier.glb) with an instruction card and a floating Touch button.
+        // Starts hidden; the director reveals it once all four labels are correct.
+        private static GameObject BuildCarrier(Transform env, PresentableArt art, Vector3 floorPos,
+            out FloatingTouchButton button, out GameObject loadDrum)
         {
-            var paint = Mat("TrolleyBlue", new Color(0.1f, 0.3f, 0.78f), 0.5f, 0.3f);
-            var rubber = Mat("TrolleyRubber", new Color(0.05f, 0.05f, 0.05f), 0.2f);
-            var steel = Mat("TrolleySteel", new Color(0.6f, 0.62f, 0.65f), 0.5f, 0.8f);
-
-            var root = new GameObject("HandTrolley").transform;
+            var root = new GameObject("DrumCarrier").transform;
             root.SetParent(env, false);
-            root.position = floorPos;
+            root.SetPositionAndRotation(floorPos, Quaternion.Euler(0f, 180f, 0f));
 
-            var frame = new GameObject("Frame").transform;
-            frame.SetParent(root, false);
-            frame.localPosition = new Vector3(0f, 0.14f, -0.08f);
-            frame.localRotation = Quaternion.Euler(-14f, 0f, 0f);
-            foreach (var x in new[] { -0.2f, 0.2f })
-                Prim("Rail", PrimitiveType.Cube, frame, new Vector3(x, 0.5f, 0f), new Vector3(0.035f, 1.0f, 0.035f), paint);
-            foreach (var y in new[] { 0.12f, 0.45f, 0.75f })
-                Prim("Cross", PrimitiveType.Cube, frame, new Vector3(0f, y, 0f), new Vector3(0.4f, 0.025f, 0.025f), paint);
-            var handle = Prim("Handle", PrimitiveType.Cylinder, frame, new Vector3(0f, 1.02f, -0.02f),
-                new Vector3(0.03f, 0.24f, 0.03f), rubber);
-            handle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-
-            Prim("NosePlate", PrimitiveType.Cube, root, new Vector3(0f, 0.06f, 0.2f), new Vector3(0.44f, 0.02f, 0.38f),
-                steel);
-            foreach (var x in new[] { -0.26f, 0.26f })
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/DrumCarrier.glb");
+            if (asset != null)
             {
-                var wheel = Prim("Wheel", PrimitiveType.Cylinder, root, new Vector3(x, 0.11f, -0.05f),
-                    new Vector3(0.22f, 0.035f, 0.22f), rubber);
-                wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+                model.transform.SetParent(root, false);
+                var b = WorldBounds(model);
+                model.transform.position += floorPos - new Vector3(b.center.x, b.min.y, b.center.z);
+                foreach (var r in model.GetComponentsInChildren<Renderer>())
+                {
+                    r.shadowCastingMode = ShadowCastingMode.Off;
+                    r.receiveShadows = false;
+                }
+
+                var nb = WorldBounds(model);
+                AddSolidBox(root, "CarrierSolid", nb.center, new Vector3(nb.size.x, nb.size.y, nb.size.z));
+            }
+            else
+            {
+                Debug.LogWarning("[Presentable] DrumCarrier.glb missing");
             }
 
-            var col = root.gameObject.AddComponent<BoxCollider>();
-            col.isTrigger = true;
-            col.center = new Vector3(0f, 0.65f, 0.05f);
-            col.size = new Vector3(0.95f, 1.3f, 0.95f);
-            root.gameObject.AddComponent<PokeTarget>();
+            // instruction card (EN + BN) above the carrier, always facing the user
+            // near eye height and small enough to read in full from the TrolleyStand, about 1 m away
+            var card = PresentableUi.WorldCanvas("CarrierCard", root, new Vector2(760f, 330f), 0.0007f, false, 60);
+            card.transform.position = floorPos + new Vector3(0f, 1.75f, 0f);
+            card.gameObject.AddComponent<YawBillboard>();
+            var border = PresentableUi.Img(PresentableUi.Rect("Border", card.transform, Vector2.zero, Vector2.one),
+                art.roundedSolid, new Color(0.3f, 0.78f, 1f, 1f));
+            PresentableUi.Img(PresentableUi.Rect("Fill", card.transform, Vector2.zero, Vector2.one, new Vector2(6f, 6f),
+                new Vector2(-6f, -6f)), art.roundedSolid, new Color(0.02f, 0.09f, 0.17f, 0.94f));
+            var en = PresentableUi.Text("English", card.transform, new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.92f),
+                "Touch the drum carrier to move the drums and continue", 42f, Color.white, bold: true, font: art.englishFont);
+            en.enableAutoSizing = true;
+            en.fontSizeMin = 28f;
+            en.fontSizeMax = 42f;
+            var bn = art.bnCarrier;
+            var aspect = bn != null ? bn.rect.width / Mathf.Max(1f, bn.rect.height) : 4f;
+            var bnH = Mathf.Min(120f, 640f / aspect);
+            PresentableUi.BanglaLine("Bangla", card.transform, bn, new Vector2(0f, -85f), bnH, new Color(0.9f, 0.97f, 1f));
+            PresentableUi.AlwaysOnTop(card);
+            if (border == null)
+                Debug.LogWarning("[Presentable] carrier card border missing");
+
+            // floating Touch button in front of the handle
+            var btnGo = new GameObject("CarrierTouchButton");
+            btnGo.transform.SetParent(root, false);
+            btnGo.transform.position = floorPos + new Vector3(-0.25f, 1.12f, -0.3f);
+            button = btnGo.AddComponent<FloatingTouchButton>();
+            SetRef(button, "art", art);
+            var bso = new SerializedObject(button);
+            bso.FindProperty("label").stringValue = "Touch";
+            bso.ApplyModifiedPropertiesWithoutUndo();
+
+            // the drum that appears on the carrier after touching it
+            var drumMat = Mat("DrumBlueA", new Color(0.05f, 0.23f, 0.66f), 0.55f, 0.45f, EnvTex("DRUM_Detail"));
+            loadDrum = MeshObj("LoadedDrum", root, RealisticDrumMesh(), new Vector3(0f, 0.62f, 0.12f),
+                new Vector3(0.58f, 0.88f, 0.58f), drumMat);
+            loadDrum.SetActive(false);
+
             root.gameObject.SetActive(false);
             return root.gameObject;
         }

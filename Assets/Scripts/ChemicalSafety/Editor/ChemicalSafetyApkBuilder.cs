@@ -22,13 +22,22 @@ namespace ChemicalSafety.Editor
             Build(LearningScene, OutputApk);
         }
 
+        /// <summary>Release build with the sharp Presentable render pipeline asset (MSAA 4x, render scale 1.0).</summary>
         [MenuItem("Chemical Safety/Build Quest APK (Presentable)")]
         public static void BuildPresentableApk()
         {
-            Build(PresentableScene, PresentableApk);
+            Build(PresentableScene, PresentableApk, false, PresentableRp);
         }
 
-        private static void Build(string scene, string output)
+        [MenuItem("Chemical Safety/Build Quest APK (Presentable, Debug)")]
+        public static void BuildPresentableApkDebug()
+        {
+            Build(PresentableScene, "Builds/Android/ChemicalSafetyVR_Presentable_Debug.apk", true, PresentableRp);
+        }
+
+        private const string PresentableRp = "Assets/Settings/Presentable_RPAsset.asset";
+
+        private static void Build(string scene, string output, bool development = true, string renderPipeline = null)
         {
             if (EditorApplication.isCompiling)
             {
@@ -57,7 +66,34 @@ namespace ChemicalSafety.Editor
             var abs = Path.GetFullPath(Path.Combine(Application.dataPath, "..", output));
             Directory.CreateDirectory(Path.GetDirectoryName(abs));
 
-            var report = BuildPipeline.BuildPlayer(new[] { scene }, abs, BuildTarget.Android, BuildOptions.Development);
+            // The sharp render pipeline asset is applied only for this build; the Learning build keeps the original.
+            var rp = renderPipeline != null ? AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(renderPipeline) : null;
+            var previousLevel = QualitySettings.GetQualityLevel();
+            var androidLevel = System.Array.IndexOf(QualitySettings.names, "Mobile");
+            UnityEngine.Rendering.RenderPipelineAsset previousRp = null;
+            if (rp != null && androidLevel >= 0)
+            {
+                QualitySettings.SetQualityLevel(androidLevel, false);
+                previousRp = QualitySettings.renderPipeline;
+                QualitySettings.renderPipeline = rp;
+                Debug.Log("[ChemicalSafety] Using render pipeline asset " + renderPipeline);
+            }
+
+            var options = development ? BuildOptions.Development : BuildOptions.None;
+            UnityEditor.Build.Reporting.BuildReport report;
+            try
+            {
+                report = BuildPipeline.BuildPlayer(new[] { scene }, abs, BuildTarget.Android, options);
+            }
+            finally
+            {
+                if (rp != null && androidLevel >= 0)
+                {
+                    QualitySettings.renderPipeline = previousRp;
+                    QualitySettings.SetQualityLevel(previousLevel, false);
+                    AssetDatabase.SaveAssets();
+                }
+            }
 
             Debug.Log($"[ChemicalSafety] APK build {report.summary.result}: {abs} scene={scene} " +
                       $"errors={report.summary.totalErrors}");

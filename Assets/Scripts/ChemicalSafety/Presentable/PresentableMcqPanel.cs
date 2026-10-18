@@ -85,6 +85,9 @@ namespace ChemicalSafety.Presentable
         public event Action<int, bool> Answered;
         public event Action NextPressed;
 
+        /// <summary>Raised once the correct / wrong popup is fully on screen (isCorrect).</summary>
+        public event Action<bool> PopupShown;
+
         public bool IsOpen { get; private set; }
 
         private void Awake()
@@ -183,6 +186,7 @@ namespace ChemicalSafety.Presentable
             _correctTitle.text = _question.correctTitle;
             _correctBody.text = opt.feedback;
             yield return PopupIn(_correctPopup);
+            PopupShown?.Invoke(true);
 
             _nextLabel.text = _question.nextLabel;
             yield return PopupIn(_nextButton);
@@ -215,6 +219,7 @@ namespace ChemicalSafety.Presentable
             _wrongBody.text = opt.feedback;
             StartCoroutine(Shake(_rows[index].root));
             yield return PopupIn(_wrongPopup);
+            PopupShown?.Invoke(false);
         }
 
         private void OnWrongClosed()
@@ -529,6 +534,9 @@ namespace ChemicalSafety.Presentable
         }
 
         public void OnPointerExit(PointerEventData eventData) => _target = 1f;
+
+        /// <summary>Hover from the finger poke system (no pointer events involved).</summary>
+        public void SetHover(bool on) => _target = on ? 1.04f : 1f;
 
         private void Update()
         {

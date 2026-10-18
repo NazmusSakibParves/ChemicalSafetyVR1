@@ -1,6 +1,6 @@
 # ChemicalSafetyVR1 — Project Handoff & Memory
 
-**Last updated:** 2026-10-15  
+**Last updated:** 2026-10-17 (see section 14 for the current Presentable state)  
 **Purpose:** Take this folder to another PC / new Cursor chat and recover full context: what was built, how to run it, what was planned, and what remains.
 
 **Project path (authoring machine):** `E:\WorkArea\VR\ChemicalSafetyVR1`  
@@ -50,6 +50,8 @@ Content source for scenarios: GIZ / NOSHTRI HTML training material (22 scenarios
 Each APK contains **only** its own scene. Git tag `learning-demo-baseline` = state before Presentable work.
 
 ### Presentable scene
+
+> The bullets below are the original (2026-10-15) description. The current flow, tools, status and TODO are in **section 14**.
 
 - **Generated** by menu `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs`). Re-run after changing builder code; do not hand-edit the scene (it is overwritten).
 - Art references collected in `Assets/Art/Presentable/PresentableArt.asset`; generated mats/meshes in `Assets/Art/Presentable/Generated/`.
@@ -331,7 +333,54 @@ Quest APK (manual):
 | 2026-10-14 | 10s intro director, Bangla greeting, warehouse shell, user murals, world MCQ, SC03 dead-end cleared, Quest package/feature prep |
 | 2026-10-14 | This handoff document added under `Docs/` |
 | 2026-10-15 | Separate `ChemicalSafety_Presentable` client scene (designer art, VO, hotspot, step05/06/07 MCQ, SC02, gloves, SDS clipboard, zoom) + two APK menus |
+| 2026-10-16/17 | Presentable: designer art, poke flow, Instructions panel, warehouse polish (committed `52e6d71`); then set 4 from Quest test (sharper render pipeline, finger-only UI, floating Touch buttons, solid props, drum carrier, SDS follow, realistic racks), verified + APK built 2026-10-17 - see section 14 |
 
 ---
 
 *If you update the demo significantly, append a row to §13 and refresh §5 / §9 so the next machine stays accurate.*
+
+
+---
+
+## 14. Presentable demo — full state & next steps (updated 2026-10-17)
+
+> Read this section first if you are a new agent / Cursor session. It supersedes the older Presentable bullets in §2b.
+> Rules that still apply: **change only the Presentable client demo** (never `ChemicalSafety_Demo` / the Learning APK), generate the scene with the builder menu (never hand-edit the `.unity`), never edit scripts while in Play mode, author is the user (no Claude co-author trailers), do **not** merge to `master` unless the user says so. Branch: `feature/Modify-Scenario1-as-per-feedback` (set 4 committed on top of `52e6d71`).
+
+### 14.1 How to work
+- Regenerate the scene: Unity menu **Chemical Safety/Presentable/Build Presentable Scene** (`Editor/PresentableSceneBuilder.cs`). Runtime scripts: `Assets/Scripts/ChemicalSafety/Presentable/`.
+- **Smoke test (editor only)**: menu **Chemical Safety/Presentable/Run Smoke Test** (`PresentableSmokeTest.cs`). It plays the whole flow on the desk (invokes the same events as finger touches), logs `[SMOKE] ...` lines to `Logs/Editor.log` and saves screenshots to `Temp/Smoke/`. Look for `[SMOKE] DONE runtime errors/exceptions = 0`.
+- APK menus (`Editor/ChemicalSafetyApkBuilder.cs`): **Build Quest APK (Presentable)** = *release* build using `Assets/Settings/Presentable_RPAsset.asset` (MSAA 4x, render scale 1.0, HDR off, no real-time shadows) applied only for that build and restored afterwards; **(Presentable, Debug)** = development build; the Learning menu is unchanged. Output `Builds/Android/ChemicalSafetyVR_Presentable.apk` (gitignored). A harmless `NullReferenceException` from `MetaQuestFeature.cs` (OpenXR validation) appears in every build, build still succeeds.
+- Unity MCP: if your tool list has no `unityMCP`, the server still answers plain HTTP: `python Tools/mcp_http.py <tool> '<json args>'` (e.g. `refresh_unity`, `read_console`, `execute_menu_item`). Domain reloads drop the MCP socket - wait, then retry. If Unity shows "License error: Token Exchange failed" open Unity Hub, sign out/in and check Licenses (network/VPN/clock).
+- Python tools (need `pip install numpy pillow trimesh fast-simplification`; `edge-tts` for voices): `Tools/render_bangla_text.py` (Bangla text -> PNG, TMP cannot shape Bangla), `generate_env_art.py` (signs, stains, light shaft), `generate_floor.py` (baked 2048x4096 floor), `generate_props_art.py` (touch icon, rack post texture, drum detail), `decimate_shelf.py` (rack mesh), `generate_ui_sprites.py` (older UI sprites).
+- Voice clips (edge-tts, `bn-BD-NabanitaNeural`) in `Assets/Art/Audio/VO/`: `VO_AssalamuAlaikum`, `VO_SC01_Instruction`, `VO_Correct`, `VO_Wrong`, `VO_PickLabel`, `VO_WrongLabel`, `VO_ContinueHint`, `VO_TouchDrum`, `VO_Carrier` (all `_bn.mp3`). `PresentableArt` slots are only overwritten when the file exists.
+
+### 14.2 Flow (current)
+Fade in -> Instructions panel (salam VO, then instruction VO; **speaker button replays**, **Continue** appears after the VO + hint VO) -> glide to drum view -> hotspot `Hotspot_SC01` (0,0,4.5) plays the pick-label VO once -> glide to `DrumPokeStand` -> **floating "Touch" buttons** in front of each drum; touching one opens the 4-name popup (wrong = popup turns red + wrong-label VO, right = dark name pill above the drum, any order, finished drums are done) -> after 4 correct the **drum carrier** (`DrumCarrier.glb`) appears with an instruction card (BN+EN + VO); touching its Touch button rolls it forward and opens MCQ Q1 -> correct -> NEXT -> SC02 zone -> hotspot -> Q2 -> finish. MCQ/popups/Instructions share the cyan "pop up screen.png" frame (`FrameScale` enlarges it so text is not clipped). Correct/wrong VO now starts ~0.25 s *after* the popup is on screen (`PresentableMcqPanel.PopupShown`). Zoom (A/B) and SDS (left X, desk C) keep working.
+
+### 14.3 What is DONE and verified (desk smoke test, 0 runtime errors, commit `52e6d71` pushed)
+Explore subtitle + SdsHint removed; designer 2D art in `Art/Presentable/2D/Designer/` used everywhere (red variants of frames generated); hotspot moved to (0,0,4.5); drum label popup flow with correct map (1 Faded, 2 No label, 3 Mismatched GHS vs SDS, 4 Correctly labelled) and name pills; Instructions panel redesign (speaker + Continue + hint VO); MCQ panel rebuilt after step05/06/07; ceiling fans (4, large, spinning), lamps, sky-light shafts, signs, stains, wall extinguishers; side racks (2 runs) with drums + GHS stickers; baked floor; SDS clipboard upright; frame enlarge so MCQ header is not clipped. Stats at that commit: ~325k tris, ~148 draw calls (editor Game view).
+
+### 14.4 Set 4 (from the Quest test) - tested and committed
+Source of this work: the user's Quest screen recordings (they look different from in-headset: recorder A/V drift; in headset timing was fine). Scene rebuilt, smoke test passes (`[SMOKE] DONE runtime errors/exceptions = 0`, ~161k tris, ~168 draw calls), Presentable APK built 2026-10-17 (101 MB). Fixes added during verification: fan speed 240 deg/s; `RayVisualSuppressor` also disables XRI 3.x `CurveVisualController` (it re-enabled the Near-Far `LineRenderer` every frame, the visible white ray); no subtitle during MCQ correct/wrong cards; drum name plates hidden before Q1; carrier card lowered/shrunk and the rig turns to face the carrier behind a short fade.
+1. **Clarity/smoothness** (root cause of "shaky, not crystal clear"): `Mobile_RPAsset` had MSAA off + render scale 0.8 + HDR on. New `Presentable_RPAsset.asset` (MSAA 4x, scale 1.0, HDR off, soft shadows off), swapped in only by the Presentable APK menu; OpenXR **Foveated Rendering** feature enabled (`OpenXR Package Settings.asset`); `QuestRenderTuning` sets foveation level 0.5 at start; Presentable build is now a release build; sun real-time shadows off; `RayVisualSuppressor` no longer polls `FindObjectsByType` every frame.
+2. **Subtitle behind drums**: `WorldSubtitle` now 0.9 m away, smaller, `PresentableUi.AlwaysOnTop(canvas)` (UI Z-test Always) - also used for the carrier card and Touch buttons. `ScreenFader.SetExtra` + `HeadSolidGuard` fade the view if the head enters a solid prop.
+3. **Finger poke only (no ray)**: `RayVisualSuppressor` now also sets `enableUIInteraction=false` on `NearFarInteractor` and `XRPokeInteractor`; new `FingerPokeSystem` presses uGUI buttons with the right fingertip (hover cursor, depth press, curl + haptic) on canvases created with `interactive:true` (registered in `PresentableUi.WorldCanvas`). `HoverLift.SetHover` added.
+4. **Drum selection UX**: new `FloatingTouchButton` (ring + finger icon + pulse, `ICON_Touch.png`) floating 0.45 m in front of each drum at 1.12 m; hover glows the drum; `DrumPokeStand` moved to z=4.8; popup placed 0.62 m in front of the head; subtitle "touch the glowing button" (+`BN_TouchDrum.png`, `VO_TouchDrum_bn.mp3`).
+5. **Solid props**: layer `SolidProps` (created by the builder via TagManager) with box/capsule colliders on hero drums/uprights/pallet, side-rack runs, floor pallets, carrier; `GlovedHandPose.LateUpdate` pushes the *rendered* glove out of solid colliders (fingertip stops at the surface); `PokeTarget` / buttons use the clamped `TipPosition`.
+6. **Drum carrier**: `Art/Presentable/3D/DrumCarrier.glb` (user file `drum-carrier.glb`, 39k tris, 37 MB textures: set texture max size in Unity import if the APK gets big) replaces the primitive trolley; `BuildCarrier()` adds card + Touch button + a loaded-drum child; director `RunCarrier()` plays `VO_Carrier_bn.mp3`, rolls the carrier forward with the drum, then opens Q1. Scale/orientation of the glb is **unverified** (placed at (1.95,0,5.7), yaw 180, base snapped to the floor).
+7. **SDS board**: `SdsClipboardController` now follows the left palm position but takes orientation from the head (upright, 12 deg back, facing the user, small sway, raise/lower animation) so wrist tilt cannot lay it over the fist. `forceHandMode` / `ForceHandMode()` is for editor tests.
+8. **Side racks/drums**: posts every 1.3 m (`RACK_Upright.png`) + rear cross braces + orange beams from `ShelfLite_Beams.obj`; `RealisticDrumMesh` (hoops, rims, recessed lid) with `DRUM_Detail.png`, random yaw/tilt/colour (blue/red/yellow/grey), stickers. Hero rack + 4 hero drums untouched visually.
+
+### 14.5 Next
+1. Next feedback round + new SC02 storage room (plan: SC01 carrier text/VO, realistic loaded trolley, scenario-complete VO after Q1; new SC02 room from the designer pack with glass 4-door compartment, wall compatibility chart, new SDS, MCQ 2.1).
+2. Draw calls are slightly above the ~160 target (168); trim if the new room adds more.
+3. Known risks to watch on device: finger-poke thresholds (`FingerPokeSystem` hover 9 cm / press 1.8 cm, `FloatingTouchButton` press radius 7.5 cm), glove clamp jitter, carrier model orientation, VO timing vs popups, foveation level (0.5) vs sharpness, hand pose of the left hand.
+
+### 14.6 Gotchas learned
+- In the editor **without a headset the XR controllers are deactivated** (`Left/Right Controller` inactive) so gloves never spawn; tests must `SetActive(true)` and disable `TrackedPoseDriver` (it overwrites the transform before render).
+- Quest screen recordings show audio slightly early and flatten near objects - judge timing in the headset, not the recording.
+- `FindObjectsByType(FindObjectsInactive)` single-argument overload does not exist in Unity 6; use the two-argument form. `UnityStats` has no `batches` (use `drawCalls`).
+- Shell/tooling on this PC: Python 3.11 with Pillow/numpy installed; `sleep`-chained commands are blocked by the harness - poll with until-loops.
+- The shelf glb has ~88k tris per rack; never instantiate it many times (side racks use procedural posts + decimated beams for that reason).
+- The `.utmp/`, `ProjectSettings/*` and `Assets/Settings/*` diffs shown by git are Unity/Android build noise - do not commit them (only `Presentable_RPAsset.asset` and the OpenXR foveation flag are intentional).

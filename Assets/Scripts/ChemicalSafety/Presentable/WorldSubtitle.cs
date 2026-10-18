@@ -11,8 +11,8 @@ namespace ChemicalSafety.Presentable
     public sealed class WorldSubtitle : MonoBehaviour
     {
         [SerializeField] private PresentableArt art;
-        [SerializeField] private float distance = 1.4f;
-        [SerializeField] private float heightOffset = -0.38f;
+        [SerializeField] private float distance = 0.9f;
+        [SerializeField] private float heightOffset = -0.26f;
         [SerializeField] private float followSpeed = 3f;
 
         private Transform _cam;
@@ -25,7 +25,7 @@ namespace ChemicalSafety.Presentable
         {
             _cam = Camera.main != null ? Camera.main.transform : null;
 
-            var canvas = PresentableUi.WorldCanvas("SubtitleCanvas", transform, new Vector2(1500f, 260f), 0.0009f,
+            var canvas = PresentableUi.WorldCanvas("SubtitleCanvas", transform, new Vector2(1500f, 260f), 0.00058f,
                 false, 500);
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
@@ -41,6 +41,8 @@ namespace ChemicalSafety.Presentable
             _english.fontSizeMin = 26f;
             _english.fontSizeMax = 42f;
 
+            // Always drawn over props, even when the user stands right next to a drum.
+            PresentableUi.AlwaysOnTop(canvas);
             SnapToView();
         }
 

@@ -31,16 +31,16 @@ namespace ChemicalSafety.Presentable
                 return;
 
             var hand = GlovedHandPose.Right;
-            var tip = hand != null ? hand.PokePoint : null;
-            if (tip != null)
+            if (hand != null && hand.HasTip)
             {
+                var tipPos = hand.TipPosition;
                 var inside = false;
                 foreach (var c in _cols)
                 {
                     if (c == null || !c.enabled)
                         continue;
-                    var p = c.ClosestPoint(tip.position);
-                    if ((p - tip.position).sqrMagnitude <= reach * reach)
+                    var p = c.ClosestPoint(tipPos);
+                    if ((p - tipPos).sqrMagnitude <= reach * reach)
                     {
                         inside = true;
                         break;

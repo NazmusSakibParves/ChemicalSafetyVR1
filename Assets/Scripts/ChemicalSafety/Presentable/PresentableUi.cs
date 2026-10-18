@@ -39,6 +39,7 @@ namespace ChemicalSafety.Presentable
             {
                 go.AddComponent<GraphicRaycaster>();
                 go.AddComponent<TrackedDeviceGraphicRaycaster>();
+                FingerPokeSystem.Register(canvas);
             }
 
             return canvas;
@@ -114,6 +115,29 @@ namespace ChemicalSafety.Presentable
             var aspect = sprite != null ? sprite.rect.width / Mathf.Max(1f, sprite.rect.height) : 6f;
             var rt = Centered(name, parent, anchoredPos, new Vector2(heightPx * aspect, heightPx));
             return Img(rt, sprite, color, preserveAspect: true);
+        }
+
+        /// <summary>
+        /// Makes every graphic below the canvas ignore the depth buffer (UI Z-test Always) so subtitles / hints
+        /// never vanish behind props the user stands next to. Call after the canvas has been filled.
+        /// </summary>
+        public static void AlwaysOnTop(Canvas canvas)
+        {
+            foreach (var g in canvas.GetComponentsInChildren<Graphic>(true))
+            {
+                if (g is TMP_Text tmp)
+                {
+                    var m = new Material(tmp.fontSharedMaterial);
+                    m.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
+                    tmp.fontSharedMaterial = m;
+                }
+                else
+                {
+                    var m = new Material(g.defaultMaterial);
+                    m.SetFloat("unity_GUIZTestMode", (float)UnityEngine.Rendering.CompareFunction.Always);
+                    g.material = m;
+                }
+            }
         }
 
         public static void SetAlpha(Graphic g, float a)

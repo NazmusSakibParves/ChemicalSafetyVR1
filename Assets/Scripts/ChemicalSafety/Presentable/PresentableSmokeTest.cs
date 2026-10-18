@@ -112,6 +112,12 @@ namespace ChemicalSafety.Presentable
             b.onClick.Invoke();
         }
 
+        private static void PressButton(FloatingTouchButton b)
+        {
+            typeof(FloatingTouchButton).GetMethod("Press", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(b, new object[] { false });
+        }
+
         private static void Poke(PokeTarget p)
         {
             typeof(PokeTarget).GetMethod("Fire", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -239,12 +245,13 @@ namespace ChemicalSafety.Presentable
 
             var popup = Get<LabelPickPopup>(_director, "labelPopup");
             var pokes = Get<PokeTarget[]>(_director, "drumPokes");
+            var buttons = Get<FloatingTouchButton[]>(_director, "drumButtons");
             var order = new[] { 1, 0, 3, 2 };
             var step = 0;
             foreach (var i in order)
             {
-                Say("poke drum " + (i + 1) + " interactable=" + pokes[i].Interactable);
-                Poke(pokes[i]);
+                Say("touch drum " + (i + 1) + " button armed=" + buttons[i].IsArmed);
+                PressButton(buttons[i]);
                 yield return new WaitForSeconds(0.8f);
                 Say("popup open = " + popup.IsOpen);
                 if (step == 0)
@@ -276,7 +283,9 @@ namespace ChemicalSafety.Presentable
             var trolley = Get<GameObject>(_director, "trolley");
             Say("trolley active = " + trolley.activeSelf + " pos=" + trolley.transform.position);
             yield return Shot("06_trolley");
-            Poke(Get<PokeTarget>(_director, "trolleyPoke"));
+            var carrierBtn = Get<FloatingTouchButton>(_director, "carrierButton");
+            Say("carrier button armed = " + carrierBtn.IsArmed);
+            PressButton(carrierBtn);
 
             yield return WaitStage("mcq1");
             yield return new WaitForSeconds(2f);

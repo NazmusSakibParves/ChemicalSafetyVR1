@@ -24,6 +24,7 @@ MonoBehaviour:
   dot: {fileID: 21300000, guid: 2c328acbaa3c5e94c986e6ab6888f76f, type: 3}
   iconGhs: {fileID: 21300000, guid: 56114bde10f371f41bb1067768fadcf2, type: 3}
   iconSds: {fileID: 21300000, guid: 2abd3dd4805ffd240b4baa4ccafa1c9a, type: 3}
+  iconTouch: {fileID: 21300000, guid: ea6b21155788cdc4c8adc60ef0ecdc61, type: 3}
   roundedPanel: {fileID: 21300000, guid: bb4535854083b0a4eb4cc85bd17d926f, type: 3}
   roundedSolid: {fileID: 21300000, guid: 2be5a388e6a22204285016ce5579134a, type: 3}
   softGlow: {fileID: 21300000, guid: bfa907de8108c704cb99ab372521a3dc, type: 3}
@@ -52,11 +53,15 @@ MonoBehaviour:
   bnPickLabel: {fileID: 21300000, guid: f4813c74395b0ca42806b377c915c74c, type: 3}
   bnWrongLabel: {fileID: 21300000, guid: fd233f1ffd96fe64092fcf88d5ff590a, type: 3}
   bnContinueHint: {fileID: 21300000, guid: e62bb65fb39c2d749be01851d74e890f, type: 3}
+  bnTouchDrum: {fileID: 21300000, guid: eaac0e07ec5aa78469e754b5f030e3a6, type: 3}
+  bnCarrier: {fileID: 21300000, guid: a7aff39dc6190fd429d29f78fb98a7c8, type: 3}
   voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
   voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
   voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
   voWrong: {fileID: 8300000, guid: 43e8f576f2817f74e8e01cf2d33512a4, type: 3}
   voPickLabel: {fileID: 8300000, guid: 9a5c541736823a5448c2f1382c7bc3dc, type: 3}
   voContinueHint: {fileID: 8300000, guid: bc89c7e26a0580045adba52eac2238a9, type: 3}
+  voTouchDrum: {fileID: 8300000, guid: c2f7a543280d7f34bb26f5fdac946c24, type: 3}
+  voCarrier: {fileID: 8300000, guid: 2485e139d58dba24082d9fb0a166cc3f, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

@@ -24,6 +24,7 @@ namespace ChemicalSafety.Presentable
         public Sprite dot;
         public Sprite iconGhs;
         public Sprite iconSds;
+        public Sprite iconTouch;
 
         [Header("Frames (white, tint in code)")]
         public Sprite roundedPanel;
@@ -62,6 +63,8 @@ namespace ChemicalSafety.Presentable
         public Sprite bnPickLabel;
         public Sprite bnWrongLabel;
         public Sprite bnContinueHint;
+        public Sprite bnTouchDrum;
+        public Sprite bnCarrier;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -72,6 +75,8 @@ namespace ChemicalSafety.Presentable
         public AudioClip voPickLabel;
         [Tooltip("VO_ContinueHint_bn.mp3 - played when the Continue button appears.")]
         public AudioClip voContinueHint;
+        public AudioClip voTouchDrum;
+        public AudioClip voCarrier;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

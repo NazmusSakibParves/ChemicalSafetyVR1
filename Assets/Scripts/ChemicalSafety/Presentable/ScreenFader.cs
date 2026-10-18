@@ -13,8 +13,19 @@ namespace ChemicalSafety.Presentable
 
         private Image _image;
         private Coroutine _running;
+        private float _fade;
+        private float _extra;
 
-        public float Alpha => _image != null ? _image.color.a : 0f;
+        public float Alpha => _fade;
+
+        /// <summary>Second, independent darkening (comfort fade when the head pokes into a solid prop).</summary>
+        public void SetExtra(float alpha)
+        {
+            _extra = alpha;
+            Apply();
+        }
+
+        private void Apply() => PresentableUi.SetAlpha(_image, Mathf.Max(_fade, _extra));
 
         private void Awake()
         {
@@ -24,13 +35,15 @@ namespace ChemicalSafety.Presentable
             canvas.transform.localRotation = Quaternion.identity;
             var rt = PresentableUi.Rect("Fade", canvas.transform, Vector2.zero, Vector2.one);
             _image = PresentableUi.Img(rt, null, new Color(0f, 0f, 0f, startAlpha));
+            _fade = startAlpha;
         }
 
         public void SetImmediate(float alpha)
         {
             if (_running != null)
                 StopCoroutine(_running);
-            PresentableUi.SetAlpha(_image, alpha);
+            _fade = alpha;
+            Apply();
         }
 
         public IEnumerator FadeTo(float alpha, float duration)
@@ -39,7 +52,11 @@ namespace ChemicalSafety.Presentable
                 StopCoroutine(_running);
 
             var from = Alpha;
-            yield return PresentableFx.Tween(duration, t => PresentableUi.SetAlpha(_image, Mathf.Lerp(from, alpha, t)));
+            yield return PresentableFx.Tween(duration, t =>
+            {
+                _fade = Mathf.Lerp(from, alpha, t);
+                Apply();
+            });
         }
     }
 }
