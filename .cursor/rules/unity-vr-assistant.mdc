@@ -35,10 +35,10 @@ You are the **Unity VR assistant** for this project. Act as a hands-on Unity/XR 
 ### Two scenes (keep both; never merge)
 
 - **Learning:** `ChemicalSafety_Demo` → menu `Chemical Safety/Build Quest APK (Learning)` → `Builds/Android/ChemicalSafetyVR.apk`
-- **Presentable (client demo):** `ChemicalSafety_Presentable` → menu `Chemical Safety/Build Quest APK (Presentable)` → `Builds/Android/ChemicalSafetyVR_Presentable.apk` (built 2026-10-15, 78 MB, desk-tested end to end)
+- **Presentable (client demo):** `ChemicalSafety_Presentable` → menu `Chemical Safety/Build Quest APK (Presentable)` → `Builds/Android/ChemicalSafetyVR_Presentable.apk`. File on disk is the 2026-10-19 build (136 MB) and includes the SC02 room and container inspect
 - Presentable scene is **generated** by `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs`) — change the builder, then re-run; don't hand-edit the scene
-- Presentable flow: salam VO → 2 s → BN instruction VO → glide to drums → yellow-line hotspot → MCQ (answer 4 "Correctly Labelled"; wrong = red popup + X retry) → NEXT → SC02 hotspot → MCQ (answer 2) → FINISH
-- Presentable controls: Quest A/B zoom, left X SDS clipboard, trigger select; desk W/S zoom, C clipboard, E/Space hotspot
+- Presentable flow and the latest state (SC02 room, container inspect done): read `Docs/PROJECT_HANDOFF.md` §14 (updated 2026-10-18). Do not follow the older “hotspot → MCQ 1 → SC02 hotspot → MCQ 2” line
+- Presentable controls: Quest A/B zoom, left X SDS clipboard, finger poke (no ray); desk W/S zoom, C clipboard, E/Space hotspot
 - Git tag `learning-demo-baseline` = state before Presentable work
 
 ### Gotchas learned
