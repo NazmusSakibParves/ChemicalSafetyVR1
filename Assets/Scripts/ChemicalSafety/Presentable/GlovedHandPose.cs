@@ -47,6 +47,12 @@ namespace ChemicalSafety.Presentable
         /// <summary>World position of the (collision-clamped) index fingertip - the point everything is poked with.</summary>
         public Vector3 TipPosition => _tipBone != null ? _tipBone.position : pokePoint != null ? pokePoint.position : transform.position;
 
+        /// <summary>
+        /// Fingertip for UI presses: the controller's poke point plus the collision push. Unlike
+        /// <see cref="TipPosition"/> it ignores the poke-curl animation, so a press cannot re-arm itself.
+        /// </summary>
+        public Vector3 PressPoint => (pokePoint != null ? pokePoint.position : TipPosition) + _push;
+
         public bool HasTip => _tipBone != null || pokePoint != null;
 
         private void Start()
@@ -98,7 +104,11 @@ namespace ChemicalSafety.Presentable
         private Vector3 SolvePush()
         {
             var total = Vector3.zero;
-            total += SphereExit(_tipBone != null ? _tipBone.position : _hand.position, 0.014f);
+            var tip = _tipBone != null ? _tipBone.position : _hand.position;
+            total += SphereExit(tip, 0.014f);
+            // the fingertip rests on UI panels instead of sinking into them (rest-pose tip, so the curl animation
+            // cannot pull the hand out of the panel stop)
+            total += FingerPokeSystem.PanelPush(pokePoint != null ? pokePoint.position : tip, 0.012f);
             if (Palm != null)
                 total += SphereExit(Palm.position, 0.04f);
             return Vector3.ClampMagnitude(total, 0.3f);

@@ -111,11 +111,10 @@ namespace ChemicalSafety.Presentable
 
             // 1. Salam (panel floats within poking distance so the speaker / Continue can be touched)
             PlaceInFrontOfHead(instructionPanel.transform, XRSettings.isDeviceActive ? 0.7f : 0.95f);
-            subtitle.SetHeightOffset(-0.55f);
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
-            subtitle.Show(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.");
-            yield return PlayVoice(art.voSalam);
+            yield return SubtitledVoice(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.",
+                art.voSalam);
             instructionPanel.SetSpeaking(false);
 
             Stage("gap");
@@ -124,19 +123,17 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(gapAfterSalam);
             Stage("instruction");
             instructionPanel.SetSpeaking(true);
-            subtitle.Show(art.bnInstructionSub,
-                "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).");
-            yield return PlayVoice(art.voInstruction);
+            yield return SubtitledVoice(art.bnInstructionSub,
+                "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", art.voInstruction);
             instructionPanel.SetSpeaking(false);
 
             // 2b. Voice-over finished: Continue appears (+ hint VO). Speaker replays the instruction any time.
             _continuePressed = false;
             instructionPanel.SpeakerClicked += OnSpeakerClicked;
             instructionPanel.Continue += OnContinueClicked;
-            subtitle.Show(art.bnContinueHint,
-                "Click the speaker to hear the instructions again, or Continue to go on.");
             yield return instructionPanel.ShowContinue();
-            StartCoroutine(PlayVoice(art.voContinueHint));
+            StartCoroutine(SubtitledVoice(art.bnContinueHint,
+                "Click the speaker to hear the instructions again, or Continue to go on.", art.voContinueHint));
             while (!_continuePressed)
                 yield return null;
             instructionPanel.SpeakerClicked -= OnSpeakerClicked;
@@ -145,7 +142,6 @@ namespace ChemicalSafety.Presentable
             StopVoice();
             instructionPanel.SetSpeaking(false);
             subtitle.Hide();
-            subtitle.SetHeightOffset(-0.26f);
             yield return instructionPanel.Hide();
 
             Stage("transition");
@@ -169,7 +165,6 @@ namespace ChemicalSafety.Presentable
             Stage("pickLabel");
 
             // 4b. Voice prompt (once), step up to the drums, then poke each drum and name its label.
-            subtitle.Show(art.bnPickLabel, "Select the correct label for each drum.", 6f);
             _introVoice = StartCoroutine(PickLabelVoices());
             yield return Glide(drumPokeStand.position, 1.2f);
             yield return RunDrumPicking();
@@ -253,9 +248,10 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PickLabelVoices()
         {
-            yield return PlayVoice(art.voPickLabel);
+            yield return SubtitledVoice(art.bnPickLabel, "Select the correct label for each drum.", art.voPickLabel);
             yield return PresentableFx.Wait(0.3f);
-            yield return PlayVoice(art.voTouchDrum);
+            yield return SubtitledVoice(art.bnTouchDrum, "Touch the glowing button in front of a drum with your finger.",
+                art.voTouchDrum);
             _introVoice = null;
         }
 
@@ -294,7 +290,6 @@ namespace ChemicalSafety.Presentable
                         drumButtons[i].Arm(firstRound);
                 }
 
-                subtitle.Show(art.bnTouchDrum, "Touch the glowing button in front of a drum with your finger.", 0f);
                 _pokedDrum = -1;
                 while (_pokedDrum < 0)
                     yield return null;
@@ -345,9 +340,8 @@ namespace ChemicalSafety.Presentable
                     PresentableFx.Haptic(true, 0.8f, 0.2f);
                     StopVoice();
                     yield return PresentableFx.Wait(0.35f);
-                    subtitle.Show(art.bnWrongLabel,
-                        "Wrong label for this drum. Select the correct label again.", 6f);
-                    StartCoroutine(PlayVoice(art.voWrongLabel));
+                    StartCoroutine(SubtitledVoice(art.bnWrongLabel,
+                        "Wrong label for this drum. Select the correct label again.", art.voWrongLabel));
                 }
 
                 labelPopup.Close();
@@ -380,8 +374,8 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.5f, t => trolley.transform.localScale =
                 baseScale * Mathf.LerpUnclamped(0.5f, 1f, t), PresentableFx.EaseOutBack);
 
-            subtitle.Show(art.bnCarrier, "Load the correct drum onto the trolley for transfer.", 0f);
-            StartCoroutine(PlayVoice(art.voCarrier));
+            StartCoroutine(SubtitledVoice(art.bnCarrier, "Load the correct drum onto the trolley for transfer.",
+                art.voCarrier));
             yield return Glide(trolleyStand.position, 1.2f);
             // the carrier is to the right of the rack; turn to face it behind a short fade (no smooth turn)
             yield return fader.FadeTo(1f, 0.2f);
@@ -540,6 +534,18 @@ namespace ChemicalSafety.Presentable
             while (!_hotspotHit)
                 yield return null;
             hotspot.Activated -= OnHit;
+        }
+
+        private int _subtitleToken;
+
+        // Subtitle lives exactly as long as its voice-over; a newer subtitle is never hidden by an older one.
+        private IEnumerator SubtitledVoice(Sprite bangla, string english, AudioClip clip)
+        {
+            var token = ++_subtitleToken;
+            subtitle.Show(bangla, english);
+            yield return PlayVoice(clip);
+            if (token == _subtitleToken)
+                subtitle.Hide();
         }
 
         private IEnumerator PlayVoice(AudioClip clip)

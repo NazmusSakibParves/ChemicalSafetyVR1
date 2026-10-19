@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,6 +32,7 @@ namespace ChemicalSafety.Presentable
 
         private Button _hovered;
         private Button _armedBlock;
+        private int _band;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -41,6 +43,38 @@ namespace ChemicalSafety.Presentable
         public static void Register(Canvas canvas)
         {
             Entries.Add(new Entry { canvas = canvas, group = canvas.GetComponent<CanvasGroup>() });
+        }
+
+        /// <summary>
+        /// Physical stop for the fingertip: the push (world space) that keeps a fingertip sphere of the given
+        /// radius in front of every visible registered panel it is over, so the glove rests on the panel instead
+        /// of sinking into it. Zero when the tip is not over a panel or is more than 12 cm behind it.
+        /// </summary>
+        public static Vector3 PanelPush(Vector3 tip, float radius)
+        {
+            var best = Vector3.zero;
+            for (var i = Entries.Count - 1; i >= 0; i--)
+            {
+                var e = Entries[i];
+                if (e.canvas == null || !e.canvas.gameObject.activeInHierarchy || (e.group != null && e.group.alpha < 0.6f))
+                    continue;
+                var rt = (RectTransform)e.canvas.transform;
+                var local = rt.InverseTransformPoint(tip);
+                var scale = rt.lossyScale;
+                var depth = -local.z * scale.z; // positive = in front of the panel (user side)
+                if (depth >= radius || depth < -0.12f)
+                    continue;
+                var margin = 0.02f / Mathf.Max(0.0001f, scale.x);
+                var r = rt.rect;
+                if (local.x < r.xMin - margin || local.x > r.xMax + margin || local.y < r.yMin - margin ||
+                    local.y > r.yMax + margin)
+                    continue;
+                var push = -rt.forward * (radius - depth);
+                if (push.sqrMagnitude > best.sqrMagnitude)
+                    best = push;
+            }
+
+            return best;
         }
 
         private void Awake()
@@ -58,7 +92,7 @@ namespace ChemicalSafety.Presentable
                 return;
             }
 
-            var tip = hand.TipPosition;
+            var tip = hand.PressPoint;
             Button best = null;
             Entry bestEntry = null;
             var bestDepth = float.MaxValue;
@@ -130,10 +164,17 @@ namespace ChemicalSafety.Presentable
             if (best == null)
             {
                 _armedBlock = null;
+                _band = 0;
                 return;
             }
 
             ShowCursor(bestEntry, bestLocal, bestDepth);
+
+            // soft haptic ramp while the fingertip approaches the button
+            var band = bestDepth < 0.03f ? 2 : bestDepth < 0.06f ? 1 : 0;
+            if (band > _band)
+                PresentableFx.Haptic(true, band == 2 ? 0.22f : 0.1f, 0.025f);
+            _band = band;
 
             if (bestDepth < pressDepth && _armedBlock != best)
             {
@@ -141,12 +182,35 @@ namespace ChemicalSafety.Presentable
                 hand.PlayPokeCurl();
                 PresentableFx.Haptic(true, 0.5f, 0.07f);
                 PresentableFx.Play(PresentableFx.Tick, 0.8f);
+                var lift = best.GetComponent<HoverLift>();
+                if (lift != null)
+                    lift.Press();
+                if (bestEntry.cursor != null)
+                    StartCoroutine(Ripple(bestEntry, bestLocal));
                 best.onClick.Invoke();
             }
             else if (bestDepth > rearmDepth && _armedBlock == best)
             {
                 _armedBlock = null;
             }
+        }
+
+        private static IEnumerator Ripple(Entry e, Vector3 canvasLocal)
+        {
+            if (e.canvas == null || _cursorSprite == null)
+                yield break;
+            var rt = PresentableUi.Centered("Ripple", e.canvas.transform, Vector2.zero, new Vector2(40f, 40f));
+            rt.localPosition = new Vector3(canvasLocal.x, canvasLocal.y, -32f);
+            var img = PresentableUi.Img(rt, _cursorSprite, new Color(0.7f, 1f, 1f, 0.9f));
+            yield return PresentableFx.Tween(0.32f, t =>
+            {
+                if (rt == null)
+                    return;
+                rt.sizeDelta = Vector2.one * Mathf.Lerp(40f, 150f, t);
+                PresentableUi.SetAlpha(img, (1f - t) * 0.9f);
+            }, PresentableFx.EaseOutCubic);
+            if (rt != null)
+                Destroy(rt.gameObject);
         }
 
         private void ClearHover()

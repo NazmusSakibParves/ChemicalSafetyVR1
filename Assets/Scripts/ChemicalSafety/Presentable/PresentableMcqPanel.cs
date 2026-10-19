@@ -519,6 +519,7 @@ namespace ChemicalSafety.Presentable
         private Vector3 _baseScale = Vector3.one;
         private float _target = 1f;
         private float _current = 1f;
+        private float _press;
 
         public void Init(RectTransform rt)
         {
@@ -538,12 +539,16 @@ namespace ChemicalSafety.Presentable
         /// <summary>Hover from the finger poke system (no pointer events involved).</summary>
         public void SetHover(bool on) => _target = on ? 1.04f : 1f;
 
+        /// <summary>Short dip when the finger presses the button.</summary>
+        public void Press() => _press = 1f;
+
         private void Update()
         {
             if (_rt == null)
                 return;
             _current = Mathf.Lerp(_current, _target, 1f - Mathf.Exp(-14f * Time.deltaTime));
-            _rt.localScale = _baseScale * _current;
+            _press = Mathf.MoveTowards(_press, 0f, Time.deltaTime * 8f);
+            _rt.localScale = _baseScale * (_current * (1f - 0.06f * _press));
         }
     }
 }

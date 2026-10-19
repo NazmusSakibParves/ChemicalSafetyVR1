@@ -11,8 +11,8 @@ namespace ChemicalSafety.Presentable
     public sealed class WorldSubtitle : MonoBehaviour
     {
         [SerializeField] private PresentableArt art;
-        [SerializeField] private float distance = 0.9f;
-        [SerializeField] private float heightOffset = -0.26f;
+        [SerializeField] private float distance = 1.0f;
+        [SerializeField] private float heightOffset = 0.34f; // top safe zone, above the panels, buttons and props
         [SerializeField] private float followSpeed = 3f;
 
         private Transform _cam;
@@ -25,7 +25,7 @@ namespace ChemicalSafety.Presentable
         {
             _cam = Camera.main != null ? Camera.main.transform : null;
 
-            var canvas = PresentableUi.WorldCanvas("SubtitleCanvas", transform, new Vector2(1500f, 260f), 0.00058f,
+            var canvas = PresentableUi.WorldCanvas("SubtitleCanvas", transform, new Vector2(1500f, 260f), 0.0005f,
                 false, 500);
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
@@ -86,6 +86,8 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Lowers / raises the subtitle bar (kept clear of the Instructions panel while it is open).</summary>
         public void SetHeightOffset(float offset) => heightOffset = offset;
+
+        public bool IsVisible => _group != null && _group.alpha > 0.05f;
 
         public void Hide()
         {

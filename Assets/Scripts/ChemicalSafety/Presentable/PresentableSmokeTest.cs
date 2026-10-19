@@ -124,6 +124,52 @@ namespace ChemicalSafety.Presentable
                 .Invoke(p, new object[] { false });
         }
 
+        // The fingertip must rest on a panel instead of sinking into it, and still press the button.
+        private IEnumerator PanelStopTest(LabelPickPopup popup)
+        {
+            var hand = GlovedHandPose.Right;
+            var opt = FindDeep(popup.transform, "Option1");
+            var btn = opt != null ? opt.GetComponent<Button>() : null;
+            if (hand == null || btn == null || !hand.HasTip)
+            {
+                Say("FAIL: panel stop test needs the right glove and Option1");
+                yield break;
+            }
+
+            var fired = 0;
+            UnityEngine.Events.UnityAction count = () => fired++;
+            btn.onClick.AddListener(count);
+            var rt = (RectTransform)opt;
+            var canvasT = rt.GetComponentInParent<Canvas>().transform;
+            var ctl = hand.transform;
+            var keep = ctl.position;
+            var behind = rt.TransformPoint(rt.rect.center) + canvasT.forward * 0.04f; // 4 cm behind the panel
+            ctl.position += behind - hand.PressPoint;
+            var trace = "";
+            for (var f = 0; f < 120; f++)
+            {
+                yield return null;
+                var lp = rt.InverseTransformPoint(hand.PressPoint);
+                if (f % 6 == 0)
+                    {
+                    var cg = rt.GetComponentInParent<CanvasGroup>();
+                    trace += (-lp.z * rt.lossyScale.z * 100f).ToString("0.0") + "|" + fired + "|a" +
+                             (cg != null ? cg.alpha.ToString("0.0") : "-") + "|p" +
+                             (FingerPokeSystem.PanelPush(hand.PressPoint, 0.012f).magnitude * 100f).ToString("0.0") + " ";
+                }
+            }
+
+            Say("panel stop trace (cm in front of option | fired): " + trace);
+            var local = rt.InverseTransformPoint(hand.PressPoint);
+            var depthCm = -local.z * rt.lossyScale.z * 100f;
+            Say("panel stop: fingertip started 4 cm behind the popup, now " + depthCm.ToString("0.0") +
+                " cm in front of the option, option fired " + fired + "x -> " + (depthCm > -0.2f && fired >= 1 ? "OK" : "FAIL"));
+            yield return Shot("03b_panel_stop");
+            btn.onClick.RemoveListener(count);
+            ctl.position = keep;
+            yield return new WaitForSeconds(0.4f);
+        }
+
         private IEnumerator Main()
         {
             _director = FindFirstObjectByType<PresentableSequenceDirector>();
@@ -153,6 +199,16 @@ namespace ChemicalSafety.Presentable
             Say("hint clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " playing=" + voiceSrc.isPlaying);
             yield return Shot("00b_instruction_continue");
             yield return new WaitForSeconds(5f);
+            var subs = Get<WorldSubtitle>(_director, "subtitle");
+            var vw = 0f;
+            while (voiceSrc.isPlaying && vw < 20f)
+            {
+                vw += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.8f);
+            Say("subtitle visible after the hint voice ended = " + subs.IsVisible + " (expected False)");
             Click(panel.transform, "Speaker");
             yield return new WaitForSeconds(1f);
             Say("after speaker click: clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " playing=" + voiceSrc.isPlaying);
@@ -272,7 +328,10 @@ namespace ChemicalSafety.Presentable
                 yield return new WaitForSeconds(0.8f);
                 Say("popup open = " + popup.IsOpen);
                 if (step == 0)
+                {
                     yield return Shot("03_popup");
+                    yield return PanelStopTest(popup);
+                }
 
                 if (step == 0)
                 {
@@ -301,7 +360,7 @@ namespace ChemicalSafety.Presentable
             Say("trolley active = " + trolley.activeSelf + " pos=" + trolley.transform.position);
             yield return Shot("06_trolley");
             var carrierBtn = Get<FloatingTouchButton>(_director, "carrierButton");
-            Say("carrier button armed = " + carrierBtn.IsArmed);
+            Say("carrier button armed = " + carrierBtn.IsArmed + " subtitle visible = " + Get<WorldSubtitle>(_director, "subtitle").IsVisible);
             PressButton(carrierBtn);
             yield return new WaitForSeconds(1.1f);
             yield return Shot("06b_loaded");

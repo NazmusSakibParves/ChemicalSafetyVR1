@@ -1136,7 +1136,7 @@ namespace ChemicalSafety.Editor
                 so.FindProperty("caption").stringValue = captions[i];
                 so.FindProperty("bubbleHeight").floatValue = height + 0.1f;
                 so.FindProperty("bubbleOffset").vector3Value = new Vector3(0f, 0f, -0.42f);
-                so.FindProperty("numberColor").colorValue = i == 3 ? PresentableUi.Green : Color.white;
+                so.FindProperty("numberColor").colorValue = Color.white;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 callouts[i] = callout;
             }
