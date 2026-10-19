@@ -45,6 +45,11 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform spawnSc02;
         [SerializeField] private FloorHotspot hotspotSc02;
         [SerializeField] private PresentableMcqPanel mcqSc02;
+        [SerializeField] private GameObject envSc01;
+        [SerializeField] private GameObject envSc02;
+        [SerializeField] private CompartmentDoor[] doors = new CompartmentDoor[4];
+        [SerializeField] private ChartViewer chart;
+        [SerializeField] private ContainerInspect inspect;
 
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
@@ -71,7 +76,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator ReplayInstruction()
         {
             instructionPanel.SetSpeaking(true);
-            yield return PlayVoice(art.voInstruction);
+            yield return PlayVoice(_instructionClip != null ? _instructionClip : art.voInstruction);
             instructionPanel.SetSpeaking(false);
             _replay = null;
         }
@@ -97,6 +102,7 @@ namespace ChemicalSafety.Presentable
             foreach (var d in drums)
                 d?.SetCalloutVisible(false, 0.01f);
 
+            _instructionClip = art.voInstruction;
             PlaceRig(spawnStart.position, spawnStart.forward);
             yield return fader.FadeTo(0f, 1.4f);
             yield return PresentableFx.Wait(0.4f);
@@ -182,18 +188,53 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc02");
 
-            // 6. SC02
+            // 6. SC02 storage room (the warehouse is hidden so only one room draws)
             foreach (var d in drums)
                 d?.SetCalloutVisible(false);
             if (trolley != null)
                 trolley.SetActive(false);
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
+            if (envSc01 != null)
+                envSc01.SetActive(false);
+            if (envSc02 != null)
+                envSc02.SetActive(true);
+            clipboard.SetSheet(art.sdsSc02);
             PlaceRig(spawnSc02.position, spawnSc02.forward);
             yield return fader.FadeTo(0f, 0.6f);
-            subtitle.Show(art.bnNextZone, "Next: chemical storage area. Step on the green hotspot.", 6f);
 
+            Stage("sc02Intro");
+            _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
+            instructionPanel.SetContent(
+                "<color=#5FD8FF><b>VOICE-OVER:</b></color> A delivery of six chemicals has arrived. " +
+                "The supervisor asks you to place each container into the correct compartment.",
+                art.bnSc02InstructionPanel);
+            PlaceInFrontOfHead(instructionPanel.transform, XRSettings.isDeviceActive ? 0.7f : 0.95f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+
+            Stage("sc02Explore");
+            SetRoomInteractable(true);
             yield return WaitHotspot(hotspotSc02);
+            SetRoomInteractable(false);
             yield return FadeReposition(hotspotSc02.transform, Flat(spawnSc02.forward), mcqSc02);
             yield return RunQuestion(mcqSc02, BuildSc02Question(), false);
 
@@ -207,6 +248,8 @@ namespace ChemicalSafety.Presentable
         private bool _popupClosed;
         private bool _carrierPressed;
         private Coroutine _introVoice;
+        private Coroutine _answerVoice;
+        private AudioClip _instructionClip;
 
         private IEnumerator PickLabelVoices()
         {
@@ -273,7 +316,11 @@ namespace ChemicalSafety.Presentable
                     d.ClearHighlight();
                 subtitle.Hide();
 
-                PlaceInFrontOfHead(labelPopup.transform, 0.62f);
+                // keep the popup in front of the rack face (rack front is about 0.4 m ahead of the focus point)
+                var popupDist = 0.62f;
+                if (_cam != null && rackFocus != null)
+                    popupDist = Mathf.Clamp(rackFocus.position.z - 0.4f - 0.12f - _cam.position.z, 0.45f, 0.62f);
+                PlaceInFrontOfHead(labelPopup.transform, popupDist);
                 _pickedLabel = -1;
                 _popupClosed = false;
                 labelPopup.Open();
@@ -333,7 +380,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.5f, t => trolley.transform.localScale =
                 baseScale * Mathf.LerpUnclamped(0.5f, 1f, t), PresentableFx.EaseOutBack);
 
-            subtitle.Show(art.bnCarrier, "Touch the drum carrier to move the drums and continue.", 0f);
+            subtitle.Show(art.bnCarrier, "Load the correct drum onto the trolley for transfer.", 0f);
             StartCoroutine(PlayVoice(art.voCarrier));
             yield return Glide(trolleyStand.position, 1.2f);
             // the carrier is to the right of the rack; turn to face it behind a short fade (no smooth turn)
@@ -352,25 +399,43 @@ namespace ChemicalSafety.Presentable
             StopVoice();
             subtitle.Hide();
 
-            // the carrier takes the drum: short roll forward with a tilt, drum appears on the nose plate
-            PresentableFx.Play(PresentableFx.Whoosh, 0.7f);
+            // lift the drum from the floor onto the toe plate, then roll the trolley a short step
+            PresentableFx.Play(PresentableFx.Whoosh, 0.55f);
             var tr = trolley.transform;
             var p0 = tr.position;
             var r0 = tr.rotation;
+            Transform drum = null;
+            var endPos = Vector3.zero;
+            var endRot = Quaternion.identity;
+            var startPos = Vector3.zero;
+            var startRot = Quaternion.identity;
             if (carrierLoad != null)
             {
                 carrierLoad.SetActive(true);
-                carrierLoad.transform.localScale = Vector3.zero;
+                drum = carrierLoad.transform;
+                endPos = drum.localPosition;
+                endRot = drum.localRotation;
+                startPos = endPos + new Vector3(0f, -0.42f, 0.28f);
+                startRot = Quaternion.identity;
+                drum.localPosition = startPos;
+                drum.localRotation = startRot;
             }
 
-            yield return PresentableFx.Tween(0.9f, t =>
+            yield return PresentableFx.Tween(0.8f, t =>
             {
-                tr.position = p0 + tr.forward * (0.0f) + new Vector3(0f, 0f, 0.45f * t);
-                tr.rotation = r0 * Quaternion.Euler(-9f * Mathf.Sin(t * Mathf.PI), 0f, 0f);
-                if (carrierLoad != null)
-                    carrierLoad.transform.localScale = Vector3.one * Mathf.Clamp01(t * 2f);
+                if (drum == null)
+                    return;
+                drum.localPosition = Vector3.Lerp(startPos, endPos, t);
+                drum.localRotation = Quaternion.Slerp(startRot, endRot, t);
+            }, PresentableFx.EaseOutCubic);
+            PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
+
+            yield return PresentableFx.Tween(0.7f, t =>
+            {
+                tr.position = p0 + new Vector3(0f, 0f, 0.35f * t);
+                tr.rotation = r0 * Quaternion.Euler(-4f * Mathf.Sin(t * Mathf.PI), 0f, 0f);
             });
-            yield return PresentableFx.Wait(0.35f);
+            yield return PresentableFx.Wait(0.25f);
         }
 
         private void PlaceInFrontOfHead(Transform t, float distance)
@@ -400,7 +465,12 @@ namespace ChemicalSafety.Presentable
             }
 
             // the voice follows the popup (it is not on screen yet when the answer is clicked)
-            void OnPopupShown(bool correct) => StartCoroutine(AnswerVoice(correct));
+            void OnPopupShown(bool correct)
+            {
+                if (_answerVoice != null)
+                    StopCoroutine(_answerVoice);
+                _answerVoice = StartCoroutine(AnswerVoice(correct, useDrums));
+            }
 
             void OnNext() => _nextPressed = true;
 
@@ -413,6 +483,9 @@ namespace ChemicalSafety.Presentable
             panel.Answered -= OnAnswered;
             panel.PopupShown -= OnPopupShown;
             panel.NextPressed -= OnNext;
+            if (_answerVoice != null)
+                StopCoroutine(_answerVoice);
+            StopVoice();
 
             if (useDrums)
             {
@@ -425,12 +498,29 @@ namespace ChemicalSafety.Presentable
         }
 
         // No subtitle here: the always-on-top bar would cover the correct / wrong card, which already shows the text.
-        private IEnumerator AnswerVoice(bool correct)
+        private IEnumerator AnswerVoice(bool correct, bool scenarioOne)
         {
             yield return PresentableFx.Wait(0.25f);
             StopVoice();
             subtitle.Hide();
             yield return PlayVoice(correct ? art.voCorrect : art.voWrong);
+            if (!correct || !scenarioOne)
+                yield break;
+            yield return PresentableFx.Wait(1f);
+            yield return PlayVoice(art.voSc01CompleteBn);
+            yield return PlayVoice(art.voSc01CompleteEn);
+        }
+
+        private void SetRoomInteractable(bool value)
+        {
+            if (doors != null)
+            {
+                foreach (var door in doors)
+                    door?.SetInteractable(value);
+            }
+
+            chart?.SetInteractable(value);
+            inspect?.SetInteractable(value);
         }
 
         public string CurrentStage { get; private set; } = "boot";
@@ -599,31 +689,33 @@ namespace ChemicalSafety.Presentable
         {
             return new PresentableMcqPanel.Question
             {
-                prompt = "Question 2: Where does the flammable solvent go?",
+                header = "STORAGE DECISION CHALLENGE",
+                prompt = "Question 2.1: Flammable Solvent Placement. Where does it go?",
                 correctIndex = 1,
                 nextLabel = "FINISH",
+                correctTitle = "CORRECT PLACEMENT!",
                 options = new[]
                 {
                     new PresentableMcqPanel.Option
                     {
-                        label = "1. With the oxidizers",
-                        feedback = "Flammable + oxidizer = fire / explosion risk. Never co-store."
+                        label = "A  With the oxidizers",
+                        feedback = "Flammable + oxidizer = fire / explosion risk. Never store them together."
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "2. Flammable-rated compartment, away from oxidizers and acids",
-                        feedback = "Correct! This matches the compatibility chart. Flammables are stored separately " +
-                                   "on fire-rated shelving."
+                        label = "B  Flammable compartment, away from oxidizers and acids",
+                        feedback = "Best practice. Flammables stay in the fire-rated cabinet, segregated from " +
+                                   "oxidizers and acids. This matches the compatibility chart."
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "3. With the acids",
-                        feedback = "Acid + flammable solvent = potential ignition on contact."
+                        label = "C  General chemical cabinet",
+                        feedback = "General storage is not rated for a hazardous flammable solvent."
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "4. In any open compartment",
-                        feedback = "Ignoring segregation defeats the entire storage system."
+                        label = "D  Near the water station",
+                        feedback = "Easy to reach, but a water station is the wrong place for a flammable solvent."
                     }
                 }
             };

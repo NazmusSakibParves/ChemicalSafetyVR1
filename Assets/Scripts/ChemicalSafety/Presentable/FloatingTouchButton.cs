@@ -18,8 +18,10 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableArt art;
         [SerializeField] private Color color = new Color(0.3f, 0.9f, 1f, 1f);
         [SerializeField] private float hoverRadius = 0.17f;
-        [SerializeField] private float pressRadius = 0.075f;
+        [SerializeField] private float pressRadius = 0.1f;
         [SerializeField] private string label = string.Empty;
+        [Tooltip("World offset of the fingertip touch point from the arrow (toward the user).")]
+        [SerializeField] private Vector3 touchOffset = Vector3.zero;
 
         private Transform _cam;
         private Transform _canvasT;
@@ -37,6 +39,8 @@ namespace ChemicalSafety.Presentable
         private Vector3 _basePos;
         private float _phase;
         private bool _pulseHint;
+        private bool _flashing;
+        private RectTransform _iconRt;
 
         public event Action<FloatingTouchButton> Pressed;
         public event Action<bool> HoverChanged;
@@ -49,21 +53,19 @@ namespace ChemicalSafety.Presentable
             _basePos = transform.position;
             _phase = UnityEngine.Random.value * 6f;
 
-            var canvas = PresentableUi.WorldCanvas("TouchCanvas", transform, new Vector2(320f, 380f), 0.0008f, false, 40);
+            var canvas = PresentableUi.WorldCanvas("TouchCanvas", transform, new Vector2(320f, 380f), 0.0007f, false, 40);
             _canvasT = canvas.transform;
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
 
-            _glow = PresentableUi.Img(PresentableUi.Rect("Glow", _canvasT, new Vector2(0.02f, 0.12f), new Vector2(0.98f, 0.88f)),
-                art.radialGlow, WithAlpha(color, 0.55f));
-            _pulse = PresentableUi.Rect("Pulse", _canvasT, new Vector2(0.1f, 0.2f), new Vector2(0.9f, 0.8f));
-            PresentableUi.Img(_pulse, art.ring, WithAlpha(color, 0.9f));
-            _ring = PresentableUi.Rect("Ring", _canvasT, new Vector2(0.14f, 0.24f), new Vector2(0.86f, 0.76f));
-            PresentableUi.Img(_ring, art.ring, Color.white);
-            PresentableUi.Img(PresentableUi.Rect("Disc", _ring, new Vector2(0.1f, 0.1f), new Vector2(0.9f, 0.9f)), art.dot,
-                new Color(0.02f, 0.12f, 0.22f, 0.85f));
-            _icon = PresentableUi.Img(PresentableUi.Rect("Icon", _ring, new Vector2(0.2f, 0.2f), new Vector2(0.8f, 0.8f)),
-                art.iconTouch, color, preserveAspect: true);
+            // floating arrow marker: soft glow behind, an expanding glow pulse, the arrow itself on top
+            _glow = PresentableUi.Img(PresentableUi.Rect("Glow", _canvasT, new Vector2(0.0f, 0.2f), new Vector2(1f, 1f)),
+                art.radialGlow, WithAlpha(color, 0.4f));
+            _pulse = PresentableUi.Rect("Pulse", _canvasT, new Vector2(0.1f, 0.3f), new Vector2(0.9f, 0.95f));
+            PresentableUi.Img(_pulse, art.radialGlow, WithAlpha(color, 0.6f));
+            _ring = PresentableUi.Rect("Arrow", _canvasT, new Vector2(0.2f, 0.26f), new Vector2(0.8f, 0.96f));
+            _iconRt = PresentableUi.Rect("Icon", _ring, Vector2.zero, Vector2.one);
+            _icon = PresentableUi.Img(_iconRt, art.iconTouch, Color.white, preserveAspect: true);
 
             if (!string.IsNullOrEmpty(label))
             {
@@ -119,13 +121,21 @@ namespace ChemicalSafety.Presentable
 
             // pulse ring
             var p = Mathf.Repeat(t * 0.9f, 1f);
-            _pulse.localScale = Vector3.one * Mathf.Lerp(1f, _pulseHint ? 1.7f : 1.35f, p);
-            PresentableUi.SetAlpha(_pulse.GetComponent<Image>(), (1f - p) * (_pulseHint ? 0.9f : 0.5f));
+            _pulse.localScale = Vector3.one * Mathf.Lerp(0.8f, _pulseHint ? 1.25f : 1.15f, p);
+            PresentableUi.SetAlpha(_pulse.GetComponent<Image>(), (1f - p) * (_pulseHint ? 0.7f : 0.45f));
+
+            if (!_flashing)
+            {
+                // blinking "touch here" arrow with a tiny downward bob
+                var blink = 0.5f + 0.5f * Mathf.Sin(t * 8.2f);
+                _icon.color = WithAlpha(Color.white, Mathf.Lerp(0.62f, 1f, blink));
+                _iconRt.anchoredPosition = new Vector2(0f, 14f * (1f - blink));
+            }
 
             var targetScale = _pressed ? 0.88f : _hover ? 1.18f : 1f;
             _scale = Mathf.Lerp(_scale, targetScale, 1f - Mathf.Exp(-16f * Time.deltaTime));
             _ring.localScale = Vector3.one * _scale;
-            _glow.color = WithAlpha(color, _hover ? 0.95f : 0.55f);
+            _glow.color = WithAlpha(color, _hover ? 0.85f : 0.4f);
 
             if (!_armed)
                 return;
@@ -133,7 +143,7 @@ namespace ChemicalSafety.Presentable
             var hand = GlovedHandPose.Right;
             if (hand != null && hand.HasTip)
             {
-                var d = Vector3.Distance(hand.TipPosition, transform.position);
+                var d = Vector3.Distance(hand.TipPosition, transform.position + touchOffset);
                 SetHover(d < hoverRadius);
                 if (d < pressRadius && !_pressed)
                     Press(true);
@@ -186,11 +196,13 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Flash()
         {
+            _flashing = true;
             yield return PresentableFx.Tween(0.25f, t =>
             {
-                _icon.color = Color.Lerp(Color.white, color, t);
-                _glow.color = WithAlpha(Color.white, Mathf.Lerp(1f, 0.55f, t));
+                _icon.color = Color.white;
+                _glow.color = WithAlpha(Color.white, Mathf.Lerp(1f, 0.4f, t));
             });
+            _flashing = false;
         }
 
         private static Color WithAlpha(Color c, float a)

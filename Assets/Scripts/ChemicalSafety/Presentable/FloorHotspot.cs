@@ -19,7 +19,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableArt art;
         [SerializeField] private Color color = new Color(0.3f, 1f, 0.55f, 1f);
         [SerializeField] private float standRadius = 0.55f;
-        [SerializeField] private string englishLabel = "Stand here";
+        [SerializeField] private string englishLabel = "Stand Here";
         [Tooltip("Off for pokeable markers (the trolley): only Activate() or a ray select triggers them.")]
         [SerializeField] private bool activateOnStand = true;
         [SerializeField] private bool showBanglaLabel = true;
@@ -77,11 +77,19 @@ namespace ChemicalSafety.Presentable
             _arrow = PresentableUi.Centered("Arrow", stand.transform, new Vector2(0f, 200f), new Vector2(170f, 170f));
             PresentableUi.Img(_arrow, art.arrowDown, color, preserveAspect: true);
 
-            if (showBanglaLabel)
-                PresentableUi.BanglaLine("LabelBn", stand.transform, art.bnStandHere, new Vector2(0f, 420f), 110f,
-                    Color.white);
-            PresentableUi.Text("LabelEn", stand.transform, new Vector2(0f, 0.86f), new Vector2(1f, 0.93f),
-                englishLabel, 64f, color, bold: true, font: art.englishFont);
+            if (art.standBadge != null)
+            {
+                PresentableUi.Img(PresentableUi.Centered("Badge", stand.transform, new Vector2(0f, 470f), new Vector2(500f, 167f)),
+                    art.standBadge, Color.white, preserveAspect: true);
+            }
+            else
+            {
+                if (showBanglaLabel)
+                    PresentableUi.BanglaLine("LabelBn", stand.transform, art.bnStandHere, new Vector2(0f, 420f), 110f,
+                        Color.white);
+                PresentableUi.Text("LabelEn", stand.transform, new Vector2(0f, 0.86f), new Vector2(1f, 0.93f),
+                    englishLabel, 64f, color, bold: true, font: art.englishFont);
+            }
 
             SetVisible(false, true);
         }

@@ -24,7 +24,7 @@ MonoBehaviour:
   dot: {fileID: 21300000, guid: 2c328acbaa3c5e94c986e6ab6888f76f, type: 3}
   iconGhs: {fileID: 21300000, guid: 56114bde10f371f41bb1067768fadcf2, type: 3}
   iconSds: {fileID: 21300000, guid: 2abd3dd4805ffd240b4baa4ccafa1c9a, type: 3}
-  iconTouch: {fileID: 21300000, guid: ea6b21155788cdc4c8adc60ef0ecdc61, type: 3}
+  iconTouch: {fileID: 21300000, guid: 6ee9447a0722a044e9b87cfeaa72645c, type: 3}
   roundedPanel: {fileID: 21300000, guid: bb4535854083b0a4eb4cc85bd17d926f, type: 3}
   roundedSolid: {fileID: 21300000, guid: 2be5a388e6a22204285016ce5579134a, type: 3}
   softGlow: {fileID: 21300000, guid: bfa907de8108c704cb99ab372521a3dc, type: 3}
@@ -40,11 +40,14 @@ MonoBehaviour:
   labelMethanol: {fileID: 21300000, guid: 86e9faf20302b4b4ab5a47754a1defc5, type: 3}
   labelIsopropanol: {fileID: 21300000, guid: 4f11f210e15e5224c94f4874ba28fbc2, type: 3}
   sdsClipboard: {fileID: 21300000, guid: 549f8b290fd0a5b40be8a5bff7d9f9f6, type: 3}
+  sdsSc02: {fileID: 21300000, guid: d2d4be1cc17ee6049ac25d257b5ad79c, type: 3}
+  chartSc02: {fileID: 21300000, guid: de472ce2a58a1124aa7a858f48db4764, type: 3}
   bnSalam: {fileID: 21300000, guid: 9e2011f2a3e4a4b4f8acfc78a4a5d4f8, type: 3}
   bnWelcomeSub: {fileID: 21300000, guid: 6a4079b75df08264ab370789700935ba, type: 3}
   bnInstructionSub: {fileID: 21300000, guid: b2aedd7790fb06549a306a6634a65808, type: 3}
   bnInstructionPanel: {fileID: 21300000, guid: 08c99c80ad1cc13499048164209ede96, type: 3}
   bnStandHere: {fileID: 21300000, guid: cfefa1447a607274486ea3d0e4f5fd2e, type: 3}
+  standBadge: {fileID: 21300000, guid: ef33dd38295fa5e49a0c55eaa4d2460f, type: 3}
   bnCorrectSub: {fileID: 21300000, guid: 1709159aae6d42149a5b79a6f74f505f, type: 3}
   bnWrongSub: {fileID: 21300000, guid: 894b0b3c037bb4b4aad9d0f7c280b552, type: 3}
   bnClipboardHint: {fileID: 21300000, guid: 96f9feaf7639c7e4a965215b3bc94d47, type: 3}
@@ -55,6 +58,8 @@ MonoBehaviour:
   bnContinueHint: {fileID: 21300000, guid: e62bb65fb39c2d749be01851d74e890f, type: 3}
   bnTouchDrum: {fileID: 21300000, guid: eaac0e07ec5aa78469e754b5f030e3a6, type: 3}
   bnCarrier: {fileID: 21300000, guid: a7aff39dc6190fd429d29f78fb98a7c8, type: 3}
+  bnSc02Instruction: {fileID: 21300000, guid: 23db8d9bb7413ce44bd229754426aad9, type: 3}
+  bnSc02InstructionPanel: {fileID: 21300000, guid: 52f378abcda396a498baf44d72b3f6cf, type: 3}
   voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
   voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
   voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
@@ -63,5 +68,8 @@ MonoBehaviour:
   voContinueHint: {fileID: 8300000, guid: bc89c7e26a0580045adba52eac2238a9, type: 3}
   voTouchDrum: {fileID: 8300000, guid: c2f7a543280d7f34bb26f5fdac946c24, type: 3}
   voCarrier: {fileID: 8300000, guid: 2485e139d58dba24082d9fb0a166cc3f, type: 3}
+  voSc01CompleteBn: {fileID: 8300000, guid: f81e6fdc4a5d9de46ab56d5a6e9b97ac, type: 3}
+  voSc01CompleteEn: {fileID: 8300000, guid: f32af67cb14814648b74f202a99fc5d2, type: 3}
+  voSc02Instruction: {fileID: 8300000, guid: 632f7303f04d88f4e831a9d93c4535de, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

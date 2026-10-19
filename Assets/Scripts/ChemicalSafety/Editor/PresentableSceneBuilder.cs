@@ -52,7 +52,7 @@ namespace ChemicalSafety.Editor
             var art = AssetDatabase.LoadAssetAtPath<PresentableArt>(artPath);
 
             SetupLighting();
-            var env = new GameObject("Environment").transform;
+            var env = new GameObject("Environment_SC01").transform;
             BuildShell(env);
             BuildFloorMarkings(env);
             BuildSideRacks(env);
@@ -60,7 +60,9 @@ namespace ChemicalSafety.Editor
             BuildDressing(env);
 
             var drums = BuildHeroRack(env, art, out var rackFocus, out var drumPokes);
-            BuildSc02Zone(env);
+            var env2 = new GameObject("Environment_SC02").transform;
+            var doors = BuildSc02Room(env2, art, out var chart, out var inspect);
+            env2.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -75,13 +77,13 @@ namespace ChemicalSafety.Editor
             var spawns = new GameObject("Spawns").transform;
             var spawnStart = Marker("Spawn_Start", spawns, new Vector3(0f, 0f, -4.2f), 0f);
             var spawnDrumView = Marker("Spawn_DrumView", spawns, new Vector3(0.5f, 0f, 2.9f), 0f);
-            var spawnSc02 = Marker("Spawn_SC02", spawns, new Vector3(0f, 0f, -7.6f), 180f);
+            var spawnSc02 = Marker("Spawn_SC02", spawns, new Vector3(40f, 0f, 2.7f), 180f);
             rig.transform.SetPositionAndRotation(spawnStart.position, spawnStart.rotation);
 
             var flow = new GameObject("PresentableFlow").transform;
             // Centre of the yellow floor box in front of the hero rack.
             var hotspot1 = Hotspot("Hotspot_SC01", flow, art, new Vector3(0f, 0f, 4.5f));
-            var hotspot2 = Hotspot("Hotspot_SC02", flow, art, new Vector3(0f, 0f, -9.3f));
+            var hotspot2 = Hotspot("Hotspot_SC02", flow, art, new Vector3(40f, 0f, 1.15f));
 
             var trolley = BuildCarrier(env, art, new Vector3(1.95f, 0f, 5.7f), out var carrierButton, out var carrierLoad);
             var drumButtons = new FloatingTouchButton[4];
@@ -89,14 +91,21 @@ namespace ChemicalSafety.Editor
             {
                 var tbGo = new GameObject("TouchButton_" + (i + 1));
                 tbGo.transform.SetParent(flow, false);
-                tbGo.transform.position = new Vector3(drums[i].transform.position.x, 1.12f, 5.35f);
+                tbGo.transform.position = new Vector3(drums[i].transform.position.x, 1.27f, drums[i].transform.position.z); // centred over the drum, in the gap between the drum lids (1.13) and the shelf beam (1.45)
                 drumButtons[i] = tbGo.AddComponent<FloatingTouchButton>();
                 SetRef(drumButtons[i], "art", art);
+                // the arrow floats over the drum centre; the fingertip reaches the touch point 0.4 m toward the user,
+                // on the way to the arrow
+                var tso = new SerializedObject(drumButtons[i]);
+                tso.FindProperty("touchOffset").vector3Value = new Vector3(0f, 0f, -0.4f);
+                tso.FindProperty("pressRadius").floatValue = 0.12f;
+                tso.FindProperty("hoverRadius").floatValue = 0.22f;
+                tso.ApplyModifiedPropertiesWithoutUndo();
             }
 
             // about a metre from the rack face: the floating Touch buttons are within arm's reach
-            var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 4.8f), 0f);
-            var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(1.3f, 0f, 5.0f), 0f);
+            var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 5.1f), 0f);
+            var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(0.7f, 0f, 4.15f), 0f);
 
             var labelPopup = Child("LabelPickPopup", flow).AddComponent<LabelPickPopup>();
             SetRef(labelPopup, "art", art);
@@ -158,6 +167,14 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < drumButtons.Length; i++)
                 btnProp.GetArrayElementAtIndex(i).objectReferenceValue = drumButtons[i];
             so.FindProperty("trolleyStand").objectReferenceValue = trolleyStand;
+            so.FindProperty("envSc01").objectReferenceValue = env.gameObject;
+            so.FindProperty("envSc02").objectReferenceValue = env2.gameObject;
+            so.FindProperty("chart").objectReferenceValue = chart;
+            so.FindProperty("inspect").objectReferenceValue = inspect;
+            var doorProp = so.FindProperty("doors");
+            doorProp.arraySize = doors.Length;
+            for (var i = 0; i < doors.Length; i++)
+                doorProp.GetArrayElementAtIndex(i).objectReferenceValue = doors[i];
             var pokesProp = so.FindProperty("drumPokes");
             pokesProp.arraySize = drumPokes.Length;
             for (var i = 0; i < drumPokes.Length; i++)
@@ -217,7 +234,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -234,7 +251,8 @@ namespace ChemicalSafety.Editor
                     }
 
                     var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096
-                        : path.EndsWith("Background.png") || path.Contains("/BanglaText/") || path.Contains("/Designer/")
+                        : path.EndsWith("Background.png") || path.EndsWith("Chart.png") || path.Contains("/BanglaText/") ||
+                          path.Contains("/Designer/")
                             ? 2048
                             : 1024;
                     if (ti.maxTextureSize != maxSize)
@@ -250,11 +268,14 @@ namespace ChemicalSafety.Editor
                         changed = true;
                     }
 
-                    if (!ti.alphaIsTransparency || !ti.mipmapEnabled || ti.wrapMode != TextureWrapMode.Clamp)
+                    var wrap = path.EndsWith("SC02_Wall.png") || path.EndsWith("SC02_Floor.png")
+                        ? TextureWrapMode.Repeat
+                        : TextureWrapMode.Clamp;
+                    if (!ti.alphaIsTransparency || !ti.mipmapEnabled || ti.wrapMode != wrap)
                     {
                         ti.alphaIsTransparency = true;
                         ti.mipmapEnabled = true;
-                        ti.wrapMode = TextureWrapMode.Clamp;
+                        ti.wrapMode = wrap;
                         changed = true;
                     }
 
@@ -327,11 +348,14 @@ namespace ChemicalSafety.Editor
             art.labelMethanol = D("Drum label/Methanol");
             art.labelIsopropanol = D("Drum label/Isopropanol");
             art.sdsClipboard = D("SDS in Clipboard");
+            art.sdsSc02 = LoadSprite("2D/Sc02/SDS_SC02");
+            art.chartSc02 = LoadSprite("2D/Sc02/Chart");
             art.bnSalam = B("BN_Salam");
             art.bnWelcomeSub = B("BN_WelcomeSub");
             art.bnInstructionSub = B("BN_InstructionSub");
             art.bnInstructionPanel = B("BN_InstructionPanel");
             art.bnStandHere = B("BN_StandHere");
+            art.standBadge = LoadSprite("2D/Env/UI_StandHere");
             art.bnCorrectSub = B("BN_CorrectSub");
             art.bnWrongSub = B("BN_WrongSub");
             art.bnClipboardHint = B("BN_ClipboardHint");
@@ -342,7 +366,9 @@ namespace ChemicalSafety.Editor
             art.bnContinueHint = B("BN_ContinueHint");
             art.bnTouchDrum = B("BN_TouchDrum");
             art.bnCarrier = B("BN_Carrier");
-            art.iconTouch = LoadSprite("2D/Env/ICON_Touch");
+            art.bnSc02Instruction = B("BN_Sc02Instruction");
+            art.bnSc02InstructionPanel = B("BN_Sc02InstructionPanel");
+            art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
             art.voCorrect = V("VO_Correct_bn.mp3");
@@ -360,6 +386,15 @@ namespace ChemicalSafety.Editor
             var carrierVo = V("VO_Carrier_bn.mp3");
             if (carrierVo != null)
                 art.voCarrier = carrierVo;
+            var doneBn = V("VO_Sc01Complete_bn.mp3");
+            if (doneBn != null)
+                art.voSc01CompleteBn = doneBn;
+            var doneEn = V("VO_Sc01Complete_en.mp3");
+            if (doneEn != null)
+                art.voSc01CompleteEn = doneEn;
+            var sc02Vo = V("VO_SC02_Instruction_bn.mp3");
+            if (sc02Vo != null)
+                art.voSc02Instruction = sc02Vo;
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;
@@ -1110,37 +1145,651 @@ namespace ChemicalSafety.Editor
             return callouts;
         }
 
-        private static void BuildSc02Zone(Transform env)
+        private static Texture2D RoomTex(string n) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Env/" + n + ".png");
+
+        private static Material TiledMat(string name, string tex, Vector2 tiling, float smooth, float metal, Color tint)
         {
-            var zone = new GameObject("Zone_SC02_Storage").transform;
-            zone.SetParent(env);
+            var m = Mat(name, tint, smooth, metal, RoomTex(tex));
+            m.SetTextureScale("_BaseMap", tiling);
+            return m;
+        }
 
-            var cabinets = new[]
+        // Chemical storage room modelled on Scene 02 BG.jpg (viewed from Spawn_SC02, facing -z: viewer-left is +x).
+        // Left wall: entry door, vent, extinguisher, conduit. Right wall: fans, hand sign, eye-wash.
+        // Back wall: glass cabinet and the compatibility chart. Sits 40 m to the side and is hidden until MCQ 1 ends.
+        private static CompartmentDoor[] BuildSc02Room(Transform env, PresentableArt art, out ChartViewer chart,
+            out ContainerInspect inspect)
+        {
+            inspect = null;
+            const float ox = 40f;
+            const float xL = ox + 4f;   // inner face of the viewer-left wall
+            const float xR = ox - 4f;   // inner face of the viewer-right wall
+            const float zBack = -3.29f; // inner face of the back wall
+            var room = new GameObject("Room").transform;
+            room.SetParent(env, false);
+
+            var floorMat = TiledMat("RoomFloor2", "SC02_Floor", new Vector2(4.1f, 3.4f), 0.4f, 0.05f, Color.white);
+            var wallBack = TiledMat("RoomWallBack", "SC02_Wall", new Vector2(4.1f, 1.75f), 0.15f, 0f, Color.white);
+            var wallSide = TiledMat("RoomWallSide", "SC02_Wall", new Vector2(3.4f, 1.75f), 0.15f, 0f, Color.white);
+            var plinthMat = TiledMat("RoomPlinth", "SC02_Floor", new Vector2(4f, 0.6f), 0.3f, 0.05f,
+                new Color(1.25f, 1.25f, 1.25f));
+            var ceilMat = Mat("RoomCeiling", new Color(0.36f, 0.38f, 0.41f), 0.2f, 0.2f);
+            var tube = Mat("RoomTube", Color.white, 0f, 0f, null, new Color(1.6f, 1.65f, 1.7f), true);
+            var housing = Mat("RoomTubeHousing", new Color(0.55f, 0.57f, 0.6f), 0.4f, 0.6f);
+            var frameMat = Mat("DoorFrame", new Color(0.55f, 0.58f, 0.62f), 0.45f, 0.8f);
+            var conduit = Mat("RoomConduit", new Color(0.5f, 0.53f, 0.57f), 0.4f, 0.7f);
+            var glass = Mat("CabinetGlass", new Color(0.72f, 0.88f, 1f, 0.28f), 0.92f, 0.04f);
+            glass.SetFloat("_Surface", 1f);
+            glass.SetOverrideTag("RenderType", "Transparent");
+            glass.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+            glass.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+            glass.SetInt("_ZWrite", 0);
+            glass.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            glass.renderQueue = (int)RenderQueue.Transparent;
+            var puffMat = MatAlpha("SmokePuff", null, new Color(0.82f, 0.84f, 0.86f, 0.4f), false);
+            var solid = LayerMask.NameToLayer("SolidProps");
+
+            void Shell(string name, Vector3 pos, Vector3 size, Material mat)
             {
-                ("OXIDIZERS", new Color(0.95f, 0.55f, 0.1f), -1.6f),
-                ("FLAMMABLE\nKEEP FIRE AWAY", new Color(0.97f, 0.8f, 0.08f), 0f),
-                ("ACIDS /\nCORROSIVES", new Color(0.16f, 0.36f, 0.75f), 1.6f)
-            };
-
-            foreach (var (title, color, x) in cabinets)
-            {
-                var name = title.Split('\n')[0].Replace(" /", "");
-                Box("Cabinet_" + name, zone, new Vector3(x, 0.95f, -12.8f), new Vector3(1.25f, 1.9f, 0.65f),
-                    Mat("Cabinet_" + name, color, 0.5f, 0.2f));
-                Box("Door_Seam", zone, new Vector3(x, 0.95f, -12.47f), new Vector3(0.015f, 1.7f, 0.01f),
-                    Mat("CabinetSeam", new Color(0.1f, 0.1f, 0.1f)), false);
-
-                var canvas = PresentableUi.WorldCanvas("Sign", zone, new Vector2(600f, 300f), 0.0017f, false, 5);
-                canvas.transform.position = new Vector3(x, 1.45f, -12.46f);
-                canvas.transform.rotation = Quaternion.LookRotation(Vector3.back);
-                var bg = PresentableUi.Rect("Bg", canvas.transform, Vector2.zero, Vector2.one);
-                PresentableUi.Img(bg, null, new Color(1f, 1f, 1f, 0.95f));
-                PresentableUi.Text("Title", canvas.transform, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.95f),
-                    title, 64f, name == "FLAMMABLE" ? new Color(0.8f, 0.05f, 0.05f) : new Color(0.1f, 0.1f, 0.1f),
-                    bold: true, font: TMP_Settings.defaultFontAsset);
+                var go = Box(name, room, pos, size, mat);
+                if (solid >= 0)
+                    go.layer = solid;
             }
 
-            PlaceModel("3D/Drum", "Sc02_SolventDrum", zone, new Vector3(-2.9f, 0f, -12.4f), 20f);
+            var floor = Box("Floor", room, new Vector3(ox, -0.05f, 0f), new Vector3(8.2f, 0.1f, 6.8f), floorMat);
+            floor.AddComponent<TeleportationArea>();
+            Shell("Wall_Back", new Vector3(ox, 1.7f, -3.35f), new Vector3(8.2f, 3.5f, 0.12f), wallBack);
+            Shell("Wall_Front", new Vector3(ox, 1.7f, 3.35f), new Vector3(8.2f, 3.5f, 0.12f), wallBack);
+            Shell("Wall_Left", new Vector3(xL + 0.06f, 1.7f, 0f), new Vector3(0.12f, 3.5f, 6.8f), wallSide);
+            Shell("Wall_Right", new Vector3(xR - 0.06f, 1.7f, 0f), new Vector3(0.12f, 3.5f, 6.8f), wallSide);
+            Shell("Ceiling", new Vector3(ox, 3.46f, 0f), new Vector3(8.2f, 0.08f, 6.8f), ceilMat);
+            Shell("Plinth", new Vector3(ox, 0.08f, -2.7f), new Vector3(8f, 0.16f, 1.1f), plinthMat);
+
+            // two fluorescent fixtures across the back half, conduit run along the back wall
+            for (var i = 0; i < 2; i++)
+            {
+                var tx = ox + (i == 0 ? 1.7f : -1.7f);
+                Box("TubeHousing", room, new Vector3(tx, 3.4f, -0.6f), new Vector3(2.5f, 0.05f, 0.24f), housing, false);
+                Box("Tube", room, new Vector3(tx, 3.37f, -0.6f), new Vector3(2.3f, 0.03f, 0.14f), tube, false);
+            }
+
+            var run = Prim("ConduitRun", PrimitiveType.Cylinder, room, new Vector3(ox, 3.12f, zBack + 0.05f),
+                new Vector3(0.05f, 3.9f, 0.05f), conduit);
+            run.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+            var lamp = new GameObject("RoomLight");
+            lamp.transform.SetParent(room, false);
+            lamp.transform.position = new Vector3(ox, 3.0f, 0.2f);
+            var point = lamp.AddComponent<Light>();
+            point.type = LightType.Point;
+            point.color = new Color(0.92f, 0.96f, 1f);
+            point.intensity = 2.6f;
+            point.range = 11f;
+            point.shadows = LightShadows.None;
+
+            BuildLeftWall(room, xL, conduit, frameMat);
+            BuildRightWall(room, xR);
+
+            GameObject containers = null;
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc02Containers.glb") != null)
+            {
+                // long axis across the view like BG.jpg; labels (+x in the glb) turn to face the player (+z)
+                containers = PlaceModel("3D/Sc02Containers", "Containers", room, new Vector3(ox + 0.2f, 0f, 0f), -90f);
+            }
+
+            if (containers != null)
+            {
+                foreach (var r in containers.GetComponentsInChildren<Renderer>())
+                {
+                    r.shadowCastingMode = ShadowCastingMode.Off;
+                    r.receiveShadows = false;
+                }
+            }
+
+            // cabinet contents are cloned from the pallet meshes, so build them before the pallet nodes are renamed
+            var doors = BuildGlassCabinet(room, art, glass, frameMat, puffMat, new Vector3(ox + 0.6f, 0f, -1.55f),
+                containers);
+            inspect = BuildContainerInspect(room, art, containers);
+
+            // wall chart right of the cabinet (BG.jpg). Unscaled holder so the large ChartViewer canvas is not distorted.
+            var chartGo = new GameObject("WallChart");
+            chartGo.transform.SetParent(room, false);
+            chartGo.transform.position = new Vector3(ox - 2.5f, 1.8f, zBack + 0.03f);
+            chartGo.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // local +z points at the wall
+            Prim("ChartBoard", PrimitiveType.Cube, chartGo.transform, new Vector3(0f, 0f, 0.02f),
+                new Vector3(1.78f, 1.08f, 0.03f), Mat("ChartBoard", new Color(0.03f, 0.1f, 0.16f), 0.5f, 0.3f));
+            var chartMat = MatAlpha("ChartWallA", art.chartSc02 != null ? art.chartSc02.texture : null, Color.white, false);
+            QuadObj("ChartFace", chartGo.transform, Vector3.zero, Vector3.zero, new Vector2(1.7f, 0.93f), chartMat);
+            var chartCol = chartGo.AddComponent<BoxCollider>();
+            chartCol.isTrigger = true;
+            chartCol.size = new Vector3(1.7f, 1f, 0.1f);
+            chartGo.AddComponent<PokeTarget>();
+            chart = chartGo.AddComponent<ChartViewer>();
+            SetRef(chart, "art", art);
+            SetRef(chart, "chart", art.chartSc02);
+            if (inspect != null)
+                SetRef(inspect, "chart", chart);
+            return doors;
+        }
+
+        private static void BuildLeftWall(Transform room, float xL, Material conduit, Material frameMat)
+        {
+            var doorMat = Mat("EntryDoor2", new Color(0.2f, 0.23f, 0.26f), 0.4f, 0.55f);
+            var doorFrame = Mat("EntryDoorFrame", new Color(0.3f, 0.33f, 0.37f), 0.4f, 0.6f);
+            var kick = Mat("EntryDoorKick", new Color(0.14f, 0.16f, 0.18f), 0.5f, 0.6f);
+            var steel = Mat("TrolleySteel", new Color(0.6f, 0.62f, 0.65f), 0.5f, 0.8f);
+            const float dz = 0.7f;
+            Box("EntryDoorFrame", room, new Vector3(xL - 0.04f, 1.1f, dz), new Vector3(0.08f, 2.26f, 1.3f), doorFrame, false);
+            Box("EntryDoor", room, new Vector3(xL - 0.09f, 1.08f, dz), new Vector3(0.05f, 2.14f, 1.1f), doorMat, false);
+            Box("EntryDoorHandle", room, new Vector3(xL - 0.15f, 1.05f, dz - 0.42f), new Vector3(0.05f, 0.04f, 0.16f), steel, false);
+            Box("EntryDoorPlate", room, new Vector3(xL - 0.13f, 1.18f, dz - 0.42f), new Vector3(0.02f, 0.2f, 0.06f), steel, false);
+            Box("EntryDoorKick", room, new Vector3(xL - 0.12f, 0.2f, dz), new Vector3(0.03f, 0.3f, 1.0f), kick, false);
+
+            var vent = QuadObj("WallVent", room, new Vector3(xL - 0.02f, 0.62f, -2.0f), Vector3.zero,
+                new Vector2(0.7f, 0.7f), Mat("RoomVent", Color.white, 0.3f, 0.3f, RoomTex("SC02_Louvre")));
+            vent.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // visible side faces -x
+
+            BuildExtinguisher(room, new Vector3(xL - 0.03f, 0f, -1.0f), -90f);
+            Box("JunctionBox", room, new Vector3(xL - 0.04f, 1.45f, -2.75f), new Vector3(0.08f, 0.2f, 0.16f), frameMat, false);
+            Prim("ConduitDrop", PrimitiveType.Cylinder, room, new Vector3(xL - 0.05f, 1.75f, -2.75f),
+                new Vector3(0.04f, 1.6f, 0.04f), conduit);
+            var run = Prim("ConduitSide", PrimitiveType.Cylinder, room, new Vector3(xL - 0.05f, 3.12f, -0.2f),
+                new Vector3(0.05f, 3.1f, 0.05f), conduit);
+            run.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        }
+
+        private static void BuildRightWall(Transform room, float xR)
+        {
+            // (z, y, size, spinning fan?)
+            var layout = new[]
+            {
+                new Vector4(-1.55f, 2.45f, 0.95f, 1f),
+                new Vector4(-0.2f, 2.7f, 1.05f, 1f),
+                new Vector4(0.35f, 1.15f, 0.95f, 0f),
+            };
+            foreach (var l in layout)
+            {
+                if (l.w > 0.5f)
+                {
+                    BuildWallFan(room, new Vector3(xR, l.y, l.x), l.z);
+                    continue;
+                }
+
+                var vent = QuadObj("WallLouvre", room, new Vector3(xR + 0.02f, l.y, l.x), Vector3.zero,
+                    new Vector2(l.z, l.z), Mat("RoomVent", Color.white, 0.3f, 0.3f, RoomTex("SC02_Louvre")));
+                vent.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // visible side faces +x
+            }
+
+            var sign = QuadObj("HandSign", room, new Vector3(xR + 0.02f, 1.95f, -2.7f), Vector3.zero,
+                new Vector2(0.4f, 0.4f), Mat("HandSign", Color.white, 0.2f, 0f, RoomTex("SC02_HandSign"), null, false, true));
+            sign.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            BuildEyeWash(room, new Vector3(xR, 0f, -2.05f));
+        }
+
+        // Square steel frame with a guard over a spinning rotor, mounted on the viewer-right wall (looks toward +x).
+        private static void BuildWallFan(Transform room, Vector3 pos, float size)
+        {
+            var blade = Mat("WallFanBlade", new Color(0.3f, 0.33f, 0.37f), 0.3f, 0.7f);
+            var hubMat = Mat("FanHub", new Color(0.16f, 0.17f, 0.19f), 0.4f, 0.8f);
+            var grille = Mat("FanGrille", Color.white, 0.35f, 0.5f, RoomTex("SC02_FanGrille"), null, false, true);
+            var back = Mat("FanBack", new Color(0.04f, 0.045f, 0.05f), 0.1f, 0f);
+
+            var holder = new GameObject("WallFan").transform;
+            holder.SetParent(room, false);
+            holder.position = pos;
+            holder.rotation = Quaternion.Euler(0f, 90f, 0f); // local +z points into the room (+x)
+
+            Prim("Backing", PrimitiveType.Cube, holder, new Vector3(0f, 0f, 0.004f),
+                new Vector3(size * 0.96f, size * 0.96f, 0.01f), back);
+            var face = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            face.name = "Grille";
+            face.transform.SetParent(holder, false);
+            face.transform.localPosition = new Vector3(0f, 0f, 0.03f);
+            face.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            face.transform.localScale = new Vector3(size, size, 1f);
+            Object.DestroyImmediate(face.GetComponent<Collider>());
+            var fr = face.GetComponent<MeshRenderer>();
+            fr.sharedMaterial = grille;
+            fr.shadowCastingMode = ShadowCastingMode.Off;
+            fr.receiveShadows = false;
+
+            var rotorBase = new GameObject("RotorBase").transform;
+            rotorBase.SetParent(holder, false);
+            rotorBase.localPosition = new Vector3(0f, 0f, 0.016f);
+            rotorBase.localRotation = Quaternion.Euler(90f, 0f, 0f); // rotor plane = wall plane
+            var rotor = new GameObject("Rotor").transform;
+            rotor.SetParent(rotorBase, false);
+            Prim("Hub", PrimitiveType.Cylinder, rotor, Vector3.zero, new Vector3(0.11f * size, 0.02f, 0.11f * size), hubMat);
+            for (var k = 0; k < 5; k++)
+            {
+                var pivot = new GameObject("Blade").transform;
+                pivot.SetParent(rotor, false);
+                pivot.localRotation = Quaternion.Euler(0f, k * 72f, 0f);
+                var p = Prim("Paddle", PrimitiveType.Cube, pivot, new Vector3(0.19f * size, 0f, 0f),
+                    new Vector3(0.27f * size, 0.006f, 0.12f * size), blade);
+                p.transform.localRotation = Quaternion.Euler(14f, 0f, 0f);
+            }
+
+            var spin = rotor.gameObject.AddComponent<CeilingFanSpin>();
+            var so = new SerializedObject(spin);
+            so.FindProperty("degreesPerSecond").floatValue = 300f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // Wall-hung eye-wash (BG.jpg): round bowl on a pipe stub, two yellow nozzle caps, green push plate and sign.
+        private static void BuildEyeWash(Transform room, Vector3 pos)
+        {
+            var steel = Mat("EyeSteel", new Color(0.75f, 0.78f, 0.8f), 0.6f, 0.85f);
+            var bowl = Mat("EyeBowl", new Color(0.82f, 0.85f, 0.88f), 0.55f, 0.6f);
+            var inner = Mat("EyeBowlInner", new Color(0.35f, 0.38f, 0.42f), 0.4f, 0.4f);
+            var yellow = Mat("EyeYellow", new Color(0.98f, 0.82f, 0.1f), 0.5f, 0f);
+            var green = Mat("EyeGreen", new Color(0.1f, 0.62f, 0.3f), 0.5f, 0f);
+
+            var holder = new GameObject("EyeWash").transform;
+            holder.SetParent(room, false);
+            holder.position = pos;
+            holder.rotation = Quaternion.Euler(0f, 90f, 0f); // local +z points into the room
+            Prim("Stub", PrimitiveType.Cylinder, holder, new Vector3(0f, 0.92f, 0.16f), new Vector3(0.05f, 0.16f, 0.05f), steel)
+                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Prim("Plate", PrimitiveType.Cylinder, holder, new Vector3(0f, 0.92f, 0.01f), new Vector3(0.14f, 0.01f, 0.14f), steel)
+                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Prim("BowlBody", PrimitiveType.Cylinder, holder, new Vector3(0f, 0.97f, 0.34f), new Vector3(0.42f, 0.06f, 0.42f), bowl);
+            Prim("BowlBase", PrimitiveType.Cylinder, holder, new Vector3(0f, 0.88f, 0.34f), new Vector3(0.2f, 0.03f, 0.2f), bowl);
+            Prim("BowlInner", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.032f, 0.34f), new Vector3(0.36f, 0.004f, 0.36f), inner);
+            Prim("BowlRim", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.035f, 0.34f), new Vector3(0.44f, 0.006f, 0.44f), steel);
+            Prim("Riser", PrimitiveType.Cylinder, holder, new Vector3(0f, 1.08f, 0.34f), new Vector3(0.03f, 0.05f, 0.03f), steel);
+            for (var s = -1; s <= 1; s += 2)
+            {
+                Prim("Nozzle", PrimitiveType.Cylinder, holder, new Vector3(s * 0.09f, 1.14f, 0.34f), new Vector3(0.05f, 0.035f, 0.05f), yellow);
+                Prim("NozzleArm", PrimitiveType.Cylinder, holder, new Vector3(s * 0.045f, 1.1f, 0.34f), new Vector3(0.02f, 0.05f, 0.02f), steel)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, s * -60f);
+            }
+
+            Prim("PushPlate", PrimitiveType.Cube, holder, new Vector3(0.2f, 0.9f, 0.5f), new Vector3(0.02f, 0.02f, 0.2f), green);
+            Prim("PushArm", PrimitiveType.Cylinder, holder, new Vector3(0.1f, 0.9f, 0.42f), new Vector3(0.012f, 0.1f, 0.012f), steel)
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+            var sign = PresentableUi.WorldCanvas("EyeSign", room, new Vector2(320f, 240f), 0.0011f, false, 4);
+            sign.transform.position = pos + new Vector3(0.03f, 1.5f, 0f);
+            sign.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            PresentableUi.Img(PresentableUi.Rect("Bg", sign.transform, Vector2.zero, Vector2.one), null, new Color(0.08f, 0.55f, 0.3f));
+            PresentableUi.Text("Label", sign.transform, new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.9f), "EYE\nWASH",
+                70f, Color.white, bold: true, font: TMP_Settings.defaultFontAsset);
+        }
+
+        private struct ContainerSpec
+        {
+            public string Node;
+            public string Name;
+            public string Title;
+            public string Hazard;
+            public string Storage;
+        }
+
+        // Pallet products -> mesh node in Sc02Containers.glb (nodes are unnamed; mapped by the label on each mesh):
+        // Object_2 drum, Tank.001 white oxidizer can, Tank.002 black acid bottle, Tank.003 green cleaner canister,
+        // Tank.004 red reactive jar, Retopo_Cube.006 spray bottle.
+        private static readonly ContainerSpec[] ContainerSpecs =
+        {
+            new ContainerSpec { Node = "Object_2", Name = "Flammable", Title = "FLAMMABLE DRUM",
+                Hazard = "Flammable liquid (isopropanol). Ignites easily; keep from heat and sparks.",
+                Storage = "Flammables compartment" },
+            new ContainerSpec { Node = "SM_WaterTank_M_Tank_0.001", Name = "Oxidizer", Title = "OXIDIZER PROPERTIES",
+                Hazard = "Oxidizer (hydrogen peroxide). Feeds fires and reacts with fuels.",
+                Storage = "Oxidizers compartment, away from flammables" },
+            new ContainerSpec { Node = "SM_WaterTank_M_Tank_0.002", Name = "Acid", Title = "ACID BOTTLE",
+                Hazard = "Corrosive acid (sulfuric). Burns skin, eyes and metal.", Storage = "Acids compartment" },
+            new ContainerSpec { Node = "SM_WaterTank_M_Tank_0.003", Name = "Canister", Title = "CLEANER CANISTER",
+                Hazard = "General cleaner (surface sanitizer). Causes serious eye irritation.",
+                Storage = "General storage" },
+            new ContainerSpec { Node = "SM_WaterTank_M_Tank_0.004", Name = "Reactive", Title = "REACTIVE JAR",
+                Hazard = "Reactive metal (magnesium powder). Keep dry and away from water and acids.",
+                Storage = "General storage, dry shelf" },
+            new ContainerSpec { Node = "Retopo_Cube.006_Material.001_0", Name = "Spray", Title = "GENERAL CLEANER SPRAY",
+                Hazard = "Surface sanitizer. Irritant; avoid eyes and do not mix with other cleaners.",
+                Storage = "General storage" },
+        };
+
+        private static ContainerInspect BuildContainerInspect(Transform room, PresentableArt art, GameObject containers)
+        {
+            if (containers == null)
+                return null;
+
+            // a second, stray copy of the spray bottle hangs off the pallet edge
+            var stray = FindDeep(containers.transform, "Cube.006_Material.001_0");
+            if (stray != null)
+                stray.gameObject.SetActive(false);
+
+            var go = Child("ContainerInspect", room);
+            var inspect = go.AddComponent<ContainerInspect>();
+            SetRef(inspect, "art", art);
+            var so = new SerializedObject(inspect);
+            var arr = so.FindProperty("entries");
+            arr.arraySize = ContainerSpecs.Length;
+            for (var i = 0; i < ContainerSpecs.Length; i++)
+            {
+                var spec = ContainerSpecs[i];
+                var node = FindDeep(containers.transform, spec.Node);
+                if (node == null)
+                {
+                    Debug.LogWarning("[Presentable] Container node missing: " + spec.Node);
+                    continue;
+                }
+
+                node.name = "Container_" + spec.Name;
+                var mf = node.GetComponent<MeshFilter>();
+                var col = node.gameObject.AddComponent<BoxCollider>();
+                col.isTrigger = true;
+                if (mf != null && mf.sharedMesh != null)
+                {
+                    col.center = mf.sharedMesh.bounds.center;
+                    col.size = mf.sharedMesh.bounds.size;
+                }
+
+                node.gameObject.AddComponent<PokeTarget>();
+                var e = arr.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("model").objectReferenceValue = node;
+                e.FindPropertyRelative("title").stringValue = spec.Title;
+                e.FindPropertyRelative("hazard").stringValue = spec.Hazard;
+                e.FindPropertyRelative("storage").stringValue = spec.Storage;
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return inspect;
+        }
+
+        private static CompartmentDoor[] BuildGlassCabinet(Transform room, PresentableArt art, Material glass,
+            Material frameMat, Material puffMat, Vector3 frontTarget, GameObject containers)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc02Compartment.glb");
+            if (asset == null)
+            {
+                Debug.LogWarning("[Presentable] Sc02Compartment.glb missing");
+                return new CompartmentDoor[0];
+            }
+
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            model.name = "Compartment";
+            model.transform.SetParent(room, false);
+            model.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            model.transform.localScale = Vector3.one * 0.48f;
+            var b = WorldBounds(model);
+            model.transform.position += new Vector3(frontTarget.x, 0f, frontTarget.z) - new Vector3(b.center.x, b.min.y, b.max.z);
+
+            var renderers = model.GetComponentsInChildren<Renderer>();
+            Renderer body = null;
+            var best = 0f;
+            foreach (var r in renderers)
+            {
+                var v = r.bounds.size.x * r.bounds.size.y * r.bounds.size.z;
+                if (v > best)
+                {
+                    best = v;
+                    body = r;
+                }
+            }
+
+            var doorMeshes = new List<Renderer>();
+            var icons = new List<Renderer>();
+            foreach (var r in renderers)
+            {
+                if (r == body)
+                    continue;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                var s = r.bounds.size;
+                var tall = s.y > 1.1f && Mathf.Min(s.x, s.z) < 0.35f;
+                if (tall)
+                    doorMeshes.Add(r);
+                else
+                    icons.Add(r);
+            }
+
+            var spreadX = Spread(doorMeshes, true);
+            var byX = spreadX >= Spread(doorMeshes, false);
+            doorMeshes.Sort((a, c) => (byX ? c.bounds.center.x : c.bounds.center.z)
+                .CompareTo(byX ? a.bounds.center.x : a.bounds.center.z));
+
+            var decalNames = new[] { "Flammables", "Oxidizers", "Acids", "General" };
+            var doors = new List<CompartmentDoor>();
+            for (var i = 0; i < doorMeshes.Count && i < 4; i++)
+            {
+                var mesh = doorMeshes[i];
+                var db = mesh.bounds;
+                var wideOnX = db.size.x >= db.size.z;
+                var hingePos = wideOnX
+                    ? new Vector3(db.min.x, db.center.y, db.center.z)
+                    : new Vector3(db.center.x, db.center.y, db.min.z);
+                var free = wideOnX
+                    ? new Vector3(db.max.x, db.center.y, db.center.z)
+                    : new Vector3(db.center.x, db.center.y, db.max.z);
+                var rel = free - hingePos;
+                var angle = (Quaternion.Euler(0f, 105f, 0f) * rel).z >= (Quaternion.Euler(0f, -105f, 0f) * rel).z
+                    ? 105f : -105f;
+
+                var hinge = new GameObject("Door_" + (i + 1)).transform;
+                hinge.SetParent(model.transform, true);
+                hinge.position = hingePos;
+                mesh.transform.SetParent(hinge, true);
+                mesh.enabled = false;
+
+                var pane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pane.name = "Glass";
+                pane.transform.SetParent(hinge, true);
+                pane.transform.position = db.center;
+                pane.transform.rotation = Quaternion.identity;
+                pane.transform.localScale = wideOnX
+                    ? new Vector3(db.size.x * 0.78f, db.size.y * 0.9f, 0.02f)
+                    : new Vector3(0.02f, db.size.y * 0.9f, db.size.z * 0.78f);
+                Object.DestroyImmediate(pane.GetComponent<Collider>());
+                var pr = pane.GetComponent<MeshRenderer>();
+                pr.sharedMaterial = glass;
+                pr.shadowCastingMode = ShadowCastingMode.Off;
+
+                AddDoorFrame(hinge, db, frameMat);
+                for (var p = 0; p < 3; p++)
+                {
+                    var puff = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    puff.name = "Puff" + p;
+                    puff.transform.SetParent(hinge, false);
+                    puff.transform.localPosition = hinge.InverseTransformPoint(db.center) + new Vector3(0f, 0.15f * p, 0.08f);
+                    puff.transform.localScale = Vector3.one * 0.2f;
+                    Object.DestroyImmediate(puff.GetComponent<Collider>());
+                    puff.GetComponent<MeshRenderer>().sharedMaterial = puffMat;
+                    puff.SetActive(false);
+                }
+
+                Renderer icon = null;
+                var nearest = 999f;
+                foreach (var candidate in icons)
+                {
+                    var d = (candidate.bounds.center - db.center).sqrMagnitude;
+                    if (d < nearest)
+                    {
+                        nearest = d;
+                        icon = candidate;
+                    }
+                }
+
+                if (icon != null)
+                {
+                    icons.Remove(icon);
+                    icon.enabled = false;
+                }
+
+                // big hazard icon + label printed on the glass (BG.jpg), rides along with the door
+                var decal = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                decal.name = "Decal";
+                decal.transform.SetParent(hinge, true);
+                decal.transform.position = new Vector3(db.center.x, db.center.y + db.size.y * 0.03f, db.center.z + 0.03f);
+                decal.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // visible from +z
+                decal.transform.localScale = new Vector3(db.size.x * 0.72f, db.size.x * 0.72f * 2f, 1f);
+                Object.DestroyImmediate(decal.GetComponent<Collider>());
+                var dr = decal.GetComponent<MeshRenderer>();
+                dr.sharedMaterial = MatAlpha("Decal_" + decalNames[i], RoomTex("SC02_Decal_" + decalNames[i]), Color.white, false);
+                dr.shadowCastingMode = ShadowCastingMode.Off;
+                dr.receiveShadows = false;
+
+                var hit = new GameObject("Hit").transform;
+                hit.SetParent(hinge, true);
+                hit.SetPositionAndRotation(db.center, Quaternion.identity);
+                var col = hit.gameObject.AddComponent<BoxCollider>();
+                col.isTrigger = true;
+                col.size = db.size + new Vector3(0.08f, 0.05f, 0.08f);
+                hinge.gameObject.AddComponent<PokeTarget>();
+                var door = hinge.gameObject.AddComponent<CompartmentDoor>();
+                var so = new SerializedObject(door);
+                so.FindProperty("openAngle").floatValue = angle;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                doors.Add(door);
+            }
+
+            if (body != null)
+                body.enabled = false; // closed metal box; the glass doors show the compartments instead
+
+            if (doorMeshes.Count > 0)
+            {
+                var shell = doorMeshes[0].bounds;
+                for (var i = 1; i < doorMeshes.Count; i++)
+                    shell.Encapsulate(doorMeshes[i].bounds);
+                var cavity = Mat("CabinetCavity", new Color(0.16f, 0.18f, 0.2f), 0.2f, 0.3f);
+                var backZ = shell.min.z - 0.55f;
+                var midZ = (shell.min.z + backZ) * 0.5f;
+                Box("CabinetBack", room, new Vector3(shell.center.x, shell.center.y, backZ),
+                    new Vector3(shell.size.x + 0.16f, shell.size.y + 0.12f, 0.05f), cavity, false);
+                Box("CabinetTop", room, new Vector3(shell.center.x, shell.max.y + 0.03f, (shell.center.z + backZ) * 0.5f),
+                    new Vector3(shell.size.x + 0.16f, 0.05f, shell.center.z - backZ), frameMat, false);
+                Box("Shelf", room, new Vector3(shell.center.x, shell.center.y, midZ),
+                    new Vector3(shell.size.x, 0.03f, 0.4f), frameMat, false);
+
+                // partitions so each door has its own compartment
+                var edges = new List<float> { shell.max.x + 0.03f, shell.min.x - 0.03f };
+                for (var i = 0; i + 1 < doorMeshes.Count; i++)
+                    edges.Add((doorMeshes[i].bounds.center.x + doorMeshes[i + 1].bounds.center.x) * 0.5f);
+                foreach (var ex in edges)
+                    Box("Partition", room, new Vector3(ex, shell.center.y, midZ),
+                        new Vector3(0.03f, shell.size.y, shell.min.z - backZ), frameMat, false);
+
+                if (containers != null)
+                {
+                    var stockZ = backZ + 0.3f;
+                    var floorY = 0.16f;
+                    var shelfY = shell.center.y + 0.015f;
+                    for (var i = 0; i < doorMeshes.Count && i < 4; i++)
+                        StockCompartment(room, containers.transform, i, doorMeshes[i].bounds.center.x, stockZ, floorY, shelfY);
+                }
+            }
+
+            return doors.ToArray();
+        }
+
+        private static Transform FindNode(Transform root, string name) => FindDeep(root, name);
+
+        // Clones a pallet product (mesh + materials) into a compartment, bottom-centre at target.
+        private static void StockItem(Transform room, Transform src, Vector3 target, float yaw, float mul)
+        {
+            if (src == null)
+                return;
+            var mf = src.GetComponent<MeshFilter>();
+            var mr = src.GetComponent<MeshRenderer>();
+            if (mf == null || mr == null)
+                return;
+            var b = mr.bounds;
+            var off = new Vector3(b.center.x, b.min.y, b.center.z) - src.position;
+            var q = Quaternion.Euler(0f, yaw, 0f);
+            var go = MeshObj("Stock_" + src.name, room, mf.sharedMesh, target - q * off * mul, src.lossyScale * mul, null);
+            go.transform.rotation = q * src.rotation;
+            go.GetComponent<MeshRenderer>().sharedMaterials = mr.sharedMaterials;
+        }
+
+        // 0 Flammables: drums. 1 Oxidizers: white cans. 2 Acids: black bottles. 3 General: cleaners and jars.
+        private static void StockCompartment(Transform room, Transform pallet, int index, float cx, float z, float floorY,
+            float shelfY)
+        {
+            var drum = FindNode(pallet, "Object_2");
+            var oxidizer = FindNode(pallet, "SM_WaterTank_M_Tank_0.001");
+            var acid = FindNode(pallet, "SM_WaterTank_M_Tank_0.002");
+            var cleaner = FindNode(pallet, "SM_WaterTank_M_Tank_0.003");
+            var jar = FindNode(pallet, "SM_WaterTank_M_Tank_0.004");
+            var spray = FindNode(pallet, "Retopo_Cube.006_Material.001_0");
+            Vector3 P(float dx, float y) => new Vector3(cx + dx, y, z);
+            switch (index)
+            {
+                case 0:
+                    StockItem(room, drum, P(-0.2f, floorY), 0f, 0.62f);
+                    StockItem(room, drum, P(0.2f, floorY), 25f, 0.62f);
+                    break;
+                case 1:
+                    StockItem(room, oxidizer, P(-0.2f, floorY), 0f, 0.8f);
+                    StockItem(room, oxidizer, P(0.2f, floorY), -8f, 0.8f);
+                    StockItem(room, oxidizer, P(0f, shelfY), 6f, 0.75f);
+                    break;
+                case 2:
+                    StockItem(room, acid, P(-0.2f, floorY), 0f, 1f);
+                    StockItem(room, acid, P(0.2f, floorY), 12f, 1f);
+                    StockItem(room, acid, P(-0.18f, shelfY), -6f, 0.9f);
+                    StockItem(room, acid, P(0.18f, shelfY), 10f, 0.9f);
+                    break;
+                default:
+                    StockItem(room, cleaner, P(-0.17f, floorY), 0f, 1f);
+                    StockItem(room, spray, P(0.1f, floorY), 10f, 1f);
+                    StockItem(room, spray, P(0.28f, floorY), -10f, 1f);
+                    StockItem(room, jar, P(-0.18f, shelfY), 0f, 1f);
+                    StockItem(room, jar, P(0.18f, shelfY), 20f, 1f);
+                    break;
+            }
+        }
+
+        private static float Spread(List<Renderer> list, bool axisX)
+        {
+            if (list.Count == 0)
+                return 0f;
+            var min = 999f;
+            var max = -999f;
+            foreach (var r in list)
+            {
+                var v = axisX ? r.bounds.center.x : r.bounds.center.z;
+                min = Mathf.Min(min, v);
+                max = Mathf.Max(max, v);
+            }
+
+            return max - min;
+        }
+
+        private static void AddDoorFrame(Transform hinge, Bounds db, Material mat)
+        {
+            void Bar(string name, Vector3 pos, Vector3 size)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.name = name;
+                go.transform.SetParent(hinge, true);
+                go.transform.position = pos;
+                go.transform.localScale = size;
+                Object.DestroyImmediate(go.GetComponent<Collider>());
+                var r = go.GetComponent<MeshRenderer>();
+                r.sharedMaterial = mat;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            var y = db.size.y;
+            var x = Mathf.Max(db.size.x, 0.04f);
+            var z = Mathf.Max(db.size.z, 0.04f);
+            var wideOnX = db.size.x >= db.size.z;
+            var t = 0.035f;
+            if (wideOnX)
+            {
+                Bar("Frame", db.center + Vector3.up * (y * 0.5f), new Vector3(x, t, t));
+                Bar("Frame", db.center - Vector3.up * (y * 0.5f), new Vector3(x, t, t));
+                Bar("Frame", db.center + Vector3.right * (x * 0.5f), new Vector3(t, y, t));
+                Bar("Frame", db.center - Vector3.right * (x * 0.5f), new Vector3(t, y, t));
+            }
+            else
+            {
+                Bar("Frame", db.center + Vector3.up * (y * 0.5f), new Vector3(t, t, z));
+                Bar("Frame", db.center - Vector3.up * (y * 0.5f), new Vector3(t, t, z));
+                Bar("Frame", db.center + Vector3.forward * (z * 0.5f), new Vector3(t, y, t));
+                Bar("Frame", db.center - Vector3.forward * (z * 0.5f), new Vector3(t, y, t));
+            }
         }
 
         private static void BuildSigns(Transform env, PresentableArt art)
@@ -1237,6 +1886,7 @@ namespace ChemicalSafety.Editor
                     r.receiveShadows = false;
                 }
 
+                ColorCarrier(model);
                 var nb = WorldBounds(model);
                 AddSolidBox(root, "CarrierSolid", nb.center, new Vector3(nb.size.x, nb.size.y, nb.size.z));
             }
@@ -1255,7 +1905,7 @@ namespace ChemicalSafety.Editor
             PresentableUi.Img(PresentableUi.Rect("Fill", card.transform, Vector2.zero, Vector2.one, new Vector2(6f, 6f),
                 new Vector2(-6f, -6f)), art.roundedSolid, new Color(0.02f, 0.09f, 0.17f, 0.94f));
             var en = PresentableUi.Text("English", card.transform, new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.92f),
-                "Touch the drum carrier to move the drums and continue", 42f, Color.white, bold: true, font: art.englishFont);
+                "Load the correct drum onto the trolley for transfer", 42f, Color.white, bold: true, font: art.englishFont);
             en.enableAutoSizing = true;
             en.fontSizeMin = 28f;
             en.fontSizeMax = 42f;
@@ -1270,21 +1920,136 @@ namespace ChemicalSafety.Editor
             // floating Touch button in front of the handle
             var btnGo = new GameObject("CarrierTouchButton");
             btnGo.transform.SetParent(root, false);
-            btnGo.transform.position = floorPos + new Vector3(-0.25f, 1.12f, -0.3f);
+            btnGo.transform.position = floorPos + new Vector3(-0.25f, 1.4f, -0.3f);
             button = btnGo.AddComponent<FloatingTouchButton>();
             SetRef(button, "art", art);
             var bso = new SerializedObject(button);
             bso.FindProperty("label").stringValue = "Touch";
             bso.ApplyModifiedPropertiesWithoutUndo();
 
-            // the drum that appears on the carrier after touching it
-            var drumMat = Mat("DrumBlueA", new Color(0.05f, 0.23f, 0.66f), 0.55f, 0.45f, EnvTex("DRUM_Detail"));
-            loadDrum = MeshObj("LoadedDrum", root, RealisticDrumMesh(), new Vector3(0f, 0.62f, 0.12f),
-                new Vector3(0.58f, 0.88f, 0.58f), drumMat);
+            // full drum on the toe plate, leaning back against the frame (local +Z is the handle side)
+            loadDrum = BuildLoadedDrum(root);
+            // toe plate is the far side of the handles; lean the drum back toward the frame
+            // between the camera and the frame, leaning back onto the toe plate so the side of the drum reads
+            loadDrum.transform.position = root.position + new Vector3(0f, 0.5f, 0.18f);
+            loadDrum.transform.rotation = Quaternion.Euler(-18f, root.eulerAngles.y, 0f);
             loadDrum.SetActive(false);
 
             root.gameObject.SetActive(false);
             return root.gameObject;
+        }
+
+        // Same drum model and Isopropanol label as the correct hero drum; pivot at the drum centre so the
+        // director's lift tween keeps working. The label (+Z side) faces the user standing at TrolleyStand.
+        private static GameObject BuildLoadedDrum(Transform root)
+        {
+            const float fit = 0.9f;
+            var holder = new GameObject("LoadedDrum");
+            holder.transform.SetParent(root, false);
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Drum.glb");
+            if (asset == null)
+            {
+                Debug.LogWarning("[Presentable] Drum.glb missing, loaded drum is empty");
+                return holder;
+            }
+
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            model.transform.SetParent(holder.transform, false);
+            model.transform.localScale *= ModelScale * fit;
+            var b = WorldBounds(model);
+            model.transform.position += holder.transform.position - b.center;
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+            }
+
+            var labelTex = AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/Isopropanol.png");
+            var radius = Mathf.Min(b.extents.x, b.extents.z);
+            var label = new GameObject("Label");
+            label.transform.SetParent(holder.transform, false);
+            label.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            label.transform.localScale = Vector3.one * ((radius + 0.004f) / 0.3f);
+            label.AddComponent<MeshFilter>().sharedMesh = CurvedLabelMesh(0.3f, 0.36f);
+            var lr = label.AddComponent<MeshRenderer>();
+            lr.sharedMaterial = Mat("Label_4", Color.white, 0.35f, 0f, labelTex, null, false, true);
+            lr.shadowCastingMode = ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            return holder;
+        }
+
+        // Orange-gold frame, black handle and grips. The handle loop shares a submesh with the frame, so the
+        // triangles above the handle height are moved to an extra submesh (mesh-local X is height in the glb).
+        private static void ColorCarrier(GameObject model)
+        {
+            var gold = Mat("CarrierGold", new Color(0.95f, 0.5f, 0.05f), 0.5f, 0.55f);
+            var black = Mat("CarrierBlack", new Color(0.03f, 0.03f, 0.035f), 0.45f, 0.35f);
+            foreach (var mr in model.GetComponentsInChildren<MeshRenderer>())
+            {
+                var mats = mr.sharedMaterials;
+                var frameIdx = -1;
+                for (var i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null)
+                        continue;
+                    if (mats[i].name == "Material_0")
+                    {
+                        mats[i] = gold;
+                        frameIdx = i;
+                    }
+                    else if (mats[i].name == "Material.002")
+                    {
+                        mats[i] = black;
+                    }
+                }
+
+                var mf = mr.GetComponent<MeshFilter>();
+                if (frameIdx >= 0 && mf != null && mf.sharedMesh != null)
+                {
+                    var split = SplitHandle(mf.sharedMesh, frameIdx, 1.1f);
+                    if (split != null)
+                    {
+                        mf.sharedMesh = split;
+                        System.Array.Resize(ref mats, mats.Length + 1);
+                        mats[mats.Length - 1] = black;
+                    }
+                }
+
+                mr.sharedMaterials = mats;
+            }
+        }
+
+        private static Mesh SplitHandle(Mesh src, int frameSub, float handleX)
+        {
+            if (!src.isReadable)
+            {
+                Debug.LogWarning("[Presentable] Carrier mesh not readable: handle stays frame colour");
+                return null;
+            }
+
+            var copy = Object.Instantiate(src);
+            copy.name = "CarrierSplit";
+            var verts = src.vertices;
+            var tris = src.GetTriangles(frameSub);
+            var low = new List<int>();
+            var high = new List<int>();
+            for (var t = 0; t < tris.Length; t += 3)
+            {
+                var cx = (verts[tris[t]].x + verts[tris[t + 1]].x + verts[tris[t + 2]].x) / 3f;
+                var dst = cx > handleX ? high : low;
+                dst.Add(tris[t]);
+                dst.Add(tris[t + 1]);
+                dst.Add(tris[t + 2]);
+            }
+
+            copy.subMeshCount = src.subMeshCount + 1;
+            for (var s = 0; s < src.subMeshCount; s++)
+                copy.SetTriangles(s == frameSub ? low.ToArray() : src.GetTriangles(s), s);
+            copy.SetTriangles(high.ToArray(), src.subMeshCount);
+            var path = GenDir + "/Mesh_CarrierSplit.asset";
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(copy, path);
+            return copy;
         }
 
         private static GameObject Prim(string name, PrimitiveType type, Transform parent, Vector3 localPos,

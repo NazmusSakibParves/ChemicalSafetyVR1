@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using UnityEngine.XR;
 
 namespace ChemicalSafety.Presentable
@@ -34,6 +35,7 @@ namespace ChemicalSafety.Presentable
         private InputAction _toggle;
         private Transform _anchor;
         private Transform _clip;
+        private Image _sheet;
         private CanvasGroup _clipGroup;
         private Transform _cam;
         private bool _visible;
@@ -67,7 +69,7 @@ namespace ChemicalSafety.Presentable
             _clip = clipCanvas.transform;
             _clipGroup = clipCanvas.gameObject.AddComponent<CanvasGroup>();
             var img = PresentableUi.Rect("Clipboard", _clip, Vector2.zero, Vector2.one);
-            PresentableUi.Img(img, art.sdsClipboard, Color.white, preserveAspect: true);
+            _sheet = PresentableUi.Img(img, art.sdsClipboard, Color.white, preserveAspect: true);
 
             _handMode = (XRSettings.isDeviceActive && leftHand != null) || forceHandMode;
             _visible = startVisible;
@@ -159,6 +161,13 @@ namespace ChemicalSafety.Presentable
             _clip.localPosition = Vector3.LerpUnclamped(lowPos, Vector3.zero, _raise) + swayPos;
             _clip.localRotation = Quaternion.SlerpUnclamped(lowRot, Quaternion.identity, _raise) * sway;
             _clip.localScale = Vector3.one * CanvasScale * Mathf.LerpUnclamped(0.7f, 1f, _raise);
+        }
+
+        /// <summary>Scene 2 uses a different sheet. The X button still shows and hides it.</summary>
+        public void SetSheet(Sprite sprite)
+        {
+            if (_sheet != null && sprite != null)
+                _sheet.sprite = sprite;
         }
 
         public void Toggle() => SetVisible(!_visible);

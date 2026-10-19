@@ -246,6 +246,23 @@ namespace ChemicalSafety.Presentable
             var popup = Get<LabelPickPopup>(_director, "labelPopup");
             var pokes = Get<PokeTarget[]>(_director, "drumPokes");
             var buttons = Get<FloatingTouchButton[]>(_director, "drumButtons");
+            for (var bi = 0; bi < buttons.Length; bi++)
+            {
+                var dp = drums[bi].transform.position;
+                var bp = buttons[bi].transform.position;
+                Say("arrow " + (bi + 1) + " offset from drum centre: dx=" + (bp.x - dp.x).ToString("0.000") + " dz=" +
+                    (bp.z - dp.z).ToString("0.000") + " height=" + bp.y.ToString("0.00"));
+            }
+
+            // close-up of a drum Touch button (arrow icon)
+            var btnCam = Camera.main.transform;
+            var btnKeep = btnCam.rotation;
+            btnCam.rotation = Quaternion.LookRotation(buttons[1].transform.position - btnCam.position);
+            yield return new WaitForSeconds(0.2f);
+            yield return Shot("02b_touch_button");
+            yield return new WaitForSeconds(0.35f);
+            yield return Shot("02c_touch_button_blink");
+            btnCam.rotation = btnKeep;
             var order = new[] { 1, 0, 3, 2 };
             var step = 0;
             foreach (var i in order)
@@ -286,6 +303,8 @@ namespace ChemicalSafety.Presentable
             var carrierBtn = Get<FloatingTouchButton>(_director, "carrierButton");
             Say("carrier button armed = " + carrierBtn.IsArmed);
             PressButton(carrierBtn);
+            yield return new WaitForSeconds(1.1f);
+            yield return Shot("06b_loaded");
 
             yield return WaitStage("mcq1");
             yield return new WaitForSeconds(2f);
@@ -298,28 +317,125 @@ namespace ChemicalSafety.Presentable
             Click(mcq1.transform, "Close");
             yield return new WaitForSeconds(0.8f);
             Click(mcq1.transform, "Row4");
-            yield return new WaitForSeconds(1.5f);
+            var heard = "";
+            var waited = 0f;
+            while (waited < 8f)
+            {
+                if (voice.clip != null && voice.clip.name.Contains("Sc01Complete"))
+                    heard = voice.clip.name;
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("09_correct");
             Click(mcq1.transform, "NextButton");
 
-            yield return WaitStage("sc02");
-            yield return new WaitForSeconds(1.5f);
+            yield return WaitStage("sc02Intro");
+            var cont2 = FindDeep(panel.transform, "ContinueButton");
+            var waitIntro = 0f;
+            while (cont2 != null && !cont2.gameObject.activeSelf && waitIntro < 40f)
+            {
+                waitIntro += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.6f);
+            yield return Shot("10_sc02_instruction");
+            Click(panel.transform, "ContinueButton");
+
+            yield return WaitStage("sc02Explore");
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("11_sc02_room");
+            Say("STATS sc02: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls);
+            var roomCam = Camera.main.transform;
+            var roomKeep = roomCam.localRotation;
+            roomCam.localRotation = Quaternion.Euler(-4f, 62f, 0f);
+            yield return Shot("11b_sc02_viewer_left");
+            roomCam.localRotation = Quaternion.Euler(-4f, -62f, 0f);
+            yield return Shot("11c_sc02_viewer_right");
+            roomCam.localRotation = Quaternion.Euler(-4f, -62f, 0f) ;
+            roomCam.localRotation = roomKeep;
+
+            var doors = Get<CompartmentDoor[]>(_director, "doors");
+            Say("doors = " + (doors != null ? doors.Length : 0));
+            if (doors != null && doors.Length > 0 && doors[0] != null)
+            {
+                Poke(doors[0].GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(0.7f);
+                doors[0].FlashWrong();
+                yield return new WaitForSeconds(0.35f);
+                yield return Shot("12_sc02_door");
+            }
+
+            var chart = Get<ChartViewer>(_director, "chart");
+            if (chart != null)
+            {
+                Poke(chart.GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(0.6f);
+                Say("chart open = " + chart.IsOpen);
+                yield return Shot("13_sc02_chart");
+                Click(chart.transform, "CloseChart");
+                yield return new WaitForSeconds(0.4f);
+            }
+
+            var inspect = Get<ContainerInspect>(_director, "inspect");
+            if (inspect == null || inspect.Count < 6)
+            {
+                Say("FAIL: container inspect missing or incomplete");
+            }
+            else
+            {
+                Say("inspect containers = " + inspect.Count + " first pokeable = " + inspect.PokeOf(0).Interactable);
+                Poke(inspect.PokeOf(0));
+                yield return new WaitForSeconds(1.0f);
+                Say("held after poke 1 = " + inspect.HeldName);
+                yield return Shot("13b_inspect_held");
+                var card = FindDeep(inspect.transform, "InspectCard");
+                Click(card, "ChartBox");
+                yield return new WaitForSeconds(0.6f);
+                Say("chart open from card = " + chart.IsOpen);
+                yield return Shot("13c_inspect_chart");
+                Click(chart.transform, "CloseChart");
+                yield return new WaitForSeconds(0.5f);
+                Say("chart open after close = " + chart.IsOpen);
+                Poke(inspect.PokeOf(1));
+                yield return new WaitForSeconds(1.0f);
+                Say("held after poke 2 = " + inspect.HeldName);
+                yield return Shot("13d_inspect_second");
+                Poke(inspect.PokeOf(1));
+                yield return new WaitForSeconds(0.8f);
+                Say("held after poking it again = '" + inspect.HeldName + "'");
+                for (var ci = 0; ci < inspect.Count; ci++)
+                {
+                    Poke(inspect.PokeOf(ci));
+                    yield return new WaitForSeconds(0.9f);
+                    var spill = inspect.CheckCardFits();
+                    Say("card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill.Length == 0) +
+                        (spill.Length > 0 ? " FAIL spill: " + spill : ""));
+                    if (ci == 0 || ci == 3 || ci == 5)
+                        yield return Shot("13e_inspect_card_" + ci);
+                }
+
+                Say("held before hotspot = " + inspect.HeldName);
+            }
+
             var hs2 = Get<FloorHotspot>(_director, "hotspotSc02");
             hs2.Activate();
             var mcq2 = Get<PresentableMcqPanel>(_director, "mcqSc02");
             var t = 0f;
-            while (!mcq2.IsOpen && t < 15f)
+            while (!mcq2.IsOpen && t < 20f)
             {
                 t += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            yield return new WaitForSeconds(1.5f);
+            yield return new WaitForSeconds(1.2f);
             Say("mcq2 open = " + mcq2.IsOpen);
-            yield return Shot("10_sc02_question");
+            yield return Shot("14_sc02_question");
             Click(mcq2.transform, "Row2");
-            yield return new WaitForSeconds(1.5f);
-            yield return Shot("11_sc02_correct");
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("15_sc02_correct");
             Click(mcq2.transform, "NextButton");
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);

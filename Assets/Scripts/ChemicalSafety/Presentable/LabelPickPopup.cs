@@ -12,13 +12,13 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public sealed class LabelPickPopup : MonoBehaviour
     {
-        private const float FrameScale = 1.1f;
+        private const float FrameScale = 1.15f;
 
         public static readonly string[] Names =
             { "Faded Label", "No Label", "Mismatched GHS vs SDS", "Correctly Labelled" };
 
         [SerializeField] private PresentableArt art;
-        [SerializeField] private Vector2 sizePx = new Vector2(940f, 600f);
+        [SerializeField] private Vector2 sizePx = new Vector2(1000f, 720f);
         [SerializeField] private float metersPerPixel = 0.00052f;
 
         private CanvasGroup _group;
@@ -132,22 +132,22 @@ namespace ChemicalSafety.Presentable
                 new Vector2(sizePx.x / 0.788f * FrameScale, sizePx.x / 0.788f / 1.777f * FrameScale));
             _frame = PresentableUi.Img(frameRt, art.popupFrame, Color.white);
 
-            _title = PresentableUi.Text("Title", root, new Vector2(0.14f, 0.82f), new Vector2(0.86f, 0.95f),
+            _title = PresentableUi.Text("Title", root, new Vector2(0.14f, 0.81f), new Vector2(0.86f, 0.9f),
                 string.Empty, 38f, PresentableUi.Cyan, bold: true, font: font);
             _title.textWrappingMode = TextWrappingModes.NoWrap;
 
-            const float rowH = 0.165f;
-            const float gap = 0.0165f;
+            const float rowH = 0.135f;
+            const float gap = 0.04f;
             for (var i = 0; i < 4; i++)
             {
-                var top = 0.80f - i * (rowH + gap);
+                var top = 0.77f - i * (rowH + gap);
                 var slot = PresentableUi.Rect("Option" + (i + 1), root, new Vector2(0.15f, top - rowH),
                     new Vector2(0.85f, top));
                 slot.localPosition += new Vector3(0f, 0f, -8f);
                 var hit = PresentableUi.Img(PresentableUi.Rect("Hit", slot, Vector2.zero, Vector2.one), null,
                     new Color(1f, 1f, 1f, 0.02f), raycast: true);
                 _pills[i] = PresentableUi.Img(PresentableUi.Rect("Pill", slot, Vector2.zero, Vector2.one,
-                    new Vector2(-88f, -54f), new Vector2(88f, 54f)), art.button, Color.white);
+                    new Vector2(-64f, -34f), new Vector2(64f, 34f)), art.button, Color.white);
                 _labels[i] = PresentableUi.Text(PresentableUi.Rect("Label", slot, new Vector2(0.05f, 0f),
                     new Vector2(0.95f, 1f)), Names[i], 40f, Color.white, bold: true, font: font);
                 _labels[i].textWrappingMode = TextWrappingModes.NoWrap;
@@ -163,7 +163,7 @@ namespace ChemicalSafety.Presentable
                 slot.gameObject.AddComponent<HoverLift>().Init(slot);
             }
 
-            var close = PresentableUi.Rect("Close", root, new Vector2(0.9f, 0.84f), new Vector2(0.97f, 0.97f));
+            var close = PresentableUi.Rect("Close", root, new Vector2(0.9f, 0.82f), new Vector2(0.97f, 0.93f));
             var closeBg = PresentableUi.Img(close, art.roundedSolid, new Color(0.05f, 0.2f, 0.3f, 0.9f),
                 raycast: true);
             PresentableUi.Img(PresentableUi.Rect("X", close, new Vector2(0.2f, 0.2f), new Vector2(0.8f, 0.8f)),
@@ -175,6 +175,9 @@ namespace ChemicalSafety.Presentable
                 if (IsOpen)
                     Closed?.Invoke();
             });
+
+            // never hidden by rack beams or drums when the user stands close
+            PresentableUi.AlwaysOnTop(canvas);
         }
     }
 }

@@ -20,6 +20,8 @@ namespace ChemicalSafety.Presentable
         private CanvasGroup _group;
         private RectTransform _speaker;
         private RectTransform _continue;
+        private TextMeshProUGUI _english;
+        private Image _bangla;
         private bool _speaking;
         private bool _built;
 
@@ -66,19 +68,19 @@ namespace ChemicalSafety.Presentable
             });
             _speaker.gameObject.AddComponent<HoverLift>().Init(_speaker);
 
-            var english = PresentableUi.Text("English", root, new Vector2(0.1f, 0.35f), new Vector2(0.9f, 0.55f),
+            _english = PresentableUi.Text("English", root, new Vector2(0.1f, 0.35f), new Vector2(0.9f, 0.55f),
                 "<color=#5FD8FF><b>VOICE-OVER:</b></color> Select the correctly labeled drum based on the " +
                 "provided Safety Data Sheet (SDS).", 46f, Color.white, font: font);
-            english.enableAutoSizing = true;
-            english.fontSizeMin = 30f;
-            english.fontSizeMax = 50f;
+            _english.enableAutoSizing = true;
+            _english.fontSizeMin = 28f;
+            _english.fontSizeMax = 50f;
 
             var bn = art.bnInstructionPanel;
             var aspect = bn != null ? bn.rect.width / Mathf.Max(1f, bn.rect.height) : 6f;
             var bnH = Mathf.Min(190f, 1060f / aspect);
             var bangla = PresentableUi.Centered("Bangla", root, new Vector2(0f, -sizePx.y * 0.275f),
                 new Vector2(bnH * aspect, bnH));
-            PresentableUi.Img(bangla, bn, new Color(0.92f, 0.97f, 1f), preserveAspect: true);
+            _bangla = PresentableUi.Img(bangla, bn, new Color(0.92f, 0.97f, 1f), preserveAspect: true);
 
             // Continue (button.png): appears below the frame, bottom right, once the voice-over is done.
             _continue = PresentableUi.Rect("ContinueButton", root, new Vector2(0.6f, -0.15f), new Vector2(0.92f, -0.03f));
@@ -112,6 +114,20 @@ namespace ChemicalSafety.Presentable
         }
 
         public void SetSpeaking(bool speaking) => _speaking = speaking;
+
+        /// <summary>Swaps the card text. Scene 1 keeps the defaults built above.</summary>
+        public void SetContent(string english, Sprite bangla)
+        {
+            Build();
+            if (!string.IsNullOrEmpty(english))
+                _english.text = english;
+            if (bangla == null || _bangla == null)
+                return;
+            _bangla.sprite = bangla;
+            var aspect = bangla.rect.width / Mathf.Max(1f, bangla.rect.height);
+            var h = Mathf.Min(190f, 1060f / aspect);
+            _bangla.rectTransform.sizeDelta = new Vector2(h * aspect, h);
+        }
 
         public IEnumerator Show()
         {

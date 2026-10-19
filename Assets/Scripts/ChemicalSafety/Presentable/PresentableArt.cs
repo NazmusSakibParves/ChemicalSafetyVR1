@@ -48,6 +48,8 @@ namespace ChemicalSafety.Presentable
 
         [Header("Props")]
         public Sprite sdsClipboard;
+        public Sprite sdsSc02;
+        public Sprite chartSc02;
 
         [Header("Bangla text (pre-shaped images)")]
         public Sprite bnSalam;
@@ -55,6 +57,8 @@ namespace ChemicalSafety.Presentable
         public Sprite bnInstructionSub;
         public Sprite bnInstructionPanel;
         public Sprite bnStandHere;
+        [Tooltip("Stand Here badge (English + Bangla) over the floor marker.")]
+        public Sprite standBadge;
         public Sprite bnCorrectSub;
         public Sprite bnWrongSub;
         public Sprite bnClipboardHint;
@@ -65,6 +69,8 @@ namespace ChemicalSafety.Presentable
         public Sprite bnContinueHint;
         public Sprite bnTouchDrum;
         public Sprite bnCarrier;
+        public Sprite bnSc02Instruction;
+        public Sprite bnSc02InstructionPanel;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -77,6 +83,9 @@ namespace ChemicalSafety.Presentable
         public AudioClip voContinueHint;
         public AudioClip voTouchDrum;
         public AudioClip voCarrier;
+        public AudioClip voSc01CompleteBn;
+        public AudioClip voSc01CompleteEn;
+        public AudioClip voSc02Instruction;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 
