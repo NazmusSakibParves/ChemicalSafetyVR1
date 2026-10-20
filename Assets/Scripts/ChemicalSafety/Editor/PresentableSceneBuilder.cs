@@ -19,7 +19,7 @@ namespace ChemicalSafety.Editor
     /// Builds Assets/Scenes/ChemicalSafety_Presentable.unity from scratch (client demo).
     /// Never opens or saves the learning scene (ChemicalSafety_Demo.unity).
     /// </summary>
-    public static class PresentableSceneBuilder
+    public static partial class PresentableSceneBuilder
     {
         public const string ScenePath = "Assets/Scenes/ChemicalSafety_Presentable.unity";
 
@@ -63,6 +63,9 @@ namespace ChemicalSafety.Editor
             var env2 = new GameObject("Environment_SC02").transform;
             var doors = BuildSc02Room(env2, art, out var chart, out var inspect, out var placement);
             env2.gameObject.SetActive(false);
+            var env3 = new GameObject("Environment_SC03").transform;
+            var sc3 = BuildSc03Room(env3, art);
+            env3.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -122,6 +125,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq1, "art", art);
             var mcq2 = Child("McqPanel_SC02", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq2, "art", art);
+            var mcq3 = Child("McqPanel_SC03", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq3, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -174,6 +179,12 @@ namespace ChemicalSafety.Editor
             so.FindProperty("trolleyStand").objectReferenceValue = trolleyStand;
             so.FindProperty("envSc01").objectReferenceValue = env.gameObject;
             so.FindProperty("envSc02").objectReferenceValue = env2.gameObject;
+            so.FindProperty("envSc03").objectReferenceValue = env3.gameObject;
+            so.FindProperty("spawnSc03").objectReferenceValue = sc3.spawn;
+            so.FindProperty("sc03InspectStand").objectReferenceValue = sc3.stand;
+            so.FindProperty("sc03Inspect").objectReferenceValue = sc3.inspect;
+            so.FindProperty("sc03Detonation").objectReferenceValue = sc3.detonation;
+            so.FindProperty("mcqSc03").objectReferenceValue = mcq3;
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
             var doorProp = so.FindProperty("doors");
@@ -239,7 +250,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -274,6 +285,7 @@ namespace ChemicalSafety.Editor
                     }
 
                     var wrap = path.EndsWith("SC02_Wall.png") || path.EndsWith("SC02_Floor.png") ||
+                               path.EndsWith("SC03_Wall.png") || path.EndsWith("SC03_Floor.png") ||
                                path.EndsWith("GLOVE_Detail.png") || path.EndsWith("FX_ScanBeam.png")
                         ? TextureWrapMode.Repeat
                         : TextureWrapMode.Clamp;
@@ -356,6 +368,9 @@ namespace ChemicalSafety.Editor
             art.sdsClipboard = D("SDS in Clipboard");
             art.sdsSc02 = LoadSprite("2D/Sc02/SDS_SC02");
             art.chartSc02 = LoadSprite("2D/Sc02/Chart");
+            art.sdsSc03 = LoadSprite("2D/Sc03/SDS_SC03");
+            art.sc03Label = LoadSprite("2D/Sc03/DrumLabel_SC03");
+            art.scanFrame = G("FX_ScanFrame");
             art.bnSalam = B("BN_Salam");
             art.bnWelcomeSub = B("BN_WelcomeSub");
             art.bnInstructionSub = B("BN_InstructionSub");
@@ -374,6 +389,8 @@ namespace ChemicalSafety.Editor
             art.bnCarrier = B("BN_Carrier");
             art.bnSc02Instruction = B("BN_Sc02Instruction");
             art.bnSc02InstructionPanel = B("BN_Sc02InstructionPanel");
+            art.bnSc03InstructionPanel = B("BN_Sc03InstructionPanel");
+            art.bnSc03Touch = B("BN_Sc03Touch");
             art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
@@ -410,6 +427,24 @@ namespace ChemicalSafety.Editor
             var sc02Vo = V("VO_SC02_Instruction_bn.mp3");
             if (sc02Vo != null)
                 art.voSc02Instruction = sc02Vo;
+            var sc03Vo = V("VO_SC03_Instruction_bn.mp3");
+            if (sc03Vo != null)
+                art.voSc03Instruction = sc03Vo;
+            var sc03Touch = V("VO_Sc03Touch_bn.mp3");
+            if (sc03Touch != null)
+                art.voSc03Touch = sc03Touch;
+            var sc03Inspect = V("VO_Sc03Inspect_bn.mp3");
+            if (sc03Inspect != null)
+                art.voSc03Inspect = sc03Inspect;
+            var sc03Wrong = V("VO_Sc03Wrong_bn.mp3");
+            if (sc03Wrong != null)
+                art.voSc03Wrong = sc03Wrong;
+            var sc03DoneBn = V("VO_Sc03Complete_bn.mp3");
+            if (sc03DoneBn != null)
+                art.voSc03CompleteBn = sc03DoneBn;
+            var sc03DoneEn = V("VO_Sc03Complete_en.mp3");
+            if (sc03DoneEn != null)
+                art.voSc03CompleteEn = sc03DoneEn;
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

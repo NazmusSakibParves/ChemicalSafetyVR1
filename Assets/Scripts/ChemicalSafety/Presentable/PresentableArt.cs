@@ -50,6 +50,11 @@ namespace ChemicalSafety.Presentable
         public Sprite sdsClipboard;
         public Sprite sdsSc02;
         public Sprite chartSc02;
+        public Sprite sdsSc03;
+        [Tooltip("Enlarged drum label shown inside the scan frame (SC03).")]
+        public Sprite sc03Label;
+        [Tooltip("White corner brackets for the Selected Label scan (SC03).")]
+        public Sprite scanFrame;
 
         [Header("Bangla text (pre-shaped images)")]
         public Sprite bnSalam;
@@ -71,6 +76,8 @@ namespace ChemicalSafety.Presentable
         public Sprite bnCarrier;
         public Sprite bnSc02Instruction;
         public Sprite bnSc02InstructionPanel;
+        public Sprite bnSc03InstructionPanel;
+        public Sprite bnSc03Touch;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -89,6 +96,12 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc02CompleteBn;
         public AudioClip voSc02PlaceHint;
         public AudioClip voSc02CompleteEn;
+        public AudioClip voSc03Instruction;
+        public AudioClip voSc03Touch;
+        public AudioClip voSc03Inspect;
+        public AudioClip voSc03Wrong;
+        public AudioClip voSc03CompleteBn;
+        public AudioClip voSc03CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

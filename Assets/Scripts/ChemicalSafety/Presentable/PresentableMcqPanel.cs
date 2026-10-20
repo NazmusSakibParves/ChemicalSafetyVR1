@@ -20,6 +20,8 @@ namespace ChemicalSafety.Presentable
         {
             public string label;
             public string wrongLabel;
+            [Tooltip("Optional red card title for this option (falls back to Question.wrongTitle).")]
+            public string wrongTitle;
             public Sprite[] icons = Array.Empty<Sprite>();
             [Tooltip("Optional sticker drawn on top of the matching icon (same index).")]
             public Sprite[] overlays = Array.Empty<Sprite>();
@@ -84,6 +86,9 @@ namespace ChemicalSafety.Presentable
         /// <summary>(index, isCorrect)</summary>
         public event Action<int, bool> Answered;
         public event Action NextPressed;
+
+        /// <summary>Raised when the red card is closed with its X and the question is open for a retry.</summary>
+        public event Action WrongClosed;
 
         /// <summary>Raised once the correct / wrong popup is fully on screen (isCorrect).</summary>
         public event Action<bool> PopupShown;
@@ -215,7 +220,7 @@ namespace ChemicalSafety.Presentable
             if (!string.IsNullOrEmpty(opt.wrongLabel))
                 _rows[index].label.text = opt.wrongLabel;
 
-            _wrongTitle.text = _question.wrongTitle;
+            _wrongTitle.text = string.IsNullOrEmpty(opt.wrongTitle) ? _question.wrongTitle : opt.wrongTitle;
             _wrongBody.text = opt.feedback;
             StartCoroutine(Shake(_rows[index].root));
             yield return PopupIn(_wrongPopup);
@@ -239,6 +244,7 @@ namespace ChemicalSafety.Presentable
 
             ApplyNormalState();
             _locked = false;
+            WrongClosed?.Invoke();
         }
 
         private void OnNextClicked()

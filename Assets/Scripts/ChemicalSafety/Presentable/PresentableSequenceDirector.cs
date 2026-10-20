@@ -57,6 +57,18 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private ChartViewer chart;
         [SerializeField] private ContainerInspect inspect;
 
+        [Header("SC03")]
+        [SerializeField] private GameObject envSc03;
+        [Tooltip("Entrance of the old storage room, facing down the aisle.")]
+        [SerializeField] private Transform spawnSc03;
+        [Tooltip("About a metre from the old drum, facing it.")]
+        [SerializeField] private Transform sc03InspectStand;
+        [SerializeField] private Sc03Inspect sc03Inspect;
+        [SerializeField] private Sc03Detonation sc03Detonation;
+        [SerializeField] private PresentableMcqPanel mcqSc03;
+        [Tooltip("Distance of the instruction card from the head in a headset (the desk uses a bit more).")]
+        [SerializeField] private float sc03CardDistance = 0.8f;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -240,9 +252,93 @@ namespace ChemicalSafety.Presentable
             yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
             yield return RunQuestion(mcqSc02, BuildSc02Question(), false, 2);
 
+            if (envSc03 != null)
+                yield return RunScenario3();
+
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            subtitle.Show(null, "Module complete. Well done!", 8f);
+            subtitle.Show(null, envSc03 != null ? Sc03Content.ModuleComplete : "Module complete. Well done!", 8f);
+        }
+
+        // SC03: old storage room. Instruction card (eye level) -> inspect the crystallised peroxide drum ->
+        // immediate-action question; a wrong answer detonates the drum and retries.
+        private IEnumerator RunScenario3()
+        {
+            Stage("sc03");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            if (envSc02 != null)
+                envSc02.SetActive(false);
+            envSc03.SetActive(true);
+            clipboard.SetSheet(art.sdsSc03);
+            clipboard.SetVisible(false);
+            PlaceRig(spawnSc03.position, spawnSc03.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc03Intro");
+            _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc03Content.InstructionEnglish, art.bnSc03InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            PlaceAtEyeLevel(instructionPanel.transform, XRSettings.isDeviceActive ? sc03CardDistance : 0.95f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+
+            Stage("sc03Inspect");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.35f);
+            PlaceRig(sc03InspectStand.position, sc03InspectStand.forward);
+            clipboard.SetVisible(true);
+            yield return fader.FadeTo(0f, 0.5f);
+            // the SDS is held up (X hides / shows it); the arrow in front of the drum invites a finger touch
+            subtitle.Show(art.bnClipboardHint, Sc03Content.SdsHint, 5f);
+            yield return PresentableFx.Wait(1.2f);
+            sc03Inspect.ArmTouch();
+            StartCoroutine(SubtitledVoice(art.bnSc03Touch, Sc03Content.TouchHint, art.voSc03Touch));
+            while (!sc03Inspect.Touched)
+                yield return null;
+            StopVoice();
+            subtitle.Hide();
+            yield return sc03Inspect.ShowReport();
+            StartCoroutine(PlayVoice(art.voSc03Inspect));
+            while (!sc03Inspect.ContinuePressed)
+                yield return null;
+            StopVoice();
+            yield return sc03Inspect.HideReport();
+
+            Stage("sc03Question");
+            // always within arm's reach and in front of the drum (the drum is about 1 m away)
+            PlaceInFrontOfHead(mcqSc03.transform, panelDistance);
+            yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
+        }
+
+        // Eye level: centred on the head height (the poked panels sit lower), upright, facing the user, straight
+        // ahead. The card and its Continue button are never above, below or to the side of the view.
+        private void PlaceAtEyeLevel(Transform t, float distance)
+        {
+            if (_cam == null)
+                return;
+            var fwd = Flat(_cam.forward);
+            t.position = _cam.position + fwd * distance + Vector3.up * 0.03f;
+            t.rotation = Quaternion.LookRotation(fwd, Vector3.up);
         }
 
         private int _pokedDrum;
@@ -555,6 +651,14 @@ namespace ChemicalSafety.Presentable
                 }
 
                 StopVoice();
+                if (scenario == 3 && !correct && sc03Detonation != null)
+                    sc03Detonation.Explode();
+            }
+
+            void OnWrongClosed()
+            {
+                if (scenario == 3 && sc03Detonation != null)
+                    sc03Detonation.Clear();
             }
 
             // the voice follows the popup (it is not on screen yet when the answer is clicked)
@@ -570,12 +674,16 @@ namespace ChemicalSafety.Presentable
             panel.Answered += OnAnswered;
             panel.PopupShown += OnPopupShown;
             panel.NextPressed += OnNext;
+            panel.WrongClosed += OnWrongClosed;
             panel.Show(q);
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
             panel.PopupShown -= OnPopupShown;
             panel.NextPressed -= OnNext;
+            panel.WrongClosed -= OnWrongClosed;
+            if (scenario == 3 && sc03Detonation != null)
+                sc03Detonation.Clear();
             if (_answerVoice != null)
                 StopCoroutine(_answerVoice);
             StopVoice();
@@ -596,12 +704,13 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(0.25f);
             StopVoice();
             subtitle.Hide();
-            yield return PlayVoice(correct ? art.voCorrect : art.voWrong);
+            var wrongClip = scenario == 3 && art.voSc03Wrong != null ? art.voSc03Wrong : art.voWrong;
+            yield return PlayVoice(correct ? art.voCorrect : wrongClip);
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
-            yield return PlayVoice(scenario == 2 ? art.voSc02CompleteBn : art.voSc01CompleteBn);
-            yield return PlayVoice(scenario == 2 ? art.voSc02CompleteEn : art.voSc01CompleteEn);
+            yield return PlayVoice(scenario == 3 ? art.voSc03CompleteBn : scenario == 2 ? art.voSc02CompleteBn : art.voSc01CompleteBn);
+            yield return PlayVoice(scenario == 3 ? art.voSc03CompleteEn : scenario == 2 ? art.voSc02CompleteEn : art.voSc01CompleteEn);
         }
 
         private void SetRoomInteractable(bool value)
@@ -787,6 +896,30 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc03Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc03Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc03Content.OptionLabels[i],
+                    feedback = Sc03Content.OptionFeedback[i],
+                    wrongTitle = Sc03Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc03Content.QuestionHeader,
+                prompt = Sc03Content.QuestionPrompt,
+                correctIndex = Sc03Content.CorrectIndex,
+                correctTitle = Sc03Content.CorrectTitle,
+                nextLabel = Sc03Content.FinishLabel,
+                options = options
             };
         }
 

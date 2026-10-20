@@ -115,6 +115,14 @@ namespace ChemicalSafety.Presentable
 
         public void SetSpeaking(bool speaking) => _speaking = speaking;
 
+        /// <summary>SC03: the Continue button sits under the middle of the card instead of the bottom right.</summary>
+        public void SetContinueCentered(bool centered)
+        {
+            Build();
+            _continue.anchorMin = new Vector2(centered ? 0.34f : 0.6f, -0.15f);
+            _continue.anchorMax = new Vector2(centered ? 0.66f : 0.92f, -0.03f);
+        }
+
         /// <summary>Swaps the card text. Scene 1 keeps the defaults built above.</summary>
         public void SetContent(string english, Sprite bangla)
         {

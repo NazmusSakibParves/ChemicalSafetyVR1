@@ -627,6 +627,119 @@ namespace ChemicalSafety.Presentable
             Say("scenario 2 complete vo = " + (heard2.Length > 0 ? heard2 : "NOT HEARD"));
             yield return Shot("15_sc02_correct");
             Click(mcq2.transform, "NextButton");
+
+            // --- Scenario 3: instruction card at eye level, inspect the old drum, immediate-action question
+            yield return WaitStage("sc03Intro", 30f);
+            var sc03 = Get<Sc03Inspect>(_director, "sc03Inspect");
+            var det = Get<Sc03Detonation>(_director, "sc03Detonation");
+            var mcq3 = Get<PresentableMcqPanel>(_director, "mcqSc03");
+            var cont3 = FindDeep(panel.transform, "ContinueButton");
+            var w3 = 0f;
+            while (cont3 != null && !cont3.gameObject.activeSelf && w3 < 60f)
+            {
+                w3 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.6f);
+            var head3 = Camera.main.transform;
+            var flat3 = Vector3.ProjectOnPlane(head3.forward, Vector3.up).normalized;
+            Vector3 Rel(Vector3 world)
+            {
+                var d = world - head3.position;
+                return new Vector3(Vector3.Dot(d, Vector3.Cross(Vector3.up, flat3)), d.y, Vector3.Dot(d, flat3));
+            }
+
+            var toCard = Rel(panel.transform.position);
+            var toBtn = Rel(cont3.position);
+            Say("SC03 card vs eye (level, upright frame): up=" + toCard.y.ToString("0.00") + " m, right=" +
+                toCard.x.ToString("0.00") + " m, distance=" + toCard.z.ToString("0.00") + " m; Continue: up=" +
+                toBtn.y.ToString("0.00") + ", right=" + toBtn.x.ToString("0.00") + " -> " +
+                (Mathf.Abs(toCard.y) < 0.12f && Mathf.Abs(toCard.x) < 0.1f && Mathf.Abs(toBtn.x) < 0.12f &&
+                 toBtn.y > -0.4f ? "OK" : "FAIL"));
+            Say("SC03 instruction clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
+            yield return Shot("16_sc03_instruction");
+            Click(panel.transform, "ContinueButton");
+
+            yield return WaitStage("sc03Inspect", 30f);
+            yield return new WaitForSeconds(2.2f);
+            var clip3 = Get<SdsClipboardController>(_director, "clipboard");
+            Say("SC03 SDS visible after Continue = " + clip3.IsVisible);
+            clip3.Toggle();
+            yield return new WaitForSeconds(0.6f);
+            Say("SC03 SDS after X (hide) = " + clip3.IsVisible + " (expected False)");
+            clip3.Toggle();
+            yield return new WaitForSeconds(0.7f);
+            Say("SC03 SDS after X (show) = " + clip3.IsVisible + " (expected True)");
+            var labelAnchor3 = Get<Transform>(sc03, "labelAnchor");
+            var camKeep3 = Camera.main.transform.localRotation;
+            Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position - Camera.main.transform.position);
+            yield return Shot("17_sc03_drum_view");
+            var armW = 0f;
+            while (!sc03.TouchButton.IsArmed && armW < 10f)
+            {
+                armW += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC03 arrow armed = " + sc03.TouchButton.IsArmed + " distance from the head = " +
+                Vector3.Distance(Camera.main.transform.position, sc03.TouchButton.transform.position).ToString("0.00") + " m");
+            yield return new WaitForSeconds(0.6f);
+            yield return Shot("17b_sc03_arrow");
+            PressButton(sc03.TouchButton);
+            var repW = 0f;
+            while (!sc03.ReportVisible && repW < 15f)
+            {
+                repW += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.2f);
+            Say("SC03 report visible = " + sc03.ReportVisible + ", clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
+            yield return Shot("18_sc03_report");
+            Camera.main.transform.localRotation = camKeep3;
+            Click(sc03.ReportCard, "ContinueButton");
+
+            yield return WaitStage("sc03Question", 30f);
+            var qW = 0f;
+            while (!mcq3.IsOpen && qW < 10f)
+            {
+                qW += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.2f);
+            Say("SC03 mcq open = " + mcq3.IsOpen);
+            yield return Shot("19_sc03_question");
+            Click(mcq3.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            Say("SC03 wrong answer: detonation active = " + det.IsActive + ", clip = " +
+                (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
+            Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.2f - Camera.main.transform.position);
+            yield return Shot("20_sc03_detonation");
+            Camera.main.transform.localRotation = camKeep3;
+            Click(mcq3.transform, "Close");
+            yield return new WaitForSeconds(0.8f);
+            Say("SC03 after closing the red card: detonation active = " + det.IsActive + " (expected False)");
+            Click(mcq3.transform, "Row3");
+            yield return new WaitForSeconds(1.4f);
+            Say("SC03 second wrong answer: detonation active = " + det.IsActive);
+            Click(mcq3.transform, "Close");
+            yield return new WaitForSeconds(0.8f);
+            Click(mcq3.transform, "Row2");
+            var heard3 = "";
+            var h3 = 0f;
+            while (h3 < 14f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc03Complete"))
+                    heard3 = voiceSrc.clip.name;
+                h3 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 3 complete vo = " + (heard3.Length > 0 ? heard3 : "NOT HEARD"));
+            yield return Shot("21_sc03_correct");
+            Click(mcq3.transform, "NextButton");
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");
