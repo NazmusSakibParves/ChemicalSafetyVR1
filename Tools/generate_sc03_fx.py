@@ -5,6 +5,7 @@ Output (re-run: python Tools/generate_sc03_fx.py), Assets/Art/Presentable/2D/Gen
   FX_SmokeSheet.png   dark billowing smoke puff, alpha blended
   FX_Soot.png         scorch mark decal (black, alpha)
   FX_Vignette.png     red screen-edge vignette (transparent centre)
+  FX_RingThin.png     thin glowing gold ring (the inspection ring, like step04)
 """
 import os
 
@@ -124,9 +125,25 @@ def vignette():
     print("wrote FX_Vignette.png")
 
 
+def ring_thin():
+    s = 512
+    yy, xx = np.mgrid[0:s, 0:s].astype(np.float32)
+    r = np.sqrt(((xx - s / 2) / (s / 2)) ** 2 + ((yy - s / 2) / (s / 2)) ** 2)
+    d = np.abs(r - 0.9)
+    core = np.exp(-(d / 0.014) ** 2)
+    glow = np.exp(-(d / 0.05) ** 2) * 0.45
+    sparkle = 0.8 + 0.4 * fbm(s, 123)
+    a = np.clip((core + glow) * sparkle, 0, 1)
+    hot = np.clip(core * 1.2, 0, 1)
+    rgb = np.dstack([np.full((s, s), 255.0), 190 + 60 * hot, 70 + 150 * hot])
+    Image.fromarray(np.dstack([rgb, a * 255]).astype(np.uint8), "RGBA").save(os.path.join(GEN, "FX_RingThin.png"))
+    print("wrote FX_RingThin.png")
+
+
 if __name__ == "__main__":
     os.makedirs(GEN, exist_ok=True)
     sheet(fire_frame, "FX_FireSheet.png")
     sheet(smoke_frame, "FX_SmokeSheet.png")
     soot()
     vignette()
+    ring_thin()

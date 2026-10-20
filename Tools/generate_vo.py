@@ -4,6 +4,7 @@
     python Tools/generate_vo.py --only <clip>   # one or more clips, comma separated, e.g. VO_Sc03Inspect_bn
     python Tools/generate_vo.py --show          # prints the text the voice reads for every clip, writes nothing
     python Tools/generate_vo.py --variants DIR  # pronunciation variants of the SC02 instruction line into DIR
+    python Tools/generate_vo.py --words DIR     # listening variants of the welcome / success words into DIR
 
 ONE VOICE, ONE PRONUNCIATION FOR THE WHOLE GAME (about 22 scenarios).
   * Every Bangla clip uses BN_VOICE, every English clip uses EN_VOICE. Never change them per scenario.
@@ -34,7 +35,8 @@ EN_VOICE = "en-IN-NeerjaNeural"
 
 # normal spelling -> what the voice has to read to sound Bangladeshi
 PRON = {
-    "স্বাগতম": "শাগতম",        # the voice split it as "sbag tom"
+    "স্বাগতম": "স্বাগোতোম",     # the voice split it as "sbag tom"; the user asked for this spelling
+    "সফল": "শফল",              # the voice said "chofol"
     "সঠিক": "শঠিক",            # the voice said "chothik"
     "সিদ্ধান্ত": "শিদ্ধান্ত",    # the voice said "chiddhanto"
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
@@ -93,6 +95,14 @@ CLIPS = {
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
+WORD_VARIANTS = {
+    "welcome_1_sbagotom": "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে স্বাগোতোম।",
+    "welcome_2_shagotom": "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে শাগোতোম।",
+    "welcome_3_shbagotom": "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে শ্বাগোতোম।",
+    "success_1_shofol": "আপনি সিনারিও তিন শফলভাবে সম্পন্ন করেছেন।",
+    "success_2_sofol": "আপনি সিনারিও তিন সফলভাবে সম্পন্ন করেছেন।",
+    "success_3_shophol": "আপনি সিনারিও তিন শোফলভাবে সম্পন্ন করেছেন।",
+}
 VARIANTS = {
     "A_precomposed": SIX + REST,
     "B_choyta": "ছয়টা" + REST,
@@ -107,20 +117,26 @@ def spoken(text):
     return text
 
 
-async def synth(text, voice, path):
-    await edge_tts.Communicate(spoken(text), voice).save(path)
+async def synth(text, voice, path, raw=False):
+    await edge_tts.Communicate(text if raw else spoken(text), voice).save(path)
     print("wrote", path, os.path.getsize(path), "bytes")
 
 
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variants", help="folder for pronunciation variants of the SC02 instruction line")
+    ap.add_argument("--words", help="folder for listening variants of the welcome / success words (text used as written)")
     ap.add_argument("--only", help="comma separated clip names to generate (for example VO_Sc03Inspect_bn)")
     ap.add_argument("--show", action="store_true", help="print the text the voice reads for every clip, write nothing")
     args = ap.parse_args()
     if args.show:
         for name, (voice, text) in CLIPS.items():
             print(name, "->", spoken(text))
+        return
+    if args.words:
+        os.makedirs(args.words, exist_ok=True)
+        for name, text in WORD_VARIANTS.items():
+            await synth(text, BN_VOICE, os.path.join(args.words, name + ".mp3"), raw=True)  # written exactly as given
         return
     if args.variants:
         os.makedirs(args.variants, exist_ok=True)

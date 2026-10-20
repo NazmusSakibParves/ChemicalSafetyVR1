@@ -188,7 +188,7 @@ namespace ChemicalSafety.Presentable
             var fwd = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
             fwd = fwd.sqrMagnitude < 0.0001f ? Vector3.forward : fwd.normalized;
             var right = Vector3.Cross(Vector3.up, fwd);
-            var pos = _cam.position + fwd * 0.68f + right * 0.2f + Vector3.down * 0.02f;
+            var pos = _cam.position + fwd * 0.66f + right * 0.26f + Vector3.down * 0.01f;
             _card.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, Vector3.up));
         }
 
@@ -204,11 +204,10 @@ namespace ChemicalSafety.Presentable
             var ringCanvas = PresentableUi.WorldCanvas("InspectRing", transform, new Vector2(512f, 512f), RingScale, false, 60);
             _ring = ringCanvas.transform;
             _ringGroup = ringCanvas.gameObject.AddComponent<CanvasGroup>();
-            PresentableUi.Img("Glow", _ring, new Vector2(-0.1f, -0.1f), new Vector2(1.1f, 1.1f), art.radialGlow,
-                new Color(Gold.r, Gold.g, Gold.b, 0.22f));
-            PresentableUi.Img("Ring", _ring, Vector2.zero, Vector2.one, art.ring, Gold, true);
-            PresentableUi.Img("Ring2", _ring, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.96f), art.ring,
-                new Color(Gold.r, Gold.g, Gold.b, 0.55f), true);
+            var ringSprite = art.ringThin != null ? art.ringThin : art.ring;
+            PresentableUi.Img("Glow", _ring, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f), art.radialGlow,
+                new Color(Gold.r, Gold.g, Gold.b, 0.07f));
+            PresentableUi.Img("Ring", _ring, Vector2.zero, Vector2.one, ringSprite, Color.white, true);
             PresentableUi.AlwaysOnTop(ringCanvas);
             _ring.gameObject.SetActive(false);
 
@@ -218,9 +217,9 @@ namespace ChemicalSafety.Presentable
             _scanGroup = scanCanvas.gameObject.AddComponent<CanvasGroup>();
             PresentableUi.Img("Label", _scan, new Vector2(0.08f, 0.06f), new Vector2(0.92f, 0.82f), art.sc03Label,
                 Color.white, true);
-            PresentableUi.Img("Frame", _scan, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.86f), art.scanFrame,
+            PresentableUi.Img("Frame", _scan, new Vector2(0.03f, 0.03f), new Vector2(0.97f, 0.56f), art.scanFrame,
                 Color.white);
-            var cap = PresentableUi.Text("Caption", _scan, new Vector2(0.1f, 0.88f), new Vector2(0.9f, 1f),
+            var cap = PresentableUi.Text("Caption", _scan, new Vector2(0.1f, 0.575f), new Vector2(0.9f, 0.69f),
                 Sc03Content.ScanCaption, 44f, Color.white, TextAlignmentOptions.Center, true, font);
             cap.enableAutoSizing = true;
             cap.fontSizeMin = 24f;
@@ -233,7 +232,7 @@ namespace ChemicalSafety.Presentable
 
         private void BuildCard(TMP_FontAsset font)
         {
-            var canvas = PresentableUi.WorldCanvas("InspectReport", transform, new Vector2(1000f, 700f), 0.00048f, true, 130);
+            var canvas = PresentableUi.WorldCanvas("InspectReport", transform, new Vector2(1000f, 700f), 0.00041f, true, 130);
             canvas.GetComponent<CanvasScaler>().dynamicPixelsPerUnit = 3f;
             _card = canvas.transform;
             _cardScale = _card.localScale;
@@ -271,6 +270,12 @@ namespace ChemicalSafety.Presentable
                 tmp.fontSizeMax = 36f;
                 _rows[i] = tmp;
             }
+
+            var orange = new Color(1f, 0.52f, 0.2f, 1f);
+            PresentableUi.Img("AccentTopH", _card, new Vector2(0.9f, 0.965f), new Vector2(1.03f, 0.985f), art.roundedSolid, orange);
+            PresentableUi.Img("AccentTopV", _card, new Vector2(1.01f, 0.84f), new Vector2(1.03f, 0.985f), art.roundedSolid, orange);
+            PresentableUi.Img("AccentBotH", _card, new Vector2(-0.03f, 0.015f), new Vector2(0.1f, 0.035f), art.roundedSolid, orange);
+            PresentableUi.Img("AccentBotV", _card, new Vector2(-0.03f, 0.015f), new Vector2(-0.01f, 0.16f), art.roundedSolid, orange);
 
             _continue = PresentableUi.Rect("ContinueButton", _card, new Vector2(0.28f, -0.2f), new Vector2(0.72f, -0.04f));
             _continue.gameObject.AddComponent<CanvasGroup>();

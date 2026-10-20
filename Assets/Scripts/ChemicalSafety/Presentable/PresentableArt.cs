@@ -55,6 +55,8 @@ namespace ChemicalSafety.Presentable
         public Sprite sc03Label;
         [Tooltip("White corner brackets for the Selected Label scan (SC03).")]
         public Sprite scanFrame;
+        [Tooltip("Thin glowing gold ring for the SC03 inspection.")]
+        public Sprite ringThin;
 
         [Header("Bangla text (pre-shaped images)")]
         public Sprite bnSalam;

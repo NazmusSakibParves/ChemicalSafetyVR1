@@ -32,10 +32,10 @@ namespace ChemicalSafety.Presentable
 
         public static readonly string[] ReportValues =
         {
-            "Organic Peroxide",
-            "Crystallized residue detected",
-            "Expired",
-            "12/08/2024"
+            "[IDENTIFIED: ORGANIC PEROXIDE]",
+            "[OBSERVATION: CRYSTALLIZED RESIDUE DETECTED]",
+            "[EXPIRED]",
+            "[12/08/2024]"
         };
 
         // ---- question (step05 - step08)

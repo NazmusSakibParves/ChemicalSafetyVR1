@@ -371,6 +371,7 @@ namespace ChemicalSafety.Editor
             art.sdsSc03 = LoadSprite("2D/Sc03/SDS_SC03");
             art.sc03Label = LoadSprite("2D/Sc03/DrumLabel_SC03");
             art.scanFrame = G("FX_ScanFrame");
+            art.ringThin = G("FX_RingThin");
             art.bnSalam = B("BN_Salam");
             art.bnWelcomeSub = B("BN_WelcomeSub");
             art.bnInstructionSub = B("BN_InstructionSub");
