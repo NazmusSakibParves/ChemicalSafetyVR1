@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c4f02cf07ef5d60419c9edec78fd72ca
+guid: fa0a24ec11379684689aa4ad1ab9fdac
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7019489513538084154
-    second: FX_Flame_0
+      213: -2472237941773112453
+    second: FX_Soot_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: FX_Flame_0
+      name: FX_Soot_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 256
-        height: 256
+        width: 512
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6c2abf07a73c59e90800000000000000
-      internalID: -7019489513538084154
+      spriteID: b7bee50c0b8d0bdd0800000000000000
+      internalID: -2472237941773112453
       vertices: []
       indices: 
       edges: []

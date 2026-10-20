@@ -42,7 +42,7 @@ namespace ChemicalSafety.Presentable
         public const string QuestionHeader = "IMMEDIATE ACTION PROTOCOL";
         public const string QuestionPrompt = "Question 3: What is the correct immediate action?";
         public const string CorrectTitle = "CORRECT ACTION!";
-        public const string FinishLabel = "FINISH";
+        public const string FinishLabel = "NEXT";
         public const int CorrectIndex = 1;
 
         public static readonly string[] OptionLabels =
@@ -71,6 +71,6 @@ namespace ChemicalSafety.Presentable
             "DANGER: VIOLENT REACTION"
         };
 
-        public const string ModuleComplete = "Scenario 3 complete. Training finished. Well done!";
+        public const string ModuleComplete = "Scenario 3 completed successfully.";
     }
 }

@@ -712,11 +712,19 @@ namespace ChemicalSafety.Presentable
             Say("SC03 mcq open = " + mcq3.IsOpen);
             yield return Shot("19_sc03_question");
             Click(mcq3.transform, "Row1");
-            yield return new WaitForSeconds(1.6f);
+            Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.25f - Camera.main.transform.position);
+            yield return new WaitForSeconds(0.2f);
+            yield return Shot("20a_blast_0");
+            yield return new WaitForSeconds(0.5f);
+            yield return Shot("20b_blast_1");
+            yield return new WaitForSeconds(1.2f);
             Say("SC03 wrong answer: detonation active = " + det.IsActive + ", clip = " +
-                (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
-            Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.2f - Camera.main.transform.position);
-            yield return Shot("20_sc03_detonation");
+                (voiceSrc.clip != null ? voiceSrc.clip.name : "none") + ", particles = " +
+                det.GetComponentsInChildren<ParticleSystem>().Length);
+            yield return Shot("20c_blast_2");
+            yield return new WaitForSeconds(2.0f);
+            yield return Shot("20d_blast_3");
+            Say("SC03 stats during the blast: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls);
             Camera.main.transform.localRotation = camKeep3;
             Click(mcq3.transform, "Close");
             yield return new WaitForSeconds(0.8f);

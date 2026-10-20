@@ -5,7 +5,6 @@ Output (re-run: python Tools/generate_sc03_room_art.py):
   Assets/Art/Presentable/2D/Env/SC03_Floor.png     cracked concrete (tiles)
   Assets/Art/Presentable/2D/Env/SC03_Residue.png   white crystalline residue patch (alpha)
   Assets/Art/Presentable/2D/Generated/FX_ScanFrame.png  white corner brackets for the "Selected Label" scan
-  Assets/Art/Presentable/2D/Generated/FX_Flame.png      upright flame puff for the detonation particles
 """
 import os
 
@@ -112,27 +111,7 @@ def scan_frame():
     save(im, GEN, "FX_ScanFrame.png")
 
 
-def flame():
-    n = 256
-    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
-    u = (xx - n / 2) / (n / 2)          # -1..1 across
-    v = 1.0 - yy / n                    # 0 bottom .. 1 top
-    turb = fbm(n, 17) - 0.5
-    width = 0.62 * np.sin(np.clip(v * 1.15, 0, 1) * np.pi * 0.62) ** 0.8 * (1.0 - 0.55 * v)
-    d = np.abs(u + turb * 0.55 * v) / np.maximum(width, 0.04)
-    core = np.clip(1.0 - d, 0, 1) ** 1.3
-    tip = np.clip((1.0 - v) * 5.0, 0, 1)  # soft bottom edge
-    top = np.clip((1.0 - v) * 3.0 + 0.0, 0, 1) if False else np.clip((0.98 - v) * 6.0, 0, 1)
-    a = np.clip(core * tip * top * (0.85 + 0.3 * turb), 0, 1)
-    # hot white centre, orange rim (particles tint the whole sprite)
-    heat = np.clip(core ** 2.2 * 1.4, 0, 1)
-    rgb = np.dstack([np.full_like(a, 255), 150 + 105 * heat, 40 + 190 * heat])
-    im = Image.fromarray(np.dstack([rgb, a * 255]).astype(np.uint8), "RGBA")
-    save(im.filter(ImageFilter.GaussianBlur(1.2)), GEN, "FX_Flame.png")
-
-
 if __name__ == "__main__":
-    flame()
     wall()
     floor()
     residue()

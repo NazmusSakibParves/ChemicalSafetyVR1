@@ -243,8 +243,28 @@ namespace ChemicalSafety.Editor
                 lights[i] = MakeLight(room, "SirenLight" + i, lp + Vector3.down * 0.2f, new Color(1f, 0.1f, 0.05f), 0f, 5f);
             }
 
+            Texture2D Gen(string file) => AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Generated/" + file);
             var glow = art.radialGlow != null ? art.radialGlow.texture : null;
-            var flame = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Generated/FX_Flame.png");
+            var ringTex = art.ring != null ? art.ring.texture : null;
+
+            // burst drum (top peeled open, charred), blown-off lid, scorch marks
+            var burst = BuildBurstDrum(room, hero, heroPos);
+            var lidGo = Prim("DrumLid", PrimitiveType.Cylinder, room, heroPos, new Vector3(0.58f, 0.025f, 0.58f),
+                Mat("Sc03Lid", new Color(0.05f, 0.22f, 0.72f), 0.55f, 0.15f));
+            lidGo.SetActive(false);
+            var sootTex = Gen("FX_Soot.png");
+            var sootMat = MatAlpha("Sc03Soot", sootTex, new Color(1f, 1f, 1f, 0f), false);
+            var wallX = ox - half + 0.012f;
+            var soot = new[]
+            {
+                QuadObj("SootWall", room, new Vector3(wallX, body.center.y + 0.35f, heroZ), new Vector3(0f, -90f, 0f),
+                    new Vector2(2.1f, 2.1f), sootMat).GetComponent<Renderer>(),
+                QuadObj("SootDeckTop", room, new Vector3(ox - half + 0.37f, decks[2] - 0.045f, heroZ), new Vector3(-90f, 0f, 0f),
+                    new Vector2(1.3f, 0.9f), sootMat).GetComponent<Renderer>(),
+                QuadObj("SootDeck", room, new Vector3(ox - half + 0.37f, decks[1] + 0.006f, heroZ), new Vector3(90f, 0f, 0f),
+                    new Vector2(1.1f, 0.8f), sootMat).GetComponent<Renderer>()
+            };
+
             var detGo = new GameObject("Sc03Detonation");
             detGo.transform.SetParent(room, false);
             detGo.transform.position = new Vector3(body.center.x, body.max.y - 0.05f, body.center.z);
@@ -252,11 +272,22 @@ namespace ChemicalSafety.Editor
             var dso = new SerializedObject(refs.detonation);
             dso.FindProperty("origin").objectReferenceValue = detGo.transform;
             dso.FindProperty("drum").objectReferenceValue = hero.transform;
-            dso.FindProperty("fireMaterial").objectReferenceValue = ParticleMat("Sc03Fire", flame != null ? flame : glow, true);
-            dso.FindProperty("smokeMaterial").objectReferenceValue = ParticleMat("Sc03Smoke", glow, false);
-            dso.FindProperty("sparkMaterial").objectReferenceValue = ParticleMat("Sc03Spark", glow, true);
+            dso.FindProperty("burstDrum").objectReferenceValue = burst;
+            dso.FindProperty("lid").objectReferenceValue = lidGo.transform;
+            dso.FindProperty("fireSheet").objectReferenceValue = ParticleMat("Sc03FireSheet", Gen("FX_FireSheet.png"), true);
+            dso.FindProperty("smokeSheet").objectReferenceValue = ParticleMat("Sc03SmokeSheet", Gen("FX_SmokeSheet.png"), false);
+            dso.FindProperty("glowAdd").objectReferenceValue = ParticleMat("Sc03Spark", glow, true);
+            dso.FindProperty("dustMaterial").objectReferenceValue = ParticleMat("Sc03Dust", glow, false);
+            dso.FindProperty("ringMaterial").objectReferenceValue = ParticleMat("Sc03Ring", ringTex, true);
+            dso.FindProperty("shardMaterial").objectReferenceValue = ShardMat();
+            dso.FindProperty("shardMesh").objectReferenceValue = ShardMesh();
             dso.FindProperty("lampOn").objectReferenceValue = lampOn;
             dso.FindProperty("lampOff").objectReferenceValue = lampOff;
+            dso.FindProperty("vignette").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Sprite>(ArtRoot + "/2D/Generated/FX_Vignette.png");
+            var sootProp = dso.FindProperty("scorch");
+            sootProp.arraySize = soot.Length;
+            for (var i = 0; i < soot.Length; i++)
+                sootProp.GetArrayElementAtIndex(i).objectReferenceValue = soot[i];
             var lampProp = dso.FindProperty("sirenLamps");
             lampProp.arraySize = lamps.Length;
             var lightProp = dso.FindProperty("sirenLights");
@@ -321,6 +352,186 @@ namespace ChemicalSafety.Editor
             EditorUtility.SetDirty(m);
             Mats[name] = m;
             return m;
+        }
+
+        // Plastic-blue lit particle material for the flying drum shards.
+        private static Material ShardMat()
+        {
+            const string name = "Sc03Shard";
+            if (Mats.TryGetValue(name, out var cached))
+                return cached;
+            var path = GenDir + "/M_" + name + ".mat";
+            var shader = Shader.Find("Universal Render Pipeline/Particles/Lit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null)
+            {
+                m = new Material(shader);
+                AssetDatabase.CreateAsset(m, path);
+            }
+            else
+            {
+                m.shader = shader;
+            }
+
+            m.SetFloat("_Surface", 0f);
+            m.SetFloat("_Cull", 0f);
+            m.SetFloat("_Smoothness", 0.55f);
+            m.SetColor("_BaseColor", new Color(0.05f, 0.24f, 0.78f));
+            EditorUtility.SetDirty(m);
+            Mats[name] = m;
+            return m;
+        }
+
+        // A thin, slightly bent triangular plastic chip (both faces), used as a mesh particle.
+        private static Mesh ShardMesh()
+        {
+            var path = GenDir + "/Mesh_Sc03Shard.asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = new Mesh { name = "Sc03Shard" };
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+
+            var v = new[]
+            {
+                new Vector3(0f, 0.55f, 0f), new Vector3(-0.32f, -0.4f, 0.05f), new Vector3(0.4f, -0.3f, -0.04f),
+                new Vector3(0.05f, -0.05f, 0.09f)
+            };
+            var verts = new System.Collections.Generic.List<Vector3>(v);
+            var tris = new System.Collections.Generic.List<int>
+            {
+                0, 1, 3, 1, 2, 3, 2, 0, 3,   // front fan
+                0, 3, 1, 1, 3, 2, 2, 3, 0    // back faces
+            };
+            mesh.Clear();
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
+        // The hero drum after the blast: a copy of its mesh with the top peeled open into jagged petals and the lid
+        // sunk into a hole, charred and glowing. Hidden until Sc03Detonation swaps it in.
+        private static GameObject BuildBurstDrum(Transform room, GameObject hero, Vector3 floorPos)
+        {
+            var burst = PlaceSizedModel("3D/Sc03Drum", "HeroDrumBurst", room, floorPos, 0f, 0.9f);
+            burst.transform.rotation = hero.transform.rotation;
+            var mf = burst.GetComponentInChildren<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null)
+            {
+                Debug.LogWarning("[Presentable] SC03 burst drum: no mesh found.");
+                burst.SetActive(false);
+                return burst;
+            }
+
+            var src = mf.sharedMesh;
+            var verts = src.vertices;
+            var local = new Vector3[verts.Length];
+            var top = float.MinValue;
+            var rMax = 0f;
+            for (var i = 0; i < verts.Length; i++)
+            {
+                local[i] = burst.transform.InverseTransformPoint(mf.transform.TransformPoint(verts[i]));
+                top = Mathf.Max(top, local[i].y);
+                rMax = Mathf.Max(rMax, new Vector2(local[i].x, local[i].z).magnitude);
+            }
+
+            for (var i = 0; i < local.Length; i++)
+            {
+                var p = local[i];
+                var r = new Vector2(p.x, p.z).magnitude;
+                var ang = Mathf.Atan2(p.z, p.x);
+                var n1 = 0.5f + 0.5f * Mathf.Sin(3f * ang + 1.3f) * Mathf.Cos(5f * ang - 0.4f);
+                var n2 = 0.5f + 0.5f * Mathf.Sin(7f * ang + 0.7f);
+                var n3 = 0.5f + 0.5f * Mathf.Sin(11f * ang - 1.1f) * Mathf.Cos(4f * ang);
+                var cutY = top * (0.74f + 0.1f * n1);
+                if (p.y > cutY)
+                {
+                    if (p.y > top - 0.03f && r < rMax * 0.8f)
+                    {
+                        // the lid cap sinks into a dark hole
+                        p.y = cutY - 0.05f - 0.04f * n2;
+                        var k = r > 1e-4f ? 0.82f : 1f;
+                        p.x *= k;
+                        p.z *= k;
+                    }
+                    else
+                    {
+                        var s = (p.y - cutY) * (0.6f + 0.8f * n3);
+                        var phi = (65f + 55f * n2) * Mathf.Deg2Rad;
+                        var dir = r > 1e-4f ? new Vector2(p.x, p.z) / r : Vector2.right;
+                        var rr = r + s * Mathf.Sin(phi) * 1.25f;
+                        p.x = dir.x * rr;
+                        p.z = dir.y * rr;
+                        p.y = cutY + s * Mathf.Cos(phi) * 0.6f - s * 0.35f;
+                    }
+                }
+
+                local[i] = p;
+            }
+
+            for (var i = 0; i < verts.Length; i++)
+                verts[i] = mf.transform.InverseTransformPoint(burst.transform.TransformPoint(local[i]));
+
+            var path = GenDir + "/Mesh_Sc03BurstDrum.asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = Object.Instantiate(src);
+                mesh.name = "Sc03BurstDrum";
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+
+            mesh.Clear();
+            mesh.indexFormat = src.indexFormat;
+            mesh.vertices = verts;
+            mesh.uv = src.uv;
+            mesh.subMeshCount = src.subMeshCount;
+            for (var si = 0; si < src.subMeshCount; si++)
+                mesh.SetTriangles(src.GetTriangles(si), si);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            mf.sharedMesh = mesh;
+
+            // charred copies of the glTF materials (body glows like hot metal)
+            var rend = mf.GetComponent<Renderer>();
+            var mats = rend.sharedMaterials;
+            var burnt = new Material[mats.Length];
+            for (var i = 0; i < mats.Length; i++)
+            {
+                var mp = GenDir + "/M_Sc03Burnt_" + i + ".mat";
+                var copy = AssetDatabase.LoadAssetAtPath<Material>(mp);
+                if (copy == null)
+                {
+                    copy = new Material(mats[i]);
+                    AssetDatabase.CreateAsset(copy, mp);
+                }
+                else
+                {
+                    copy.CopyPropertiesFromMaterial(mats[i]);
+                }
+
+                if (copy.HasProperty("baseColorFactor"))
+                {
+                    var c = mats[i].GetColor("baseColorFactor");
+                    var dark = i == 0 ? 0.22f : 0.4f;
+                    copy.SetColor("baseColorFactor", new Color(c.r * dark, c.g * dark, c.b * dark, c.a));
+                }
+
+                if (i == 0 && copy.HasProperty("emissiveFactor"))
+                    copy.SetColor("emissiveFactor", new Color(0.7f, 0.17f, 0.03f));
+                EditorUtility.SetDirty(copy);
+                burnt[i] = copy;
+            }
+
+            rend.sharedMaterials = burnt;
+            burst.SetActive(false);
+            return burst;
         }
 
         // Instantiates a glb scaled so its tallest part is targetHeight, bottom centre on floorPos, yaw about the pivot.
