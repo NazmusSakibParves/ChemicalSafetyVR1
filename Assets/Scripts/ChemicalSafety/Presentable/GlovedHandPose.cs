@@ -24,6 +24,12 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private GameObject controllerVisualToHide;
         [SerializeField] private Vector3 localEuler = new Vector3(0f, 0f, 0f);
         [SerializeField] private float scale = 1.06f;
+        [Tooltip("Ribbed glove cuff at the wrist (blue).")]
+        [SerializeField] private Material cuffMaterial;
+        [Tooltip("Lab-coat sleeve that hides the end of the hand mesh.")]
+        [SerializeField] private Material sleeveMaterial;
+        [Tooltip("Optional glove surface skinned to the same skeleton; replaces the stock hand mesh.")]
+        [SerializeField] private Mesh gloveMesh;
 
         private Transform _hand;
         private Transform _tipBone;
@@ -34,6 +40,11 @@ namespace ChemicalSafety.Presentable
         private Transform[] _indexBones;
         private Quaternion[] _indexBase;
         private Coroutine _curl;
+        private Transform[] _graspBones;
+        private Quaternion[] _graspBase;
+        private float[] _graspExtra;
+        private float _grasp;
+        private Coroutine _graspRoutine;
 
         /// <summary>The gloved right hand (null until it has spawned).</summary>
         public static GlovedHandPose Right { get; private set; }
@@ -70,6 +81,8 @@ namespace ChemicalSafety.Presentable
 
             foreach (var smr in _hand.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
+                if (gloveMesh != null)
+                    smr.sharedMesh = gloveMesh;
                 if (gloveMaterial != null)
                     smr.sharedMaterial = gloveMaterial;
                 smr.updateWhenOffscreen = true;
@@ -82,6 +95,8 @@ namespace ChemicalSafety.Presentable
             _solidMask = LayerMask.GetMask("SolidProps");
             CaptureIndex();
             Palm = FindDeep(_hand, (isRight ? "R_" : "L_") + "Palm");
+            CaptureGrasp();
+            BuildSleeve();
             if (isRight)
                 Right = this;
             else
@@ -165,6 +180,81 @@ namespace ChemicalSafety.Presentable
             _indexBase = new Quaternion[_indexBones.Length];
             for (var i = 0; i < _indexBones.Length; i++)
                 _indexBase[i] = _indexBones[i] != null ? _indexBones[i].localRotation : Quaternion.identity;
+        }
+
+        // Cuff and sleeve: the stock hand mesh stops at the wrist (hand local +Z points to the fingers), so a short
+        // ribbed cuff and a lab-coat sleeve continue it backwards instead of leaving the hand floating.
+        private void BuildSleeve()
+        {
+            if (_hand == null || (cuffMaterial == null && sleeveMaterial == null))
+                return;
+            void Tube(string name, float zCentre, float length, float radius, Material mat)
+            {
+                if (mat == null)
+                    return;
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                go.name = name;
+                Destroy(go.GetComponent<Collider>());
+                go.transform.SetParent(_hand, false);
+                go.transform.localPosition = new Vector3(0f, -0.004f, zCentre);
+                go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                go.transform.localScale = new Vector3(radius * 2f, length * 0.5f, radius * 2f);
+                var r = go.GetComponent<MeshRenderer>();
+                r.sharedMaterial = mat;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                r.receiveShadows = false;
+            }
+
+            Tube("GloveCuff", -0.108f, 0.05f, 0.036f, cuffMaterial);
+            Tube("GloveCuffRib", -0.135f, 0.012f, 0.039f, cuffMaterial);
+            // with the glove mesh the cuff is part of the surface (to z -0.118), the sleeve starts right behind it
+            Tube("LabSleeve", cuffMaterial != null ? -0.25f : -0.22f, 0.22f, 0.041f, sleeveMaterial);
+        }
+
+        // Extra finger bend (on top of the pose) that closes the fingers around a held container.
+        private void CaptureGrasp()
+        {
+            var p = isRight ? "R_" : "L_";
+            var names = new[]
+            {
+                "IndexProximal", "IndexIntermediate", "IndexDistal", "MiddleProximal", "MiddleIntermediate", "MiddleDistal",
+                "RingProximal", "RingIntermediate", "RingDistal", "LittleProximal", "LittleIntermediate", "LittleDistal",
+                "ThumbProximal", "ThumbDistal"
+            };
+            var extra = new[] { 30f, 36f, 20f, 36f, 40f, 24f, 38f, 42f, 24f, 40f, 42f, 24f, 14f, 22f };
+            _graspBones = new Transform[names.Length];
+            _graspBase = new Quaternion[names.Length];
+            _graspExtra = extra;
+            for (var i = 0; i < names.Length; i++)
+            {
+                _graspBones[i] = FindDeep(_hand, p + names[i]);
+                _graspBase[i] = _graspBones[i] != null ? _graspBones[i].localRotation : Quaternion.identity;
+            }
+        }
+
+        /// <summary>0 = relaxed pose, 1 = fingers closed around a held container.</summary>
+        public void SetGrasp(float target)
+        {
+            if (_graspBones == null)
+                return;
+            if (_graspRoutine != null)
+                StopCoroutine(_graspRoutine);
+            _graspRoutine = StartCoroutine(GraspRoutine(target));
+        }
+
+        private IEnumerator GraspRoutine(float target)
+        {
+            var from = _grasp;
+            yield return PresentableFx.Tween(0.3f, t =>
+            {
+                _grasp = Mathf.Lerp(from, target, t);
+                for (var i = 0; i < _graspBones.Length; i++)
+                {
+                    if (_graspBones[i] != null)
+                        _graspBones[i].localRotation = _graspBase[i] * Quaternion.Euler(_graspExtra[i] * _grasp, 0f, 0f);
+                }
+            }, PresentableFx.EaseOutCubic);
+            _graspRoutine = null;
         }
 
         /// <summary>Briefly curls the index finger (poke feedback), then straightens it again.</summary>

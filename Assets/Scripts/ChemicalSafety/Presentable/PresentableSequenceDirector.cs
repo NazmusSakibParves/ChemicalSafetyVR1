@@ -43,7 +43,13 @@ namespace ChemicalSafety.Presentable
 
         [Header("SC02")]
         [SerializeField] private Transform spawnSc02;
-        [SerializeField] private FloorHotspot hotspotSc02;
+        [Tooltip("Stand Here marker beside the pallet (arm's reach of the containers).")]
+        [SerializeField] private FloorHotspot hotspotSc02Pick;
+        [Tooltip("Spot in front of the glass cabinet (arm's reach of the doors). No marker is drawn there.")]
+        [SerializeField] private Transform shelfStand;
+        [Tooltip("Seconds the user gets to walk to the cabinet before the rig glides there.")]
+        [SerializeField] private float shelfPatience = 20f;
+        [SerializeField] private ContainerPlacement placement;
         [SerializeField] private PresentableMcqPanel mcqSc02;
         [SerializeField] private GameObject envSc01;
         [SerializeField] private GameObject envSc02;
@@ -227,11 +233,12 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Hide();
 
             Stage("sc02Explore");
-            SetRoomInteractable(true);
-            yield return WaitHotspot(hotspotSc02);
-            SetRoomInteractable(false);
-            yield return FadeReposition(hotspotSc02.transform, Flat(spawnSc02.forward), mcqSc02);
-            yield return RunQuestion(mcqSc02, BuildSc02Question(), false);
+            yield return RunPlacement();
+
+            Stage("sc02Question");
+            // the question opens in front of the user, back at the room entrance so the glass doors are not in the way
+            yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
+            yield return RunQuestion(mcqSc02, BuildSc02Question(), false, 2);
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
@@ -441,7 +448,99 @@ namespace ChemicalSafety.Presentable
             t.rotation = Quaternion.LookRotation(fwd, Vector3.up) * Quaternion.Euler(8f, 0f, 0f);
         }
 
-        private IEnumerator RunQuestion(PresentableMcqPanel panel, PresentableMcqPanel.Question q, bool useDrums)
+        // SC02: walk to the pallet, pick a container, carry it to the cabinet, place it; repeat for all six.
+        // The Stand Here markers are walked onto; if the user does not get there the rig glides (comfort fallback).
+        private IEnumerator RunPlacement()
+        {
+            subtitle.Show(null, "Touch a chemical container, then place it in the matching compartment.", 7f);
+            SetRoomInteractable(true);
+            inspect.SetCardAllowed(true);
+            chart.SetDistance(1.05f);
+            if (placement != null)
+                placement.SetActive(true);
+            yield return WalkOrGlide(hotspotSc02Pick);
+            while (placement != null && placement.Placed < placement.Total)
+            {
+                while (!inspect.HasHeld)
+                    yield return null;
+                hotspotSc02Pick.Hide();
+                // voice-over: put the chemical in the compartment that suits its type
+                StartCoroutine(SubtitledVoice(null, "Place the chemical in the correct compartment for its type.",
+                    art.voSc02PlaceHint));
+                yield return WalkToShelf();
+                if (placement != null)
+                    placement.AdjustRows(_cam != null ? _cam.position.y - rig.position.y : 1.6f);
+                // at the cabinet: no details card (its chart box sits where the finger works) and the large chart
+                // opens close enough not to land inside the compartment
+                inspect.SetCardAllowed(false);
+                chart.SetDistance(0.6f);
+                var before = placement.Placed;
+                while (placement.Placed == before)
+                    yield return null;
+                if (placement.Placed >= placement.Total)
+                    break;
+                inspect.SetCardAllowed(true);
+                chart.SetDistance(1.05f);
+                yield return WalkOrGlide(hotspotSc02Pick);
+            }
+
+            // let the last door finish closing before the question appears
+            while (placement != null && placement.IsBusy)
+                yield return null;
+            yield return PresentableFx.Wait(0.4f);
+            if (placement != null)
+                placement.SetActive(false);
+            SetRoomInteractable(false);
+            subtitle.Hide();
+            hotspotSc02Pick.Hide();
+        }
+
+        // Walk to the cabinet; if the user is not within reach after a while the rig glides there (no marker).
+        private IEnumerator WalkToShelf()
+        {
+            if (shelfStand == null)
+                yield break;
+            var waited = 0f;
+            while (waited < shelfPatience)
+            {
+                var d = new Vector2(_cam.position.x - shelfStand.position.x, _cam.position.z - shelfStand.position.z);
+                if (d.magnitude < 0.8f)
+                    yield break;
+                // reading the details card or the large chart does not use up the time
+                if (chart == null || !chart.IsOpen)
+                    waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return Glide(shelfStand.position, 1.1f);
+        }
+
+        private IEnumerator WalkOrGlide(FloorHotspot hotspot, float patience = 8f)
+        {
+            if (hotspot == null)
+                yield break;
+            _hotspotHit = false;
+            void OnHit() => _hotspotHit = true;
+            hotspot.Activated += OnHit;
+            hotspot.Arm();
+            var waited = 0f;
+            while (!_hotspotHit && waited < patience)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (!_hotspotHit)
+            {
+                yield return Glide(hotspot.transform.position, 1.1f);
+                hotspot.Activate();
+            }
+
+            hotspot.Activated -= OnHit;
+        }
+
+        private IEnumerator RunQuestion(PresentableMcqPanel panel, PresentableMcqPanel.Question q, bool useDrums,
+            int scenario = 1)
         {
             _nextPressed = false;
 
@@ -463,7 +562,7 @@ namespace ChemicalSafety.Presentable
             {
                 if (_answerVoice != null)
                     StopCoroutine(_answerVoice);
-                _answerVoice = StartCoroutine(AnswerVoice(correct, useDrums));
+                _answerVoice = StartCoroutine(AnswerVoice(correct, scenario));
             }
 
             void OnNext() => _nextPressed = true;
@@ -492,17 +591,17 @@ namespace ChemicalSafety.Presentable
         }
 
         // No subtitle here: the always-on-top bar would cover the correct / wrong card, which already shows the text.
-        private IEnumerator AnswerVoice(bool correct, bool scenarioOne)
+        private IEnumerator AnswerVoice(bool correct, int scenario)
         {
             yield return PresentableFx.Wait(0.25f);
             StopVoice();
             subtitle.Hide();
             yield return PlayVoice(correct ? art.voCorrect : art.voWrong);
-            if (!correct || !scenarioOne)
+            if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
-            yield return PlayVoice(art.voSc01CompleteBn);
-            yield return PlayVoice(art.voSc01CompleteEn);
+            yield return PlayVoice(scenario == 2 ? art.voSc02CompleteBn : art.voSc01CompleteBn);
+            yield return PlayVoice(scenario == 2 ? art.voSc02CompleteEn : art.voSc01CompleteEn);
         }
 
         private void SetRoomInteractable(bool value)
@@ -698,7 +797,7 @@ namespace ChemicalSafety.Presentable
                 header = "STORAGE DECISION CHALLENGE",
                 prompt = "Question 2.1: Flammable Solvent Placement. Where does it go?",
                 correctIndex = 1,
-                nextLabel = "FINISH",
+                nextLabel = "NEXT",
                 correctTitle = "CORRECT PLACEMENT!",
                 options = new[]
                 {

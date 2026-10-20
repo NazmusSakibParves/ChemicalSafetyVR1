@@ -170,6 +170,33 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(0.4f);
         }
 
+        // The chart box on the details card must be within arm's reach and open the chart when touched.
+        private IEnumerator ChartBoxTouchTest(ContainerInspect inspect, ChartViewer chart)
+        {
+            var hand = GlovedHandPose.Right;
+            var card = FindDeep(inspect.transform, "InspectCard");
+            var box = card != null ? FindDeep(card, "ChartBox") : null;
+            if (hand == null || box == null)
+            {
+                Say("FAIL: chart box touch test needs the right glove and the card");
+                yield break;
+            }
+
+            var rt = (RectTransform)box;
+            var centre = rt.TransformPoint(rt.rect.center);
+            Say("chart box distance from the head = " +
+                Vector3.Distance(Camera.main.transform.position, centre).ToString("0.00") + " m (reach is about 0.65)");
+            var ctl = hand.transform;
+            var keep = ctl.position;
+            ctl.position += centre + card.forward * 0.04f - hand.PressPoint; // 4 cm behind the box
+            yield return new WaitForSeconds(0.7f);
+            Say("chart opened by touching the box = " + chart.IsOpen + " -> " + (chart.IsOpen ? "OK" : "FAIL"));
+            if (chart.IsOpen)
+                Click(chart.transform, "CloseChart");
+            ctl.position = keep;
+            yield return new WaitForSeconds(0.8f);
+        }
+
         private IEnumerator Main()
         {
             _director = FindFirstObjectByType<PresentableSequenceDirector>();
@@ -416,18 +443,37 @@ namespace ChemicalSafety.Presentable
             roomCam.localRotation = Quaternion.Euler(-4f, -62f, 0f) ;
             roomCam.localRotation = roomKeep;
 
+            var hsPick = Get<FloorHotspot>(_director, "hotspotSc02Pick");
+            var placement = Get<ContainerPlacement>(_director, "placement");
+            var inspect = Get<ContainerInspect>(_director, "inspect");
             var doors = Get<CompartmentDoor[]>(_director, "doors");
-            Say("doors = " + (doors != null ? doors.Length : 0));
-            if (doors != null && doors.Length > 0 && doors[0] != null)
+            var chart = Get<ChartViewer>(_director, "chart");
+            Say("pick marker armed = " + hsPick.IsArmed +
+                ", placement = " + (placement != null) + ", inspect = " + (inspect != null && inspect.Count == 6));
+
+            // reach: horizontal distance from the Stand Here marker to every container (arm reach is about 0.7 m)
+            for (var ri = 0; ri < inspect.Count; ri++)
             {
-                Poke(doors[0].GetComponent<PokeTarget>());
-                yield return new WaitForSeconds(0.7f);
-                doors[0].FlashWrong();
-                yield return new WaitForSeconds(0.35f);
-                yield return Shot("12_sc02_door");
+                var cr = inspect.PokeOf(ri).GetComponent<Renderer>();
+                var cp = cr != null ? cr.bounds.center : inspect.PokeOf(ri).transform.position;
+                var mp = hsPick.transform.position;
+                Say("reach container " + ri + " from the pick marker: " +
+                    Vector2.Distance(new Vector2(cp.x, cp.z), new Vector2(mp.x, mp.z)).ToString("0.00") + " m");
             }
 
-            var chart = Get<ChartViewer>(_director, "chart");
+            // walk to the pallet marker
+            hsPick.Activate();
+            yield return new WaitForSeconds(0.6f);
+
+            // doors with nothing in the hand: plain open / close
+            Poke(doors[0].GetComponent<PokeTarget>());
+            yield return new WaitForSeconds(1.0f);
+            Say("door 0 open after a poke (empty hand) = " + doors[0].IsOpen);
+            yield return Shot("12_sc02_door");
+            Poke(doors[0].GetComponent<PokeTarget>());
+            yield return new WaitForSeconds(1.0f);
+            Say("door 0 open after the second poke = " + doors[0].IsOpen + " (expected False)");
+
             if (chart != null)
             {
                 Poke(chart.GetComponent<PokeTarget>());
@@ -438,49 +484,123 @@ namespace ChemicalSafety.Presentable
                 yield return new WaitForSeconds(0.4f);
             }
 
-            var inspect = Get<ContainerInspect>(_director, "inspect");
-            if (inspect == null || inspect.Count < 6)
+            // container inspect: hand + card + chart box + card text fit
+            Poke(inspect.PokeOf(0));
+            yield return new WaitForSeconds(1.0f);
+            Say("held after poke 1 = " + inspect.HeldName);
+            yield return Shot("13b_inspect_held");
+
+            // grip: put the left glove where a hand would be; the container should rest in the palm with the
+            // fingers closed round it, and the scan beam runs from it to the details card
+            var cam0 = Camera.main.transform;
+            inspect.ForceHandMode();
+            var lhand = GlovedHandPose.Left;
+            if (lhand != null)
             {
-                Say("FAIL: container inspect missing or incomplete");
+                lhand.transform.SetPositionAndRotation(
+                    cam0.position + cam0.forward * 0.5f + cam0.right * -0.16f + cam0.up * -0.2f, cam0.rotation);
+                yield return new WaitForSeconds(1.3f);
+                yield return Shot("13f_grip");
+                var beamT = inspect.transform.Find("ScanBeam");
+                var beamLr = beamT != null ? beamT.GetComponent<LineRenderer>() : null;
+                Say("scan beam visible = " + (beamLr != null && beamLr.enabled));
             }
             else
             {
-                Say("inspect containers = " + inspect.Count + " first pokeable = " + inspect.PokeOf(0).Interactable);
-                Poke(inspect.PokeOf(0));
-                yield return new WaitForSeconds(1.0f);
-                Say("held after poke 1 = " + inspect.HeldName);
-                yield return Shot("13b_inspect_held");
-                var card = FindDeep(inspect.transform, "InspectCard");
-                Click(card, "ChartBox");
-                yield return new WaitForSeconds(0.6f);
-                Say("chart open from card = " + chart.IsOpen);
-                yield return Shot("13c_inspect_chart");
-                Click(chart.transform, "CloseChart");
-                yield return new WaitForSeconds(0.5f);
-                Say("chart open after close = " + chart.IsOpen);
-                Poke(inspect.PokeOf(1));
-                yield return new WaitForSeconds(1.0f);
-                Say("held after poke 2 = " + inspect.HeldName);
-                yield return Shot("13d_inspect_second");
-                Poke(inspect.PokeOf(1));
-                yield return new WaitForSeconds(0.8f);
-                Say("held after poking it again = '" + inspect.HeldName + "'");
-                for (var ci = 0; ci < inspect.Count; ci++)
-                {
-                    Poke(inspect.PokeOf(ci));
-                    yield return new WaitForSeconds(0.9f);
-                    var spill = inspect.CheckCardFits();
-                    Say("card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill.Length == 0) +
-                        (spill.Length > 0 ? " FAIL spill: " + spill : ""));
-                    if (ci == 0 || ci == 3 || ci == 5)
-                        yield return Shot("13e_inspect_card_" + ci);
-                }
-
-                Say("held before hotspot = " + inspect.HeldName);
+                Say("FAIL: no left glove for the grip test");
+            }
+            var card = FindDeep(inspect.transform, "InspectCard");
+            Click(card, "ChartBox");
+            yield return new WaitForSeconds(0.6f);
+            Say("chart open from card = " + chart.IsOpen);
+            yield return new WaitForSeconds(0.5f);
+            Say("details card visible while the chart is open = " + inspect.CardVisible + " (expected False)");
+            Click(chart.transform, "CloseChart");
+            yield return new WaitForSeconds(0.7f);
+            Say("details card visible after the chart closed = " + inspect.CardVisible + " (expected True)");
+            yield return ChartBoxTouchTest(inspect, chart);
+            for (var ci = 0; ci < inspect.Count; ci++)
+            {
+                Poke(inspect.PokeOf(ci));
+                yield return new WaitForSeconds(0.9f);
+                var spill = inspect.CheckCardFits();
+                Say("card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill.Length == 0) +
+                    (spill.Length > 0 ? " FAIL spill: " + spill : ""));
+                if (ci == 0 || ci == 5)
+                    yield return Shot("13e_inspect_card_" + ci);
             }
 
-            var hs2 = Get<FloorHotspot>(_director, "hotspotSc02");
-            hs2.Activate();
+            inspect.ReturnAll();
+            yield return new WaitForSeconds(1.0f);
+
+            // the storage game: all six containers into their compartments
+            // container order: 0 flammable drum, 1 oxidizer, 2 acid, 3 cleaner canister, 4 reactive jar, 5 spray
+            var compartment = new[] { 0, 1, 2, 3, 3, 3 };
+            var placeOrder = new[] { 2, 0, 1, 3, 4, 5 };
+            // no waiting for a walk to the cabinet in the test: the rig glides there after a short patience
+            typeof(PresentableSequenceDirector).GetField("shelfPatience", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(_director, 0.4f);
+            var ghostT = placement.transform.Find("SlotGhost");
+            for (var oi = 0; oi < placeOrder.Length; oi++)
+            {
+                var ci2 = placeOrder[oi];
+                var tw = 0f;
+                while (!hsPick.IsArmed && tw < 15f)
+                {
+                    tw += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                hsPick.Activate();
+                yield return new WaitForSeconds(0.3f);
+                Poke(inspect.PokeOf(ci2));
+                yield return new WaitForSeconds(3.0f); // voice-over starts, rig glides to the cabinet
+                var headNow = Camera.main.transform.position;
+                var stand = Get<Transform>(_director, "shelfStand").position;
+                Say("container " + ci2 + " held = " + inspect.HeldName + ", distance to the cabinet stand = " +
+                    Vector2.Distance(new Vector2(headNow.x, headNow.z), new Vector2(stand.x, stand.z)).ToString("0.00") + " m");
+                if (oi == 0)
+                    Say("eye-level board y = " + FindFirstObjectByType<CabinetRows>(FindObjectsInactive.Include).CurrentEyeBoardY.ToString("0.00") +
+                        ", place voice-over = " + (Get<AudioSource>(_director, "voice").clip != null
+                            ? Get<AudioSource>(_director, "voice").clip.name : "none"));
+                if (oi == 0)
+                    Say("details card visible at the cabinet = " + inspect.CardVisible + " (expected False)");
+
+                if (oi == 0)
+                {
+                    // a wrong door first: red, the container stays in the hand
+                    var wrongDoor = compartment[ci2] == 0 ? 1 : 0;
+                    Poke(doors[wrongDoor].GetComponent<PokeTarget>());
+                    yield return new WaitForSeconds(1.6f);
+                    Say("wrong door state = " + doors[wrongDoor].State + ", still holding = " + inspect.HasHeld +
+                        ", door open = " + doors[wrongDoor].IsOpen);
+                    yield return Shot("12b_wrong_placement");
+                    yield return new WaitForSeconds(2.6f);
+                    Say("after the warning: door state = " + doors[wrongDoor].State + ", door open = " + doors[wrongDoor].IsOpen +
+                        ", placed = " + placement.Placed);
+                }
+
+                Poke(doors[compartment[ci2]].GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(1.6f);
+                Say("right door state = " + doors[compartment[ci2]].State + ", slot ghost visible = " +
+                    (ghostT != null && ghostT.gameObject.activeSelf));
+                if (oi == 0)
+                    yield return Shot("12c_correct_placement");
+                if (ghostT != null && ghostT.gameObject.activeSelf)
+                    Poke(ghostT.GetComponent<PokeTarget>());
+                var before = placement.Placed;
+                tw = 0f;
+                while (placement.Placed == before && tw < 10f)
+                {
+                    tw += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("placed " + placement.Placed + " / " + placement.Total);
+                if (oi == 0 || oi == 5)
+                    yield return Shot("12d_placed_" + (oi + 1));
+            }
+
             var mcq2 = Get<PresentableMcqPanel>(_director, "mcqSc02");
             var t = 0f;
             while (!mcq2.IsOpen && t < 20f)
@@ -490,10 +610,21 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return new WaitForSeconds(1.2f);
-            Say("mcq2 open = " + mcq2.IsOpen);
+            Say("mcq2 open = " + mcq2.IsOpen + " after " + placement.Placed + " / " + placement.Total + " placed");
             yield return Shot("14_sc02_question");
             Click(mcq2.transform, "Row2");
-            yield return new WaitForSeconds(1.2f);
+            var heard2 = "";
+            var hw = 0f;
+            var voiceNow = Get<AudioSource>(_director, "voice");
+            while (hw < 12f)
+            {
+                if (voiceNow.clip != null && voiceNow.clip.name.Contains("Sc02Complete"))
+                    heard2 = voiceNow.clip.name;
+                hw += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 2 complete vo = " + (heard2.Length > 0 ? heard2 : "NOT HEARD"));
             yield return Shot("15_sc02_correct");
             Click(mcq2.transform, "NextButton");
             yield return WaitStage("complete", 30f);

@@ -71,5 +71,8 @@ MonoBehaviour:
   voSc01CompleteBn: {fileID: 8300000, guid: f81e6fdc4a5d9de46ab56d5a6e9b97ac, type: 3}
   voSc01CompleteEn: {fileID: 8300000, guid: f32af67cb14814648b74f202a99fc5d2, type: 3}
   voSc02Instruction: {fileID: 8300000, guid: 632f7303f04d88f4e831a9d93c4535de, type: 3}
+  voSc02CompleteBn: {fileID: 8300000, guid: 47f60c82f25e3e040928c9757e1845c9, type: 3}
+  voSc02PlaceHint: {fileID: 8300000, guid: e3a2e91636e125947bade95b01b10dc4, type: 3}
+  voSc02CompleteEn: {fileID: 8300000, guid: 36e30c48813f4e648ab15f4c5253a727, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

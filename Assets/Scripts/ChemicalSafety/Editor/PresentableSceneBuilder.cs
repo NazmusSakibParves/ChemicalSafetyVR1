@@ -61,7 +61,7 @@ namespace ChemicalSafety.Editor
 
             var drums = BuildHeroRack(env, art, out var rackFocus, out var drumPokes);
             var env2 = new GameObject("Environment_SC02").transform;
-            var doors = BuildSc02Room(env2, art, out var chart, out var inspect);
+            var doors = BuildSc02Room(env2, art, out var chart, out var inspect, out var placement);
             env2.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
@@ -77,13 +77,16 @@ namespace ChemicalSafety.Editor
             var spawns = new GameObject("Spawns").transform;
             var spawnStart = Marker("Spawn_Start", spawns, new Vector3(0f, 0f, -4.2f), 0f);
             var spawnDrumView = Marker("Spawn_DrumView", spawns, new Vector3(0.5f, 0f, 2.9f), 0f);
-            var spawnSc02 = Marker("Spawn_SC02", spawns, new Vector3(40f, 0f, 2.7f), 180f);
+            var spawnSc02 = Marker("Spawn_SC02", spawns, new Vector3(40f, 0f, 1.5f), 180f);
             rig.transform.SetPositionAndRotation(spawnStart.position, spawnStart.rotation);
 
             var flow = new GameObject("PresentableFlow").transform;
             // Centre of the yellow floor box in front of the hero rack.
             var hotspot1 = Hotspot("Hotspot_SC01", flow, art, new Vector3(0f, 0f, 4.5f));
-            var hotspot2 = Hotspot("Hotspot_SC02", flow, art, new Vector3(40f, 0f, 1.15f));
+            // SC02 "Stand Here" markers: beside the pallet (arm's reach of the containers) and in front of the
+            // glass cabinet (arm's reach of the doors). Walking onto one continues the flow; otherwise the rig glides.
+            var hotspotPick = Hotspot("Hotspot_SC02_Pick", flow, art, new Vector3(40.2f, 0f, -0.25f));
+            var shelfStand = Marker("ShelfStand", spawns, new Vector3(40f, 0f, -1.85f), 0f); // no marker graphic
 
             var trolley = BuildCarrier(env, art, new Vector3(1.95f, 0f, 5.7f), out var carrierButton, out var carrierLoad);
             var drumButtons = new FloatingTouchButton[4];
@@ -155,7 +158,9 @@ namespace ChemicalSafety.Editor
             so.FindProperty("hotspotSc01").objectReferenceValue = hotspot1;
             so.FindProperty("mcqSc01").objectReferenceValue = mcq1;
             so.FindProperty("spawnSc02").objectReferenceValue = spawnSc02;
-            so.FindProperty("hotspotSc02").objectReferenceValue = hotspot2;
+            so.FindProperty("hotspotSc02Pick").objectReferenceValue = hotspotPick;
+            so.FindProperty("shelfStand").objectReferenceValue = shelfStand;
+            so.FindProperty("placement").objectReferenceValue = placement;
             so.FindProperty("mcqSc02").objectReferenceValue = mcq2;
             so.FindProperty("labelPopup").objectReferenceValue = labelPopup;
             so.FindProperty("drumPokeStand").objectReferenceValue = drumPokeStand;
@@ -268,7 +273,8 @@ namespace ChemicalSafety.Editor
                         changed = true;
                     }
 
-                    var wrap = path.EndsWith("SC02_Wall.png") || path.EndsWith("SC02_Floor.png")
+                    var wrap = path.EndsWith("SC02_Wall.png") || path.EndsWith("SC02_Floor.png") ||
+                               path.EndsWith("GLOVE_Detail.png") || path.EndsWith("FX_ScanBeam.png")
                         ? TextureWrapMode.Repeat
                         : TextureWrapMode.Clamp;
                     if (!ti.alphaIsTransparency || !ti.mipmapEnabled || ti.wrapMode != wrap)
@@ -392,6 +398,15 @@ namespace ChemicalSafety.Editor
             var doneEn = V("VO_Sc01Complete_en.mp3");
             if (doneEn != null)
                 art.voSc01CompleteEn = doneEn;
+            var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
+            if (sc02Hint != null)
+                art.voSc02PlaceHint = sc02Hint;
+            var sc02DoneBn = V("VO_Sc02Complete_bn.mp3");
+            if (sc02DoneBn != null)
+                art.voSc02CompleteBn = sc02DoneBn;
+            var sc02DoneEn = V("VO_Sc02Complete_en.mp3");
+            if (sc02DoneEn != null)
+                art.voSc02CompleteEn = sc02DoneEn;
             var sc02Vo = V("VO_SC02_Instruction_bn.mp3");
             if (sc02Vo != null)
                 art.voSc02Instruction = sc02Vo;
@@ -1159,9 +1174,10 @@ namespace ChemicalSafety.Editor
         // Left wall: entry door, vent, extinguisher, conduit. Right wall: fans, hand sign, eye-wash.
         // Back wall: glass cabinet and the compatibility chart. Sits 40 m to the side and is hidden until MCQ 1 ends.
         private static CompartmentDoor[] BuildSc02Room(Transform env, PresentableArt art, out ChartViewer chart,
-            out ContainerInspect inspect)
+            out ContainerInspect inspect, out ContainerPlacement placement)
         {
             inspect = null;
+            placement = null;
             const float ox = 40f;
             const float xL = ox + 4f;   // inner face of the viewer-left wall
             const float xR = ox - 4f;   // inner face of the viewer-right wall
@@ -1235,7 +1251,9 @@ namespace ChemicalSafety.Editor
             if (AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc02Containers.glb") != null)
             {
                 // long axis across the view like BG.jpg; labels (+x in the glb) turn to face the player (+z)
-                containers = PlaceModel("3D/Sc02Containers", "Containers", room, new Vector3(ox + 0.2f, 0f, 0f), -90f);
+                containers = PlaceModel("3D/Sc02Containers", "Containers", room, new Vector3(ox + 0.2f, 0f, -0.77f), -90f);
+                // a slightly smaller pallet keeps the outer containers within a lean of the Stand Here marker
+                containers.transform.localScale = Vector3.one * 0.82f;
             }
 
             if (containers != null)
@@ -1249,21 +1267,24 @@ namespace ChemicalSafety.Editor
 
             // cabinet contents are cloned from the pallet meshes, so build them before the pallet nodes are renamed
             var doors = BuildGlassCabinet(room, art, glass, frameMat, puffMat, new Vector3(ox + 0.6f, 0f, -1.55f),
-                containers);
+                containers, out var slots, out var slotCompartments);
             inspect = BuildContainerInspect(room, art, containers);
+            placement = BuildPlacement(room, art, inspect, doors, slots, slotCompartments);
 
             // wall chart right of the cabinet (BG.jpg). Unscaled holder so the large ChartViewer canvas is not distorted.
             var chartGo = new GameObject("WallChart");
             chartGo.transform.SetParent(room, false);
             chartGo.transform.position = new Vector3(ox - 2.5f, 1.8f, zBack + 0.03f);
             chartGo.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // local +z points at the wall
-            Prim("ChartBoard", PrimitiveType.Cube, chartGo.transform, new Vector3(0f, 0f, 0.02f),
-                new Vector3(1.78f, 1.08f, 0.03f), Mat("ChartBoard", new Color(0.03f, 0.1f, 0.16f), 0.5f, 0.3f));
+            // the chart picture keeps its own proportions (about 1.1 : 1)
+            var chartAspect = art.chartSc02 != null ? art.chartSc02.rect.width / art.chartSc02.rect.height : 1.1f;
+            var chartH = 1.2f;
+            var chartW = chartH * chartAspect;
             var chartMat = MatAlpha("ChartWallA", art.chartSc02 != null ? art.chartSc02.texture : null, Color.white, false);
-            QuadObj("ChartFace", chartGo.transform, Vector3.zero, Vector3.zero, new Vector2(1.7f, 0.93f), chartMat);
+            QuadObj("ChartFace", chartGo.transform, Vector3.zero, Vector3.zero, new Vector2(chartW, chartH), chartMat);
             var chartCol = chartGo.AddComponent<BoxCollider>();
             chartCol.isTrigger = true;
-            chartCol.size = new Vector3(1.7f, 1f, 0.1f);
+            chartCol.size = new Vector3(chartW, chartH, 0.1f);
             chartGo.AddComponent<PokeTarget>();
             chart = chartGo.AddComponent<ChartViewer>();
             SetRef(chart, "art", art);
@@ -1464,6 +1485,7 @@ namespace ChemicalSafety.Editor
             var go = Child("ContainerInspect", room);
             var inspect = go.AddComponent<ContainerInspect>();
             SetRef(inspect, "art", art);
+            SetRef(inspect, "scanMaterial", MatAlpha("ScanBeam", RoomTex("FX_ScanBeam"), Color.white, true));
             var so = new SerializedObject(inspect);
             var arr = so.FindProperty("entries");
             arr.arraySize = ContainerSpecs.Length;
@@ -1478,6 +1500,17 @@ namespace ChemicalSafety.Editor
                 }
 
                 node.name = "Container_" + spec.Name;
+                if (spec.Name == "Flammable")
+                {
+                    // a smaller drum looks like something you can lift into the cabinet; keep it standing on the pallet
+                    var dr = node.GetComponent<Renderer>();
+                    var before = dr.bounds;
+                    node.localScale *= 0.78f;
+                    var after = dr.bounds;
+                    node.position += new Vector3(before.center.x - after.center.x, before.min.y - after.min.y,
+                        before.center.z - after.center.z);
+                }
+
                 var mf = node.GetComponent<MeshFilter>();
                 var col = node.gameObject.AddComponent<BoxCollider>();
                 col.isTrigger = true;
@@ -1487,7 +1520,10 @@ namespace ChemicalSafety.Editor
                     col.size = mf.sharedMesh.bounds.size;
                 }
 
-                node.gameObject.AddComponent<PokeTarget>();
+                var poke = node.gameObject.AddComponent<PokeTarget>();
+                var pso = new SerializedObject(poke);
+                pso.FindProperty("reach").floatValue = 0.08f; // generous: a fingertip near the container is enough
+                pso.ApplyModifiedPropertiesWithoutUndo();
                 var e = arr.GetArrayElementAtIndex(i);
                 e.FindPropertyRelative("model").objectReferenceValue = node;
                 e.FindPropertyRelative("title").stringValue = spec.Title;
@@ -1499,9 +1535,18 @@ namespace ChemicalSafety.Editor
             return inspect;
         }
 
+        private const float ShelfEyeY = 1.3f;     // eye-level board as built; CabinetRows lowers it for a seated user
+        private const float ShelfTopOffset = 0.55f; // small top row above the eye-level board
+
+        private static readonly string[] CompartmentTitles = { "Flammables", "Oxidizers", "Acids", "General Storage" };
+
         private static CompartmentDoor[] BuildGlassCabinet(Transform room, PresentableArt art, Material glass,
-            Material frameMat, Material puffMat, Vector3 frontTarget, GameObject containers)
+            Material frameMat, Material puffMat, Vector3 frontTarget, GameObject containers,
+            out List<Transform> slots, out List<int> slotCompartments)
         {
+            slots = new List<Transform>();
+            slotCompartments = new List<int>();
+            Transform rowsRoot = null;
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc02Compartment.glb");
             if (asset == null)
             {
@@ -1640,7 +1685,18 @@ namespace ChemicalSafety.Editor
                 var door = hinge.gameObject.AddComponent<CompartmentDoor>();
                 var so = new SerializedObject(door);
                 so.FindProperty("openAngle").floatValue = angle;
+                so.FindProperty("compartmentName").stringValue = i < CompartmentTitles.Length ? CompartmentTitles[i] : "";
                 so.ApplyModifiedPropertiesWithoutUndo();
+                // red / green glow of the door (off until the door gets a placement state)
+                var glow = new GameObject("StateLight");
+                glow.transform.SetParent(hinge, true);
+                glow.transform.position = db.center + new Vector3(0f, 0f, 0.35f);
+                var gl = glow.AddComponent<Light>();
+                gl.type = LightType.Point;
+                gl.range = 2.4f;
+                gl.intensity = 2.2f;
+                gl.shadows = LightShadows.None;
+                gl.enabled = false;
                 doors.Add(door);
             }
 
@@ -1659,8 +1715,15 @@ namespace ChemicalSafety.Editor
                     new Vector3(shell.size.x + 0.16f, shell.size.y + 0.12f, 0.05f), cavity, false);
                 Box("CabinetTop", room, new Vector3(shell.center.x, shell.max.y + 0.03f, (shell.center.z + backZ) * 0.5f),
                     new Vector3(shell.size.x + 0.16f, 0.05f, shell.center.z - backZ), frameMat, false);
-                Box("Shelf", room, new Vector3(shell.center.x, shell.center.y, midZ),
-                    new Vector3(shell.size.x, 0.03f, 0.4f), frameMat, false);
+                // three rows per compartment: the floor, a middle board and an eye-level board (kept free for placing)
+                // the eye-level board and the small top row live in one group that follows the user's eye height
+                rowsRoot = new GameObject("AdjustableRows").transform;
+                rowsRoot.SetParent(room, false);
+                rowsRoot.gameObject.AddComponent<CabinetRows>();
+                Box("Shelf_Eye", rowsRoot, new Vector3(shell.center.x, ShelfEyeY, midZ),
+                    new Vector3(shell.size.x, 0.03f, 0.5f), frameMat, false);
+                Box("Shelf_Top", rowsRoot, new Vector3(shell.center.x, ShelfEyeY + ShelfTopOffset, midZ),
+                    new Vector3(shell.size.x, 0.03f, 0.5f), frameMat, false);
 
                 // partitions so each door has its own compartment
                 var edges = new List<float> { shell.max.x + 0.03f, shell.min.x - 0.03f };
@@ -1674,9 +1737,40 @@ namespace ChemicalSafety.Editor
                 {
                     var stockZ = backZ + 0.3f;
                     var floorY = 0.16f;
-                    var shelfY = shell.center.y + 0.015f;
+                    var shelfY = ShelfEyeY + ShelfTopOffset + 0.015f;
                     for (var i = 0; i < doorMeshes.Count && i < 4; i++)
-                        StockCompartment(room, containers.transform, i, doorMeshes[i].bounds.center.x, stockZ, floorY, shelfY);
+                        StockCompartment(room, rowsRoot, containers.transform, i, doorMeshes[i].bounds.center.x, stockZ, floorY, shelfY);
+                }
+
+                // empty places the containers go into: one per container, three in General Storage
+                var slotZ = backZ + 0.3f;
+                var slotEye = ShelfEyeY + 0.015f; // the empty places are always on the eye-level row
+                var slotRoot = new GameObject("Slots").transform;
+                slotRoot.SetParent(rowsRoot, false);
+                var slotList = slots;
+                var compartmentList = slotCompartments;
+                void AddSlot(int compartment, string label, float x, float y)
+                {
+                    var t = new GameObject("Slot_" + label).transform;
+                    t.SetParent(slotRoot, false);
+                    t.position = new Vector3(x, y, slotZ);
+                    slotList.Add(t);
+                    compartmentList.Add(compartment);
+                }
+
+                for (var i = 0; i < doorMeshes.Count && i < 4; i++)
+                {
+                    var cx = doorMeshes[i].bounds.center.x;
+                    if (i < 3)
+                    {
+                        AddSlot(i, CompartmentTitles[i] + "_1", cx, slotEye);
+                    }
+                    else
+                    {
+                        AddSlot(i, "General_1", cx - 0.27f, slotEye);
+                        AddSlot(i, "General_2", cx, slotEye);
+                        AddSlot(i, "General_3", cx + 0.27f, slotEye);
+                    }
                 }
             }
 
@@ -1703,7 +1797,7 @@ namespace ChemicalSafety.Editor
         }
 
         // 0 Flammables: drums. 1 Oxidizers: white cans. 2 Acids: black bottles. 3 General: cleaners and jars.
-        private static void StockCompartment(Transform room, Transform pallet, int index, float cx, float z, float floorY,
+        private static void StockCompartment(Transform room, Transform rows, Transform pallet, int index, float cx, float z, float floorY,
             float shelfY)
         {
             var drum = FindNode(pallet, "Object_2");
@@ -1713,31 +1807,78 @@ namespace ChemicalSafety.Editor
             var jar = FindNode(pallet, "SM_WaterTank_M_Tank_0.004");
             var spray = FindNode(pallet, "Retopo_Cube.006_Material.001_0");
             Vector3 P(float dx, float y) => new Vector3(cx + dx, y, z);
+            // three rows: the floor holds the big stock, the eye-level board stays empty for the containers,
+            // the small top row (moves with the eye-level board) holds small stock
             switch (index)
             {
                 case 0:
                     StockItem(room, drum, P(-0.2f, floorY), 0f, 0.62f);
                     StockItem(room, drum, P(0.2f, floorY), 25f, 0.62f);
+                    StockItem(rows, drum, P(0f, shelfY), 10f, 0.32f);
                     break;
                 case 1:
                     StockItem(room, oxidizer, P(-0.2f, floorY), 0f, 0.8f);
                     StockItem(room, oxidizer, P(0.2f, floorY), -8f, 0.8f);
-                    StockItem(room, oxidizer, P(0f, shelfY), 6f, 0.75f);
+                    StockItem(rows, oxidizer, P(-0.19f, shelfY), 6f, 0.5f);
+                    StockItem(rows, oxidizer, P(0.19f, shelfY), -4f, 0.5f);
                     break;
                 case 2:
                     StockItem(room, acid, P(-0.2f, floorY), 0f, 1f);
                     StockItem(room, acid, P(0.2f, floorY), 12f, 1f);
-                    StockItem(room, acid, P(-0.18f, shelfY), -6f, 0.9f);
-                    StockItem(room, acid, P(0.18f, shelfY), 10f, 0.9f);
+                    StockItem(rows, acid, P(-0.18f, shelfY), -6f, 0.6f);
+                    StockItem(rows, acid, P(0.18f, shelfY), 10f, 0.6f);
                     break;
                 default:
-                    StockItem(room, cleaner, P(-0.17f, floorY), 0f, 1f);
-                    StockItem(room, spray, P(0.1f, floorY), 10f, 1f);
-                    StockItem(room, spray, P(0.28f, floorY), -10f, 1f);
-                    StockItem(room, jar, P(-0.18f, shelfY), 0f, 1f);
-                    StockItem(room, jar, P(0.18f, shelfY), 20f, 1f);
+                    StockItem(room, cleaner, P(-0.2f, floorY), 0f, 0.85f);
+                    StockItem(room, cleaner, P(0.2f, floorY), 8f, 0.85f);
+                    StockItem(rows, jar, P(-0.3f, shelfY), 0f, 1f);
+                    StockItem(rows, spray, P(0f, shelfY), 10f, 0.85f);
+                    StockItem(rows, spray, P(0.3f, shelfY), -10f, 0.85f);
                     break;
             }
+        }
+
+        private static ContainerPlacement BuildPlacement(Transform room, PresentableArt art, ContainerInspect inspect,
+            CompartmentDoor[] doors, List<Transform> slots, List<int> slotCompartments)
+        {
+            if (inspect == null || doors == null || doors.Length < 4)
+                return null;
+            var go = Child("ContainerPlacement", room);
+            var placement = go.AddComponent<ContainerPlacement>();
+            SetRef(placement, "art", art);
+            SetRef(placement, "inspect", inspect);
+            SetRef(placement, "ghostMaterial", MatAlpha("SlotGhost", null, new Color(0.3f, 1f, 0.5f, 0.5f), false));
+            SetRef(placement, "rows", room.GetComponentInChildren<CabinetRows>(true));
+            var so = new SerializedObject(placement);
+            var d = so.FindProperty("doors");
+            d.arraySize = doors.Length;
+            for (var i = 0; i < doors.Length; i++)
+                d.GetArrayElementAtIndex(i).objectReferenceValue = doors[i];
+            // container order = ContainerSpecs: flammable drum, oxidizer, acid, cleaner canister, reactive jar, spray
+            var compartments = new[] { 0, 1, 2, 3, 3, 3 };
+            var scales = new[] { 0.85f, 0.8f, 0.9f, 0.7f, 1f, 1f };
+            var cc = so.FindProperty("containerCompartment");
+            cc.arraySize = compartments.Length;
+            var ps = so.FindProperty("placedScale");
+            ps.arraySize = scales.Length;
+            for (var i = 0; i < compartments.Length; i++)
+            {
+                cc.GetArrayElementAtIndex(i).intValue = compartments[i];
+                ps.GetArrayElementAtIndex(i).floatValue = scales[i];
+            }
+
+            var sa = so.FindProperty("slotAnchors");
+            sa.arraySize = slots.Count;
+            var sc = so.FindProperty("slotCompartment");
+            sc.arraySize = slots.Count;
+            for (var i = 0; i < slots.Count; i++)
+            {
+                sa.GetArrayElementAtIndex(i).objectReferenceValue = slots[i];
+                sc.GetArrayElementAtIndex(i).intValue = slotCompartments[i];
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return placement;
         }
 
         private static float Spread(List<Renderer> list, bool axisX)
@@ -2081,17 +2222,59 @@ namespace ChemicalSafety.Editor
             cam.gameObject.tag = "MainCamera";
             cam.gameObject.AddComponent<DeskCameraFallback>();
 
-            var glove = Mat("NitrileGlove", new Color(0.07f, 0.075f, 0.085f), 0.62f);
+            // glove style (menu Chemical Safety/Presentable/Glove Style): 0 black original (default), 1 blue on the stock
+            // hand, 2 blue on the smooth glove shape
+            var style = EditorPrefs.GetInt(GloveStyleKey, 0);
+            Material glove, cuff = null, sleeve = null;
+            Mesh gloveL = null, gloveR = null;
+            if (style == 0)
+            {
+                glove = Mat("NitrileGlove", new Color(0.07f, 0.075f, 0.085f), 0.62f);
+            }
+            else
+            {
+                // blue nitrile: glossy, with a fine crease detail map (the hand meshes have UVs)
+                glove = TiledMat("GloveBlue", "GLOVE_Detail", new Vector2(style == 2 ? 1f : 3f, style == 2 ? 1f : 3f),
+                    0.62f, 0f, new Color(0.14f, 0.5f, 0.95f));
+                sleeve = Mat("LabSleeve", new Color(0.92f, 0.94f, 0.96f), 0.25f);
+                if (style == 1)
+                {
+                    cuff = Mat("GloveCuff", new Color(0.06f, 0.26f, 0.62f), 0.55f);
+                }
+                else
+                {
+                    gloveL = GloveMeshImporter.Load(false);
+                    gloveR = GloveMeshImporter.Load(true);
+                }
+            }
             leftController = FindDeep(rig.transform, "Left Controller");
             var right = FindDeep(rig.transform, "Right Controller");
 
-            AddGlove(right, true, GlovedHandPose.Pose.Point, glove, "RightHand.fbx");
-            AddGlove(leftController, false, GlovedHandPose.Pose.Hold, glove, "LeftHand.fbx");
+            AddGlove(right, true, GlovedHandPose.Pose.Point, glove, cuff, sleeve, gloveR, "RightHand.fbx");
+            AddGlove(leftController, false, GlovedHandPose.Pose.Hold, glove, cuff, sleeve, gloveL, "LeftHand.fbx");
             return rig;
         }
 
+        private const string GloveStyleKey = "PresentableGloveStyle";
+
+        [MenuItem("Chemical Safety/Presentable/Glove Style/1 Black (original, default)")]
+        private static void GloveStyleBlack() => SetGloveStyle(0);
+
+        [MenuItem("Chemical Safety/Presentable/Glove Style/2 Blue on the stock hand")]
+        private static void GloveStyleBlueStock() => SetGloveStyle(1);
+
+        [MenuItem("Chemical Safety/Presentable/Glove Style/3 Blue smooth glove shape")]
+        private static void GloveStyleBlueShape() => SetGloveStyle(2);
+
+        private static void SetGloveStyle(int style)
+        {
+            EditorPrefs.SetInt(GloveStyleKey, style);
+            Debug.Log("[Presentable] Glove style " + style + ", rebuilding the scene");
+            Build();
+        }
+
         private static void AddGlove(Transform controller, bool isRight, GlovedHandPose.Pose pose, Material glove,
-            string model)
+            Material cuff, Material sleeve, Mesh gloveMesh, string model)
         {
             if (controller == null)
                 return;
@@ -2101,6 +2284,9 @@ namespace ChemicalSafety.Editor
             so.FindProperty("handModel").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<GameObject>(HandsDir + "/" + model);
             so.FindProperty("gloveMaterial").objectReferenceValue = glove;
+            so.FindProperty("cuffMaterial").objectReferenceValue = cuff;
+            so.FindProperty("sleeveMaterial").objectReferenceValue = sleeve;
+            so.FindProperty("gloveMesh").objectReferenceValue = gloveMesh;
             so.FindProperty("isRight").boolValue = isRight;
             so.FindProperty("pose").enumValueIndex = (int)pose;
             var poke = FindDeep(controller, "Poke Point");

@@ -133,6 +133,17 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(FadeIn());
         }
 
+        /// <summary>Hides the marker immediately without triggering <see cref="Activated"/>.</summary>
+        public void Hide()
+        {
+            StopAllCoroutines();
+            _armed = false;
+            _activated = true;
+            SetVisible(false, true);
+            _floorGroup.transform.localScale = Vector3.one * 0.0022f;
+            transform.localScale = Vector3.one;
+        }
+
         public void Activate()
         {
             if (!_armed || _activated)

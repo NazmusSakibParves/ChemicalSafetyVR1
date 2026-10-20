@@ -86,6 +86,9 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc01CompleteBn;
         public AudioClip voSc01CompleteEn;
         public AudioClip voSc02Instruction;
+        public AudioClip voSc02CompleteBn;
+        public AudioClip voSc02PlaceHint;
+        public AudioClip voSc02CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

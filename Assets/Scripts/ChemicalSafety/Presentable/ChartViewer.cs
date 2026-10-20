@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,16 @@ namespace ChemicalSafety.Presentable
         private bool _built;
 
         public bool IsOpen => _open;
+
+        /// <summary>Raised when the large chart opens / closes (the details card hides while it is open).</summary>
+        public event Action Opened;
+
+        public event Action Closed;
+
+        private float _distance = 1.05f;
+
+        /// <summary>How far in front of the head the large chart opens (closer at the glass cabinet).</summary>
+        public void SetDistance(float meters) => _distance = Mathf.Clamp(meters, 0.45f, 1.5f);
 
         private void Start()
         {
@@ -54,7 +65,7 @@ namespace ChemicalSafety.Presentable
                 if (fwd.sqrMagnitude < 0.001f)
                     fwd = Vector3.forward;
                 fwd.Normalize();
-                _panel.position = cam.position + fwd * 1.05f + Vector3.down * 0.02f;
+                _panel.position = cam.position + fwd * _distance + Vector3.down * 0.02f;
                 _panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             }
 
@@ -63,6 +74,7 @@ namespace ChemicalSafety.Presentable
             StopAllCoroutines();
             StartCoroutine(Fade(1f));
             PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
+            Opened?.Invoke();
         }
 
         public void Close()
@@ -72,6 +84,7 @@ namespace ChemicalSafety.Presentable
             _open = false;
             StopAllCoroutines();
             StartCoroutine(Fade(0f));
+            Closed?.Invoke();
         }
 
         private IEnumerator Fade(float target)
@@ -93,7 +106,7 @@ namespace ChemicalSafety.Presentable
                 return;
             _built = true;
 
-            var canvas = PresentableUi.WorldCanvas("ChartPanel", transform, new Vector2(1500f, 980f), 0.00072f, true, 220);
+            var canvas = PresentableUi.WorldCanvas("ChartPanel", transform, new Vector2(1120f, 1060f), 0.0007f, true, 220);
             _panel = canvas.transform;
             _panelScale = _panel.localScale;
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
