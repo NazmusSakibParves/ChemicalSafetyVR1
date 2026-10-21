@@ -16,6 +16,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float fogStart = 5f;
         [SerializeField] private float fogEnd = 16f;
         [SerializeField] private float sunIntensity = 0.1f;
+        [Tooltip("Environment reflections (the default sky is bright blue and made the wet floor look blue).")]
+        [SerializeField] private float reflectionIntensity = 0.2f;
 
         private AmbientMode _mode;
         private Color _sky;
@@ -26,6 +28,7 @@ namespace ChemicalSafety.Presentable
         private float _end;
         private Light _sun;
         private float _sunIntensity;
+        private float _reflection;
         private bool _applied;
 
         private void OnEnable()
@@ -37,6 +40,7 @@ namespace ChemicalSafety.Presentable
             _fog = RenderSettings.fogColor;
             _start = RenderSettings.fogStartDistance;
             _end = RenderSettings.fogEndDistance;
+            _reflection = RenderSettings.reflectionIntensity;
             foreach (var l in FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
                 if (l.type == LightType.Directional)
@@ -55,6 +59,7 @@ namespace ChemicalSafety.Presentable
             RenderSettings.fogColor = fogColor;
             RenderSettings.fogStartDistance = fogStart;
             RenderSettings.fogEndDistance = fogEnd;
+            RenderSettings.reflectionIntensity = reflectionIntensity;
             _applied = true;
         }
 
@@ -70,6 +75,7 @@ namespace ChemicalSafety.Presentable
             RenderSettings.fogColor = _fog;
             RenderSettings.fogStartDistance = _start;
             RenderSettings.fogEndDistance = _end;
+            RenderSettings.reflectionIntensity = _reflection;
             if (_sun != null)
                 _sun.intensity = _sunIntensity;
         }

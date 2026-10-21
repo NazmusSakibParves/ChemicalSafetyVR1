@@ -675,6 +675,7 @@ namespace ChemicalSafety.Presentable
             var camKeep3 = Camera.main.transform.localRotation;
             Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position - Camera.main.transform.position);
             yield return Shot("17_sc03_drum_view");
+            Say("STATS sc03 room: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls + " setPass=" + UnityStats.setPassCalls);
             var armW = 0f;
             while (!sc03.TouchButton.IsArmed && armW < 10f)
             {

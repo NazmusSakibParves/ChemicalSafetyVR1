@@ -29,7 +29,7 @@ namespace ChemicalSafety.Editor
             const float half = 2.55f;      // inner half width
             const float zFront = 3.0f;
             const float zBack = -4.2f;
-            const float ceil = 3.3f;
+            const float ceil = 3.7f;
             const float heroZ = -1.2f;
             var refs = new Sc03Refs();
             var room = new GameObject("Room").transform;
@@ -37,10 +37,16 @@ namespace ChemicalSafety.Editor
             env.gameObject.AddComponent<Sc03Mood>();
             var solid = LayerMask.NameToLayer("SolidProps");
 
-            var floorMat = TiledMat("Sc03Floor", "SC03_Floor", new Vector2(2.6f, 3.7f), 0.3f, 0f, Color.white);
-            var wallBack = TiledMat("Sc03WallBack", "SC03_Wall", new Vector2(2.6f, 1.65f), 0.1f, 0f, Color.white);
-            var wallSide = TiledMat("Sc03WallSide", "SC03_Wall", new Vector2(3.7f, 1.65f), 0.1f, 0f, Color.white);
-            var ceilMat = Mat("Sc03Ceiling", new Color(0.2f, 0.2f, 0.21f), 0.1f, 0.1f);
+            ConfigureSc03Textures();
+            var floorMat = PbrMat("Sc03FloorPbr", "Floor_Albedo", "Floor_Normal", "Floor_MS", new Color(0.82f, 0.8f, 0.76f),
+                new Vector2(2.2f, 3.0f), 0.7f);
+            var wallBack = PbrMat("Sc03WallBackPbr", "Wall_Albedo", "Wall_Normal", "Wall_MS", new Color(0.78f, 0.76f, 0.72f),
+                new Vector2(2.2f, 1.5f));
+            var wallSide = PbrMat("Sc03WallSidePbr", "Wall_Albedo", "Wall_Normal", "Wall_MS", new Color(0.78f, 0.76f, 0.72f),
+                new Vector2(3.0f, 1.5f));
+            var ceilMat = PbrMat("Sc03CeilPbr", "Wall_Albedo", "Wall_Normal", "Wall_MS", new Color(0.4f, 0.39f, 0.38f),
+                new Vector2(2.2f, 3.0f));
+            var moteGlow = art.radialGlow != null ? art.radialGlow.texture : null;
             var pipeMat = Mat("Sc03Pipe", new Color(0.28f, 0.27f, 0.26f), 0.35f, 0.7f);
             var tube = Mat("RoomTube", Color.white, 0f, 0f, null, new Color(1.6f, 1.65f, 1.7f), true);
             var housing = Mat("RoomTubeHousing", new Color(0.55f, 0.57f, 0.6f), 0.4f, 0.6f);
@@ -76,68 +82,70 @@ namespace ChemicalSafety.Editor
                 Box("Tube", room, new Vector3(ox + t.x, ceil - 0.09f, t.z), new Vector3(0.14f, 0.03f, 1.3f), tube, false);
             }
 
-            MakeLight(room, "RoomLightA", new Vector3(ox - 0.9f, 2.85f, -1.0f), new Color(1f, 0.93f, 0.8f), 2.4f, 7f);
-            MakeLight(room, "RoomLightB", new Vector3(ox + 0.8f, 2.85f, 1.4f), new Color(1f, 0.93f, 0.8f), 1.5f, 6f);
+            var lightA = MakeLight(room, "RoomLightA", new Vector3(ox - 0.9f, ceil - 0.45f, -1.0f), new Color(1f, 0.93f, 0.8f), 2.4f, 7f);
+            var lightB = MakeLight(room, "RoomLightB", new Vector3(ox + 0.8f, ceil - 0.45f, 1.4f), new Color(1f, 0.93f, 0.8f), 1.5f, 6f);
             MakeLight(room, "HeroLight", new Vector3(ox - 1.1f, 2.3f, heroZ + 0.4f), new Color(1f, 0.95f, 0.88f), 1.6f, 3.2f);
 
-            // --- shelving
-            var shelfMesh = LoadObjMesh(ArtRoot + "/3D/Sc03Shelf.obj");
-            var shelfMat = Mat("Sc03Shelf", new Color(0.4f, 0.33f, 0.27f), 0.3f, 0.6f);
-            var deckMat = Mat("Sc03Deck", new Color(0.3f, 0.28f, 0.26f), 0.25f, 0.5f);
-            var detail = EnvTex("DRUM_Detail");
-            var drumMats = new[]
+            // --- shelving: rusty steel racks (designer rust textures) and old barrels (designer barrel mesh)
+            var props = new GameObject("StaticProps").transform;
+            props.SetParent(room, false);
+            const float rackH = 3.5f;
+            float[] decks = { 0.12f, 1.36f, 2.5f };
+            var rackMesh = Sc03RackMesh(decks, rackH);
+            var rackMat = PbrMat("Sc03RackPbr", "Rust_Albedo", "Rust_Normal", "Rust_MS", new Color(0.8f, 0.72f, 0.66f),
+                Vector2.one, 0.9f);
+            var barrelMesh = Sc03BarrelMesh();
+            Material Barrel(string n, Color tint) =>
+                PbrMat(n, "Barrel_Albedo", "Barrel_Normal", "Barrel_MS", tint, Vector2.one, 0.85f);
+            var barrelMats = new[]
             {
-                Mat("Sc03DrumA", new Color(0.1f, 0.15f, 0.28f), 0.3f, 0.5f, detail),
-                Mat("Sc03DrumB", new Color(0.17f, 0.18f, 0.19f), 0.3f, 0.5f, detail),
-                Mat("Sc03DrumC", new Color(0.27f, 0.2f, 0.1f), 0.3f, 0.45f, detail),
-                Mat("Sc03DrumD", new Color(0.2f, 0.25f, 0.3f), 0.3f, 0.5f, detail)
+                Barrel("Sc03BarrelA", new Color(0.78f, 0.72f, 0.68f)),   // bare rust
+                Barrel("Sc03BarrelB", new Color(0.5f, 0.58f, 0.78f)),    // blue-grey paint
+                Barrel("Sc03BarrelC", new Color(0.55f, 0.68f, 0.5f)),    // faded green
+                Barrel("Sc03BarrelD", new Color(0.4f, 0.37f, 0.35f)),    // soot
+                Barrel("Sc03BarrelE", new Color(0.78f, 0.45f, 0.4f))     // red-brown
             };
-            var drumMesh = RealisticDrumMesh();
             var fadedLabel = LabelMat("Sc03Label_Faded", "faded");
-            var residueMat = MatAlpha("Sc03Residue", EnvTex("SC03_Residue"), new Color(0.78f, 0.78f, 0.75f, 0.85f), false);
+            var residueMat = MatAlpha("Sc03Residue", EnvTex("SC03_Residue"), new Color(0.62f, 0.62f, 0.58f, 0.7f), false);
             var rnd = new System.Random(303);
-            float[] decks = { 0.12f, 1.36f, 2.62f };
 
-            // (centre, yaw, side towards the aisle, depth axis is z for the back shelf)
+            // (centre, yaw so that local -z is the wall side, side towards the aisle)
             var bays = new[]
             {
                 new { pos = new Vector3(ox - half + 0.37f, 0f, heroZ), yaw = 90f, side = -1f, hero = true },
                 new { pos = new Vector3(ox - half + 0.37f, 0f, heroZ + 2.7f), yaw = 90f, side = -1f, hero = false },
-                new { pos = new Vector3(ox + half - 0.37f, 0f, heroZ), yaw = 90f, side = 1f, hero = false },
-                new { pos = new Vector3(ox + half - 0.37f, 0f, heroZ + 2.7f), yaw = 90f, side = 1f, hero = false },
+                new { pos = new Vector3(ox + half - 0.37f, 0f, heroZ), yaw = 270f, side = 1f, hero = false },
+                new { pos = new Vector3(ox + half - 0.37f, 0f, heroZ + 2.7f), yaw = 270f, side = 1f, hero = false },
                 new { pos = new Vector3(ox, 0f, zBack + 0.37f), yaw = 0f, side = 0f, hero = false }
             };
 
             foreach (var bay in bays)
             {
-                var holder = new GameObject("ShelfBay").transform;
-                holder.SetParent(room, false);
-                holder.SetPositionAndRotation(bay.pos, Quaternion.Euler(0f, bay.yaw, 0f));
-                MeshObj("Shelf", holder, shelfMesh, Vector3.zero, Vector3.one, shelfMat);
-                foreach (var dy in decks)
-                    Box("Deck", holder, bay.pos + Vector3.up * (dy - 0.02f), new Vector3(2.5f, 0.04f, 0.66f), deckMat, false)
-                        .transform.rotation = Quaternion.Euler(0f, bay.yaw, 0f);
+                var rot = Quaternion.Euler(0f, bay.yaw, 0f);
+                var rack = MeshObj("Rack", props, rackMesh, bay.pos, Vector3.one, rackMat);
+                rack.transform.rotation = rot;
                 var sx = Mathf.Abs(Mathf.Sin(bay.yaw * Mathf.Deg2Rad)) > 0.5f;
                 AddSolidBox(room, "ShelfSolid", bay.pos + Vector3.up * 1.8f,
                     sx ? new Vector3(0.78f, 3.6f, 2.7f) : new Vector3(2.7f, 3.6f, 0.78f));
 
                 for (var tier = 0; tier < decks.Length; tier++)
                 {
-                    var slots = new[] { -0.95f, -0.32f, 0.32f, 0.95f };
-                    foreach (var along in slots)
+                    foreach (var along in new[] { -0.95f, -0.32f, 0.32f, 0.95f })
                     {
-                        if (rnd.NextDouble() < 0.12)
+                        if (rnd.NextDouble() < 0.1)
                             continue;
                         // the hero bay keeps the middle shelf open around the crystallised drum
                         if (bay.hero && tier == 1 && Mathf.Abs(along) < 0.7f)
                             continue;
-                        var local = new Vector3(along, 0f, 0f);
-                        var wp = bay.pos + Quaternion.Euler(0f, bay.yaw, 0f) * local + Vector3.up * (decks[tier] + 0.44f);
-                        var d = MeshObj("Drum", room, drumMesh, wp, new Vector3(0.57f, 0.88f, 0.57f),
-                            drumMats[rnd.Next(drumMats.Length)]);
-                        d.transform.localRotation = Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f);
-                        if (bay.side != 0f && rnd.NextDouble() < 0.5)
-                            AddDrumLabel(room, wp, bay.side, fadedLabel, rnd);
+                        var wp = bay.pos + rot * new Vector3(along + ((float)rnd.NextDouble() - 0.5f) * 0.05f, 0f,
+                            ((float)rnd.NextDouble() - 0.5f) * 0.05f) + Vector3.up * decks[tier];
+                        var jitter = 0.97f + (float)rnd.NextDouble() * 0.06f;
+                        var d = MeshObj("Barrel", props, barrelMesh, wp, new Vector3(jitter, 0.97f + (float)rnd.NextDouble() * 0.06f, jitter),
+                            barrelMats[rnd.Next(barrelMats.Length)]);
+                        d.transform.rotation = Quaternion.Euler(((float)rnd.NextDouble() - 0.5f) * 2.4f,
+                            (float)rnd.NextDouble() * 360f, ((float)rnd.NextDouble() - 0.5f) * 2.4f);
+                        if (bay.side != 0f && rnd.NextDouble() < 0.4)
+                            AddDrumLabel(props, wp + Vector3.up * 0.45f, bay.side, fadedLabel, rnd);
                     }
                 }
             }
@@ -150,12 +158,117 @@ namespace ChemicalSafety.Editor
             QuadObj("ResidueFloorA", room, new Vector3(ox - 1.5f, 0.006f, heroZ - 0.2f), new Vector3(90f, 10f, 0f),
                 new Vector2(1.0f, 0.75f), residueMat);
 
-            // two real old drums on the floor (designer model, 10k triangles: only one pair)
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc03OldDrums.glb") != null)
+            // --- floor clutter and dirt (kept out of the walking line x = ox and the inspection stand)
+            var woodMat = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
+            var boxMat = Mat("Sc03Cardboard", new Color(0.36f, 0.28f, 0.19f), 0.1f);
+            var tapeMat = Mat("Sc03Tape", new Color(0.62f, 0.5f, 0.3f), 0.2f);
+            void FloorBarrel(Vector3 p, bool lying, float yaw, int mat)
             {
-                var pair = PlaceSizedModel("3D/Sc03OldDrums", "OldDrums", room, new Vector3(ox + 1.55f, 0f, 0.9f), 35f, 0.9f);
-                AddSolidBox(room, "OldDrumsSolid", new Vector3(ox + 1.55f, 0.5f, 0.9f), new Vector3(1.2f, 1f, 1.2f));
+                var go = MeshObj("FloorBarrel", props, barrelMesh, p, Vector3.one, barrelMats[mat % barrelMats.Length]);
+                if (lying)
+                {
+                    var q = Quaternion.Euler(90f, yaw, 0f);
+                    go.transform.rotation = q;
+                    go.transform.position = new Vector3(p.x, 0.285f, p.z) - q * new Vector3(0f, 0.45f, 0f);
+                }
+                else
+                {
+                    go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                }
             }
+
+            // pallet with upright barrels near the right wall, front half
+            Box("Pallet", props, new Vector3(ox - 1.55f, 0.07f, 2.05f), new Vector3(1.15f, 0.14f, 1.15f), woodMat, false);
+            FloorBarrel(new Vector3(ox - 1.8f, 0.14f, 1.8f), false, 30f, 0);
+            FloorBarrel(new Vector3(ox - 1.3f, 0.14f, 2.25f), false, 140f, 3);
+            FloorBarrel(new Vector3(ox - 1.8f, 0.14f, 2.3f), false, 80f, 1);
+            AddSolidBox(room, "PalletSolid", new Vector3(ox - 1.55f, 0.55f, 2.05f), new Vector3(1.2f, 1.1f, 1.2f));
+            // fallen barrels left behind the rack ends
+            FloorBarrel(new Vector3(ox + 1.1f, 0f, 0.55f), true, 70f, 4);
+            FloorBarrel(new Vector3(ox + 1.45f, 0f, -2.95f), true, 20f, 0);
+            FloorBarrel(new Vector3(ox - 1.2f, 0f, -3.05f), false, 0f, 2);
+            // cardboard boxes in the front left corner
+            foreach (var cb in new[]
+                     {
+                         new Vector4(ox + 1.6f, 0.22f, 2.35f, 12f), new Vector4(ox + 1.1f, 0.18f, 2.55f, -20f),
+                         new Vector4(ox + 1.55f, 0.6f, 2.4f, 35f)
+                     })
+            {
+                var size = new Vector3(0.55f, cb.y * 2f, 0.45f);
+                var bx = Box("CardboardBox", props, new Vector3(cb.x, cb.y, cb.z), size, boxMat, false);
+                bx.transform.rotation = Quaternion.Euler(0f, cb.w, 0f);
+                var tape = Box("Tape", props, new Vector3(cb.x, cb.y * 2f + 0.002f, cb.z), new Vector3(0.1f, 0.004f, 0.46f), tapeMat, false);
+                tape.transform.rotation = Quaternion.Euler(0f, cb.w, 0f);
+            }
+
+            AddSolidBox(room, "BoxesSolid", new Vector3(ox + 1.45f, 0.4f, 2.45f), new Vector3(1.1f, 0.9f, 0.7f));
+
+            // dirt: dark blots and drips, white crystal residue
+            var blotMat = DecalMat("Sc03Blot", "Stain_Blot", new Color(1f, 1f, 1f, 0.7f));
+            var dripMat = DecalMat("Sc03Drip", "Grime_Drip", new Color(1f, 1f, 1f, 0.85f));
+            foreach (var bl in new[]
+                     {
+                         new Vector4(ox - 0.3f, -2.2f, 1.6f, 20f), new Vector4(ox + 0.6f, -0.2f, 1.2f, 80f),
+                         new Vector4(ox - 0.9f, 1.3f, 1.8f, 150f), new Vector4(ox + 0.5f, 2.0f, 1.4f, 40f),
+                         new Vector4(ox + 0.2f, -3.4f, 1.7f, 110f), new Vector4(ox + 1.3f, -1.4f, 1.0f, 10f),
+                         new Vector4(ox - 1.5f, -2.6f, 1.2f, 60f)
+                     })
+                DecalQuad("FloorBlot", props, new Vector3(bl.x, 0.005f, bl.y), Vector3.up, Quaternion.Euler(0f, bl.w, 0f) * Vector3.forward,
+                    new Vector2(bl.z, bl.z * 0.75f), blotMat);
+            var dripXs = new[] { -2.1f, -0.9f, 0.7f, 1.9f };
+            foreach (var dx in dripXs)
+                DecalQuad("WallDrip", props, new Vector3(ox + dx, ceil - 1.2f, zBack + 0.012f), Vector3.forward, Vector3.up,
+                    new Vector2(0.7f, 2.4f), dripMat);
+            foreach (var dz in new[] { -3.0f, -1.2f, 0.9f, 2.1f })
+            {
+                DecalQuad("WallDrip", props, new Vector3(ox - half + 0.012f, ceil - 1.2f, dz), Vector3.right, Vector3.up,
+                    new Vector2(0.7f, 2.4f), dripMat);
+                DecalQuad("WallDrip", props, new Vector3(ox + half - 0.012f, ceil - 1.2f, dz + 0.4f), Vector3.left, Vector3.up,
+                    new Vector2(0.7f, 2.4f), dripMat);
+            }
+
+            // cobwebs: every ceiling corner and the top corners of every rack bay
+            var webCorner = DecalMat("Sc03WebCorner", "Web_Corner", new Color(1f, 1f, 1f, 0.8f));
+            var webFull = DecalMat("Sc03WebFull", "Web_Full", new Color(1f, 1f, 1f, 0.7f));
+            foreach (var sxc in new[] { -1f, 1f })
+            {
+                var cx = ox + sxc * half;
+                WebCorner(props, new Vector3(cx, ceil, zBack), Vector3.forward, new Vector3(-sxc, 0f, 0f), 1.0f, webCorner);
+                WebCorner(props, new Vector3(cx, ceil, zFront), Vector3.back, new Vector3(-sxc, 0f, 0f), 1.0f, webCorner);
+                WebCorner(props, new Vector3(cx, ceil, zBack), new Vector3(-sxc, 0f, 0f), Vector3.forward, 1.0f, webCorner);
+                WebCorner(props, new Vector3(cx, ceil, zFront), new Vector3(-sxc, 0f, 0f), Vector3.back, 1.0f, webCorner);
+            }
+
+            foreach (var bay in bays)
+            {
+                var rot = Quaternion.Euler(0f, bay.yaw, 0f);
+                var frontN = rot * Vector3.forward;
+                foreach (var sxc in new[] { -1f, 1f })
+                {
+                    var anchor3 = bay.pos + rot * new Vector3(sxc * 1.27f, rackH - 0.05f, 0.34f);
+                    WebCorner(props, anchor3, frontN, rot * new Vector3(-sxc, 0f, 0f), 0.75f, webCorner);
+                }
+
+                // a round web hanging in the front plane of the top tier
+                DecalQuad("WebFull", props, bay.pos + rot * new Vector3((float)(rnd.NextDouble() - 0.5) * 1.4f, 2.35f, 0.345f),
+                    frontN, Vector3.up, new Vector2(0.55f, 0.55f), webFull);
+            }
+
+            // dust motes, light shafts under the tubes, an old tube that dims now and then
+            BuildDust(room, new Vector3(ox, 1.7f, cz), new Vector3(4.6f, 2.8f, 6.6f), ParticleMat("Sc03Mote", moteGlow, true));
+            var shaftMat = DecalMat("Sc03Shaft", "Shaft", new Color(1f, 0.95f, 0.8f, 0.24f), true);
+            foreach (var tl in new[] { new Vector2(-0.9f, -1.0f), new Vector2(0.8f, 1.4f), new Vector2(-0.3f, -3.1f) })
+                LightShaft(props, new Vector3(ox + tl.x, ceil - 0.1f, tl.y), 2.4f, 1.1f, shaftMat);
+            var flicker = room.gameObject.AddComponent<Sc03Flicker>();
+            var fso = new SerializedObject(flicker);
+            var fl = fso.FindProperty("lights");
+            fl.arraySize = 2;
+            fl.GetArrayElementAtIndex(0).objectReferenceValue = lightA;
+            fl.GetArrayElementAtIndex(1).objectReferenceValue = lightB;
+            fso.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (var tr in props.GetComponentsInChildren<Transform>(true))
+                GameObjectUtility.SetStaticEditorFlags(tr.gameObject, StaticEditorFlags.BatchingStatic);
 
             // --- hero drum: crystallised Organic Peroxide, label facing the aisle (+x)
             var heroPos = new Vector3(ox - half + 0.37f, decks[1], heroZ);
@@ -237,7 +350,7 @@ namespace ChemicalSafety.Editor
             var lights = new UnityEngine.Light[3];
             for (var i = 0; i < 3; i++)
             {
-                var lp = new Vector3(ox - half + 0.5f, 3.05f, heroZ + (i - 1) * 0.6f);
+                var lp = new Vector3(ox - 1.45f, ceil - 0.18f, heroZ + (i - 1) * 0.6f);
                 lamps[i] = Prim("SirenLamp" + i, PrimitiveType.Cylinder, room, lp, new Vector3(0.14f, 0.09f, 0.14f), lampOff)
                     .GetComponent<Renderer>();
                 lights[i] = MakeLight(room, "SirenLight" + i, lp + Vector3.down * 0.2f, new Color(1f, 0.1f, 0.05f), 0f, 5f);

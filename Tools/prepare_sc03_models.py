@@ -4,8 +4,8 @@ Source: Downloads/Scene03 workflow-.../Scene03 workflow/3D and 2D/Resources.
 Output (Assets/Art/Presentable):
   3D/Sc03Drum.glb       hero Organic Peroxide drum (crystals + label), textures capped at 1024
   3D/Sc03OldDrums.glb   old drum pair, textures capped at 1024
-  3D/Sc03Shelf.obj      one 3-tier bay of "old shelve 01.glb", decimated (the original is 90k triangles), metres,
-                        centred on x/z with its base at y=0
+  (the rack is no longer a decimated copy of "old shelve 01.glb": Tools/extract_sc03_textures.py takes its rust
+   textures and the builder makes the rack mesh)
   2D/Sc03/SDS_SC03.png  new SDS clipboard sheet
 
     python Tools/prepare_sc03_models.py
@@ -129,7 +129,6 @@ def decimate_shelf(src, dst):
 def main():
     shrink_glb(os.path.join(SRC, "3D", "chemical dram.glb"), os.path.join(ART, "3D", "Sc03Drum.glb"))
     shrink_glb(os.path.join(SRC, "3D", "Old drams.glb"), os.path.join(ART, "3D", "Sc03OldDrums.glb"))
-    decimate_shelf(os.path.join(SRC, "3D", "old shelve 01.glb"), os.path.join(ART, "3D", "Sc03Shelf.obj"))
     out2d = os.path.join(ART, "2D", "Sc03")
     os.makedirs(out2d, exist_ok=True)
     shutil.copyfile(os.path.join(SRC, "2D", "Resources", "SDS sheet.png"), os.path.join(out2d, "SDS_SC03.png"))
