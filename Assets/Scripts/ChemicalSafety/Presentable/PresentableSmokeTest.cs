@@ -677,17 +677,39 @@ namespace ChemicalSafety.Presentable
             yield return Shot("17_sc03_drum_view");
             Say("STATS sc03 room: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls + " setPass=" + UnityStats.setPassCalls);
             var armW = 0f;
-            while (!sc03.TouchButton.IsArmed && armW < 10f)
+            while (!sc03.ScanArmed && armW < 10f)
             {
                 armW += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            Say("SC03 arrow armed = " + sc03.TouchButton.IsArmed + " distance from the head = " +
-                Vector3.Distance(Camera.main.transform.position, sc03.TouchButton.transform.position).ToString("0.00") + " m");
+            var scanHand = GlovedHandPose.Right;
+            Say("SC03 label scan armed = " + sc03.ScanArmed + " distance from the head to the label = " +
+                Vector3.Distance(Camera.main.transform.position, labelAnchor3.position).ToString("0.00") + " m");
             yield return new WaitForSeconds(0.6f);
-            yield return Shot("17b_sc03_arrow");
-            PressButton(sc03.TouchButton);
+            yield return Shot("17b_sc03_scan_idle");
+            // really hold a finger on the label: the right glove goes to the label plane (the drum stops it there)
+            sc03.LabelScan.ForceHandMode();
+            var ctlScan = scanHand.transform;
+            var ctlKeep = ctlScan.position;
+            ctlScan.position += labelAnchor3.position + labelAnchor3.forward * 0.06f - scanHand.PressPoint;
+            yield return new WaitForSeconds(0.5f);
+            Say("SC03 scan progress after 0.5 s of holding = " + sc03.LabelScan.Progress.ToString("0.00") + " (expected about 0.5)");
+            yield return Shot("17c_sc03_scan_holding");
+            // lifting the finger drains the ring
+            ctlScan.position = ctlKeep;
+            yield return new WaitForSeconds(0.4f);
+            Say("SC03 scan progress after lifting the finger = " + sc03.LabelScan.Progress.ToString("0.00") + " (expected below 0.2)");
+            ctlScan.position += labelAnchor3.position + labelAnchor3.forward * 0.06f - scanHand.PressPoint;
+            var scanW = 0f;
+            while (!sc03.Touched && scanW < 6f)
+            {
+                scanW += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC03 scan finished by holding the label = " + sc03.Touched);
+            ctlScan.position = ctlKeep;
             var repW = 0f;
             while (!sc03.ReportVisible && repW < 15f)
             {

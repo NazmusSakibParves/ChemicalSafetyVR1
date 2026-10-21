@@ -18,6 +18,7 @@ namespace ChemicalSafety.Editor
             public Sc03Detonation detonation;
             public Transform spawn;
             public Transform stand;
+            public Transform scanStand;
         }
 
         private const float Sc03Ox = 80f;
@@ -106,7 +107,7 @@ namespace ChemicalSafety.Editor
                 Barrel("Sc03BarrelE", new Color(0.78f, 0.45f, 0.4f))     // red-brown
             };
             var fadedLabel = LabelMat("Sc03Label_Faded", "faded");
-            var residueMat = MatAlpha("Sc03Residue", EnvTex("SC03_Residue"), new Color(0.62f, 0.62f, 0.58f, 0.7f), false);
+            var residueMat = MatAlpha("Sc03Residue", EnvTex("SC03_Residue"), new Color(0.6f, 0.6f, 0.57f, 0.62f), false);
             var rnd = new System.Random(303);
 
             // (centre, yaw so that local -z is the wall side, side towards the aisle)
@@ -126,7 +127,7 @@ namespace ChemicalSafety.Editor
                 rack.transform.rotation = rot;
                 var sx = Mathf.Abs(Mathf.Sin(bay.yaw * Mathf.Deg2Rad)) > 0.5f;
                 AddSolidBox(room, "ShelfSolid", bay.pos + Vector3.up * 1.8f,
-                    sx ? new Vector3(0.78f, 3.6f, 2.7f) : new Vector3(2.7f, 3.6f, 0.78f));
+                    sx ? new Vector3(0.66f, 3.6f, 2.7f) : new Vector3(2.7f, 3.6f, 0.66f));
 
                 for (var tier = 0; tier < decks.Length; tier++)
                 {
@@ -325,22 +326,18 @@ namespace ChemicalSafety.Editor
             anchor.rotation = Quaternion.LookRotation(Vector3.right, Vector3.up);
             AddSolidBox(room, "HeroDrumSolid", body.center, new Vector3(0.62f, body.size.y, 0.62f));
 
-            // floating arrow + inspection
-            var touchGo = new GameObject("TouchButton_SC03");
-            touchGo.transform.SetParent(room, false);
-            touchGo.transform.position = new Vector3(ox - half + 0.37f + 0.29f + 0.42f, 1.55f, heroZ);
-            var touch = touchGo.AddComponent<FloatingTouchButton>();
-            SetRef(touch, "art", art);
-            var tso = new SerializedObject(touch);
-            tso.FindProperty("pressRadius").floatValue = 0.12f;
-            tso.FindProperty("hoverRadius").floatValue = 0.22f;
-            tso.ApplyModifiedPropertiesWithoutUndo();
+            // hold-to-scan on the label + inspection
+            var scanGo = new GameObject("Sc03LabelScan");
+            scanGo.transform.SetParent(room, false);
+            var scan = scanGo.AddComponent<Sc03LabelScan>();
+            SetRef(scan, "art", art);
+            SetRef(scan, "labelAnchor", anchor);
 
             var inspectGo = new GameObject("Sc03Inspect");
             inspectGo.transform.SetParent(room, false);
             refs.inspect = inspectGo.AddComponent<Sc03Inspect>();
             SetRef(refs.inspect, "art", art);
-            SetRef(refs.inspect, "touchButton", touch);
+            SetRef(refs.inspect, "labelScan", scan);
             SetRef(refs.inspect, "labelAnchor", anchor);
 
             // --- detonation (wrong answer): siren lamps above the hero bay, particle materials are scene assets
@@ -416,6 +413,8 @@ namespace ChemicalSafety.Editor
             refs.spawn = Marker("Spawn_SC03", env, new Vector3(ox, 0f, 2.4f), 180f);
             // about 0.9 m from the drum surface, facing it (-x)
             refs.stand = Marker("Stand_SC03", env, new Vector3(ox - half + 0.37f + 0.29f + 0.95f, 0f, heroZ), 270f);
+            // arm's reach from the label for the hold-to-scan (the report and the question use the stand above)
+            refs.scanStand = Marker("Stand_SC03_Scan", env, new Vector3(ox - half + 0.37f + 0.29f + 0.6f, 0f, heroZ), 270f);
             return refs;
         }
 

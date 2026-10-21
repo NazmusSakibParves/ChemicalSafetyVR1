@@ -36,6 +36,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private int[] slotCompartment = new int[0];
         [SerializeField] private Material ghostMaterial;
         [SerializeField] private CabinetRows rows;
+        [Tooltip("Dashed ring drawn on the glass over the slot (where to tap).")]
+        [SerializeField] private Material tapMarkMaterial;
 
         private bool[] _slotUsed;
         private bool _active;
@@ -55,6 +57,12 @@ namespace ChemicalSafety.Presentable
         private BoxCollider _ghostCollider;
         private MaterialPropertyBlock _block;
         private bool _slotTapped;
+        private GameObject _tapZone;
+        private BoxCollider _tapBox;
+        private PokeTarget _tapPoke;
+        private GameObject _tapMark;
+        private MeshRenderer _tapMarkRenderer;
+        private float _frontZ = float.NaN;
         private bool _cancel;
         private CompartmentDoor _nextDoor;
 
@@ -79,6 +87,78 @@ namespace ChemicalSafety.Presentable
 
             BuildCard();
             BuildGhost();
+            BuildTapZone();
+        }
+
+        // Front of the cabinet (the glass plane): the doors' pick colliders reach 4 cm past it.
+        private float FrontZ()
+        {
+            if (!float.IsNaN(_frontZ))
+                return _frontZ;
+            var z = float.MinValue;
+            foreach (var d in doors)
+            {
+                var hit = d != null ? d.transform.Find("Hit") : null;
+                var c = hit != null ? hit.GetComponent<BoxCollider>() : null;
+                if (c != null)
+                    z = Mathf.Max(z, c.bounds.max.z);
+            }
+
+            _frontZ = z > float.MinValue ? z - 0.04f : slotAnchors.Length > 0 ? slotAnchors[0].position.z + 0.55f : 0f;
+            return _frontZ;
+        }
+
+        // The slot is deep inside the cabinet and the glove stops at the glass, so the finger taps a zone that reaches
+        // from the slot out to the glass; a dashed ring on the glass shows where.
+        private void BuildTapZone()
+        {
+            _tapZone = new GameObject("SlotTapZone");
+            _tapZone.transform.SetParent(transform, false);
+            _tapBox = _tapZone.AddComponent<BoxCollider>();
+            _tapBox.isTrigger = true;
+            _tapPoke = _tapZone.AddComponent<PokeTarget>();
+            _tapPoke.Poked += _ => _slotTapped = true;
+
+            _tapMark = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            _tapMark.name = "SlotTapMark";
+            _tapMark.transform.SetParent(transform, false);
+            Destroy(_tapMark.GetComponent<Collider>());
+            _tapMarkRenderer = _tapMark.GetComponent<MeshRenderer>();
+            _tapMarkRenderer.sharedMaterial = tapMarkMaterial != null ? tapMarkMaterial : ghostMaterial;
+            _tapMarkRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _tapMarkRenderer.receiveShadows = false;
+            _tapZone.SetActive(false);
+            _tapMark.SetActive(false);
+        }
+
+        private void ShowTapZone()
+        {
+            var b = _ghostRenderer.bounds;
+            var front = FrontZ();
+            var backZ = b.min.z;
+            var frontEdge = front + 0.07f;
+            var depth = Mathf.Max(0.1f, frontEdge - backZ);
+            _tapZone.transform.SetPositionAndRotation(
+                new Vector3(b.center.x, b.center.y, (backZ + frontEdge) * 0.5f), Quaternion.identity);
+            _tapBox.center = Vector3.zero;
+            _tapBox.size = new Vector3(Mathf.Max(0.22f, b.size.x + 0.1f), Mathf.Max(0.22f, b.size.y + 0.05f), depth);
+            _tapZone.SetActive(true);
+            _tapPoke.SetInteractable(true);
+
+            var s = Mathf.Max(0.3f, Mathf.Max(b.size.x, b.size.y) + 0.14f);
+            _tapMark.transform.SetPositionAndRotation(new Vector3(b.center.x, b.center.y, front + 0.006f),
+                Quaternion.Euler(0f, 180f, 0f)); // visible from +z, the player side
+            _tapMark.transform.localScale = new Vector3(s, s, 1f);
+            _tapMark.SetActive(true);
+        }
+
+        private void HideTapZone()
+        {
+            if (_tapZone == null)
+                return;
+            _tapPoke.SetInteractable(false);
+            _tapZone.SetActive(false);
+            _tapMark.SetActive(false);
         }
 
         /// <summary>Moves the eye-level board with the empty places to the user's eye height (seated or standing).</summary>
@@ -295,6 +375,7 @@ namespace ChemicalSafety.Presentable
             _slotTapped = false;
             _ghost.SetActive(true);
             _ghostPoke.SetInteractable(true);
+            ShowTapZone();
             StartCoroutine(BlinkGhost());
         }
 
@@ -304,6 +385,7 @@ namespace ChemicalSafety.Presentable
                 return;
             _ghostPoke.SetInteractable(false);
             _ghost.SetActive(false);
+            HideTapZone();
         }
 
         private IEnumerator BlinkGhost()
@@ -315,6 +397,13 @@ namespace ChemicalSafety.Presentable
                 var a = Mathf.Lerp(0.18f, 0.7f, 0.5f + 0.5f * Mathf.Sin(t * 7f));
                 _block.SetColor("_BaseColor", new Color(0.3f, 1f, 0.5f, a));
                 _ghostRenderer.SetPropertyBlock(_block);
+                if (_tapMarkRenderer != null)
+                {
+                    var m = new MaterialPropertyBlock();
+                    m.SetColor("_BaseColor", new Color(0.35f, 1f, 0.55f, Mathf.Lerp(0.45f, 1f, 0.5f + 0.5f * Mathf.Sin(t * 7f))));
+                    _tapMarkRenderer.SetPropertyBlock(m);
+                    _tapMark.transform.Rotate(0f, 0f, 20f * Time.deltaTime, Space.Self);
+                }
                 yield return null;
             }
         }

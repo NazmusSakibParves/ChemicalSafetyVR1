@@ -27,7 +27,7 @@ namespace ChemicalSafety.Presentable
 
         public event Action Closed;
 
-        private float _distance = 1.05f;
+        private float _distance = 0.58f;
 
         /// <summary>How far in front of the head the large chart opens (closer at the glass cabinet).</summary>
         public void SetDistance(float meters) => _distance = Mathf.Clamp(meters, 0.45f, 1.5f);
@@ -65,7 +65,7 @@ namespace ChemicalSafety.Presentable
                 if (fwd.sqrMagnitude < 0.001f)
                     fwd = Vector3.forward;
                 fwd.Normalize();
-                _panel.position = cam.position + fwd * _distance + Vector3.down * 0.02f;
+                _panel.position = cam.position + fwd * _distance; // eye level
                 _panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             }
 
@@ -106,7 +106,7 @@ namespace ChemicalSafety.Presentable
                 return;
             _built = true;
 
-            var canvas = PresentableUi.WorldCanvas("ChartPanel", transform, new Vector2(1120f, 1060f), 0.0007f, true, 220);
+            var canvas = PresentableUi.WorldCanvas("ChartPanel", transform, new Vector2(1120f, 1060f), 0.00056f, true, 220);
             _panel = canvas.transform;
             _panelScale = _panel.localScale;
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
@@ -117,7 +117,24 @@ namespace ChemicalSafety.Presentable
                 chart, Color.white, preserveAspect: true);
             PresentableUi.AlwaysOnTop(canvas);
 
-            var close = PresentableUi.Rect("CloseChart", _panel, new Vector2(0.78f, 0.01f), new Vector2(0.98f, 0.1f));
+            // small X in the top right corner as well (both within arm's reach)
+            var x = PresentableUi.Rect("CloseChartX", _panel, new Vector2(0.9f, 0.9f), new Vector2(0.99f, 0.99f));
+            var xHit = PresentableUi.Img(PresentableUi.Rect("Hit", x, Vector2.zero, Vector2.one), null,
+                new Color(1f, 1f, 1f, 0.02f), raycast: true);
+            PresentableUi.Img(PresentableUi.Rect("Disc", x, Vector2.zero, Vector2.one), art.circle,
+                new Color(0.85f, 0.2f, 0.18f, 1f), preserveAspect: true);
+            PresentableUi.Img(PresentableUi.Rect("X", x, new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f)), art.cross,
+                Color.white, preserveAspect: true);
+            var xBtn = x.gameObject.AddComponent<Button>();
+            xBtn.transition = Selectable.Transition.None;
+            xBtn.targetGraphic = xHit;
+            xBtn.onClick.AddListener(() =>
+            {
+                PresentableFx.Play(PresentableFx.Tick);
+                Close();
+            });
+
+            var close = PresentableUi.Rect("CloseChart", _panel, new Vector2(0.56f, 0.0f), new Vector2(0.96f, 0.115f));
             var hit = PresentableUi.Img(PresentableUi.Rect("Hit", close, Vector2.zero, Vector2.one), null,
                 new Color(1f, 1f, 1f, 0.02f), raycast: true);
             PresentableUi.Img(PresentableUi.Rect("Pill", close, Vector2.zero, Vector2.one), art.button, Color.white);

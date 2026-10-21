@@ -18,7 +18,7 @@ namespace ChemicalSafety.Presentable
 
         // ---- subtitles
         public const string SdsHint = "Press X on the left controller to open or hide the SDS.";
-        public const string TouchHint = "Touch the glowing arrow in front of the drum to inspect it.";
+        public const string TouchHint = "Touch and hold the drum label with your finger to scan it.";
 
         // ---- DRUM INSPECTION REPORT card (step04): label / value pairs, the dot colour is set in Sc03Inspect
         public const string ReportTitle = "DRUM INSPECTION REPORT";

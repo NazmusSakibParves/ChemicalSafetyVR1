@@ -26,7 +26,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableArt art;
         [SerializeField] private ChartViewer chart;
         [SerializeField] private Entry[] entries = new Entry[0];
-        [SerializeField] private float heldHeight = 0.34f;
+        [SerializeField] private float heldHeight = 0.30f;
         [Tooltip("Additive dotted material for the scan beam between the container and the details card.")]
         [SerializeField] private Material scanMaterial;
 
@@ -42,6 +42,8 @@ namespace ChemicalSafety.Presentable
             public Vector3 localBottom;
             public Mesh mesh;
             public float scaleFactor;
+            public float holdRadius;
+            public float grasp;
             public float blend;
             public Coroutine routine;
             public bool placed;
@@ -70,6 +72,8 @@ namespace ChemicalSafety.Presentable
         private Coroutine _reveal;
         private bool _forceHand;
         private Quaternion _cardRot = Quaternion.identity;
+        private Vector3 _cardFwd = Vector3.forward;
+        private bool _cardHasFwd;
 
         public bool HasHeld => _held != null;
         public string HeldName => _held != null ? _held.entry.title : "";
@@ -128,6 +132,9 @@ namespace ChemicalSafety.Presentable
                     item.localBottom = new Vector3(mb.center.x, mb.min.y, mb.center.z);
                 }
                 item.scaleFactor = Mathf.Clamp(heldHeight / Mathf.Max(0.05f, b.size.y), 0.45f, 1.5f);
+                // half width of the container in the hand; wide ones are held with the fingers only half closed
+                item.holdRadius = Mathf.Max(b.size.x, b.size.z) * 0.5f * item.scaleFactor;
+                item.grasp = Mathf.Clamp(Mathf.InverseLerp(0.15f, 0.05f, item.holdRadius), 0.35f, 1f);
                 item.poke = t.GetComponent<PokeTarget>();
                 if (item.poke != null)
                 {
@@ -205,6 +212,7 @@ namespace ChemicalSafety.Presentable
             if (_held != null)
                 Release(_held);
             GlovedHandPose.Left?.SetGrasp(0f);
+            GlovedHandPose.Left?.SetCradle(false);
             _held = null;
             ShowCard(null);
             HeldChanged?.Invoke();
@@ -227,6 +235,7 @@ namespace ChemicalSafety.Presentable
                 item.poke.SetInteractable(false);
             _held = null;
             GlovedHandPose.Left?.SetGrasp(0f);
+            GlovedHandPose.Left?.SetCradle(false);
             PlacedCount++;
             _placementHidden = false;
             ShowCard(null);
@@ -264,7 +273,8 @@ namespace ChemicalSafety.Presentable
         private void Pick(Item item)
         {
             PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
-            GlovedHandPose.Left?.SetGrasp(1f); // fingers close around the container
+            GlovedHandPose.Left?.SetCradle(true); // the glove turns palm up under the container
+            GlovedHandPose.Left?.SetGrasp(item.grasp); // fingers curl round it from below
             Tween(item, 1f);
         }
 
@@ -341,7 +351,15 @@ namespace ChemicalSafety.Presentable
             var hand = GlovedHandPose.Left;
             if ((XRSettings.isDeviceActive || _forceHand) && hand != null && hand.gameObject.activeInHierarchy)
             {
-                // resting in the palm with the fingers wrapped round it: centre a little above the palm bone
+                // cradled: the container stands on the open palm (the glove turns palm up), the fingers curl round
+                // its lower half from below, so the glove never ends up inside it
+                if (hand.TryGetPalmFrame(out var pc, out _, out var pf))
+                {
+                    pf.y = 0f;
+                    pf = pf.sqrMagnitude > 0.001f ? pf.normalized : fwd;
+                    return pc + Vector3.up * (heldHeight * 0.5f + 0.03f) + pf * 0.02f;
+                }
+
                 var palm = hand.Palm != null ? hand.Palm.position : hand.transform.position;
                 return palm + Vector3.up * (heldHeight * 0.32f) + fwd * 0.025f;
             }
@@ -454,7 +472,7 @@ namespace ChemicalSafety.Presentable
             _beam.receiveShadows = false;
             _beam.numCapVertices = 0;
             _beam.widthCurve = new AnimationCurve(new Keyframe(0f, 0.3f), new Keyframe(1f, 1f));
-            _beam.widthMultiplier = 0.1f;
+            _beam.widthMultiplier = 0.055f;
             _beam.enabled = false;
             _beamBlock = new MaterialPropertyBlock();
         }
@@ -475,7 +493,7 @@ namespace ChemicalSafety.Presentable
             _beam.SetPosition(1, to);
             _beam.textureScale = new Vector2(Mathf.Max(1f, Vector3.Distance(from, to) * 14f), 1f);
             _beamBlock.SetVector("_BaseMap_ST", new Vector4(1f, 1f, -Time.time * 1.6f, 0f));
-            _beamBlock.SetColor("_BaseColor", new Color(0.45f, 0.92f, 1f, _cardGroup.alpha * _beamLevel));
+            _beamBlock.SetColor("_BaseColor", new Color(0.45f, 0.92f, 1f, _cardGroup.alpha * _beamLevel * 0.7f));
             _beam.SetPropertyBlock(_beamBlock);
         }
 
@@ -496,12 +514,34 @@ namespace ChemicalSafety.Presentable
             var cam = Camera.main != null ? Camera.main.transform : null;
             if (cam == null || _held == null)
                 return;
-            var fwd = FlatForward(cam);
+            var camFwd = FlatForward(cam);
+            var visible = _card.gameObject.activeSelf && _cardGroup.alpha > 0.05f;
+            if (!_cardHasFwd || !visible)
+            {
+                _cardFwd = camFwd; // a new card opens straight ahead
+                _cardHasFwd = true;
+            }
+            else
+            {
+                // lazy follow: the card stays put while the user looks around within about 24 degrees and only
+                // re-centres, gently, when they turn further (it never sweeps over the container in the hand)
+                var ang = Vector3.SignedAngle(_cardFwd, camFwd, Vector3.up);
+                var excess = Mathf.Abs(ang) - 24f;
+                if (excess > 0f)
+                {
+                    var step = excess * (1f - Mathf.Exp(-4f * Time.deltaTime));
+                    _cardFwd = Quaternion.Euler(0f, Mathf.Sign(ang) * step, 0f) * _cardFwd;
+                }
+            }
+
+            var fwd = _cardFwd;
             var right = Vector3.Cross(Vector3.up, fwd);
-            // anchored to the head (not the hand) so it never ends up right in the face, and close enough
-            // (about half a metre) that the whole card, chart box included, can be touched
-            var pos = cam.position + fwd * 0.52f + right * 0.24f + Vector3.down * 0.14f;
-            var want = Quaternion.LookRotation(pos - cam.position, Vector3.up);
+            // eye level, just right of centre (the container is in the left hand), about 0.7 m away so the whole
+            // card, chart box included, can be touched
+            var pos = new Vector3(cam.position.x, cam.position.y - 0.02f, cam.position.z) + fwd * 0.68f + right * 0.17f;
+            var toHead = cam.position - pos;
+            toHead.y = 0f;
+            var want = Quaternion.LookRotation(-toHead.normalized, Vector3.up);
             _cardRot = _card.gameObject.activeSelf && _cardGroup.alpha > 0.05f
                 ? Quaternion.Slerp(_cardRot, want, 1f - Mathf.Exp(-12f * Time.deltaTime))
                 : want;

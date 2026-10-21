@@ -15,6 +15,8 @@ namespace ChemicalSafety.Presentable
     {
         [SerializeField] private PresentableArt art;
         [SerializeField] private FloatingTouchButton touchButton;
+        [Tooltip("Hold-to-scan on the drum label (replaces the floating arrow).")]
+        [SerializeField] private Sc03LabelScan labelScan;
         [Tooltip("Centre of the drum label; its forward axis points the way the label faces (towards the user).")]
         [SerializeField] private Transform labelAnchor;
         [SerializeField] private float ringDistance = 0.12f;
@@ -45,6 +47,8 @@ namespace ChemicalSafety.Presentable
         public bool ContinuePressed => _continued;
         public bool ReportVisible => _card != null && _card.gameObject.activeSelf && _cardGroup.alpha > 0.5f;
         public FloatingTouchButton TouchButton => touchButton;
+        public Sc03LabelScan LabelScan => labelScan;
+        public bool ScanArmed => labelScan != null && labelScan.IsArmed;
         public Transform ReportCard => _card;
 
         /// <summary>Raised when the finger presses the arrow or the Continue button (smoke test hooks this too).</summary>
@@ -56,6 +60,14 @@ namespace ChemicalSafety.Presentable
         {
             if (touchButton != null)
                 touchButton.Pressed -= OnArrow;
+            if (labelScan != null)
+                labelScan.Completed -= OnScanned;
+        }
+
+        private void OnScanned()
+        {
+            _touched = true;
+            ArrowPressed?.Invoke();
         }
 
         private void OnArrow(FloatingTouchButton _)
@@ -76,6 +88,16 @@ namespace ChemicalSafety.Presentable
         {
             Build();
             _touched = false;
+            if (labelScan != null)
+            {
+                labelScan.Completed -= OnScanned;
+                labelScan.Completed += OnScanned;
+                labelScan.Arm();
+                return;
+            }
+
+            if (touchButton == null)
+                return;
             touchButton.Pressed -= OnArrow;
             touchButton.Pressed += OnArrow;
             touchButton.Arm(true);
@@ -83,6 +105,8 @@ namespace ChemicalSafety.Presentable
 
         public void DisarmTouch()
         {
+            if (labelScan != null)
+                labelScan.Disarm();
             if (touchButton != null)
                 touchButton.Disarm();
         }

@@ -182,6 +182,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("envSc03").objectReferenceValue = env3.gameObject;
             so.FindProperty("spawnSc03").objectReferenceValue = sc3.spawn;
             so.FindProperty("sc03InspectStand").objectReferenceValue = sc3.stand;
+            so.FindProperty("sc03ScanStand").objectReferenceValue = sc3.scanStand;
             so.FindProperty("sc03Inspect").objectReferenceValue = sc3.inspect;
             so.FindProperty("sc03Detonation").objectReferenceValue = sc3.detonation;
             so.FindProperty("mcqSc03").objectReferenceValue = mcq3;
@@ -1746,6 +1747,13 @@ namespace ChemicalSafety.Editor
                     shell.Encapsulate(doorMeshes[i].bounds);
                 var cavity = Mat("CabinetCavity", new Color(0.16f, 0.18f, 0.2f), 0.2f, 0.3f);
                 var backZ = shell.min.z - 0.55f;
+                // solid cabinet: a thin wall at the glass plane (the glove stops at it like at a drum, the view fades
+                // if the head goes in) and the two sides, so nothing can reach or walk into a compartment
+                AddSolidBox(room, "CabinetFrontSolid", new Vector3(shell.center.x, shell.center.y, shell.max.z - 0.05f),
+                    new Vector3(shell.size.x + 0.2f, shell.size.y + 0.14f, 0.08f));
+                foreach (var sideX in new[] { shell.min.x - 0.1f, shell.max.x + 0.1f })
+                    AddSolidBox(room, "CabinetSideSolid", new Vector3(sideX, shell.center.y, (shell.max.z + backZ) * 0.5f),
+                        new Vector3(0.08f, shell.size.y + 0.14f, shell.max.z - backZ));
                 var midZ = (shell.min.z + backZ) * 0.5f;
                 Box("CabinetBack", room, new Vector3(shell.center.x, shell.center.y, backZ),
                     new Vector3(shell.size.x + 0.16f, shell.size.y + 0.12f, 0.05f), cavity, false);
@@ -1885,6 +1893,8 @@ namespace ChemicalSafety.Editor
             SetRef(placement, "inspect", inspect);
             SetRef(placement, "ghostMaterial", MatAlpha("SlotGhost", null, new Color(0.3f, 1f, 0.5f, 0.5f), false));
             SetRef(placement, "rows", room.GetComponentInChildren<CabinetRows>(true));
+            SetRef(placement, "tapMarkMaterial", MatAlpha("SlotTapMark", art.ringDashed != null ? art.ringDashed.texture : null,
+                new Color(0.35f, 1f, 0.55f, 0.9f), true));
             var so = new SerializedObject(placement);
             var d = so.FindProperty("doors");
             d.arraySize = doors.Length;

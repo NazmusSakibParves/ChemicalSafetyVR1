@@ -63,6 +63,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform spawnSc03;
         [Tooltip("About a metre from the old drum, facing it.")]
         [SerializeField] private Transform sc03InspectStand;
+        [Tooltip("About 0.6 m from the drum label, within arm's reach for the hold-to-scan.")]
+        [SerializeField] private Transform sc03ScanStand;
         [SerializeField] private Sc03Inspect sc03Inspect;
         [SerializeField] private Sc03Detonation sc03Detonation;
         [SerializeField] private PresentableMcqPanel mcqSc03;
@@ -305,7 +307,8 @@ namespace ChemicalSafety.Presentable
             Stage("sc03Inspect");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.35f);
-            PlaceRig(sc03InspectStand.position, sc03InspectStand.forward);
+            PlaceRig(sc03ScanStand != null ? sc03ScanStand.position : sc03InspectStand.position,
+                sc03ScanStand != null ? sc03ScanStand.forward : sc03InspectStand.forward);
             clipboard.SetVisible(true);
             yield return fader.FadeTo(0f, 0.5f);
             // the SDS is held up (X hides / shows it); the arrow in front of the drum invites a finger touch
@@ -317,6 +320,14 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             StopVoice();
             subtitle.Hide();
+            // back to the stand the ring, the report card and the question are laid out for
+            if (sc03ScanStand != null)
+            {
+                yield return fader.FadeTo(1f, 0.25f);
+                PlaceRig(sc03InspectStand.position, sc03InspectStand.forward);
+                yield return fader.FadeTo(0f, 0.35f);
+            }
+
             yield return sc03Inspect.ShowReport();
             StartCoroutine(PlayVoice(art.voSc03Inspect));
             while (!sc03Inspect.ContinuePressed)
@@ -551,7 +562,7 @@ namespace ChemicalSafety.Presentable
             subtitle.Show(null, "Touch a chemical container, then place it in the matching compartment.", 7f);
             SetRoomInteractable(true);
             inspect.SetCardAllowed(true);
-            chart.SetDistance(1.05f);
+            chart.SetDistance(0.58f);
             if (placement != null)
                 placement.SetActive(true);
             yield return WalkOrGlide(hotspotSc02Pick);
@@ -569,14 +580,14 @@ namespace ChemicalSafety.Presentable
                 // at the cabinet: no details card (its chart box sits where the finger works) and the large chart
                 // opens close enough not to land inside the compartment
                 inspect.SetCardAllowed(false);
-                chart.SetDistance(0.6f);
+                chart.SetDistance(0.58f);
                 var before = placement.Placed;
                 while (placement.Placed == before)
                     yield return null;
                 if (placement.Placed >= placement.Total)
                     break;
                 inspect.SetCardAllowed(true);
-                chart.SetDistance(1.05f);
+                chart.SetDistance(0.58f);
                 yield return WalkOrGlide(hotspotSc02Pick);
             }
 

@@ -44,6 +44,14 @@ namespace ChemicalSafety.Presentable
         private Quaternion[] _graspBase;
         private float[] _graspExtra;
         private float _grasp;
+        private Transform _midProx;
+        private Transform _midDist;
+        private Transform _idxProx;
+        private Transform _litProx;
+        private float _palmSign = 1f;
+        private Quaternion _baseLocalRot = Quaternion.identity;
+        private float _cradle;
+        private float _cradleTarget;
         private Coroutine _graspRoutine;
 
         /// <summary>The gloved right hand (null until it has spawned).</summary>
@@ -77,6 +85,7 @@ namespace ChemicalSafety.Presentable
             _hand = Instantiate(handModel, transform, false).transform;
             _hand.name = isRight ? "GlovedHand_R" : "GlovedHand_L";
             _hand.localRotation = Quaternion.Euler(localEuler);
+            _baseLocalRot = _hand.localRotation;
             _hand.localScale = Vector3.one * scale;
 
             foreach (var smr in _hand.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -96,6 +105,7 @@ namespace ChemicalSafety.Presentable
             CaptureIndex();
             Palm = FindDeep(_hand, (isRight ? "R_" : "L_") + "Palm");
             CaptureGrasp();
+            CapturePalmFrame();
             BuildSleeve();
             if (isRight)
                 Right = this;
@@ -111,6 +121,10 @@ namespace ChemicalSafety.Presentable
                 return;
 
             _hand.localPosition = _baseLocalPos;
+            _hand.localRotation = _baseLocalRot;
+            _cradle = Mathf.MoveTowards(_cradle, _cradleTarget, Time.unscaledDeltaTime / 0.38f);
+            if (_cradle > 0.001f && Palm != null && _midProx != null && _idxProx != null && _litProx != null)
+                ApplyCradle(Mathf.SmoothStep(0f, 1f, _cradle));
             var target = _solidMask != 0 ? SolvePush() : Vector3.zero;
             _push = Vector3.Lerp(_push, target, 1f - Mathf.Exp(-30f * Time.unscaledDeltaTime));
             _hand.position += _push;
@@ -230,6 +244,82 @@ namespace ChemicalSafety.Presentable
                 _graspBones[i] = FindDeep(_hand, p + names[i]);
                 _graspBase[i] = _graspBones[i] != null ? _graspBones[i].localRotation : Quaternion.identity;
             }
+        }
+
+        // The palm frame: which way the palm faces and where the fingers point, measured from the skeleton. The sign
+        // of the normal is found once by closing the fingers (they curl towards the palm side).
+        private void CapturePalmFrame()
+        {
+            var p = isRight ? "R_" : "L_";
+            _midProx = FindDeep(_hand, p + "MiddleProximal");
+            _midDist = FindDeep(_hand, p + "MiddleDistal");
+            _idxProx = FindDeep(_hand, p + "IndexProximal");
+            _litProx = FindDeep(_hand, p + "LittleProximal");
+            _palmSign = 1f;
+            if (Palm == null || _midProx == null || _midDist == null || _idxProx == null || _litProx == null ||
+                _graspBones == null)
+                return;
+            var n = RawPalmNormal();
+            var open = _midDist.position;
+            for (var i = 0; i < _graspBones.Length; i++)
+            {
+                if (_graspBones[i] != null)
+                    _graspBones[i].localRotation = _graspBase[i] * Quaternion.Euler(_graspExtra[i], 0f, 0f);
+            }
+
+            var closed = _midDist.position;
+            for (var i = 0; i < _graspBones.Length; i++)
+            {
+                if (_graspBones[i] != null)
+                    _graspBones[i].localRotation = _graspBase[i];
+            }
+
+            if (Vector3.Dot(closed - open, n) < 0f)
+                _palmSign = -1f;
+        }
+
+        /// <summary>
+        /// Holding pose for the left hand: the glove (visual only, tracking is untouched) turns palm up under the
+        /// container with the fingers pointing the way the user looks, and the fingers curl round it from below.
+        /// </summary>
+        public void SetCradle(bool on) => _cradleTarget = on ? 1f : 0f;
+
+        public float CradleAmount => _cradle;
+
+        private void ApplyCradle(float k)
+        {
+            var cam = Camera.main != null ? Camera.main.transform : null;
+            var fwd = cam != null ? Vector3.ProjectOnPlane(cam.forward, Vector3.up) : Vector3.forward;
+            fwd = fwd.sqrMagnitude < 0.001f ? Vector3.forward : fwd.normalized;
+            var palmPos = Palm.position;
+            var f = (_midProx.position - palmPos).normalized;
+            var n = RawPalmNormal() * _palmSign;
+            var cur = Quaternion.LookRotation(f, n);
+            var tgt = Quaternion.LookRotation(fwd, Vector3.up);
+            var delta = tgt * Quaternion.Inverse(cur);
+            _hand.rotation = Quaternion.Slerp(Quaternion.identity, delta, k) * _hand.rotation;
+            _hand.position += palmPos - Palm.position;
+        }
+
+        private Vector3 RawPalmNormal()
+        {
+            var f = (_midProx.position - Palm.position).normalized;
+            var a = (_idxProx.position - _litProx.position).normalized;
+            return Vector3.Cross(f, a).normalized;
+        }
+
+        /// <summary>Palm centre, the direction the palm faces (where a held object sits) and the finger direction.</summary>
+        public bool TryGetPalmFrame(out Vector3 center, out Vector3 normal, out Vector3 fingers)
+        {
+            center = Vector3.zero;
+            normal = Vector3.up;
+            fingers = Vector3.forward;
+            if (Palm == null || _midProx == null || _idxProx == null || _litProx == null)
+                return false;
+            fingers = (_midProx.position - Palm.position).normalized;
+            normal = RawPalmNormal() * _palmSign;
+            center = Palm.position + fingers * 0.015f;
+            return true;
         }
 
         /// <summary>0 = relaxed pose, 1 = fingers closed around a held container.</summary>

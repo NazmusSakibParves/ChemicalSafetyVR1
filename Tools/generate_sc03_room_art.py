@@ -90,8 +90,8 @@ def residue():
     mask = np.clip((mask - 0.25) * 1.8, 0, 1)
     speck = np.random.default_rng(4).random((n, n)).astype(np.float32)
     shade = 0.82 + 0.18 * speck + 0.12 * (noise(n, 60, 8) - 0.5)
-    rgb = np.clip(np.array([238, 240, 236], dtype=np.float32)[None, None, :] * shade[..., None], 0, 255)
-    alpha = (mask * (0.78 + 0.22 * speck)) * 255
+    rgb = np.clip(np.array([206, 208, 201], dtype=np.float32)[None, None, :] * shade[..., None], 0, 255)
+    alpha = (mask * (0.78 + 0.22 * speck)) * 0.8 * 255
     im = Image.fromarray(np.dstack([rgb, alpha]).astype(np.uint8), "RGBA")
     save(im, ENV, "SC03_Residue.png")
 

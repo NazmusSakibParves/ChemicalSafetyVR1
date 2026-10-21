@@ -49,6 +49,11 @@ namespace ChemicalSafety.Presentable
         private ParticleSystem _dust;
         private ParticleSystem _ring;
         private ParticleSystem _ring2;
+        private ParticleSystem _ringFlat;
+        private bool _pending;
+        private bool _fogSaved;
+        private Color _fogColor0;
+        private float _fogEnd0;
         private Light _fireLight;
         private Light _flashLight;
         private AudioSource _oneShot;
@@ -63,7 +68,7 @@ namespace ChemicalSafety.Presentable
         private Vector3 _burstScale = Vector3.one;
         private Coroutine _routine;
 
-        public bool IsActive => _active;
+        public bool IsActive => _active || _pending;
 
         private void Awake()
         {
@@ -81,6 +86,9 @@ namespace ChemicalSafety.Presentable
             _dust = Make("CrystalDust", dustMaterial, bodyPos, Vector3.zero, 2f);
             _ring = Make("ShockRing", ringMaterial, bodyPos, Vector3.zero, 0f);
             _ring2 = Make("ShockRing2", ringMaterial, bodyPos, Vector3.zero, 0f);
+            _ringFlat = Make("ShockRingFlat", ringMaterial, drum != null ? drum.position + Vector3.up * 0.03f : origin.position,
+                new Vector3(90f, 0f, 0f), 0f);
+            _ringFlat.GetComponent<ParticleSystemRenderer>().alignment = ParticleSystemRenderSpace.Local;
 
             ConfigureFireBurst(_fireBurst);
             ConfigureFlames(_flames);
@@ -92,6 +100,7 @@ namespace ChemicalSafety.Presentable
             ConfigureDust(_dust);
             ConfigureRing(_ring, 4.6f, 0.55f);
             ConfigureRing(_ring2, 3.0f, 0.8f);
+            ConfigureRing(_ringFlat, 5.2f, 0.75f);
 
             _fireLight = MakeLight("FireLight", origin.position + Vector3.up * 0.25f, new Color(1f, 0.55f, 0.2f), 6f);
             _flashLight = MakeLight("FlashLight", origin.position + Vector3.up * 0.4f, new Color(1f, 0.8f, 0.55f), 9f);
@@ -353,14 +362,14 @@ namespace ChemicalSafety.Presentable
             main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 7.5f);
             main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.32f);
             main.gravityModifier = 1.3f;
-            main.maxParticles = 40;
+            main.maxParticles = 60;
             main.startRotation3D = true;
             main.startRotationX = new ParticleSystem.MinMaxCurve(0f, 6.28f);
             main.startRotationY = new ParticleSystem.MinMaxCurve(0f, 6.28f);
             main.startRotationZ = new ParticleSystem.MinMaxCurve(0f, 6.28f);
             var emission = ps.emission;
             emission.rateOverTime = 0f;
-            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 26) });
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 40) });
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Cone;
             shape.angle = 50f;
@@ -431,10 +440,47 @@ namespace ChemicalSafety.Presentable
 
         // ---------------------------------------------------------------- play
 
+        // The drum trembles and rumbles for a quarter of a second, then it goes.
         public void Explode()
+        {
+            if (_pending || _active)
+                return;
+            _pending = true;
+            StartCoroutine(Tremor());
+        }
+
+        private IEnumerator Tremor()
+        {
+            PresentableFx.Play(PresentableFx.Whoosh, 0.55f);
+            PresentableFx.HapticBoth(0.35f, 0.25f);
+            if (drum != null)
+            {
+                var basePos = drum.localPosition;
+                var baseRot = drum.localRotation;
+                yield return PresentableFx.Tween(0.26f, k =>
+                {
+                    var a = k * 0.014f;
+                    drum.localPosition = basePos + new Vector3(Mathf.Sin(k * 90f) * a, 0f, Mathf.Cos(k * 77f) * a);
+                    drum.localRotation = baseRot * Quaternion.Euler(Mathf.Sin(k * 63f) * 2.4f * k, 0f, Mathf.Cos(k * 55f) * 2.4f * k);
+                }, x => x);
+                drum.localPosition = basePos;
+                drum.localRotation = baseRot;
+            }
+
+            _pending = false;
+            ExplodeNow();
+        }
+
+        private void ExplodeNow()
         {
             _active = true;
             _t = 0f;
+            if (!_fogSaved)
+            {
+                _fogSaved = true;
+                _fogColor0 = RenderSettings.fogColor;
+                _fogEnd0 = RenderSettings.fogEndDistance;
+            }
             foreach (var ps in AllSystems())
             {
                 ps.Clear();
@@ -472,6 +518,13 @@ namespace ChemicalSafety.Presentable
             if (_fireBurst == null)
                 return; // never built: the room has not been shown yet
             _active = false;
+            _pending = false;
+            if (_fogSaved)
+            {
+                RenderSettings.fogColor = _fogColor0;
+                RenderSettings.fogEndDistance = _fogEnd0;
+                _fogSaved = false;
+            }
             foreach (var ps in AllSystems())
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             _fireLight.intensity = 0f;
@@ -497,7 +550,7 @@ namespace ChemicalSafety.Presentable
 
         private ParticleSystem[] AllSystems() => new[]
         {
-            _fireBurst, _flames, _body, _smoke, _sparks, _embers, _shards, _dust, _ring, _ring2
+            _fireBurst, _flames, _body, _smoke, _sparks, _embers, _shards, _dust, _ring, _ring2, _ringFlat
         };
 
         private IEnumerator Sequence()
@@ -555,6 +608,10 @@ namespace ChemicalSafety.Presentable
             var burst = Mathf.Exp(-_t * 1.6f);
             _fireLight.intensity = 3.4f + burst * 5f + Mathf.PerlinNoise(t * 9f, 0.3f) * 3.2f;
             var beat = 0.5f + 0.5f * Mathf.Sin(t * 5.2f); // smooth, never a hard strobe
+            // the room fills with warm smoke: the fog turns brownish and closes in
+            var smoke = Mathf.Clamp01(_t * 0.7f);
+            RenderSettings.fogColor = Color.Lerp(_fogColor0, new Color(0.2f, 0.09f, 0.045f), smoke);
+            RenderSettings.fogEndDistance = Mathf.Lerp(_fogEnd0, 9f, smoke);
             SetSirens(true, beat);
             if (_vignetteImg != null)
             {
