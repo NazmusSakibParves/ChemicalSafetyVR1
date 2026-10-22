@@ -140,16 +140,6 @@ namespace ChemicalSafety.Presentable
             }
         }
 
-        /// <summary>Orange corner brackets (top right, bottom left) like the step05 reference panels.</summary>
-        public static void CornerAccents(Transform root, Sprite solid)
-        {
-            var orange = new Color(1f, 0.52f, 0.2f, 1f);
-            Img("AccentTopH", root, new Vector2(0.9f, 0.958f), new Vector2(1.0f, 0.974f), solid, orange);
-            Img("AccentTopV", root, new Vector2(0.984f, 0.82f), new Vector2(1.0f, 0.974f), solid, orange);
-            Img("AccentBotH", root, new Vector2(0.0f, 0.04f), new Vector2(0.1f, 0.056f), solid, orange);
-            Img("AccentBotV", root, new Vector2(0.0f, 0.04f), new Vector2(0.016f, 0.19f), solid, orange);
-        }
-
         public static void SetAlpha(Graphic g, float a)
         {
             if (g == null)

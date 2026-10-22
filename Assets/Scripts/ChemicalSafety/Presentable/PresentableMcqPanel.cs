@@ -378,7 +378,6 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < 4; i++)
                 _rows.Add(BuildRow(root, i, font));
 
-            PresentableUi.CornerAccents(root, art.roundedSolid);
             BuildCorrectPopup(root, font);
             BuildWrongPopup(root, font);
             BuildNextButton(root, font);
@@ -531,6 +530,9 @@ namespace ChemicalSafety.Presentable
         private float _current = 1f;
         private float _press;
 
+        /// <summary>Raised when the hover starts / ends (pointer or finger), for rows that also change colour.</summary>
+        public event Action<bool> HoverChanged;
+
         public void Init(RectTransform rt)
         {
             _rt = rt;
@@ -540,14 +542,23 @@ namespace ChemicalSafety.Presentable
         public void OnPointerEnter(PointerEventData eventData)
         {
             _target = 1.04f;
+            HoverChanged?.Invoke(true);
             PresentableFx.Haptic(true, 0.12f, 0.03f);
             PresentableFx.Play(PresentableFx.Tick, 0.35f);
         }
 
-        public void OnPointerExit(PointerEventData eventData) => _target = 1f;
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _target = 1f;
+            HoverChanged?.Invoke(false);
+        }
 
         /// <summary>Hover from the finger poke system (no pointer events involved).</summary>
-        public void SetHover(bool on) => _target = on ? 1.04f : 1f;
+        public void SetHover(bool on)
+        {
+            _target = on ? 1.04f : 1f;
+            HoverChanged?.Invoke(on);
+        }
 
         /// <summary>Short dip when the finger presses the button.</summary>
         public void Press() => _press = 1f;
