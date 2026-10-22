@@ -82,6 +82,67 @@ namespace ChemicalSafety.Presentable
             Say("stage " + stage + (_director.CurrentStage == stage ? " reached" : " NOT reached (at " + _director.CurrentStage + ")"));
         }
 
+        // Every visible text of a panel must stay inside the safe area of its frame (not on the border arcs) and
+        // option labels inside their own row.
+        private static int LayoutCheck(string where, Transform root)
+        {
+            var canvas = root.GetComponentInChildren<Canvas>(true);
+            if (canvas == null)
+                return 0;
+            var crt = (RectTransform)canvas.transform;
+            var cr = crt.rect;
+            var bad = 0;
+            var count = 0;
+            foreach (var t in root.GetComponentsInChildren<TMPro.TMP_Text>(false))
+            {
+                if (string.IsNullOrEmpty(t.text) || !t.gameObject.activeInHierarchy)
+                    continue;
+                var skip = false;
+                for (var q = t.transform; q != null && q != root; q = q.parent)
+                {
+                    if (q.name == "NextButton" || q.name == "ContinueButton")
+                        skip = true;
+                }
+
+                if (skip)
+                    continue;
+                t.ForceMeshUpdate(true);
+                var b = t.textBounds;
+                var rt = t.rectTransform;
+                count++;
+                Vector2 InCanvas(Vector3 lp)
+                {
+                    var l = crt.InverseTransformPoint(rt.TransformPoint(lp));
+                    return new Vector2((l.x - cr.xMin) / cr.width, (l.y - cr.yMin) / cr.height);
+                }
+
+                var mn = InCanvas(b.min);
+                var mx = InCanvas(b.max);
+                var outside = mn.x < 0.05f || mx.x > 0.95f || mn.y < 0.09f || mx.y > 0.95f;
+                var inRow = true;
+                var parent = rt.parent as RectTransform;
+                if (parent != null && (parent.name.StartsWith("Row") || parent.name.StartsWith("Option")))
+                {
+                    var pr = parent.rect;
+                    var a = parent.InverseTransformPoint(rt.TransformPoint(b.min));
+                    var c = parent.InverseTransformPoint(rt.TransformPoint(b.max));
+                    inRow = a.x >= pr.xMin - 2f && c.x <= pr.xMax + 2f && a.y >= pr.yMin - 2f && c.y <= pr.yMax + 2f;
+                }
+
+                if (outside || !inRow)
+                {
+                    bad++;
+                    var txt = t.text.Replace("\n", " ");
+                    Say("LAYOUT FAIL " + where + ": '" + (txt.Length > 40 ? txt.Substring(0, 40) : txt) + "' x " +
+                        mn.x.ToString("0.00") + "-" + mx.x.ToString("0.00") + " y " + mn.y.ToString("0.00") + "-" +
+                        mx.y.ToString("0.00") + (inRow ? "" : " (leaves its row)"));
+                }
+            }
+
+            Say("layout " + where + ": " + count + " texts checked, violations = " + bad);
+            return bad;
+        }
+
         private static T Get<T>(object o, string field)
         {
             var f = o.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
@@ -355,6 +416,8 @@ namespace ChemicalSafety.Presentable
                 yield return new WaitForSeconds(0.8f);
                 Say("popup open = " + popup.IsOpen);
                 if (step == 0)
+                    LayoutCheck("SC01 label popup", popup.transform);
+                if (step == 0)
                 {
                     yield return Shot("03_popup");
                     yield return PanelStopTest(popup);
@@ -368,6 +431,7 @@ namespace ChemicalSafety.Presentable
                     yield return new WaitForSeconds(1.0f);
                     Say("after wrong: popup open = " + popup.IsOpen + " voice=" +
                         (voice.clip != null ? voice.clip.name : "none") + " playing=" + voice.isPlaying);
+                    LayoutCheck("SC01 label popup (wrong)", popup.transform);
                     yield return Shot("04_popup_wrong");
                 }
 
@@ -396,9 +460,11 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(2f);
             var mcq1 = Get<PresentableMcqPanel>(_director, "mcqSc01");
             Say("mcq1 open = " + mcq1.IsOpen);
+            LayoutCheck("SC01 MCQ", mcq1.transform);
             yield return Shot("07_question");
             Click(mcq1.transform, "Row1");
             yield return new WaitForSeconds(1.2f);
+            LayoutCheck("SC01 MCQ wrong card", mcq1.transform);
             yield return Shot("08_wrong");
             Click(mcq1.transform, "Close");
             yield return new WaitForSeconds(0.8f);
@@ -418,6 +484,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect1);
             yield return Shot("09_correct");
+            LayoutCheck("SC01 MCQ correct card", mcq1.transform);
             Click(mcq1.transform, "NextButton");
 
             yield return WaitStage("sc02Intro");
@@ -613,6 +680,7 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return new WaitForSeconds(1.2f);
+            LayoutCheck("SC02 MCQ", mcq2.transform);
             Say("mcq2 open = " + mcq2.IsOpen + " after " + placement.Placed + " / " + placement.Total + " placed");
             yield return Shot("14_sc02_question");
             Click(mcq2.transform, "Row2");
@@ -632,6 +700,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 2 complete vo = " + (heard2.Length > 0 ? heard2 : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect2);
             yield return Shot("15_sc02_correct");
+            LayoutCheck("SC02 MCQ correct card", mcq2.transform);
             Click(mcq2.transform, "NextButton");
 
             // --- Scenario 3: instruction card at eye level, inspect the old drum, immediate-action question
@@ -739,6 +808,7 @@ namespace ChemicalSafety.Presentable
 
             yield return new WaitForSeconds(1.2f);
             Say("SC03 mcq open = " + mcq3.IsOpen);
+            LayoutCheck("SC03 MCQ", mcq3.transform);
             yield return Shot("19_sc03_question");
             Click(mcq3.transform, "Row1");
             Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.25f - Camera.main.transform.position);
@@ -753,6 +823,7 @@ namespace ChemicalSafety.Presentable
             yield return Shot("20c_blast_2");
             yield return new WaitForSeconds(2.0f);
             yield return Shot("20d_blast_3");
+            LayoutCheck("SC03 MCQ wrong card", mcq3.transform);
             Say("SC03 stats during the blast: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls);
             Camera.main.transform.localRotation = camKeep3;
             Click(mcq3.transform, "Close");
@@ -779,6 +850,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 3 complete vo = " + (heard3.Length > 0 ? heard3 : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect3);
             yield return Shot("21_sc03_correct");
+            LayoutCheck("SC03 MCQ correct card", mcq3.transform);
             Click(mcq3.transform, "NextButton");
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);

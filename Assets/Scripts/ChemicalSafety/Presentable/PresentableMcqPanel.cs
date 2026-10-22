@@ -122,7 +122,7 @@ namespace ChemicalSafety.Presentable
                 var opt = question.options[i];
                 _rows[i].label.text = opt.label;
                 var n = opt.icons == null ? 0 : Mathf.Min(opt.icons.Length, _rows[i].icons.Length);
-                _rows[i].label.rectTransform.anchorMax = new Vector2(n > 0 ? 0.97f - n * 0.125f - 0.01f : 0.86f, 1f);
+                _rows[i].label.rectTransform.anchorMax = new Vector2(n > 0 ? 0.97f - n * 0.125f - 0.01f : 0.86f, 0.9f);
                 for (var k = 0; k < _rows[i].icons.Length; k++)
                 {
                     var has = k < n && opt.icons[k] != null;
@@ -362,13 +362,14 @@ namespace ChemicalSafety.Presentable
                 new Vector2(sizePx.x / 0.788f * FrameScale, sizePx.x / 0.788f / 1.777f * FrameScale));
             _frame = PresentableUi.Img(frameRt, art.popupFrame, Color.white);
 
-            _header = PresentableUi.Text("Header", root, new Vector2(0.06f, 0.875f), new Vector2(0.94f, 0.95f),
+            // safe areas measured on the frame art: top arc ~0.97, title underline ~0.83, bottom arc ~0.06-0.10
+            _header = PresentableUi.Text("Header", root, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.93f),
                 string.Empty, 40f, PresentableUi.Cyan, bold: true, font: font);
             _header.textWrappingMode = TextWrappingModes.NoWrap;
             _header.enableAutoSizing = true;
             _header.fontSizeMin = 24f;
             _header.fontSizeMax = 40f;
-            _prompt = PresentableUi.Text("Prompt", root, new Vector2(0.06f, 0.8f), new Vector2(0.94f, 0.875f),
+            _prompt = PresentableUi.Text("Prompt", root, new Vector2(0.08f, 0.738f), new Vector2(0.92f, 0.822f),
                 string.Empty, 28f, Color.white, font: font);
             _prompt.enableAutoSizing = true;
             _prompt.fontSizeMin = 20f;
@@ -377,6 +378,7 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < 4; i++)
                 _rows.Add(BuildRow(root, i, font));
 
+            PresentableUi.CornerAccents(root, art.roundedSolid);
             BuildCorrectPopup(root, font);
             BuildWrongPopup(root, font);
             BuildNextButton(root, font);
@@ -384,9 +386,9 @@ namespace ChemicalSafety.Presentable
 
         private Row BuildRow(Transform root, int index, TMP_FontAsset font)
         {
-            const float rowH = 0.165f;
+            const float rowH = 0.13f;
             const float gap = 0.02f;
-            var top = 0.775f - index * (rowH + gap);
+            var top = 0.715f - index * (rowH + gap); // last row ends at 0.135, clear of the bottom arc
             var row = new Row
             {
                 root = PresentableUi.Rect("Row" + (index + 1), root, new Vector2(0.17f, top - rowH),
@@ -413,12 +415,12 @@ namespace ChemicalSafety.Presentable
             var dotRt = PresentableUi.Rect("Dot", radioRt, new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f));
             row.dot = PresentableUi.Img(dotRt, art.dot, PresentableUi.Green, preserveAspect: true);
 
-            var labelRt = PresentableUi.Rect("Label", row.root, new Vector2(0.04f, 0f), new Vector2(0.62f, 1f));
-            row.label = PresentableUi.Text(labelRt, string.Empty, 44f, Color.white, TextAlignmentOptions.Left,
+            var labelRt = PresentableUi.Rect("Label", row.root, new Vector2(0.04f, 0.1f), new Vector2(0.62f, 0.9f));
+            row.label = PresentableUi.Text(labelRt, string.Empty, 34f, Color.white, TextAlignmentOptions.Left,
                 true, font);
             row.label.enableAutoSizing = true;
-            row.label.fontSizeMin = 22f;
-            row.label.fontSizeMax = 44f;
+            row.label.fontSizeMin = 20f;
+            row.label.fontSizeMax = 34f;
 
             row.icons = new Image[3];
             row.overlays = new Image[3];
@@ -448,14 +450,15 @@ namespace ChemicalSafety.Presentable
                 new Color(0.03f, 0.35f, 0.15f, 0.96f));
             PresentableUi.Img(PresentableUi.Rect("Frame", _correctPopup, Vector2.zero, Vector2.one), art.pop02,
                 PresentableUi.Green);
-            _correctTitle = PresentableUi.Text("Title", _correctPopup, new Vector2(0.08f, 0.71f),
-                new Vector2(0.92f, 0.87f), string.Empty, 50f, new Color(0.6f, 1f, 0.6f), bold: true, font: font);
+            // pop02 art: the glass area is x 0.12-0.88, y 0.12-0.83
+            _correctTitle = PresentableUi.Text("Title", _correctPopup, new Vector2(0.14f, 0.68f),
+                new Vector2(0.86f, 0.81f), string.Empty, 50f, new Color(0.6f, 1f, 0.6f), bold: true, font: font);
             _correctTitle.textWrappingMode = TextWrappingModes.NoWrap;
             _correctTitle.enableAutoSizing = true;
             _correctTitle.fontSizeMin = 30f;
             _correctTitle.fontSizeMax = 50f;
-            _correctBody = PresentableUi.Text("Body", _correctPopup, new Vector2(0.09f, 0.15f),
-                new Vector2(0.91f, 0.69f), string.Empty, 29f, Color.white, font: font);
+            _correctBody = PresentableUi.Text("Body", _correctPopup, new Vector2(0.14f, 0.16f),
+                new Vector2(0.86f, 0.66f), string.Empty, 29f, Color.white, font: font);
             _correctBody.enableAutoSizing = true;
             _correctBody.fontSizeMin = 20f;
             _correctBody.fontSizeMax = 29f;
@@ -475,19 +478,20 @@ namespace ChemicalSafety.Presentable
                 new Color(0.4f, 0.04f, 0.04f, 0.96f));
             PresentableUi.Img(PresentableUi.Rect("Frame", _wrongPopup, Vector2.zero, Vector2.one), art.pop02,
                 PresentableUi.Red);
-            _wrongTitle = PresentableUi.Text("Title", _wrongPopup, new Vector2(0.08f, 0.7f), new Vector2(0.85f, 0.87f),
+            _wrongTitle = PresentableUi.Text("Title", _wrongPopup, new Vector2(0.14f, 0.68f), new Vector2(0.86f, 0.81f),
                 string.Empty, 50f, new Color(1f, 0.55f, 0.5f), bold: true, font: font);
             _wrongTitle.textWrappingMode = TextWrappingModes.NoWrap;
             _wrongTitle.enableAutoSizing = true;
             _wrongTitle.fontSizeMin = 30f;
             _wrongTitle.fontSizeMax = 50f;
-            _wrongBody = PresentableUi.Text("Body", _wrongPopup, new Vector2(0.09f, 0.12f), new Vector2(0.91f, 0.67f),
+            _wrongBody = PresentableUi.Text("Body", _wrongPopup, new Vector2(0.14f, 0.28f), new Vector2(0.86f, 0.66f),
                 string.Empty, 30f, Color.white, TextAlignmentOptions.Left, font: font);
             _wrongBody.enableAutoSizing = true;
             _wrongBody.fontSizeMin = 20f;
             _wrongBody.fontSizeMax = 30f;
 
-            var close = PresentableUi.Rect("Close", _wrongPopup, new Vector2(0.88f, 0.76f), new Vector2(0.98f, 0.96f));
+            // bottom right inside the glass (the old top right spot sat on the frame)
+            var close = PresentableUi.Rect("Close", _wrongPopup, new Vector2(0.74f, 0.13f), new Vector2(0.86f, 0.27f));
             var closeBg = PresentableUi.Img(close, art.roundedPanel, new Color(0.8f, 0.15f, 0.12f, 1f), raycast: true);
             var closeIcon = PresentableUi.Rect("X", close, new Vector2(0.15f, 0.15f), new Vector2(0.85f, 0.85f));
             PresentableUi.Img(closeIcon, art.cross, Color.white, preserveAspect: true);
