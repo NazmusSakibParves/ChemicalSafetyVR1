@@ -852,6 +852,91 @@ namespace ChemicalSafety.Presentable
             yield return Shot("21_sc03_correct");
             LayoutCheck("SC03 MCQ correct card", mcq3.transform);
             Click(mcq3.transform, "NextButton");
+
+            // Scenario 4 is entered only after SC03 Next. The checks above are unchanged.
+            yield return WaitStage("sc04Intro", 30f);
+            var cont4 = FindDeep(panel.transform, "ContinueButton");
+            var w4 = 0f;
+            while (cont4 != null && !cont4.gameObject.activeSelf && w4 < 40f)
+            {
+                w4 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Say("SC04 instruction clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
+            Click(panel.transform, "ContinueButton");
+            yield return WaitStage("sc04Explore", 20f);
+            var gloves = Get<GloveInspect>(_director, "gloves");
+            var clip4 = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(0.4f);
+            Say("SC04 SDS starts hidden = " + !clip4.IsVisible);
+            clip4.Toggle();
+            yield return new WaitForSeconds(0.3f);
+            Say("SC04 SDS after X = " + clip4.IsVisible);
+            clip4.Toggle();
+            for (var g = 0; g < 3; g++)
+            {
+                var glove = gloves.transform.parent.Find("Glove" + g);
+                var poke = glove != null ? glove.GetComponent<PokeTarget>() : null;
+                if (poke != null)
+                    Poke(poke);
+                var waitHold = 0f;
+                while (!gloves.Holding && waitHold < 3f)
+                {
+                    waitHold += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.5f);
+                Say("SC04 holding glove " + g + " = " + gloves.Holding);
+                Click(gloves.transform, "CloseButton");
+                var waitBack = 0f;
+                while (gloves.Holding && waitBack < 3f)
+                {
+                    waitBack += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            var gateWait = 0f;
+            var next4 = FindDeep(gloves.transform, "NextButton");
+            while ((next4 == null || !next4.gameObject.activeInHierarchy) && gateWait < 8f)
+            {
+                gateWait += Time.unscaledDeltaTime;
+                next4 = FindDeep(gloves.transform, "NextButton");
+                yield return null;
+            }
+
+            Say("SC04 gloves seen = " + gloves.Seen + " / 3");
+            Click(gloves.transform, "NextButton");
+            yield return WaitStage("sc04Question", 20f);
+            var mcq4 = Get<PresentableMcqPanel>(_director, "mcqSc04");
+            var q4 = 0f;
+            while (!mcq4.IsOpen && q4 < 8f)
+            {
+                q4 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            LayoutCheck("SC04 MCQ", mcq4.transform);
+            Click(mcq4.transform, "Row1");
+            yield return new WaitForSeconds(0.8f);
+            Click(mcq4.transform, "Close");
+            yield return new WaitForSeconds(0.4f);
+            Click(mcq4.transform, "Row3");
+            var heard4 = "";
+            var h4 = 0f;
+            while (h4 < 12f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc04Complete"))
+                    heard4 = voiceSrc.clip.name;
+                h4 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 4 complete vo = " + (heard4.Length > 0 ? heard4 : "NOT HEARD"));
+            Click(mcq4.transform, "NextButton");
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

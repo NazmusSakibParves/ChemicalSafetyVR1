@@ -14,8 +14,8 @@ ONE VOICE, ONE PRONUNCIATION FOR THE WHOLE GAME (about 22 scenarios).
     numbers change. Add a scenario by adding its numbers to NUM / TO_NUM / EN_NUM.
 
 The respelling is only what the voice reads; the screen text and the Bangla images keep the normal spelling.
-Bangla is written with the precomposed letter YA-NUKTA (U+09DF) on purpose. Written as YA (U+09AF) plus the nukta sign
-(U+09BC) the voice read the number six as "shoshti".
+The number six is the precomposed letter YYA (U+09DF) inside SIX. YA (U+09AF) plus the nukta sign
+(U+09BC) looks the same on screen, and the voice reads that form as "shoshti".
 """
 import argparse
 import asyncio
@@ -42,12 +42,12 @@ PRON = {
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
 }
 
-SIX = "ছয়টি"  # ছয়টি with U+09DF
+SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF). Do not type this letter; editors save it as য + nukta.
 
 # scenario number -> how it is spoken
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four"}
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
 
 
 def complete_bn(n):
@@ -94,6 +94,14 @@ CLIPS = {
         BN_VOICE,
         "ভুল সিদ্ধান্ত। ক্রিস্টাল জমা অর্গানিক পারক্সাইড খোলার সময় বা ঘষা লাগলে বিস্ফোরিত হতে পারে।",
     ),
+    # Scenario 4
+    "VO_SC04_Instruction_bn": (
+        BN_VOICE,
+        "আপনি একজন ল্যাব টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড দিয়ে একটি ডাই নমুনা পরীক্ষার প্রস্তুতি নিচ্ছেন। "
+        "আগে সেফটি ডাটা শিট দেখুন। সঠিক গ্লাভস বেছে নিন।",
+    ),
+    "VO_Sc04Complete_bn": (BN_VOICE, complete_bn(4)),
+    "VO_Sc04Complete_en": (EN_VOICE, complete_en(4)),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
@@ -109,7 +117,7 @@ VARIANTS = {
     "A_precomposed": SIX + REST,
     "B_choyta": "ছয়টা" + REST,
     "C_digit": "৬টি" + REST,
-    "D_old_decomposed": "ছয়টি" + REST,
+    "D_old_decomposed": "\u099b\u09af\u09bc\u099f\u09bf" + REST,  # য + nukta: the voice reads this as "shoshti"
 }
 
 

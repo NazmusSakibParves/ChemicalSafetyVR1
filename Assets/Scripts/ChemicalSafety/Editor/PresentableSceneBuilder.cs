@@ -66,6 +66,9 @@ namespace ChemicalSafety.Editor
             var env3 = new GameObject("Environment_SC03").transform;
             var sc3 = BuildSc03Room(env3, art);
             env3.gameObject.SetActive(false);
+            var env4 = new GameObject("Environment_SC04").transform;
+            var sc4 = BuildSc04Room(env4, art);
+            env4.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -127,6 +130,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq2, "art", art);
             var mcq3 = Child("McqPanel_SC03", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq3, "art", art);
+            var mcq4 = Child("McqPanel_SC04", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq4, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -186,6 +191,10 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc03Inspect").objectReferenceValue = sc3.inspect;
             so.FindProperty("sc03Detonation").objectReferenceValue = sc3.detonation;
             so.FindProperty("mcqSc03").objectReferenceValue = mcq3;
+            so.FindProperty("envSc04").objectReferenceValue = env4.gameObject;
+            so.FindProperty("spawnSc04").objectReferenceValue = sc4.spawn;
+            so.FindProperty("gloves").objectReferenceValue = sc4.inspect;
+            so.FindProperty("mcqSc04").objectReferenceValue = mcq4;
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
             var doorProp = so.FindProperty("doors");
@@ -251,7 +260,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -393,6 +402,8 @@ namespace ChemicalSafety.Editor
             art.bnSc02InstructionPanel = B("BN_Sc02InstructionPanel");
             art.bnSc03InstructionPanel = B("BN_Sc03InstructionPanel");
             art.bnSc03Touch = B("BN_Sc03Touch");
+            art.bnSc04InstructionPanel = B("BN_Sc04InstructionPanel");
+            art.sdsSc04 = LoadSprite("2D/Sc04/SDS_SC04");
             art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
@@ -447,6 +458,15 @@ namespace ChemicalSafety.Editor
             var sc03DoneEn = V("VO_Sc03Complete_en.mp3");
             if (sc03DoneEn != null)
                 art.voSc03CompleteEn = sc03DoneEn;
+            var sc04Vo = V("VO_SC04_Instruction_bn.mp3");
+            if (sc04Vo != null)
+                art.voSc04Instruction = sc04Vo;
+            var sc04DoneBn = V("VO_Sc04Complete_bn.mp3");
+            if (sc04DoneBn != null)
+                art.voSc04CompleteBn = sc04DoneBn;
+            var sc04DoneEn = V("VO_Sc04Complete_en.mp3");
+            if (sc04DoneEn != null)
+                art.voSc04CompleteEn = sc04DoneEn;
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

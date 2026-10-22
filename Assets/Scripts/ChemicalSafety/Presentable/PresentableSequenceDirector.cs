@@ -71,6 +71,12 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Distance of the instruction card from the head in a headset (the desk uses a bit more).")]
         [SerializeField] private float sc03CardDistance = 0.8f;
 
+        [Header("SC04")]
+        [SerializeField] private GameObject envSc04;
+        [SerializeField] private Transform spawnSc04;
+        [SerializeField] private GloveInspect gloves;
+        [SerializeField] private PresentableMcqPanel mcqSc04;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -259,7 +265,10 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            subtitle.Show(null, envSc03 != null ? Sc03Content.ModuleComplete : "Module complete. Well done!", 8f);
+            var doneLine = envSc04 != null ? Sc04Content.ModuleComplete
+                : envSc03 != null ? Sc03Content.ModuleComplete
+                : "Module complete. Well done!";
+            subtitle.Show(null, doneLine, 8f);
         }
 
         // SC03: old storage room. Instruction card (eye level) -> inspect the crystallised peroxide drum ->
@@ -339,6 +348,63 @@ namespace ChemicalSafety.Presentable
             // always within arm's reach and in front of the drum (the drum is about 1 m away)
             PlaceInFrontOfHead(mcqSc03.transform, panelDistance);
             yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
+
+            if (envSc04 != null)
+                yield return RunScenario4();
+        }
+
+        // SC04 starts only after the SC03 question is finished. SC01–SC03 rooms and questions are unchanged.
+        private IEnumerator RunScenario4()
+        {
+            Stage("sc04");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            if (envSc03 != null)
+                envSc03.SetActive(false);
+            envSc04.SetActive(true);
+            clipboard.SetSheet(art.sdsSc04);
+            clipboard.SetVisible(false);
+            PlaceRig(spawnSc04.position, spawnSc04.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc04Intro");
+            _instructionClip = art.voSc04Instruction != null ? art.voSc04Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc04Content.InstructionEnglish, art.bnSc04InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            PlaceAtEyeLevel(instructionPanel.transform, XRSettings.isDeviceActive ? sc03CardDistance : 0.95f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+
+            Stage("sc04Explore");
+            if (gloves != null)
+            {
+                gloves.Begin();
+                while (!gloves.NextChosen)
+                    yield return null;
+            }
+
+            Stage("sc04Question");
+            PlaceInFrontOfHead(mcqSc04.transform, panelDistance);
+            yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
         }
 
         // Eye level: centred on the head height (the poked panels sit lower), upright, facing the user, straight
@@ -720,8 +786,31 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
-            yield return PlayVoice(scenario == 3 ? art.voSc03CompleteBn : scenario == 2 ? art.voSc02CompleteBn : art.voSc01CompleteBn);
-            yield return PlayVoice(scenario == 3 ? art.voSc03CompleteEn : scenario == 2 ? art.voSc02CompleteEn : art.voSc01CompleteEn);
+            AudioClip doneBn;
+            AudioClip doneEn;
+            if (scenario == 4)
+            {
+                doneBn = art.voSc04CompleteBn;
+                doneEn = art.voSc04CompleteEn;
+            }
+            else if (scenario == 3)
+            {
+                doneBn = art.voSc03CompleteBn;
+                doneEn = art.voSc03CompleteEn;
+            }
+            else if (scenario == 2)
+            {
+                doneBn = art.voSc02CompleteBn;
+                doneEn = art.voSc02CompleteEn;
+            }
+            else
+            {
+                doneBn = art.voSc01CompleteBn;
+                doneEn = art.voSc01CompleteEn;
+            }
+
+            yield return PlayVoice(doneBn);
+            yield return PlayVoice(doneEn);
         }
 
         private void SetRoomInteractable(bool value)
@@ -907,6 +996,30 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc04Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc04Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc04Content.OptionLabels[i],
+                    feedback = Sc04Content.OptionFeedback[i],
+                    wrongTitle = Sc04Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc04Content.QuestionHeader,
+                prompt = Sc04Content.QuestionPrompt,
+                correctIndex = Sc04Content.CorrectIndex,
+                correctTitle = Sc04Content.CorrectTitle,
+                nextLabel = Sc04Content.FinishLabel,
+                options = options
             };
         }
 

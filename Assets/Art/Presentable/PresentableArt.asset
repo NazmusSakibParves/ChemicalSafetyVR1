@@ -43,6 +43,7 @@ MonoBehaviour:
   sdsSc02: {fileID: 21300000, guid: d2d4be1cc17ee6049ac25d257b5ad79c, type: 3}
   chartSc02: {fileID: 21300000, guid: de472ce2a58a1124aa7a858f48db4764, type: 3}
   sdsSc03: {fileID: 21300000, guid: 964818aa85f0b5943b8b019ab9f50fd1, type: 3}
+  sdsSc04: {fileID: 21300000, guid: e2426dd69f7b5094e81a00618a04224e, type: 3}
   sc03Label: {fileID: 21300000, guid: 0cc2ccf62a12bb740994fa06faa83f5d, type: 3}
   scanFrame: {fileID: 21300000, guid: b62be6570af1d324f86e67b594d7d4cd, type: 3}
   ringThin: {fileID: 21300000, guid: d1034a8b78db1eb4ca45550aa1f32188, type: 3}
@@ -66,6 +67,7 @@ MonoBehaviour:
   bnSc02InstructionPanel: {fileID: 21300000, guid: 52f378abcda396a498baf44d72b3f6cf, type: 3}
   bnSc03InstructionPanel: {fileID: 21300000, guid: c035da48bb66eec45a700d2df3beb7c6, type: 3}
   bnSc03Touch: {fileID: 21300000, guid: 35cb5e82e1731f04a9615abf48b31679, type: 3}
+  bnSc04InstructionPanel: {fileID: 21300000, guid: e3a2dbef8755add43ab10fcd4340cb0a, type: 3}
   voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
   voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
   voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
@@ -86,5 +88,8 @@ MonoBehaviour:
   voSc03Wrong: {fileID: 8300000, guid: 800469651619532419d3234f8f59c3ea, type: 3}
   voSc03CompleteBn: {fileID: 8300000, guid: 7684f1a93b5faac488f2e9590960f98a, type: 3}
   voSc03CompleteEn: {fileID: 8300000, guid: 98159351f8b5e1c4db0f36a8fa00df36, type: 3}
+  voSc04Instruction: {fileID: 8300000, guid: 9454f657adee1d6479c045922de529ba, type: 3}
+  voSc04CompleteBn: {fileID: 8300000, guid: cf457c27f87a1074a8eb40209ceafed9, type: 3}
+  voSc04CompleteEn: {fileID: 8300000, guid: 2f7e70415a42adf4f8b8627bc4ccf778, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

@@ -53,6 +53,9 @@ TEXTS = {
         "(ভয়েস-ওভার: আপনি পুরনো স্টোররুমের পেছনের তাকে একটি পুরনো অর্গানিক পারক্সাইডের ড্রাম খুঁজে পেয়েছেন। মেয়াদ দুই বছরের বেশি আগে শেষ এবং ঢাকনার চারপাশে ক্রিস্টাল জমেছে। আপনাকে সিদ্ধান্ত নিতে হবে কী করবেন।)",
         60, False, 1650),
     "BN_Sc03Touch": ("ড্রামের লেবেলে আঙুল ছুঁয়ে ধরে রাখুন, স্ক্যান শেষ হলে রিপোর্ট দেখা যাবে", 64, False, 1700),
+    "BN_Sc04InstructionPanel": (
+        "(ভয়েস-ওভার: আপনি একজন ল্যাব টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড দিয়ে একটি ডাই নমুনা পরীক্ষার প্রস্তুতি নিচ্ছেন। আগে সেফটি ডাটা শিট দেখুন। সঠিক গ্লাভস বেছে নিন।)",
+        58, False, 1650),
 }
 
 PAD = 12
@@ -128,8 +131,15 @@ def render(name, text, size, bold, max_w):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", help="comma separated image names, so the other Bangla cards are not rewritten")
+    args = ap.parse_args()
+    only = set(args.only.split(",")) if args.only else None
     os.makedirs(OUT_DIR, exist_ok=True)
     for name, (text, size, bold, max_w) in TEXTS.items():
+        if only and name not in only:
+            continue
         print(name, render(name, text, size, bold, max_w))
 
 
