@@ -404,16 +404,19 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(0.8f);
             Click(mcq1.transform, "Row4");
             var heard = "";
+            var sawCorrect1 = false;
             var waited = 0f;
             while (waited < 8f)
             {
                 if (voice.clip != null && voice.clip.name.Contains("Sc01Complete"))
                     heard = voice.clip.name;
+                if (voice.clip != null && voice.clip.name == "VO_Correct_bn")
+                    sawCorrect1 = true;
                 waited += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect1);
             yield return Shot("09_correct");
             Click(mcq1.transform, "NextButton");
 
@@ -614,17 +617,20 @@ namespace ChemicalSafety.Presentable
             yield return Shot("14_sc02_question");
             Click(mcq2.transform, "Row2");
             var heard2 = "";
+            var sawCorrect2 = false;
             var hw = 0f;
             var voiceNow = Get<AudioSource>(_director, "voice");
             while (hw < 12f)
             {
                 if (voiceNow.clip != null && voiceNow.clip.name.Contains("Sc02Complete"))
                     heard2 = voiceNow.clip.name;
+                if (voiceNow.clip != null && voiceNow.clip.name == "VO_Correct_bn")
+                    sawCorrect2 = true;
                 hw += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            Say("scenario 2 complete vo = " + (heard2.Length > 0 ? heard2 : "NOT HEARD"));
+            Say("scenario 2 complete vo = " + (heard2.Length > 0 ? heard2 : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect2);
             yield return Shot("15_sc02_correct");
             Click(mcq2.transform, "NextButton");
 
@@ -759,16 +765,19 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(0.8f);
             Click(mcq3.transform, "Row2");
             var heard3 = "";
+            var sawCorrect3 = false;
             var h3 = 0f;
             while (h3 < 14f)
             {
                 if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc03Complete"))
                     heard3 = voiceSrc.clip.name;
+                if (voiceSrc.clip != null && voiceSrc.clip.name == "VO_Correct_bn")
+                    sawCorrect3 = true;
                 h3 += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            Say("scenario 3 complete vo = " + (heard3.Length > 0 ? heard3 : "NOT HEARD"));
+            Say("scenario 3 complete vo = " + (heard3.Length > 0 ? heard3 : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect3);
             yield return Shot("21_sc03_correct");
             Click(mcq3.transform, "NextButton");
             yield return WaitStage("complete", 30f);

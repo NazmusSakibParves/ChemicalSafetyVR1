@@ -68,6 +68,8 @@ CLIPS = {
         BN_VOICE,
         SIX + " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।",
     ),
+    # said after a right answer in EVERY scenario: no scenario-specific words (label, drum, ...)
+    "VO_Correct_bn": (BN_VOICE, "সঠিক। চমৎকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।"),
     "VO_Sc02PlaceHint_bn": (BN_VOICE, "কেমিক্যালটি নির্দিষ্ট কম্পার্টমেন্টে রাখুন।"),
     # scenario endings: the same sentence every time, only the numbers change
     "VO_Sc01Complete_bn": (BN_VOICE, complete_bn(1)),
