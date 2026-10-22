@@ -37,7 +37,7 @@ EN_VOICE = "en-IN-NeerjaNeural"
 PRON = {
     "স্বাগতম": "স্বাগোতোম",     # the voice split it as "sbag tom"; the user asked for this spelling
     "সফল": "শফল",              # the voice said "chofol"
-    "সঠিক": "শঠিক",            # the voice said "chothik"
+    "চমৎকার": "চমতকারর",        # the voice dropped the final র ("chomotka"); chosen by listening (variant B)
     "সিদ্ধান্ত": "শিদ্ধান্ত",    # the voice said "chiddhanto"
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
 }
@@ -69,7 +69,7 @@ CLIPS = {
         SIX + " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।",
     ),
     # said after a right answer in EVERY scenario: no scenario-specific words (label, drum, ...)
-    "VO_Correct_bn": (BN_VOICE, "সঠিক। চমৎকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।"),
+    "VO_Correct_bn": (BN_VOICE, "সঠিক। চমৎকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),  # third value = speaking rate
     "VO_Sc02PlaceHint_bn": (BN_VOICE, "কেমিক্যালটি নির্দিষ্ট কম্পার্টমেন্টে রাখুন।"),
     # scenario endings: the same sentence every time, only the numbers change
     "VO_Sc01Complete_bn": (BN_VOICE, complete_bn(1)),
@@ -113,27 +113,47 @@ VARIANTS = {
 }
 
 
+# listening variants for the right-answer line: (file name, text exactly as sent, rate)
+CORRECT_VARIANTS = [
+    ("A_tik_chomotkar", "সঠিক। চমতকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+    ("B_chomotkarr", "সঠিক। চমতকারর! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+    ("C_fullstop_after", "সঠিক। চমতকার। আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+    ("D_slow", "সঠিক। চমতকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-16%"),
+    ("E_hyphen", "সঠিক। চম-তকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+    ("F_pause_before_next", "সঠিক। চমতকার... আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+    ("G_chomotkar_word_last", "সঠিক। আপনি সঠিক উত্তরটি নির্বাচন করেছেন। চমতকার!", "-8%"),
+    ("H_normal_spelling_chomotkar", "সঠিক। চমৎকার। আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),
+]
+
+
 def spoken(text):
     for written, say in PRON.items():
         text = text.replace(written, say)
     return text
 
 
-async def synth(text, voice, path, raw=False):
-    await edge_tts.Communicate(text if raw else spoken(text), voice).save(path)
+async def synth(text, voice, path, raw=False, rate="+0%"):
+    await edge_tts.Communicate(text if raw else spoken(text), voice, rate=rate).save(path)
     print("wrote", path, os.path.getsize(path), "bytes")
 
 
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variants", help="folder for pronunciation variants of the SC02 instruction line")
+    ap.add_argument("--correct", help="folder for listening variants of the right-answer line")
     ap.add_argument("--words", help="folder for listening variants of the welcome / success words (text used as written)")
     ap.add_argument("--only", help="comma separated clip names to generate (for example VO_Sc03Inspect_bn)")
     ap.add_argument("--show", action="store_true", help="print the text the voice reads for every clip, write nothing")
     args = ap.parse_args()
     if args.show:
-        for name, (voice, text) in CLIPS.items():
-            print(name, "->", spoken(text))
+        for name, entry in CLIPS.items():
+            print(name, "->", spoken(entry[1]), entry[2] if len(entry) > 2 else "")
+        return
+    if args.correct:
+        os.makedirs(args.correct, exist_ok=True)
+        for name, text, rate in CORRECT_VARIANTS:
+            await edge_tts.Communicate(text, BN_VOICE, rate=rate).save(os.path.join(args.correct, name + ".mp3"))
+            print("wrote", name)
         return
     if args.words:
         os.makedirs(args.words, exist_ok=True)
@@ -146,10 +166,10 @@ async def main():
             await synth(text, BN_VOICE, os.path.join(args.variants, "SC02_Instruction_" + name + ".mp3"))
         return
     only = set(args.only.split(",")) if args.only else None
-    for name, (voice, text) in CLIPS.items():
+    for name, entry in CLIPS.items():
         if only and name not in only:
             continue
-        await synth(text, voice, os.path.join(OUT, name + ".mp3"))
+        await synth(entry[1], entry[0], os.path.join(OUT, name + ".mp3"), rate=entry[2] if len(entry) > 2 else "+0%")
 
 
 if __name__ == "__main__":
