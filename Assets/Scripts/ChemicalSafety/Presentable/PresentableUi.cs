@@ -18,6 +18,19 @@ namespace ChemicalSafety.Presentable
         public static readonly Color PanelFill = new Color(0.02f, 0.08f, 0.12f, 0.84f);
         public static readonly Color PanelFillRed = new Color(0.18f, 0.02f, 0.02f, 0.88f);
 
+        // Flat rounded panel shared by the MCQ and the property cards (dark fill, light border, orange corners).
+        public static readonly Color FlatBorder = new Color(0.45f, 0.78f, 1f, 0.95f);
+        public static readonly Color FlatFill = new Color(0.04f, 0.14f, 0.26f, 0.95f);
+        public static readonly Color FlatRowBorder = new Color(0.4f, 0.75f, 1f, 0.9f);
+        public static readonly Color FlatRowFill = new Color(0.07f, 0.2f, 0.34f, 0.96f);
+        public static readonly Color Orange = new Color(1f, 0.52f, 0.2f, 1f);
+
+        public sealed class FlatPanel
+        {
+            public Image border;
+            public Image fill;
+        }
+
         public static Canvas WorldCanvas(string name, Transform parent, Vector2 sizePx, float metersPerPixel,
             bool interactive, int sortingOrder = 0)
         {
@@ -138,6 +151,36 @@ namespace ChemicalSafety.Presentable
                     g.material = m;
                 }
             }
+        }
+
+        /// <summary>
+        /// Fills an existing rect with the shared flat panel: rounded border, darker fill, orange corner brackets.
+        /// The host itself must not already have an Image.
+        /// </summary>
+        public static FlatPanel FlatBox(RectTransform host, Sprite rounded, Color border, Color fill)
+        {
+            var panel = new FlatPanel
+            {
+                border = Img(host, rounded, border, sliced: true),
+                fill = Img(Rect("Fill", host, Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f)),
+                    rounded, fill, sliced: true)
+            };
+            CornerBrackets(host, rounded);
+            return panel;
+        }
+
+        public static void CornerBrackets(RectTransform panel, Sprite rounded)
+        {
+            Bracket(panel, "AccentTopH", new Vector2(1f, 1f), new Vector2(-72f, 3f), new Vector2(10f, 9f), rounded);
+            Bracket(panel, "AccentTopV", new Vector2(1f, 1f), new Vector2(4f, -62f), new Vector2(10f, 9f), rounded);
+            Bracket(panel, "AccentBotH", new Vector2(0f, 0f), new Vector2(-10f, -9f), new Vector2(72f, -3f), rounded);
+            Bracket(panel, "AccentBotV", new Vector2(0f, 0f), new Vector2(-10f, -9f), new Vector2(-4f, 62f), rounded);
+        }
+
+        private static void Bracket(RectTransform panel, string name, Vector2 anchor, Vector2 offsetMin,
+            Vector2 offsetMax, Sprite rounded)
+        {
+            Img(Rect(name, panel, anchor, anchor, offsetMin, offsetMax), rounded, Orange);
         }
 
         public static void SetAlpha(Graphic g, float a)

@@ -453,13 +453,14 @@ namespace ChemicalSafety.Presentable
             _cardBody.text = body;
             _cardBody.color = good ? new Color(0.75f, 1f, 0.85f) : new Color(1f, 0.82f, 0.8f);
             UpdateCount(false);
-            var center = door.Center;
-            var cam = Camera.main != null ? Camera.main.transform.position : center + Vector3.forward;
-            var towards = cam - center;
-            towards.y = 0f;
-            towards = towards.sqrMagnitude < 0.01f ? Vector3.forward : towards.normalized;
-            // just in front of the door, at reading height (the user stands about half a metre from the glass)
-            _card.position = center + towards * 0.14f + Vector3.up * 0.2f;
+            var camT = Camera.main != null ? Camera.main.transform : null;
+            if (camT != null)
+            {
+                var fwd = camT.forward;
+                fwd.y = 0f;
+                fwd = fwd.sqrMagnitude < 0.01f ? Vector3.forward : fwd.normalized;
+                _card.SetPositionAndRotation(camT.position + fwd * 0.55f, Quaternion.LookRotation(fwd, Vector3.up));
+            }
             _card.gameObject.SetActive(true);
             if (_cardRoutine != null)
                 StopCoroutine(_cardRoutine);

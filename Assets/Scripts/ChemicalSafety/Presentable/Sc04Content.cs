@@ -12,13 +12,14 @@ namespace ChemicalSafety.Presentable
 
         public const string QuestionHeader = "SAFETY GLOVE QUIZ";
         public const string QuestionPrompt =
-            "Question 4.1: You are about to handle concentrated HCl. Select the correct glove.";
+            "You are about to handle concentrated Hydrochloric Acid (HCl). Select the correct glove type based on safety guidelines.";
         public const string CorrectTitle = "RIGHT SELECTION!";
         public const string FinishLabel = "NEXT";
         public const int CorrectIndex = 2;
         public const string ModuleComplete = "Scenario 4 completed successfully.";
-        public const string GateTitle = "GLOVE INSPECTION COMPLETE";
-        public const string GateBody = "Press NEXT for the question, or BACK to review the gloves.";
+        public const string GateTitle = "GLOVE INSPECTION COMPLETE.";
+        public const string GateQuestion = "Are you ready for the Multiple Choice Questions (MCQ)?";
+        public const string GateBody = "Press NEXT to proceed or BACK to review again.";
 
         public static readonly string[] Materials =
         {
@@ -30,18 +31,20 @@ namespace ChemicalSafety.Presentable
         public static readonly string[] Ratings = { "None", "Poor", "Excellent" };
         public static readonly string[] Times = { "Immediate", "<30 minute", ">480 minute" };
 
+        public static readonly string[] RowLabels = { "MATERIAL", "RATING", "PERMEATION TIME" };
+
         public static readonly string[] OptionLabels =
         {
-            "A   Cotton work gloves",
-            "B   Thin nitrile gloves",
-            "C   Thick neoprene gloves"
+            "A   Standard cotton work gloves\n<size=70%>Poor chemical barrier and permeates instantly</size>",
+            "B   Thin nitrile disposable gloves\n<size=70%>Thin nitrile disposable rubber gloves</size>",
+            "C   Thick Neoprene/Butyl rubber gloves"
         };
 
         public static readonly string[] OptionFeedback =
         {
             "You selected cotton work gloves. Cotton has no chemical barrier. Acid soaks through immediately.",
             "Thin nitrile is a poor barrier to concentrated HCl. It is not the glove this SDS specifies.",
-            "Thick neoprene resists concentrated HCl. Permeation time is over 480 minutes."
+            "Thick Neoprene/Butyl gloves are impermeable to concentrated HCl. Prevents rapid permeation and degradation. Matches highest mineral acid resistance ratings."
         };
 
         public static readonly string[] OptionWrongTitle =

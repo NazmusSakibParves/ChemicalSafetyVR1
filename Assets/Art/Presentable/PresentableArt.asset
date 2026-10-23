@@ -32,6 +32,11 @@ MonoBehaviour:
   answerBox: {fileID: 21300000, guid: 75b9ea0ee99246e42bc3eb13a3ffce9f, type: 3}
   pop02: {fileID: 21300000, guid: 133505bbb1f42ee4193758f2375408ef, type: 3}
   button: {fileID: 21300000, guid: b6ad6df3c1ec0bd45afc4f62e3478bbf, type: 3}
+  frameCorrect: {fileID: 21300000, guid: 227b36a973cb4512be997c2d52f2cd47, type: 3}
+  frameWrong: {fileID: 21300000, guid: 989ceb686f72483988b0a9416857a647, type: 3}
+  frameWide: {fileID: 21300000, guid: c464f5ff94814d3294ae538ae901e191, type: 3}
+  optionBar: {fileID: 21300000, guid: a912e70a962749df922ea94816f03d78, type: 3}
+  optionBarHot: {fileID: 21300000, guid: 647d08746b644f669c12870b3ea83242, type: 3}
   popupFrameRed: {fileID: 21300000, guid: b3b82c7b50eff484697faedd4297e525, type: 3}
   answerBoxRed: {fileID: 21300000, guid: 7c9ccd4d76e303d46a0d4ef981f7ed9f, type: 3}
   buttonRed: {fileID: 21300000, guid: d78f6d169f82011479ea1fb56dff8a86, type: 3}

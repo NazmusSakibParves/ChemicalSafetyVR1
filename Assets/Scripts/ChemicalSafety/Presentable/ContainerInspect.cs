@@ -580,7 +580,7 @@ namespace ChemicalSafety.Presentable
 
         private void BuildCard()
         {
-            var canvas = PresentableUi.WorldCanvas("InspectCard", transform, new Vector2(900f, 780f), 0.00044f, true, 120);
+            var canvas = PresentableUi.WorldCanvas("InspectCard", transform, new Vector2(920f, 980f), 0.00042f, true, 120);
             canvas.GetComponent<CanvasScaler>().dynamicPixelsPerUnit = 3f;
             _card = canvas.transform;
             _cardScale = _card.localScale;
@@ -588,39 +588,48 @@ namespace ChemicalSafety.Presentable
             _cardGroup.alpha = 0f;
             var font = art != null ? art.englishFont : null;
             var cyan = PresentableUi.Cyan;
-            // same look as the other panels: the designer frame (soft transparent margin, so it is drawn larger than
-            // its content rect), row-style fill for the chart box, text kept inside the frame
-            var rowFill = new Color(0.02f, 0.16f, 0.22f, 0.72f);
 
-            var info = PresentableUi.Rect("Details", _card, new Vector2(0f, 0.3f), Vector2.one);
-            var frameRt = PresentableUi.Centered("Frame", info, Vector2.zero, new Vector2(900f / 0.788f, 900f / 0.788f / 1.777f));
-            PresentableUi.Img(frameRt, art.popupFrame, Color.white);
-            _title = Fit(PresentableUi.Text("Title", info, new Vector2(0.12f, 0.72f), new Vector2(0.88f, 0.86f), "", 46f,
-                cyan, TextAlignmentOptions.Left, true, font), 26f, 46f);
-            PresentableUi.Img("Divider", info, new Vector2(0.12f, 0.7f), new Vector2(0.88f, 0.705f), art.roundedSolid,
-                new Color(cyan.r, cyan.g, cyan.b, 0.55f));
-            PresentableUi.Text("HazardLabel", info, new Vector2(0.12f, 0.6f), new Vector2(0.88f, 0.69f), "HAZARD", 30f,
+            var info = PresentableUi.Rect("Details", _card, new Vector2(0.02f, 0.4f), new Vector2(0.98f, 0.98f));
+            if (art.frameWide != null)
+                PresentableUi.Img(info, art.frameWide, Color.white);
+            else
+                PresentableUi.FlatBox(info, art.roundedSolid, PresentableUi.FlatBorder, PresentableUi.FlatFill);
+            _title = Fit(PresentableUi.Text("Title", info, new Vector2(0.14f, 0.78f), new Vector2(0.86f, 0.9f), "", 28f,
+                Color.white, TextAlignmentOptions.Left, true, font), 16f, 26f);
+            _title.textWrappingMode = TextWrappingModes.NoWrap;
+            _title.overflowMode = TextOverflowModes.Ellipsis;
+            PresentableUi.Text("HazardLabel", info, new Vector2(0.14f, 0.62f), new Vector2(0.86f, 0.74f), "HAZARD", 22f,
                 cyan, TextAlignmentOptions.Left, true, font);
-            _hazard = Fit(PresentableUi.Text("Hazard", info, new Vector2(0.12f, 0.38f), new Vector2(0.88f, 0.6f), "", 36f,
-                Color.white, TextAlignmentOptions.TopLeft, false, font), 22f, 36f);
-            PresentableUi.Text("StoreLabel", info, new Vector2(0.12f, 0.28f), new Vector2(0.88f, 0.37f), "STORE IN", 30f,
+            _hazard = Fit(PresentableUi.Text("Hazard", info, new Vector2(0.14f, 0.42f), new Vector2(0.86f, 0.6f), "", 26f,
+                Color.white, TextAlignmentOptions.TopLeft, false, font), 16f, 26f);
+            PresentableUi.Text("StoreLabel", info, new Vector2(0.14f, 0.26f), new Vector2(0.86f, 0.38f), "STORE IN", 22f,
                 cyan, TextAlignmentOptions.Left, true, font);
-            _storage = Fit(PresentableUi.Text("Storage", info, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.28f), "",
-                36f, Color.white, TextAlignmentOptions.TopLeft, false, font), 22f, 36f);
+            _storage = Fit(PresentableUi.Text("Storage", info, new Vector2(0.14f, 0.12f), new Vector2(0.86f, 0.26f), "",
+                24f, Color.white, TextAlignmentOptions.TopLeft, false, font), 16f, 24f);
 
-            var box = PresentableUi.Rect("ChartBox", _card, new Vector2(0.06f, 0.02f), new Vector2(0.94f, 0.24f));
+            var box = PresentableUi.Centered("ChartBox", _card, new Vector2(0f, -300f), new Vector2(340f, 340f));
+            box.localPosition += new Vector3(0f, 0f, -8f);
             _boxGroup = box.gameObject.AddComponent<CanvasGroup>();
-            var hit = PresentableUi.Img(PresentableUi.Rect("Hit", box, Vector2.zero, Vector2.one), null,
-                new Color(1f, 1f, 1f, 0.02f), raycast: true);
-            PresentableUi.Img(PresentableUi.Rect("Fill", box, Vector2.zero, Vector2.one, new Vector2(6f, 4f), new Vector2(-6f, -4f)),
-                art.roundedSolid, rowFill);
-            PresentableUi.Img(PresentableUi.Rect("Frame", box, Vector2.zero, Vector2.one), art.answerBox, Color.white);
-            PresentableUi.Img("Thumb", box, new Vector2(0.05f, 0.14f), new Vector2(0.34f, 0.86f), art.chartSc02,
-                Color.white, true);
-            Fit(PresentableUi.Text("Label", box, new Vector2(0.38f, 0.46f), new Vector2(0.95f, 0.88f),
-                "CHEMICAL COMPATIBILITY CHART", 30f, cyan, TextAlignmentOptions.Left, true, font), 20f, 30f);
-            Fit(PresentableUi.Text("Hint", box, new Vector2(0.38f, 0.12f), new Vector2(0.95f, 0.46f), "Touch to enlarge",
-                26f, Color.white, TextAlignmentOptions.TopLeft, false, font), 18f, 26f);
+            var hit = PresentableUi.Img(box, art.frameWide != null ? art.frameWide : art.roundedSolid, Color.white, raycast: true);
+            // Centred in the glass, between the top border and the caption. Not stuck to either.
+            const float cell = 0.048f;
+            const float step = 0.058f;
+            const float x0 = 0.418f;
+            const float y0 = 0.628f;
+            for (var gy = 0; gy < 3; gy++)
+            for (var gx = 0; gx < 3; gx++)
+            {
+                var x = x0 + gx * step;
+                var y = y0 + gy * step;
+                var tile = PresentableUi.Rect("Cell" + gy + gx, box, new Vector2(x, y), new Vector2(x + cell, y + cell));
+                PresentableUi.Img(tile, art.roundedSolid, gy == 1 && gx == 1 ? PresentableUi.Green : cyan);
+            }
+            Fit(PresentableUi.Text("Label", box, new Vector2(0.12f, 0.38f), new Vector2(0.88f, 0.6f),
+                "CHEMICAL\nCOMPATIBILITY\nCHART", 22f, Color.white, TextAlignmentOptions.Center, true, font), 14f, 22f);
+            var scan = PresentableUi.Rect("Scan", box, new Vector2(0.28f, 0.16f), new Vector2(0.72f, 0.32f));
+            PresentableUi.Img(scan, art.button, PresentableUi.Green);
+            PresentableUi.Text("ScanLabel", scan, Vector2.zero, Vector2.one, "SCAN", 22f, Color.white,
+                TextAlignmentOptions.Center, true, font);
             var btn = box.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None;
             btn.targetGraphic = hit;

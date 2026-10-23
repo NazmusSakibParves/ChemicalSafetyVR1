@@ -34,6 +34,12 @@ namespace ChemicalSafety.Presentable
         public Sprite answerBox;
         public Sprite pop02;
         public Sprite button;
+        [Tooltip("Designed frames. Green opens on a right answer, red on a wrong answer.")]
+        public Sprite frameCorrect;
+        public Sprite frameWrong;
+        public Sprite frameWide;
+        public Sprite optionBar;
+        public Sprite optionBarHot;
         [Header("Red variants (generated from the designer frames)")]
         public Sprite popupFrameRed;
         public Sprite answerBoxRed;

@@ -18,7 +18,11 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float metersPerPixel = 0.0006f;
 
         private CanvasGroup _group;
+        private RectTransform _canvasRt;
+        private RectTransform _frameRt;
+        private RectTransform _titleRt;
         private RectTransform _speaker;
+        private Image _speakerIcon;
         private RectTransform _continue;
         private TextMeshProUGUI _english;
         private Image _bangla;
@@ -37,27 +41,27 @@ namespace ChemicalSafety.Presentable
             _built = true;
 
             var canvas = PresentableUi.WorldCanvas("InstructionCanvas", transform, sizePx, metersPerPixel, true, 100);
+            _canvasRt = (RectTransform)canvas.transform;
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
             var root = canvas.transform;
             var font = art.englishFont;
 
-            // The designer frame has a soft transparent margin, so it is drawn larger than the canvas.
-            var frame = PresentableUi.Centered("Frame", root, Vector2.zero,
-                new Vector2(sizePx.x / 0.788f, sizePx.x / 0.788f / 1.777f));
-            PresentableUi.Img(frame, art.popupFrame, Color.white);
+            // The pop-up frame. Reflow sizes it around the words so nothing is clipped.
+            _frameRt = PresentableUi.Centered("Frame", root, Vector2.zero, sizePx);
+            PresentableUi.Img(_frameRt, art.popupFrame, Color.white);
 
-            var title = PresentableUi.Text("Title", root, new Vector2(0.1f, 0.8f), new Vector2(0.9f, 0.94f),
-                "INSTRUCTIONS", 66f, Color.white, bold: true, font: font);
+            var title = PresentableUi.Text("Title", root, new Vector2(0.2f, 0.6f), new Vector2(0.8f, 0.7f),
+                "INSTRUCTIONS", 40f, Color.white, bold: true, font: font);
             title.textWrappingMode = TextWrappingModes.NoWrap;
+            _titleRt = title.rectTransform;
 
-            // Speaker: the designer art has a wide transparent margin, so the image is larger than its hit area.
-            _speaker = PresentableUi.Rect("Speaker", root, new Vector2(0.435f, 0.545f), new Vector2(0.565f, 0.795f));
+            _speaker = PresentableUi.Rect("Speaker", root, new Vector2(0.43f, 0.46f), new Vector2(0.57f, 0.58f));
             _speaker.localPosition += new Vector3(0f, 0f, -10f);
             var hit = PresentableUi.Img(PresentableUi.Rect("Hit", _speaker, Vector2.zero, Vector2.one), null,
                 new Color(1f, 1f, 1f, 0.02f), raycast: true);
-            PresentableUi.Img(PresentableUi.Rect("Icon", _speaker, Vector2.zero, Vector2.one,
-                new Vector2(-95f, -75f), new Vector2(95f, 75f)), art.speaker, Color.white, preserveAspect: true);
+            _speakerIcon = PresentableUi.Img(PresentableUi.Rect("Icon", _speaker, new Vector2(0.08f, 0.08f),
+                new Vector2(0.92f, 0.92f)), art.speaker, Color.white, preserveAspect: true);
             var speakerBtn = _speaker.gameObject.AddComponent<Button>();
             speakerBtn.transition = Selectable.Transition.None;
             speakerBtn.targetGraphic = hit;
@@ -68,22 +72,16 @@ namespace ChemicalSafety.Presentable
             });
             _speaker.gameObject.AddComponent<HoverLift>().Init(_speaker);
 
-            _english = PresentableUi.Text("English", root, new Vector2(0.1f, 0.35f), new Vector2(0.9f, 0.55f),
+            _english = PresentableUi.Text("English", root, new Vector2(0.14f, 0.32f), new Vector2(0.86f, 0.44f),
                 "<color=#5FD8FF><b>VOICE-OVER:</b></color> Select the correctly labeled drum based on the " +
-                "provided Safety Data Sheet (SDS).", 46f, Color.white, font: font);
-            _english.enableAutoSizing = true;
-            _english.fontSizeMin = 28f;
-            _english.fontSizeMax = 50f;
+                "provided Safety Data Sheet (SDS).", 32f, Color.white, font: font);
+            _english.textWrappingMode = TextWrappingModes.Normal;
+            _english.overflowMode = TextOverflowModes.Overflow;
 
-            var bn = art.bnInstructionPanel;
-            var aspect = bn != null ? bn.rect.width / Mathf.Max(1f, bn.rect.height) : 6f;
-            var bnH = Mathf.Min(190f, 1060f / aspect);
-            var bangla = PresentableUi.Centered("Bangla", root, new Vector2(0f, -sizePx.y * 0.275f),
-                new Vector2(bnH * aspect, bnH));
-            _bangla = PresentableUi.Img(bangla, bn, new Color(0.92f, 0.97f, 1f), preserveAspect: true);
+            var bangla = PresentableUi.Rect("Bangla", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            _bangla = PresentableUi.Img(bangla, art.bnInstructionPanel, new Color(0.92f, 0.97f, 1f), preserveAspect: true);
 
-            // Continue (button.png): appears below the frame, bottom right, once the voice-over is done.
-            _continue = PresentableUi.Rect("ContinueButton", root, new Vector2(0.6f, -0.15f), new Vector2(0.92f, -0.03f));
+            _continue = PresentableUi.Rect("ContinueButton", root, new Vector2(0.34f, 0.04f), new Vector2(0.66f, 0.14f));
             _continue.localPosition += new Vector3(0f, 0f, -20f);
             _continue.gameObject.AddComponent<CanvasGroup>();
             var contHit = PresentableUi.Img(PresentableUi.Rect("Hit", _continue, Vector2.zero, Vector2.one), null,
@@ -103,38 +101,109 @@ namespace ChemicalSafety.Presentable
             });
             _continue.gameObject.AddComponent<HoverLift>().Init(_continue);
             _continue.gameObject.SetActive(false);
+            Reflow();
         }
 
         private void Update()
         {
-            if (_speaker == null)
+            if (_speakerIcon == null)
                 return;
-            var s = _speaking ? 1f + Mathf.Sin(Time.time * 9f) * 0.07f : 1f;
-            _speaker.localScale = Vector3.one * s;
+            // Blink the icon only. Scaling the button made it look bigger in some scenes than others.
+            var c = Color.white;
+            c.a = _speaking ? 0.4f + Mathf.PingPong(Time.time * 1.6f, 0.6f) : 1f;
+            _speakerIcon.color = c;
         }
 
         public void SetSpeaking(bool speaking) => _speaking = speaking;
 
-        /// <summary>SC03: the Continue button sits under the middle of the card instead of the bottom right.</summary>
+        /// <summary>Continue stays centred under the words on every scenario.</summary>
         public void SetContinueCentered(bool centered)
         {
             Build();
-            _continue.anchorMin = new Vector2(centered ? 0.34f : 0.6f, -0.15f);
-            _continue.anchorMax = new Vector2(centered ? 0.66f : 0.92f, -0.03f);
+            if (centered)
+                Reflow();
         }
 
-        /// <summary>Swaps the card text. Scene 1 keeps the defaults built above.</summary>
+        /// <summary>Swaps the card text and grows the frame so the words stay inside.</summary>
         public void SetContent(string english, Sprite bangla)
         {
             Build();
+            if (art != null && art.englishFont != null)
+                _english.font = art.englishFont;
             if (!string.IsNullOrEmpty(english))
                 _english.text = english;
-            if (bangla == null || _bangla == null)
-                return;
-            _bangla.sprite = bangla;
-            var aspect = bangla.rect.width / Mathf.Max(1f, bangla.rect.height);
-            var h = Mathf.Min(190f, 1060f / aspect);
-            _bangla.rectTransform.sizeDelta = new Vector2(h * aspect, h);
+            if (bangla != null && _bangla != null)
+                _bangla.sprite = bangla;
+            Reflow();
+        }
+
+        // The frame hugs the words. Continue sits under the frame, not in the glass.
+        private void Reflow()
+        {
+            const float cardW = 1300f;
+            const float textW = 920f;
+            _english.enableAutoSizing = false;
+            _english.fontSize = 32f;
+            _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
+            _english.ForceMeshUpdate();
+            var englishH = Mathf.Clamp(_english.preferredHeight + 8f, 64f, 340f);
+
+            var aspect = 6f;
+            if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
+                aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
+            var bnH = Mathf.Min(160f, 860f / Mathf.Max(0.1f, aspect));
+            var bnW = bnH * aspect;
+
+            const float padTop = 72f;
+            const float titleH = 56f;
+            const float speakerH = 172f;
+            const float speakerDrop = 28f;
+            const float gap = 18f;
+            const float padBot = 48f;
+            var h = Mathf.Max(790f, padTop + titleH + gap + speakerDrop + speakerH + gap + englishH + gap + bnH + padBot);
+            if (h > 900f)
+            {
+                var extra = h - 900f;
+                var share = extra / Mathf.Max(1f, englishH + bnH);
+                englishH = Mathf.Max(72f, englishH * (1f - share));
+                bnH = Mathf.Max(56f, bnH * (1f - share));
+                bnW = bnH * aspect;
+                h = 900f;
+            }
+
+            _canvasRt.sizeDelta = new Vector2(cardW, h);
+            var frameW = cardW / 0.788f;
+            _frameRt.sizeDelta = new Vector2(frameW, frameW / 1.777f * (h / 790f));
+
+            var y = padTop;
+            Band(_titleRt, y + 20f, titleH, 680f);
+            y += titleH + gap + speakerDrop;
+            Band(_speaker, y, speakerH, speakerH);
+            y += speakerH + gap;
+            Band(_english.rectTransform, y, englishH, textW);
+            y += englishH + gap;
+            Band(_bangla.rectTransform, y, bnH, bnW);
+
+            _continue.anchorMin = _continue.anchorMax = new Vector2(0.5f, 0f);
+            _continue.pivot = new Vector2(0.5f, 1f);
+            _continue.sizeDelta = new Vector2(420f, 78f);
+            var z = _continue.localPosition.z;
+            _continue.anchoredPosition = new Vector2(0f, -78f);
+            var p = _continue.localPosition;
+            p.z = z;
+            _continue.localPosition = p;
+        }
+
+        private static void Band(RectTransform rt, float fromTop, float height, float width)
+        {
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.sizeDelta = new Vector2(width, height);
+            var z = rt.localPosition.z;
+            rt.anchoredPosition = new Vector2(0f, -fromTop);
+            var p = rt.localPosition;
+            p.z = z;
+            rt.localPosition = p;
         }
 
         public IEnumerator Show()

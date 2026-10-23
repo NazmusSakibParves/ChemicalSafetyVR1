@@ -261,45 +261,44 @@ namespace ChemicalSafety.Presentable
             _card = canvas.transform;
             _cardScale = _card.localScale;
             _cardGroup = canvas.gameObject.AddComponent<CanvasGroup>();
-            var cyan = PresentableUi.Cyan;
-
-            var frameRt = PresentableUi.Centered("Frame", _card, Vector2.zero, new Vector2(1000f / 0.788f, 1000f / 0.788f / 1.777f));
-            PresentableUi.Img(frameRt, art.popupFrame, Color.white);
-            var title = PresentableUi.Text("Title", _card, new Vector2(0.1f, 0.79f), new Vector2(0.9f, 0.93f),
-                Sc03Content.ReportTitle, 50f, Color.white, TextAlignmentOptions.Left, true, font);
+            var panel = PresentableUi.Rect("Panel", _card, new Vector2(0.0f, 0.0f), new Vector2(1f, 1f));
+            if (art.frameWide != null)
+                PresentableUi.Img(panel, art.frameWide, Color.white);
+            else
+                PresentableUi.FlatBox(panel, art.roundedSolid, PresentableUi.FlatBorder, PresentableUi.FlatFill);
+            var title = PresentableUi.Text("Title", panel, new Vector2(0.12f, 0.78f), new Vector2(0.88f, 0.9f),
+                Sc03Content.ReportTitle, 40f, Color.white, TextAlignmentOptions.Left, true, font);
             title.enableAutoSizing = true;
-            title.fontSizeMin = 28f;
-            title.fontSizeMax = 50f;
-            title.textWrappingMode = TextWrappingModes.NoWrap;
-            PresentableUi.Img("Divider", _card, new Vector2(0.1f, 0.775f), new Vector2(0.9f, 0.78f), art.roundedSolid,
-                new Color(cyan.r, cyan.g, cyan.b, 0.55f));
+            title.fontSizeMin = 22f;
+            title.fontSizeMax = 40f;
+            title.textWrappingMode = TextWrappingModes.Normal;
+            title.overflowMode = TextOverflowModes.Truncate;
+            PresentableUi.Img("Divider", panel, new Vector2(0.14f, 0.76f), new Vector2(0.86f, 0.768f), art.roundedSolid,
+                new Color(PresentableUi.FlatBorder.r, PresentableUi.FlatBorder.g, PresentableUi.FlatBorder.b, 0.55f));
 
             var count = Mathf.Min(Sc03Content.ReportLabels.Length, Sc03Content.ReportValues.Length);
             _rows = new TextMeshProUGUI[count];
-            const float top = 0.755f;
-            const float rowH = 0.165f;
+            const float top = 0.74f;
+            const float rowH = 0.145f;
             for (var i = 0; i < count; i++)
             {
                 var y1 = top - i * rowH;
-                var dot = PresentableUi.Img("Dot" + i, _card, new Vector2(0.1f, y1 - 0.085f), new Vector2(0.15f, y1 - 0.025f),
+                var dot = PresentableUi.Img("Dot" + i, panel, new Vector2(0.08f, y1 - 0.07f), new Vector2(0.13f, y1 - 0.02f),
                     art.dot, DotColors[i % DotColors.Length], true);
                 dot.raycastTarget = false;
                 var valueColor = i == 2 ? "#FF6A5E" : "#FFFFFF";
                 var text = "<b>" + Sc03Content.ReportLabels[i] + "</b>\n<color=" + valueColor + ">" +
                            Sc03Content.ReportValues[i] + "</color>";
-                var tmp = PresentableUi.Text("Row" + i, _card, new Vector2(0.17f, y1 - rowH + 0.01f),
-                    new Vector2(0.92f, y1), text, 36f, Color.white, TextAlignmentOptions.TopLeft, false, font);
+                var tmp = PresentableUi.Text("Row" + i, panel, new Vector2(0.16f, y1 - rowH + 0.012f),
+                    new Vector2(0.94f, y1 - 0.006f), text, 32f, Color.white, TextAlignmentOptions.TopLeft, false, font);
                 tmp.enableAutoSizing = true;
-                tmp.fontSizeMin = 20f;
-                tmp.fontSizeMax = 36f;
+                tmp.fontSizeMin = 16f;
+                tmp.fontSizeMax = 32f;
+                tmp.textWrappingMode = TextWrappingModes.Normal;
+                tmp.overflowMode = TextOverflowModes.Truncate;
+                tmp.margin = new Vector4(4f, 2f, 4f, 2f);
                 _rows[i] = tmp;
             }
-
-            var orange = new Color(1f, 0.52f, 0.2f, 1f);
-            PresentableUi.Img("AccentTopH", _card, new Vector2(0.9f, 0.965f), new Vector2(1.03f, 0.985f), art.roundedSolid, orange);
-            PresentableUi.Img("AccentTopV", _card, new Vector2(1.01f, 0.84f), new Vector2(1.03f, 0.985f), art.roundedSolid, orange);
-            PresentableUi.Img("AccentBotH", _card, new Vector2(-0.03f, 0.015f), new Vector2(0.1f, 0.035f), art.roundedSolid, orange);
-            PresentableUi.Img("AccentBotV", _card, new Vector2(-0.03f, 0.015f), new Vector2(-0.01f, 0.16f), art.roundedSolid, orange);
 
             _continue = PresentableUi.Rect("ContinueButton", _card, new Vector2(0.28f, -0.2f), new Vector2(0.72f, -0.04f));
             _continue.gameObject.AddComponent<CanvasGroup>();

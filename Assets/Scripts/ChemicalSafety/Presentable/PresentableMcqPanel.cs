@@ -9,9 +9,9 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// World-space MCQ matching step05 (question), step06 (correct) and step07 (wrong): cyan sci-fi frame,
-    /// title, four rows (radio + label + drum thumbnail), green CORRECT popup + NEXT, red WRONG popup with X.
-    /// Answers are poked with the gloved finger.
+    /// World-space MCQ. Flat dark-blue panel, rounded option rows and orange corner brackets, shared with the
+    /// property cards. Option text wraps inside its row. Green CORRECT popup + NEXT, red WRONG popup with X.
+    /// Answers are poked with the gloved finger. Every scenario uses this one panel.
     /// </summary>
     public sealed class PresentableMcqPanel : MonoBehaviour
     {
@@ -46,30 +46,29 @@ namespace ChemicalSafety.Presentable
             public Button button;
             public Image fill;
             public Image frame;
-            public Image radio;
-            public Image dot;
             public Image check;
             public TextMeshProUGUI label;
             public Image[] icons;
             public Image[] overlays;
         }
 
-        private const float FrameScale = 1.14f; // frame drawn a bit larger than the content so nothing touches its border
-
-        private static readonly Color RowFill = new Color(0.02f, 0.16f, 0.22f, 0.72f);
-        private static readonly Color RowFillGreen = new Color(0.05f, 0.5f, 0.28f, 0.88f);
-        private static readonly Color RowFillRed = new Color(0.45f, 0.05f, 0.05f, 0.88f);
-        private static readonly Color RowFillRedDim = new Color(0.14f, 0.04f, 0.04f, 0.6f);
-        private static readonly Color RadioCyan = new Color(0.45f, 0.95f, 1f, 1f);
+        private static readonly Color RowFillGreen = new Color(0.05f, 0.42f, 0.24f, 0.96f);
+        private static readonly Color RowBorderGreen = new Color(0.55f, 1f, 0.65f, 1f);
+        private static readonly Color RowFillRed = new Color(0.42f, 0.06f, 0.06f, 0.96f);
+        private static readonly Color RowFillRedDim = new Color(0.22f, 0.05f, 0.05f, 0.7f);
+        private static readonly Color RowBorderRed = new Color(1f, 0.4f, 0.34f, 1f);
+        private static readonly Color PanelFillRed = new Color(0.22f, 0.04f, 0.05f, 0.96f);
 
         [SerializeField] private PresentableArt art;
-        [SerializeField] private Vector2 sizePx = new Vector2(1300f, 790f);
+        [SerializeField] private Vector2 sizePx = new Vector2(1240f, 900f);
         [SerializeField] private float metersPerPixel = 0.00055f;
 
         private readonly List<Row> _rows = new List<Row>();
         private Question _question;
         private CanvasGroup _group;
         private Image _frame;
+        private RectTransform _readPlate;
+        private Image _panelFill;
         private TextMeshProUGUI _header;
         private TextMeshProUGUI _prompt;
         private RectTransform _correctPopup;
@@ -107,6 +106,7 @@ namespace ChemicalSafety.Presentable
         {
             Build();
             _question = question;
+            SetQuestionChrome(true);
             _locked = false;
             IsOpen = true;
             _header.text = question.header;
@@ -122,7 +122,13 @@ namespace ChemicalSafety.Presentable
                 var opt = question.options[i];
                 _rows[i].label.text = opt.label;
                 var n = opt.icons == null ? 0 : Mathf.Min(opt.icons.Length, _rows[i].icons.Length);
-                _rows[i].label.rectTransform.anchorMax = new Vector2(n > 0 ? 0.97f - n * 0.125f - 0.01f : 0.86f, 0.9f);
+                const float iconW = 0.082f;
+                const float iconGap = 0.014f;
+                const float iconRight = 0.95f;
+                var labelRight = n > 0 ? iconRight - n * (iconW + iconGap) - 0.02f : 0.92f;
+                _rows[i].label.rectTransform.anchorMin = new Vector2(0.06f, 0.08f);
+                _rows[i].label.rectTransform.anchorMax = new Vector2(labelRight, 0.92f);
+                _rows[i].label.alignment = TextAlignmentOptions.MidlineLeft;
                 for (var k = 0; k < _rows[i].icons.Length; k++)
                 {
                     var has = k < n && opt.icons[k] != null;
@@ -131,9 +137,9 @@ namespace ChemicalSafety.Presentable
                     if (!has)
                         continue;
                     icon.sprite = opt.icons[k];
-                    var x1 = 0.97f - (n - 1 - k) * 0.125f;
-                    icon.rectTransform.anchorMin = new Vector2(x1 - 0.115f, 0.07f);
-                    icon.rectTransform.anchorMax = new Vector2(x1, 0.93f);
+                    var x1 = iconRight - (n - 1 - k) * (iconW + iconGap);
+                    icon.rectTransform.anchorMin = new Vector2(x1 - iconW, 0.2f);
+                    icon.rectTransform.anchorMax = new Vector2(x1, 0.8f);
                     var sticker = opt.overlays != null && k < opt.overlays.Length ? opt.overlays[k] : null;
                     _rows[i].overlays[k].gameObject.SetActive(sticker != null);
                     _rows[i].overlays[k].sprite = sticker;
@@ -177,11 +183,10 @@ namespace ChemicalSafety.Presentable
             PresentableFx.Play(PresentableFx.Success);
             PresentableFx.Haptic(true, 0.6f, 0.15f);
 
+            SetQuestionChrome(false);
             var row = _rows[index];
-            row.dot.gameObject.SetActive(true);
             row.check.gameObject.SetActive(true);
-            row.fill.color = RowFillGreen;
-            row.frame.color = new Color(0.55f, 1f, 0.65f, 1f);
+            PaintRow(row, true, Color.white);
             for (var i = 0; i < _rows.Count; i++)
             {
                 if (i != index)
@@ -202,18 +207,13 @@ namespace ChemicalSafety.Presentable
             PresentableFx.Play(PresentableFx.Error);
             PresentableFx.Haptic(true, 0.9f, 0.25f);
 
-            _frame.sprite = art.popupFrameRed;
-            _header.color = PresentableUi.Red;
+            SetQuestionChrome(false);
+            _header.color = Color.white;
             for (var i = 0; i < _rows.Count; i++)
             {
                 var r = _rows[i];
                 var selected = i == index;
-                r.frame.sprite = art.answerBoxRed;
-                r.frame.color = selected ? Color.white : new Color(1f, 1f, 1f, 0.55f);
-                r.fill.color = selected ? RowFillRed : RowFillRedDim;
-                r.radio.color = selected ? PresentableUi.Red : PresentableUi.RedDim;
-                r.dot.color = PresentableUi.Red;
-                r.dot.gameObject.SetActive(selected);
+                PaintRow(r, selected, selected ? new Color(1f, 0.72f, 0.68f) : new Color(1f, 1f, 1f, 0.45f));
                 r.root.GetComponent<CanvasGroup>().alpha = selected ? 1f : 0.6f;
             }
 
@@ -236,6 +236,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator RetryRoutine()
         {
             yield return PopupOut(_wrongPopup);
+            SetQuestionChrome(true);
             if (_question != null)
             {
                 for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
@@ -253,21 +254,52 @@ namespace ChemicalSafety.Presentable
             NextPressed?.Invoke();
         }
 
+        // The question frame, title and rows hide while a result card is open, and come back only when the wrong card closes.
+        private void SetQuestionChrome(bool visible)
+        {
+            if (_frame != null)
+                _frame.gameObject.SetActive(visible);
+            if (_readPlate != null)
+                _readPlate.gameObject.SetActive(visible);
+            if (_header != null)
+                _header.gameObject.SetActive(visible);
+            if (_prompt != null)
+                _prompt.gameObject.SetActive(visible);
+            for (var i = 0; i < _rows.Count; i++)
+            {
+                var show = visible && _question != null && i < _question.options.Length;
+                _rows[i].root.gameObject.SetActive(show);
+            }
+        }
+
         private void ApplyNormalState()
         {
-            _frame.sprite = art.popupFrame;
-            _header.color = PresentableUi.Cyan;
+            if (art.frameWide == null)
+                SetPanelColors(PresentableUi.FlatBorder, PresentableUi.FlatFill);
+            else if (_frame != null)
+                _frame.color = Color.white;
+            _header.color = Color.white;
             foreach (var r in _rows)
             {
-                r.frame.sprite = art.answerBox;
-                r.frame.color = Color.white;
-                r.fill.color = RowFill;
-                r.radio.color = RadioCyan;
-                r.dot.color = PresentableUi.Green;
-                r.dot.gameObject.SetActive(false);
+                PaintRow(r, false, Color.white);
                 r.check.gameObject.SetActive(false);
                 r.root.GetComponent<CanvasGroup>().alpha = 1f;
             }
+        }
+
+        private void PaintRow(Row row, bool hot, Color tint)
+        {
+            if (art.optionBar != null)
+                row.frame.sprite = hot && art.optionBarHot != null ? art.optionBarHot : art.optionBar;
+            row.frame.color = tint;
+        }
+
+        private void SetPanelColors(Color border, Color fill)
+        {
+            if (_frame != null)
+                _frame.color = border;
+            if (_panelFill != null)
+                _panelFill.color = fill;
         }
 
         private IEnumerator PopIn()
@@ -357,143 +389,149 @@ namespace ChemicalSafety.Presentable
             var root = canvas.transform;
             var font = art.englishFont;
 
-            // The designer frame has a soft transparent margin, so it is drawn larger than the canvas.
-            var frameRt = PresentableUi.Centered("Frame", root, Vector2.zero,
-                new Vector2(sizePx.x / 0.788f * FrameScale, sizePx.x / 0.788f / 1.777f * FrameScale));
-            _frame = PresentableUi.Img(frameRt, art.popupFrame, Color.white);
+            var panel = root;
+            if (art.frameWide != null)
+            {
+                var frameRt = PresentableUi.Centered("Frame", root, Vector2.zero, sizePx * 1.08f);
+                _frame = PresentableUi.Img(frameRt, art.frameWide, Color.white);
+            }
+            else
+            {
+                var host = PresentableUi.Rect("Panel", root, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f));
+                var box = PresentableUi.FlatBox(host, art.roundedSolid, PresentableUi.FlatBorder, PresentableUi.FlatFill);
+                _frame = box.border;
+                _panelFill = box.fill;
+                panel = host;
+            }
 
-            // safe areas measured on the frame art: top arc ~0.97, title underline ~0.83, bottom arc ~0.06-0.10
-            _header = PresentableUi.Text("Header", root, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.93f),
-                string.Empty, 40f, PresentableUi.Cyan, bold: true, font: font);
-            _header.textWrappingMode = TextWrappingModes.NoWrap;
-            _header.enableAutoSizing = true;
-            _header.fontSizeMin = 24f;
-            _header.fontSizeMax = 40f;
-            _prompt = PresentableUi.Text("Prompt", root, new Vector2(0.08f, 0.738f), new Vector2(0.92f, 0.822f),
-                string.Empty, 28f, Color.white, font: font);
-            _prompt.enableAutoSizing = true;
-            _prompt.fontSizeMin = 20f;
-            _prompt.fontSizeMax = 28f;
+            // Dark plate behind the words so they stay readable on the translucent blue glass.
+            _readPlate = PresentableUi.Rect("ReadPlate", panel, new Vector2(0.06f, 0.10f), new Vector2(0.94f, 0.83f));
+            PresentableUi.Img(_readPlate, art.roundedSolid, new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
+            _header = HeaderTitle(PresentableUi.Text("Header", panel, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.93f),
+                string.Empty, 24f, Color.white, bold: true, font: font));
+            _header.fontSizeMin = 18f;
+            _header.fontSizeMax = 28f;
+            _prompt = FitInside(PresentableUi.Text("Prompt", panel, new Vector2(0.08f, 0.675f), new Vector2(0.92f, 0.825f),
+                string.Empty, 28f, new Color(0.94f, 0.97f, 1f), font: font), 20f, 32f);
 
             for (var i = 0; i < 4; i++)
-                _rows.Add(BuildRow(root, i, font));
+                _rows.Add(BuildRow(panel, i, font));
 
             BuildCorrectPopup(root, font);
             BuildWrongPopup(root, font);
             BuildNextButton(root, font);
+            PresentableUi.AlwaysOnTop(canvas);
         }
 
         private Row BuildRow(Transform root, int index, TMP_FontAsset font)
         {
-            const float rowH = 0.13f;
-            const float gap = 0.02f;
-            var top = 0.715f - index * (rowH + gap); // last row ends at 0.135, clear of the bottom arc
+            const float rowH = 0.128f;
+            const float gap = 0.012f;
+            var top = 0.655f - index * (rowH + gap);
             var row = new Row
             {
-                root = PresentableUi.Rect("Row" + (index + 1), root, new Vector2(0.17f, top - rowH),
-                    new Vector2(0.92f, top))
+                root = PresentableUi.Rect("Row" + (index + 1), root, new Vector2(0.05f, top - rowH),
+                    new Vector2(0.95f, top))
             };
             row.root.gameObject.AddComponent<CanvasGroup>();
             row.root.localPosition += new Vector3(0f, 0f, -12f);
 
-            var fillRt = PresentableUi.Rect("Fill", row.root, Vector2.zero, Vector2.one, new Vector2(6f, 4f),
-                new Vector2(-6f, -4f));
-            row.fill = PresentableUi.Img(fillRt, art.roundedSolid, RowFill, raycast: true);
-            var frameRt = PresentableUi.Rect("Frame", row.root, Vector2.zero, Vector2.one);
-            row.frame = PresentableUi.Img(frameRt, art.answerBox, Color.white);
+            var bar = art.optionBar != null ? art.optionBar : art.roundedSolid;
+            row.frame = PresentableUi.Img(PresentableUi.Rect("Frame", row.root, Vector2.zero, Vector2.one),
+                bar, Color.white);
+            row.fill = PresentableUi.Img(PresentableUi.Rect("Fill", row.root, Vector2.zero, Vector2.one),
+                null, new Color(1f, 1f, 1f, 0.02f), raycast: true);
 
             row.button = row.root.gameObject.AddComponent<Button>();
             row.button.transition = Selectable.Transition.None;
             row.button.targetGraphic = row.fill;
             var captured = index;
             row.button.onClick.AddListener(() => OnOptionClicked(captured));
-            row.root.gameObject.AddComponent<HoverLift>().Init(row.root);
+            var lift = row.root.gameObject.AddComponent<HoverLift>();
+            lift.Init(row.root);
+            lift.HoverChanged += on =>
+            {
+                if (_locked || art.optionBar == null)
+                    return;
+                row.frame.sprite = on && art.optionBarHot != null ? art.optionBarHot : art.optionBar;
+                row.frame.color = Color.white;
+            };
 
-            var radioRt = PresentableUi.Rect("Radio", row.root, new Vector2(-0.125f, 0.12f), new Vector2(-0.02f, 0.88f));
-            row.radio = PresentableUi.Img(radioRt, art.circle, RadioCyan, preserveAspect: true);
-            var dotRt = PresentableUi.Rect("Dot", radioRt, new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f));
-            row.dot = PresentableUi.Img(dotRt, art.dot, PresentableUi.Green, preserveAspect: true);
-
-            var labelRt = PresentableUi.Rect("Label", row.root, new Vector2(0.04f, 0.1f), new Vector2(0.62f, 0.9f));
-            row.label = PresentableUi.Text(labelRt, string.Empty, 34f, Color.white, TextAlignmentOptions.Left,
+            var labelRt = PresentableUi.Rect("Label", row.root, new Vector2(0.06f, 0.08f), new Vector2(0.7f, 0.92f));
+            row.label = PresentableUi.Text(labelRt, string.Empty, 28f, Color.white, TextAlignmentOptions.MidlineLeft,
                 true, font);
-            row.label.enableAutoSizing = true;
-            row.label.fontSizeMin = 20f;
-            row.label.fontSizeMax = 34f;
+            FitInside(row.label, 18f, 28f);
 
             row.icons = new Image[3];
             row.overlays = new Image[3];
             for (var k = 0; k < 3; k++)
             {
-                var iconRt = PresentableUi.Rect("Icon" + k, row.root, new Vector2(0.8f, 0.07f), new Vector2(0.9f, 0.93f));
+                var iconRt = PresentableUi.Rect("Icon" + k, row.root, new Vector2(0.78f, 0.2f), new Vector2(0.95f, 0.8f));
                 row.icons[k] = PresentableUi.Img(iconRt, null, Color.white, preserveAspect: true);
-                // Sticker sits on the drum body: 62 % of the drum width, top at 30 % of its height.
                 var stickerRt = PresentableUi.Rect("Sticker", iconRt, new Vector2(0.19f, 0.21f), new Vector2(0.81f, 0.70f));
                 row.overlays[k] = PresentableUi.Img(stickerRt, null, Color.white, preserveAspect: true);
             }
 
-            var checkRt = PresentableUi.Rect("Check", row.root, new Vector2(0.9f, 0.12f), new Vector2(1.0f, 0.88f));
+            var checkRt = PresentableUi.Rect("Check", row.root, new Vector2(0.015f, 0.28f), new Vector2(0.07f, 0.72f));
             row.check = PresentableUi.Img(checkRt, art.check, PresentableUi.Green, preserveAspect: true);
+            row.check.gameObject.SetActive(false);
             return row;
+        }
+
+        private static TextMeshProUGUI HeaderTitle(TextMeshProUGUI t)
+        {
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = 14f;
+            t.fontSizeMax = 28f;
+            t.alignment = TextAlignmentOptions.Center;
+            return t;
+        }
+
+        private static TextMeshProUGUI FitInside(TextMeshProUGUI t, float min, float max)
+        {
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Truncate;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = min;
+            t.fontSizeMax = max;
+            t.margin = new Vector4(6f, 2f, 6f, 2f);
+            return t;
         }
 
         private void BuildCorrectPopup(Transform root, TMP_FontAsset font)
         {
-            _correctPopup = PresentableUi.Centered("CorrectPopup", root, new Vector2(-20f, 20f),
-                new Vector2(730f, 440f));
+            // The supplied green frame already has the blue metal border. Words stay in the inner glass.
+            _correctPopup = PresentableUi.Centered("CorrectPopup", root, new Vector2(0f, 40f), new Vector2(900f, 482f));
             _correctPopup.localPosition += new Vector3(0f, 0f, -45f);
             _correctPopup.gameObject.AddComponent<CanvasGroup>();
-            PresentableUi.Img(PresentableUi.Rect("Glow", _correctPopup, Vector2.zero, Vector2.one,
-                new Vector2(-50f, -50f), new Vector2(50f, 50f)), art.softGlow, new Color(0.2f, 1f, 0.4f, 0.45f));
-            PresentableUi.Img(PresentableUi.Rect("Fill", _correctPopup, Vector2.zero, Vector2.one), art.roundedSolid,
-                new Color(0.03f, 0.35f, 0.15f, 0.96f));
-            PresentableUi.Img(PresentableUi.Rect("Frame", _correctPopup, Vector2.zero, Vector2.one), art.pop02,
-                PresentableUi.Green);
-            // pop02 art: the glass area is x 0.12-0.88, y 0.12-0.83
-            _correctTitle = PresentableUi.Text("Title", _correctPopup, new Vector2(0.14f, 0.68f),
-                new Vector2(0.86f, 0.81f), string.Empty, 50f, new Color(0.6f, 1f, 0.6f), bold: true, font: font);
-            _correctTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            _correctTitle.enableAutoSizing = true;
-            _correctTitle.fontSizeMin = 30f;
-            _correctTitle.fontSizeMax = 50f;
-            _correctBody = PresentableUi.Text("Body", _correctPopup, new Vector2(0.14f, 0.16f),
-                new Vector2(0.86f, 0.66f), string.Empty, 29f, Color.white, font: font);
-            _correctBody.enableAutoSizing = true;
-            _correctBody.fontSizeMin = 20f;
-            _correctBody.fontSizeMax = 29f;
-            var check = PresentableUi.Rect("Check", _correctPopup, new Vector2(0.84f, -0.06f), new Vector2(0.98f, 0.16f));
-            PresentableUi.Img(check, art.check, PresentableUi.Green, preserveAspect: true);
+            PresentableUi.Img(_correctPopup, art.frameCorrect != null ? art.frameCorrect : art.frameWide, Color.white);
+            _correctTitle = HeaderTitle(PresentableUi.Text("Title", _correctPopup, new Vector2(0.18f, 0.855f),
+                new Vector2(0.82f, 0.93f), string.Empty, 26f, Color.white, bold: true, font: font));
+            PresentableUi.Img(PresentableUi.Rect("Tick", _correctPopup, new Vector2(0.42f, 0.62f), new Vector2(0.58f, 0.76f)),
+                art.check, new Color(0.55f, 1f, 0.62f), preserveAspect: true);
+            _correctBody = FitInside(PresentableUi.Text("Body", _correctPopup, new Vector2(0.16f, 0.22f),
+                new Vector2(0.84f, 0.58f), string.Empty, 26f, new Color(0.86f, 1f, 0.9f), font: font), 16f, 28f);
             _correctPopup.gameObject.SetActive(false);
         }
 
         private void BuildWrongPopup(Transform root, TMP_FontAsset font)
         {
-            _wrongPopup = PresentableUi.Centered("WrongPopup", root, new Vector2(-20f, 20f), new Vector2(740f, 430f));
+            _wrongPopup = PresentableUi.Centered("WrongPopup", root, new Vector2(0f, 40f), new Vector2(900f, 482f));
             _wrongPopup.localPosition += new Vector3(0f, 0f, -45f);
             _wrongPopup.gameObject.AddComponent<CanvasGroup>();
-            PresentableUi.Img(PresentableUi.Rect("Glow", _wrongPopup, Vector2.zero, Vector2.one,
-                new Vector2(-50f, -50f), new Vector2(50f, 50f)), art.softGlow, new Color(1f, 0.2f, 0.15f, 0.45f));
-            PresentableUi.Img(PresentableUi.Rect("Fill", _wrongPopup, Vector2.zero, Vector2.one), art.roundedSolid,
-                new Color(0.4f, 0.04f, 0.04f, 0.96f));
-            PresentableUi.Img(PresentableUi.Rect("Frame", _wrongPopup, Vector2.zero, Vector2.one), art.pop02,
-                PresentableUi.Red);
-            _wrongTitle = PresentableUi.Text("Title", _wrongPopup, new Vector2(0.14f, 0.68f), new Vector2(0.86f, 0.81f),
-                string.Empty, 50f, new Color(1f, 0.55f, 0.5f), bold: true, font: font);
-            _wrongTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            _wrongTitle.enableAutoSizing = true;
-            _wrongTitle.fontSizeMin = 30f;
-            _wrongTitle.fontSizeMax = 50f;
-            _wrongBody = PresentableUi.Text("Body", _wrongPopup, new Vector2(0.14f, 0.28f), new Vector2(0.86f, 0.66f),
-                string.Empty, 30f, Color.white, TextAlignmentOptions.Left, font: font);
-            _wrongBody.enableAutoSizing = true;
-            _wrongBody.fontSizeMin = 20f;
-            _wrongBody.fontSizeMax = 30f;
+            PresentableUi.Img(_wrongPopup, art.frameWrong != null ? art.frameWrong : art.frameWide, Color.white);
+            _wrongTitle = HeaderTitle(PresentableUi.Text("Title", _wrongPopup, new Vector2(0.18f, 0.855f),
+                new Vector2(0.82f, 0.93f), string.Empty, 24f, Color.white, bold: true, font: font));
+            _wrongBody = FitInside(PresentableUi.Text("Body", _wrongPopup, new Vector2(0.16f, 0.36f),
+                new Vector2(0.84f, 0.74f), string.Empty, 22f, new Color(1f, 0.94f, 0.94f), font: font), 15f, 24f);
 
-            // bottom right inside the glass (the old top right spot sat on the frame)
-            var close = PresentableUi.Rect("Close", _wrongPopup, new Vector2(0.74f, 0.13f), new Vector2(0.86f, 0.27f));
-            var closeBg = PresentableUi.Img(close, art.roundedPanel, new Color(0.8f, 0.15f, 0.12f, 1f), raycast: true);
-            var closeIcon = PresentableUi.Rect("X", close, new Vector2(0.15f, 0.15f), new Vector2(0.85f, 0.85f));
-            PresentableUi.Img(closeIcon, art.cross, Color.white, preserveAspect: true);
+            var close = PresentableUi.Rect("Close", _wrongPopup, new Vector2(0.74f, 0.20f), new Vector2(0.86f, 0.32f));
+            var closeBg = PresentableUi.Img(close, art.roundedSolid, new Color(0.75f, 0.14f, 0.12f, 1f), sliced: true,
+                raycast: true);
+            PresentableUi.Img(PresentableUi.Rect("X", close, new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f)),
+                art.cross, Color.white, preserveAspect: true);
             var btn = close.gameObject.AddComponent<Button>();
             btn.targetGraphic = closeBg;
             btn.onClick.AddListener(OnWrongClosed);
@@ -503,14 +541,14 @@ namespace ChemicalSafety.Presentable
 
         private void BuildNextButton(Transform root, TMP_FontAsset font)
         {
-            _nextButton = PresentableUi.Rect("NextButton", root, new Vector2(0.6f, -0.15f), new Vector2(0.92f, -0.03f));
+            _nextButton = PresentableUi.Rect("NextButton", _correctPopup, new Vector2(0.18f, -0.34f), new Vector2(0.82f, -0.08f));
             _nextButton.localPosition += new Vector3(0f, 0f, -30f);
             _nextButton.gameObject.AddComponent<CanvasGroup>();
             var hit = PresentableUi.Img(PresentableUi.Rect("Hit", _nextButton, Vector2.zero, Vector2.one), null,
                 new Color(1f, 1f, 1f, 0.02f), raycast: true);
             PresentableUi.Img(PresentableUi.Rect("Pill", _nextButton, Vector2.zero, Vector2.one,
                 new Vector2(-80f, -52f), new Vector2(80f, 52f)), art.button, Color.white);
-            _nextLabel = PresentableUi.Text("Label", _nextButton, Vector2.zero, Vector2.one, "NEXT", 46f, Color.white,
+            _nextLabel = PresentableUi.Text("Label", _nextButton, Vector2.zero, Vector2.one, "NEXT", 42f, Color.white,
                 bold: true, font: font);
             var btn = _nextButton.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None;

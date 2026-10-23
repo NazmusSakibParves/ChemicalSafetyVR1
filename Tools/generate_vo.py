@@ -40,6 +40,7 @@ PRON = {
     "চমৎকার": "চমতকারর",        # the voice dropped the final র ("chomotka"); chosen by listening (variant B)
     "সিদ্ধান্ত": "শিদ্ধান্ত",    # the voice said "chiddhanto"
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
+    "ঘন": "ঘনো",                # concentrated: the voice did not say the word clearly
 }
 
 SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF). Do not type this letter; editors save it as য + nukta.
@@ -60,9 +61,10 @@ def complete_en(n):
 
 CLIPS = {
     "VO_AssalamuAlaikum_bn": (BN_VOICE, "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে স্বাগতম।"),
+    # শঠিক is only for this clip. The voice reads সঠিক as ছঠিক here. The on-screen Bangla still says সঠিক.
     "VO_SC01_Instruction_bn": (
         BN_VOICE,
-        "সরবরাহ করা সেফটি ডাটা শিট-এর উপর ভিত্তি করে সঠিক লেবেলযুক্ত ড্রামটি নির্বাচন করুন।",
+        "সরবরাহ করা সেফটি ডাটা শিট-এর উপর ভিত্তি করে শঠিক লেবেলযুক্ত ড্রামটি নির্বাচন করুন।",
     ),
     "VO_SC02_Instruction_bn": (
         BN_VOICE,

@@ -7,22 +7,14 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// SC01 popup listing the four label names, opened by poking an unlabeled drum. Flat (not curved) dark-blue
-    /// panel with a thin light border, straight rounded rows and orange corner brackets, like the step05
-    /// "IMMEDIATE ACTION PROTOCOL" reference. A wrong pick turns this same popup red (it never uses the MCQ popups).
+    /// SC01 popup listing the four label names, opened by poking an unlabeled drum. Uses the same wide
+    /// blue frame and option bars as the MCQ. A wrong pick turns the plate and the rows red.
     /// </summary>
     public sealed class LabelPickPopup : MonoBehaviour
     {
-        private static readonly Color PanelBorder = new Color(0.45f, 0.78f, 1f, 0.95f);
-        private static readonly Color PanelFill = new Color(0.04f, 0.14f, 0.26f, 0.95f);
-        private static readonly Color RowBorder = new Color(0.4f, 0.75f, 1f, 0.9f);
-        private static readonly Color RowFill = new Color(0.07f, 0.2f, 0.34f, 0.96f);
-        private static readonly Color RowHover = new Color(0.16f, 0.4f, 0.6f, 1f);
-        private static readonly Color RedBorder = new Color(1f, 0.38f, 0.32f, 0.95f);
-        private static readonly Color RedPanel = new Color(0.22f, 0.04f, 0.05f, 0.95f);
-        private static readonly Color RedRow = new Color(0.34f, 0.07f, 0.08f, 0.96f);
-        private static readonly Color RedHover = new Color(0.55f, 0.14f, 0.13f, 1f);
-        private static readonly Color Orange = new Color(1f, 0.52f, 0.2f, 1f);
+        private static readonly Color RowFillRed = new Color(0.3f, 0.05f, 0.05f, 0.78f);
+        private static readonly Color RowHover = new Color(0.08f, 0.32f, 0.4f, 0.9f);
+        private static readonly Color RedHover = new Color(0.5f, 0.1f, 0.1f, 0.9f);
 
         public static readonly string[] Names =
             { "Faded Label", "No Label", "Mismatched GHS vs SDS", "Correctly Labelled" };
@@ -35,7 +27,6 @@ namespace ChemicalSafety.Presentable
         private RectTransform _panel;
         private Image _panelBorder;
         private Image _panelFill;
-        private Image _titleLine;
         private TextMeshProUGUI _title;
         private readonly Image[] _rowBorders = new Image[4];
         private readonly Image[] _rowFills = new Image[4];
@@ -77,11 +68,12 @@ namespace ChemicalSafety.Presentable
         public void SetWrong(bool wrong)
         {
             _wrong = wrong;
-            _panelBorder.color = wrong ? RedBorder : PanelBorder;
-            _panelFill.color = wrong ? RedPanel : PanelFill;
-            _titleLine.color = wrong ? RedBorder : new Color(PanelBorder.r, PanelBorder.g, PanelBorder.b, 0.55f);
+            _panelBorder.color = Color.white;
+            _panelFill.color = wrong
+                ? new Color(0.22f, 0.04f, 0.05f, 0.88f)
+                : new Color(0.02f, 0.05f, 0.09f, 0.82f);
             _title.text = wrong ? "WRONG LABEL - TRY AGAIN" : "SELECT THE CORRECT LABEL";
-            _title.color = wrong ? PresentableUi.Red : Color.white;
+            _title.color = Color.white;
             for (var i = 0; i < _rowBorders.Length; i++)
             {
                 _hover[i] = false;
@@ -94,8 +86,14 @@ namespace ChemicalSafety.Presentable
 
         private void ApplyRow(int i)
         {
-            _rowBorders[i].color = _wrong ? RedBorder : RowBorder;
-            _rowFills[i].color = _hover[i] ? (_wrong ? RedHover : RowHover) : (_wrong ? RedRow : RowFill);
+            var bar = art.optionBar != null ? art.optionBar : art.roundedSolid;
+            if (_hover[i] && art.optionBarHot != null)
+                bar = art.optionBarHot;
+            _rowBorders[i].sprite = bar;
+            _rowBorders[i].color = _wrong ? new Color(1f, 0.62f, 0.58f, 1f) : Color.white;
+            _rowFills[i].color = _hover[i]
+                ? (_wrong ? RedHover : RowHover)
+                : (_wrong ? RowFillRed : new Color(1f, 1f, 1f, 0.02f));
         }
 
         private IEnumerator Shake()
@@ -152,40 +150,42 @@ namespace ChemicalSafety.Presentable
             var root = canvas.transform;
             var font = art.englishFont;
 
-            // flat panel: light border, dark fill (rounded corners)
-            _panel = PresentableUi.Rect("Panel", root, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f));
-            _panelBorder = PresentableUi.Img(_panel, art.roundedSolid, PanelBorder, sliced: true);
-            _panelFill = PresentableUi.Img(PresentableUi.Rect("Fill", _panel, Vector2.zero, Vector2.one,
-                new Vector2(4f, 4f), new Vector2(-4f, -4f)), art.roundedSolid, PanelFill, sliced: true);
+            var card = PresentableUi.Rect("Card", root, Vector2.zero, Vector2.one);
+            _panel = card;
+            var frame = PresentableUi.Centered("Frame", card, Vector2.zero, sizePx * 1.08f);
+            _panelBorder = PresentableUi.Img(frame, art.frameWide != null ? art.frameWide : art.roundedSolid, Color.white);
+            var plate = PresentableUi.Rect("ReadPlate", card, new Vector2(0.04f, 0.12f), new Vector2(0.96f, 0.77f));
+            _panelFill = PresentableUi.Img(plate, art.roundedSolid, new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
 
-            _title = PresentableUi.Text("Title", _panel, new Vector2(0.12f, 0.86f), new Vector2(0.86f, 0.96f),
-                string.Empty, 40f, Color.white, bold: true, font: font);
+            _title = PresentableUi.Text("Title", card, new Vector2(0.12f, 0.84f), new Vector2(0.8f, 0.93f),
+                string.Empty, 30f, Color.white, bold: true, font: font);
             _title.textWrappingMode = TextWrappingModes.NoWrap;
+            _title.overflowMode = TextOverflowModes.Ellipsis;
             _title.enableAutoSizing = true;
-            _title.fontSizeMin = 24f;
-            _title.fontSizeMax = 40f;
-            _titleLine = PresentableUi.Img("TitleLine", _panel, new Vector2(0.06f, 0.845f), new Vector2(0.94f, 0.85f),
-                art.roundedSolid, new Color(PanelBorder.r, PanelBorder.g, PanelBorder.b, 0.55f));
+            _title.fontSizeMin = 18f;
+            _title.fontSizeMax = 32f;
 
-            // straight rounded rows: rounded border + fill, centred white text
-            const float rowH = 0.15f;
-            const float gap = 0.027f;
+            const float rowH = 0.145f;
+            const float gap = 0.012f;
+            const float firstTop = 0.75f;
             for (var i = 0; i < 4; i++)
             {
-                var top = 0.81f - i * (rowH + gap); // last row ends at 0.15
-                var slot = PresentableUi.Rect("Option" + (i + 1), _panel, new Vector2(0.07f, top - rowH),
-                    new Vector2(0.93f, top));
+                var top = firstTop - i * (rowH + gap);
+                var slot = PresentableUi.Rect("Option" + (i + 1), card, new Vector2(0.04f, top - rowH),
+                    new Vector2(0.96f, top));
                 slot.localPosition += new Vector3(0f, 0f, -8f);
+                var bar = art.optionBar != null ? art.optionBar : art.roundedSolid;
                 _rowBorders[i] = PresentableUi.Img(PresentableUi.Rect("Border", slot, Vector2.zero, Vector2.one),
-                    art.roundedSolid, RowBorder, sliced: true);
-                _rowFills[i] = PresentableUi.Img(PresentableUi.Rect("Fill", slot, Vector2.zero, Vector2.one,
-                    new Vector2(3f, 3f), new Vector2(-3f, -3f)), art.roundedSolid, RowFill, sliced: true, raycast: true);
-                _labels[i] = PresentableUi.Text(PresentableUi.Rect("Label", slot, new Vector2(0.04f, 0.1f),
-                    new Vector2(0.96f, 0.9f)), Names[i], 36f, Color.white, bold: true, font: font);
-                _labels[i].textWrappingMode = TextWrappingModes.NoWrap;
+                    bar, Color.white);
+                _rowFills[i] = PresentableUi.Img(PresentableUi.Rect("Fill", slot, Vector2.zero, Vector2.one),
+                    null, new Color(1f, 1f, 1f, 0.02f), raycast: true);
+                _labels[i] = PresentableUi.Text(PresentableUi.Rect("Label", slot, new Vector2(0.06f, 0.12f),
+                    new Vector2(0.94f, 0.88f)), Names[i], 28f, Color.white, bold: true, font: font);
+                _labels[i].textWrappingMode = TextWrappingModes.Normal;
+                _labels[i].overflowMode = TextOverflowModes.Truncate;
                 _labels[i].enableAutoSizing = true;
-                _labels[i].fontSizeMin = 22f;
-                _labels[i].fontSizeMax = 36f;
+                _labels[i].fontSizeMin = 16f;
+                _labels[i].fontSizeMax = 28f;
 
                 var btn = slot.gameObject.AddComponent<Button>();
                 btn.transition = Selectable.Transition.None;
@@ -202,11 +202,11 @@ namespace ChemicalSafety.Presentable
             }
 
             // close (X), small, inside the panel at the top right
-            var close = PresentableUi.Rect("Close", _panel, new Vector2(0.88f, 0.87f), new Vector2(0.96f, 0.95f));
-            var closeBg = PresentableUi.Img(close, art.roundedSolid, new Color(0.1f, 0.3f, 0.45f, 0.95f), sliced: true,
+            var close = PresentableUi.Rect("Close", card, new Vector2(0.84f, 0.84f), new Vector2(0.94f, 0.94f));
+            var closeBg = PresentableUi.Img(close, art.roundedSolid, new Color(0.28f, 0.03f, 0.04f, 0.96f), sliced: true,
                 raycast: true);
-            PresentableUi.Img(PresentableUi.Rect("X", close, new Vector2(0.2f, 0.2f), new Vector2(0.8f, 0.8f)),
-                art.cross, Color.white, preserveAspect: true);
+            PresentableUi.Img(PresentableUi.Rect("X", close, new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f)),
+                art.cross, new Color(0.72f, 0.05f, 0.07f), preserveAspect: true);
             var closeBtn = close.gameObject.AddComponent<Button>();
             closeBtn.transition = Selectable.Transition.None;
             closeBtn.targetGraphic = closeBg;
@@ -216,20 +216,8 @@ namespace ChemicalSafety.Presentable
                     Closed?.Invoke();
             });
 
-            // orange corner brackets hugging the panel (top right, bottom left), like step05
-            Bracket("AccentTopH", new Vector2(1f, 1f), new Vector2(-72f, 3f), new Vector2(10f, 9f));
-            Bracket("AccentTopV", new Vector2(1f, 1f), new Vector2(4f, -62f), new Vector2(10f, 9f));
-            Bracket("AccentBotH", new Vector2(0f, 0f), new Vector2(-10f, -9f), new Vector2(72f, -3f));
-            Bracket("AccentBotV", new Vector2(0f, 0f), new Vector2(-10f, -9f), new Vector2(-4f, 62f));
-
             // never hidden by rack beams or drums when the user stands close
             PresentableUi.AlwaysOnTop(canvas);
-        }
-
-        private void Bracket(string name, Vector2 anchor, Vector2 offsetMin, Vector2 offsetMax)
-        {
-            var rt = PresentableUi.Rect(name, _panel, anchor, anchor, offsetMin, offsetMax);
-            PresentableUi.Img(rt, art.roundedSolid, Orange);
         }
     }
 }

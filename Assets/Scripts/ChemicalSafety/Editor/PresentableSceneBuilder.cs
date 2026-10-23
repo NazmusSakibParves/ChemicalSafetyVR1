@@ -367,6 +367,11 @@ namespace ChemicalSafety.Editor
             art.answerBox = D("answer box");
             art.pop02 = D("pop02");
             art.button = D("button");
+            art.frameCorrect = D("Frame_Correct");
+            art.frameWrong = D("Frame_Wrong");
+            art.frameWide = D("Frame_Wide");
+            art.optionBar = D("OptionBar");
+            art.optionBarHot = D("OptionBarHot");
             art.popupFrameRed = G("UI_Red_PopupScreen");
             art.answerBoxRed = G("UI_Red_AnswerBox");
             art.buttonRed = G("UI_Red_Button");

@@ -135,8 +135,9 @@ namespace ChemicalSafety.Presentable
 
             Stage("salam");
 
-            // 1. Salam (panel floats within poking distance so the speaker / Continue can be touched)
-            PlaceInFrontOfHead(instructionPanel.transform, XRSettings.isDeviceActive ? 0.7f : 0.95f);
+            // Salam and the instruction share one card. It stays at eye level the whole time,
+            // whether the learner is sitting or standing, so it does not jump up after the greeting.
+            BeginEyeInstruction();
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             yield return SubtitledVoice(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.",
@@ -145,9 +146,10 @@ namespace ChemicalSafety.Presentable
 
             Stage("gap");
 
-            // 2. Instruction after a 2s gap
+            // 2. Instruction after a 2s gap. Same eye-level card and centred Continue as Scenario 3.
             yield return PresentableFx.Wait(gapAfterSalam);
             Stage("instruction");
+            instructionPanel.SetContinueCentered(true);
             instructionPanel.SetSpeaking(true);
             yield return SubtitledVoice(art.bnInstructionSub,
                 "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", art.voInstruction);
@@ -158,6 +160,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SpeakerClicked += OnSpeakerClicked;
             instructionPanel.Continue += OnContinueClicked;
             yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
             StartCoroutine(SubtitledVoice(art.bnContinueHint,
                 "Click the speaker to hear the instructions again, or Continue to go on.", art.voContinueHint));
             while (!_continuePressed)
@@ -169,6 +172,8 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetSpeaking(false);
             subtitle.Hide();
             yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
 
             Stage("transition");
 
@@ -230,7 +235,8 @@ namespace ChemicalSafety.Presentable
                 "<color=#5FD8FF><b>VOICE-OVER:</b></color> A delivery of six chemicals has arrived. " +
                 "The supervisor asks you to place each container into the correct compartment.",
                 art.bnSc02InstructionPanel);
-            PlaceInFrontOfHead(instructionPanel.transform, XRSettings.isDeviceActive ? 0.7f : 0.95f);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
@@ -241,6 +247,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SpeakerClicked += OnSpeakerClicked;
             instructionPanel.Continue += OnContinueClicked;
             yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
             StartCoroutine(PlayVoice(art.voContinueHint));
             while (!_continuePressed)
                 yield return null;
@@ -251,6 +258,8 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetSpeaking(false);
             subtitle.Hide();
             yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
 
             Stage("sc02Explore");
             yield return RunPlacement();
@@ -290,7 +299,7 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc03Content.InstructionEnglish, art.bnSc03InstructionPanel);
             instructionPanel.SetContinueCentered(true);
-            PlaceAtEyeLevel(instructionPanel.transform, XRSettings.isDeviceActive ? sc03CardDistance : 0.95f);
+            BeginEyeInstruction();
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
@@ -301,6 +310,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SpeakerClicked += OnSpeakerClicked;
             instructionPanel.Continue += OnContinueClicked;
             yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
             StartCoroutine(PlayVoice(art.voContinueHint));
             while (!_continuePressed)
                 yield return null;
@@ -312,6 +322,7 @@ namespace ChemicalSafety.Presentable
             subtitle.Hide();
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
 
             Stage("sc03Inspect");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
@@ -342,11 +353,13 @@ namespace ChemicalSafety.Presentable
             while (!sc03Inspect.ContinuePressed)
                 yield return null;
             StopVoice();
+            // The finger is still on Continue. Wait until it lifts so it cannot poke a wrong
+            // option the moment the question appears. The blast stays on a wrong answer only.
+            yield return WaitUntilFingerOff(sc03Inspect.ReportCard);
             yield return sc03Inspect.HideReport();
 
             Stage("sc03Question");
-            // always within arm's reach and in front of the drum (the drum is about 1 m away)
-            PlaceInFrontOfHead(mcqSc03.transform, panelDistance);
+            PlaceAtEyeLevel(mcqSc03.transform, panelDistance, false);
             yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
 
             if (envSc04 != null)
@@ -371,7 +384,7 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc04Instruction != null ? art.voSc04Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc04Content.InstructionEnglish, art.bnSc04InstructionPanel);
             instructionPanel.SetContinueCentered(true);
-            PlaceAtEyeLevel(instructionPanel.transform, XRSettings.isDeviceActive ? sc03CardDistance : 0.95f);
+            BeginEyeInstruction();
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
@@ -382,6 +395,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SpeakerClicked += OnSpeakerClicked;
             instructionPanel.Continue += OnContinueClicked;
             yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
             StartCoroutine(PlayVoice(art.voContinueHint));
             while (!_continuePressed)
                 yield return null;
@@ -393,6 +407,10 @@ namespace ChemicalSafety.Presentable
             subtitle.Hide();
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            if (gloves != null)
+                yield return Glide(gloves.StandInFront(), 0.7f);
 
             Stage("sc04Explore");
             if (gloves != null)
@@ -407,15 +425,90 @@ namespace ChemicalSafety.Presentable
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
         }
 
-        // Eye level: centred on the head height (the poked panels sit lower), upright, facing the user, straight
-        // ahead. The card and its Continue button are never above, below or to the side of the view.
-        private void PlaceAtEyeLevel(Transform t, float distance)
+        private bool _eyeInstruction;
+
+        private void LateUpdate()
         {
-            if (_cam == null)
+            if (!_eyeInstruction || instructionPanel == null)
+                return;
+            // Reaching for the speaker or Continue: freeze the card so the target does not slide away.
+            if (FingerCovers(instructionPanel.transform, 0.22f, 200f))
+                return;
+            PlaceAtEyeLevel(instructionPanel.transform, EyeCardDistance(), true);
+        }
+
+        private float EyeCardDistance()
+        {
+            // Headset: close enough to poke without a full arm extension. The desk preview stays further back.
+            return XRSettings.isDeviceActive ? Mathf.Min(sc03CardDistance, 0.52f) : 0.95f;
+        }
+
+        private void BeginEyeInstruction()
+        {
+            _eyeInstruction = true;
+            PlaceAtEyeLevel(instructionPanel.transform, EyeCardDistance(), false);
+        }
+
+        private void EndEyeInstruction()
+        {
+            _eyeInstruction = false;
+        }
+
+        // Eye height for both a seated and a standing user. Horizontal follow is damped so a small head
+        // movement does not yank the card. A fingertip over the card skips this and holds the last pose.
+        private void PlaceAtEyeLevel(Transform t, float distance, bool smooth)
+        {
+            if (_cam == null || t == null)
                 return;
             var fwd = Flat(_cam.forward);
-            t.position = _cam.position + fwd * distance + Vector3.up * 0.03f;
-            t.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            var target = _cam.position + fwd * distance + Vector3.up * 0.03f;
+            var look = Quaternion.LookRotation(fwd, Vector3.up);
+            if (!smooth)
+            {
+                t.SetPositionAndRotation(target, look);
+                return;
+            }
+
+            var k = 1f - Mathf.Exp(-4.5f * Time.deltaTime);
+            t.position = Vector3.Lerp(t.position, target, k);
+            t.rotation = Quaternion.Slerp(t.rotation, look, k);
+        }
+
+        // True while a fingertip is just in front of the panel, including the Continue pill that hangs below it.
+        private static bool FingerCovers(Transform panel, float depthLimit, float belowPad)
+        {
+            if (panel == null)
+                return false;
+            return TipCovers(GlovedHandPose.Right, panel, depthLimit, belowPad) ||
+                   TipCovers(GlovedHandPose.Left, panel, depthLimit, belowPad);
+        }
+
+        private static bool TipCovers(GlovedHandPose hand, Transform panel, float depthLimit, float belowPad)
+        {
+            if (hand == null || !hand.HasTip)
+                return false;
+            var rt = panel.GetComponentInChildren<RectTransform>();
+            if (rt == null || !rt.gameObject.activeInHierarchy)
+                return false;
+            var local = rt.InverseTransformPoint(hand.PressPoint);
+            var depth = -local.z * rt.lossyScale.z;
+            if (depth < -0.03f || depth > depthLimit)
+                return false;
+            var r = rt.rect;
+            return local.x >= r.xMin - 80f && local.x <= r.xMax + 80f &&
+                   local.y >= r.yMin - belowPad && local.y <= r.yMax + 80f;
+        }
+
+        private IEnumerator WaitUntilFingerOff(Transform panel)
+        {
+            if (!FingerCovers(panel, 0.08f, 40f))
+                yield break;
+            var guard = 0f;
+            while (FingerCovers(panel, 0.08f, 40f) && guard < 8f)
+            {
+                guard += Time.deltaTime;
+                yield return null;
+            }
         }
 
         private int _pokedDrum;
@@ -956,6 +1049,7 @@ namespace ChemicalSafety.Presentable
         {
             return new PresentableMcqPanel.Question
             {
+                header = "PROFESSIONAL CHEMICAL SAFETY TRAINING - MCS Module",
                 prompt = "Question 1: Based on GHS labeling standards, which drum should you select for transfer?",
                 correctIndex = 3,
                 options = new[]
