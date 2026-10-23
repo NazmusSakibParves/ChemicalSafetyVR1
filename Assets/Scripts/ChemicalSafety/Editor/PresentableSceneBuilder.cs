@@ -69,6 +69,9 @@ namespace ChemicalSafety.Editor
             var env4 = new GameObject("Environment_SC04").transform;
             var sc4 = BuildSc04Room(env4, art);
             env4.gameObject.SetActive(false);
+            var env5 = new GameObject("Environment_SC05").transform;
+            var sc5 = BuildSc05Room(env5, art);
+            env5.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -132,6 +135,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq3, "art", art);
             var mcq4 = Child("McqPanel_SC04", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq4, "art", art);
+            var mcq5 = Child("McqPanel_SC05", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq5, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -196,6 +201,12 @@ namespace ChemicalSafety.Editor
             so.FindProperty("gloves").objectReferenceValue = sc4.inspect;
             so.FindProperty("gloveBench").objectReferenceValue = sc4.bench;
             so.FindProperty("mcqSc04").objectReferenceValue = mcq4;
+            so.FindProperty("envSc05").objectReferenceValue = env5.gameObject;
+            so.FindProperty("spawnSc05").objectReferenceValue = sc5.spawn;
+            so.FindProperty("masks").objectReferenceValue = sc5.masks;
+            so.FindProperty("mcqSc05").objectReferenceValue = mcq5;
+            so.FindProperty("sc05Ambience").objectReferenceValue = sc5.ambience;
+            SetRef(sc5.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
             var doorProp = so.FindProperty("doors");
@@ -261,7 +272,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -410,6 +421,8 @@ namespace ChemicalSafety.Editor
             art.bnSc03Touch = B("BN_Sc03Touch");
             art.bnSc04InstructionPanel = B("BN_Sc04InstructionPanel");
             art.sdsSc04 = LoadSprite("2D/Sc04/SDS_SC04");
+            art.bnSc05InstructionPanel = B("BN_Sc05InstructionPanel");
+            art.sdsSc05 = LoadSprite("2D/Sc05/SDS_SC05");
             art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
@@ -473,6 +486,18 @@ namespace ChemicalSafety.Editor
             var sc04DoneEn = V("VO_Sc04Complete_en.mp3");
             if (sc04DoneEn != null)
                 art.voSc04CompleteEn = sc04DoneEn;
+            var sc05Vo = V("VO_SC05_Instruction_bn.mp3");
+            if (sc05Vo != null)
+                art.voSc05Instruction = sc05Vo;
+            art.voSc05Mask = new AudioClip[4];
+            for (var mi = 0; mi < 4; mi++)
+                art.voSc05Mask[mi] = V("VO_Sc05Mask" + mi + "_bn.mp3");
+            var sc05DoneBn = V("VO_Sc05Complete_bn.mp3");
+            if (sc05DoneBn != null)
+                art.voSc05CompleteBn = sc05DoneBn;
+            var sc05DoneEn = V("VO_Sc05Complete_en.mp3");
+            if (sc05DoneEn != null)
+                art.voSc05CompleteEn = sc05DoneEn;
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

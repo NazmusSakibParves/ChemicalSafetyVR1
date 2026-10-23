@@ -943,6 +943,119 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 4 complete vo = " + (heard4.Length > 0 ? heard4 : "NOT HEARD"));
             Click(mcq4.transform, "NextButton");
+
+            // Scenario 5 (dyeing factory) follows the SC04 NEXT
+            yield return WaitStage("sc05Intro", 30f);
+            var amb = Get<Sc05Ambience>(_director, "sc05Ambience");
+            yield return new WaitForSeconds(2.5f);
+            Say("SC05 machine sound on = " + amb.IsOn + ", voice playing = " + voiceSrc.isPlaying + ", target volume under the voice = " +
+                amb.TargetVolume.ToString("0.00") + " (expected about 0.09)");
+            yield return Shot("40_sc05_instruction");
+            var cont5 = FindDeep(panel.transform, "ContinueButton");
+            var w5 = 0f;
+            while (cont5 != null && !cont5.gameObject.activeSelf && w5 < 40f)
+            {
+                w5 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Say("SC05 voice ended: playing = " + voiceSrc.isPlaying + ", target volume = " + amb.TargetVolume.ToString("0.00") +
+                " (expected 0.32 or the hint voice 0.09), fastest fan = " +
+                FindFirstObjectByType<Sc05FactoryFx>(FindObjectsInactive.Include).FastestSpin.ToString("0") + " deg/s");
+            Click(panel.transform, "ContinueButton");
+            yield return WaitStage("sc05Explore", 20f);
+            var masks5 = Get<MaskInspect>(_director, "masks");
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("41_sc05_rail");
+            var camT5 = Camera.main.transform;
+            var keep5 = camT5.localRotation;
+            camT5.localRotation = Quaternion.Euler(-4f, -55f, 0f);
+            yield return Shot("47_sc05_left_hall");
+            camT5.localRotation = Quaternion.Euler(-12f, -100f, 0f);
+            yield return Shot("48_sc05_far_left");
+            camT5.localRotation = Quaternion.Euler(-35f, -30f, 0f);
+            yield return Shot("49_sc05_ceiling");
+            camT5.localRotation = keep5;
+            for (var k = 0; k < masks5.Count; k++)
+            {
+                var idx = masks5.CurrentIndex;
+                var reach = masks5.MeshWithinReach(idx);
+                Say("SC05 mask " + idx + " mesh in reach = " + reach);
+                if (!reach)
+                    Debug.LogError("[SMOKE] SC05 mask " + idx + " collider does not cover the visible mesh");
+                var pk = masks5.PokeOf(idx);
+                if (pk != null)
+                    Poke(pk);
+                var wm = 0f;
+                while (!masks5.Holding && wm < 3f)
+                {
+                    wm += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.7f);
+                Say("SC05 holding " + masks5.HeldIndex + ": card = [" + masks5.CardName + "] / [" + masks5.CardCompat + "], voice = " +
+                    (voiceSrc.isPlaying && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + ", machine target volume = " +
+                    amb.TargetVolume.ToString("0.00"));
+                yield return Shot("42_sc05_mask_" + idx);
+                Click(masks5.transform, "CloseButton");
+                var wb = 0f;
+                while (masks5.Holding && wb < 3f)
+                {
+                    wb += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            var gate5 = 0f;
+            var next5 = FindDeep(masks5.transform, "NextButton");
+            while ((next5 == null || !next5.gameObject.activeInHierarchy) && gate5 < 8f)
+            {
+                gate5 += Time.unscaledDeltaTime;
+                next5 = FindDeep(masks5.transform, "NextButton");
+                yield return null;
+            }
+
+            Say("SC05 masks seen = " + masks5.Seen + " / " + masks5.Count);
+            yield return Shot("43_sc05_gate");
+            Click(masks5.transform, "NextButton");
+            yield return WaitStage("sc05Question", 20f);
+            var mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
+            var q5 = 0f;
+            while (!mcq5.IsOpen && q5 < 8f)
+            {
+                q5 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.2f);
+            LayoutCheck("SC05 MCQ", mcq5.transform);
+            yield return Shot("44_sc05_question");
+            // rows are named Row1..Row4 (A..D): A (N95) is wrong, B (half-face) is right
+            Click(mcq5.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("45_sc05_wrong");
+            Click(mcq5.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq5.transform, "Row2");
+            var heard5 = "";
+            var h5 = 0f;
+            while (h5 < 14f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc05Complete"))
+                    heard5 = voiceSrc.clip.name;
+                if (h5 > 1.2f && h5 < 1.3f)
+                    LayoutCheck("SC05 MCQ correct card", mcq5.transform);
+                h5 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 5 complete vo = " + (heard5.Length > 0 ? heard5 : "NOT HEARD"));
+            yield return Shot("46_sc05_correct");
+            Click(mcq5.transform, "NextButton");
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

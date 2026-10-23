@@ -315,7 +315,7 @@ namespace ChemicalSafety.Presentable
                 transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.8f, 1f, t);
             }, PresentableFx.EaseOutBack);
             var guard = 0f;
-            while (FingerInFront() && guard < 4f)
+            while (FingerInFront() && guard < 2.5f)
             {
                 guard += Time.deltaTime;
                 yield return null;

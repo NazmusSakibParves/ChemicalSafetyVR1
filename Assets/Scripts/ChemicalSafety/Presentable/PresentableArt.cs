@@ -58,6 +58,7 @@ namespace ChemicalSafety.Presentable
         public Sprite chartSc02;
         public Sprite sdsSc03;
         public Sprite sdsSc04;
+        public Sprite sdsSc05;
         [Tooltip("Enlarged drum label shown inside the scan frame (SC03).")]
         public Sprite sc03Label;
         [Tooltip("White corner brackets for the Selected Label scan (SC03).")]
@@ -88,6 +89,7 @@ namespace ChemicalSafety.Presentable
         public Sprite bnSc03InstructionPanel;
         public Sprite bnSc03Touch;
         public Sprite bnSc04InstructionPanel;
+        public Sprite bnSc05InstructionPanel;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -115,6 +117,11 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc04Instruction;
         public AudioClip voSc04CompleteBn;
         public AudioClip voSc04CompleteEn;
+        public AudioClip voSc05Instruction;
+        [Tooltip("Bangla voice when a respirator is opened: N95, half-face, surgical, full-face (Sc05Content order).")]
+        public AudioClip[] voSc05Mask = new AudioClip[4];
+        public AudioClip voSc05CompleteBn;
+        public AudioClip voSc05CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

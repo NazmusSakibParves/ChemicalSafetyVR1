@@ -78,6 +78,14 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc04BenchHeight gloveBench;
         [SerializeField] private PresentableMcqPanel mcqSc04;
 
+        [Header("SC05")]
+        [SerializeField] private GameObject envSc05;
+        [Tooltip("At the pillar with the respirators, about 1 m from the hook rail.")]
+        [SerializeField] private Transform spawnSc05;
+        [SerializeField] private MaskInspect masks;
+        [SerializeField] private PresentableMcqPanel mcqSc05;
+        [SerializeField] private Sc05Ambience sc05Ambience;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -430,6 +438,85 @@ namespace ChemicalSafety.Presentable
             Stage("sc04Question");
             PlaceAtEyeLevel(mcqSc04.transform, panelDistance, false);
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
+
+            if (envSc05 != null)
+                yield return RunScenario5();
+        }
+
+        // SC05 starts only after the SC04 question's NEXT. Dyeing factory: pick the right respirator for toluene.
+        private IEnumerator RunScenario5()
+        {
+            Stage("sc05");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            if (envSc04 != null)
+                envSc04.SetActive(false);
+            envSc05.SetActive(true);
+            clipboard.SetSheet(art.sdsSc05);
+            clipboard.SetVisible(false);
+            PlaceRig(spawnSc05.position, spawnSc05.forward);
+            if (sc05Ambience != null)
+                sc05Ambience.Begin(); // machines run from the first second; the voice-over lowers them
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc05Intro");
+            _instructionClip = art.voSc05Instruction != null ? art.voSc05Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc05Content.InstructionEnglish, art.bnSc05InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            if (masks != null)
+                yield return Glide(masks.StandInFront(), 0.7f);
+
+            Stage("sc05Explore");
+            if (masks != null)
+            {
+                // opening a respirator: the Bangla voice says what it is and whether it suits toluene
+                void OnMaskOpened(int index)
+                {
+                    StopVoice();
+                    if (art.voSc05Mask != null && index >= 0 && index < art.voSc05Mask.Length && art.voSc05Mask[index] != null)
+                        StartCoroutine(PlayVoice(art.voSc05Mask[index]));
+                }
+
+                void OnMaskClosed() => StopVoice();
+                masks.Opened += OnMaskOpened;
+                masks.Closed += OnMaskClosed;
+                masks.Begin();
+                while (!masks.NextChosen)
+                    yield return null;
+                masks.Opened -= OnMaskOpened;
+                masks.Closed -= OnMaskClosed;
+                StopVoice();
+            }
+
+            Stage("sc05Question");
+            PlaceAtEyeLevel(mcqSc05.transform, panelDistance, false);
+            yield return RunQuestion(mcqSc05, BuildSc05Question(), false, 5);
+            if (sc05Ambience != null)
+                sc05Ambience.End();
         }
 
         private bool _eyeInstruction;
@@ -888,7 +975,12 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(1f);
             AudioClip doneBn;
             AudioClip doneEn;
-            if (scenario == 4)
+            if (scenario == 5)
+            {
+                doneBn = art.voSc05CompleteBn;
+                doneEn = art.voSc05CompleteEn;
+            }
+            else if (scenario == 4)
             {
                 doneBn = art.voSc04CompleteBn;
                 doneEn = art.voSc04CompleteEn;
@@ -1097,6 +1189,30 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc05Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc05Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc05Content.OptionLabels[i],
+                    feedback = Sc05Content.OptionFeedback[i],
+                    wrongTitle = Sc05Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc05Content.QuestionHeader,
+                prompt = Sc05Content.QuestionPrompt,
+                correctIndex = Sc05Content.CorrectIndex,
+                correctTitle = Sc05Content.CorrectTitle,
+                nextLabel = Sc05Content.FinishLabel,
+                options = options
             };
         }
 

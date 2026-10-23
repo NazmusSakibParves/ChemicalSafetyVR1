@@ -46,9 +46,10 @@ PRON = {
 SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF). Do not type this letter; editors save it as য + nukta.
 
 # scenario number -> how it is spoken
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
+CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
 
 
 def complete_bn(n):
@@ -104,6 +105,25 @@ CLIPS = {
     ),
     "VO_Sc04Complete_bn": (BN_VOICE, complete_bn(4)),
     "VO_Sc04Complete_en": (EN_VOICE, complete_en(4)),
+    # Scenario 5
+    "VO_SC05_Instruction_bn": (
+        BN_VOICE,
+        "আপনি একজন ডাইং মেশিন অপারেটর। একটি কাপড়ের ব্যাচ টলুইন-ভিত্তিক দ্রাবক দিয়ে প্রক্রিয়া করতে হবে। "
+        "আজ ভেতরে বাষ্পের মাত্রা বেশি। ভেতরে ঢোকার আগে সঠিক মাস্কটি পরুন।",
+    ),
+    # said when a respirator is picked up: what it is and whether it is compatible with toluene (same order as the cards)
+    "VO_Sc05Mask0_bn": (BN_VOICE, "এটি সাধারণ ডাস্ট মাস্ক, এন নাইনটি ফাইভ। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়।"),
+    "VO_Sc05Mask1_bn": (
+        BN_VOICE,
+        "এটি অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ।",
+    ),
+    "VO_Sc05Mask2_bn": (BN_VOICE, "এটি সার্জিক্যাল মাস্ক। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়।"),
+    "VO_Sc05Mask3_bn": (
+        BN_VOICE,
+        "এটি শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়।",
+    ),
+    "VO_Sc05Complete_bn": (BN_VOICE, complete_bn(5)),
+    "VO_Sc05Complete_en": (EN_VOICE, complete_en(5)),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
