@@ -29,13 +29,13 @@ namespace ChemicalSafety.Editor
             room.SetParent(env, false);
             var solid = SolidLayer;
 
-            var floorMat = Mat("Sc04Floor", Color.white, 0.88f, 0.02f, FloorTex());
-            floorMat.SetTextureScale("_BaseMap", new Vector2(6f, 5f));
-            var tile = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/WallTile.png");
-            var wallMat = Mat("Sc04Wall", Color.white, 0.22f, 0.02f, tile);
-            // About 15 cm squares on the 8 m × 3.3 m walls. The tile image is an 8×8 grid.
-            wallMat.SetTextureScale("_BaseMap", new Vector2(6.7f, 2.8f));
-            var ceilMat = Mat("Sc04Ceil", new Color(0.93f, 0.94f, 0.93f), 0.08f, 0f);
+            ConfigureSc04Textures();
+            // PBR: glossy epoxy floor, 15 cm wall tiles with grout (one image = 0.6 m), T-bar ceiling panels.
+            var floorMat = Sc04Pbr("Sc04FloorPbr2", "Epoxy", Color.white, new Vector2(3.5f, 3.6f), 1f, 0.6f);
+            // 30 cm tiles like the designer's lab (one image = 1.2 m of 4x4 tiles)
+            var wallMat = Sc04Pbr("Sc04WallPbrC", "Tile", Color.white, new Vector2(5.85f, 2.75f), 0.9f, 0.5f);
+            var wallSide = Sc04Pbr("Sc04WallPbrD", "Tile", Color.white, new Vector2(5.7f, 2.75f), 0.9f, 0.5f);
+            var ceilMat = Sc04Pbr("Sc04CeilPbr2", "Ceiling", Color.white, new Vector2(5.85f, 6f), 1f, 0.7f, false);
             // lit (not unlit) so the cloth shades and the gloves sit on it instead of floating over a flat white card
             var cloth = Mat("Sc04ClothLit", new Color(0.9f, 0.9f, 0.88f), 0.04f, 0f);
             var lampMat = Mat("Sc04Lamp", new Color(0.92f, 0.94f, 0.93f), 0f, 0f, null, new Color(0.35f, 0.38f, 0.36f), true);
@@ -47,13 +47,15 @@ namespace ChemicalSafety.Editor
                     go.layer = solid;
             }
 
-            var floor = Box("Floor", room, new Vector3(ox, -0.05f, 0.2f), new Vector3(8f, 0.1f, 7.2f), floorMat);
+            // A tighter room (7 m wide) so the benches, hood, fridge and eyewash fill the view like the designer's lab.
+            var cx = ox + 0.47f;
+            var floor = Box("Floor", room, new Vector3(cx, -0.05f, 0.2f), new Vector3(7f, 0.1f, 7.2f), floorMat);
             floor.AddComponent<TeleportationArea>();
-            Shell("Wall_Back", new Vector3(ox, 1.6f, -3.2f), new Vector3(8f, 3.3f, 0.12f), wallMat);
-            Shell("Wall_Front", new Vector3(ox, 1.6f, 3.6f), new Vector3(8f, 3.3f, 0.12f), wallMat);
-            Shell("Wall_Left", new Vector3(ox + 3.94f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallMat);
-            Shell("Wall_Right", new Vector3(ox - 3.94f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallMat);
-            Shell("Ceiling", new Vector3(ox, 3.22f, 0.2f), new Vector3(8f, 0.08f, 7.2f), ceilMat);
+            Shell("Wall_Back", new Vector3(cx, 1.6f, -3.2f), new Vector3(7f, 3.3f, 0.12f), wallMat);
+            Shell("Wall_Front", new Vector3(cx, 1.6f, 3.6f), new Vector3(7f, 3.3f, 0.12f), wallMat);
+            Shell("Wall_Left", new Vector3(ox + 3.94f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
+            Shell("Wall_Right", new Vector3(ox - 3.0f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
+            Shell("Ceiling", new Vector3(cx, 3.22f, 0.2f), new Vector3(7f, 0.08f, 7.2f), ceilMat);
             Box("LampA", room, new Vector3(ox + 2.9f, 3.14f, 0.45f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
             Box("LampB", room, new Vector3(ox + 2.9f, 3.14f, -1.05f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
             LabLight(room, new Vector3(ox + 0.4f, 2.9f, 0.9f), 1.15f);
@@ -216,6 +218,7 @@ namespace ChemicalSafety.Editor
             }
 
             DressLab(room, bench, ox, gloveTop, gloveBox, sideTop, sideBox);
+            DressLabDetails(room, ox, sideBox, gloveBox);
             Transform[] gloveGroups = null;
             if (glovesModel != null)
                 gloveGroups = SplitGloves(glovesModel, bench, gloveTop + 0.008f);
@@ -281,7 +284,9 @@ namespace ChemicalSafety.Editor
 
             Binder(bench, new Vector3(gloveBox.min.x + 0.32f, gloveTop, gloveBox.center.z), gloveTop, steel);
             TestTubes(bench, new Vector3(gloveBox.max.x - 0.22f, gloveTop, gloveBox.center.z), gloveTop);
-            Fridge(room, new Vector3(ox - 2.7f, 0f, -1.6f));
+            Fridge(room, new Vector3(ox - 2.3f, 0f, -2.8f));
+            LabBackBench(room, ox);
+            LabShelving(room, ox);
         }
 
         // White angled rack with four blue pipettes standing in a row, as on the return bench.
@@ -447,7 +452,7 @@ namespace ChemicalSafety.Editor
 
         private static Material Steel()
         {
-            return Mat("Sc04Steel", new Color(0.72f, 0.74f, 0.76f), 0.82f, 0.9f);
+            return Sc04Pbr("Sc04SteelPbr", "Steel", new Color(0.93f, 0.94f, 0.95f), Vector2.one, 0.95f, 0.8f);
         }
 
         private static void DressSteel(GameObject table)
@@ -552,9 +557,22 @@ namespace ChemicalSafety.Editor
             const float w = 0.72f;
             const float d = 0.62f;
             var c = pos + new Vector3(0f, h * 0.5f, 0f);
-            Box("Fridge", room, c, new Vector3(w, h, d), body);
-            Box("FridgeInside", room, c + new Vector3(0f, 0.02f, 0.02f), new Vector3(w - 0.14f, h - 0.22f, d - 0.18f), inside, false);
-            Box("FridgeShelf", room, pos + new Vector3(0f, 0.78f, 0.02f), new Vector3(w - 0.18f, 0.02f, d - 0.24f), steel, false);
+            // Hollow cabinet (back, sides, top, bottom) with a glass door, so the contents show from outside.
+            const float t = 0.04f;
+            Box("FridgeBack", room, c + new Vector3(0f, 0f, -d * 0.5f + t * 0.5f), new Vector3(w, h, t), inside);
+            Box("FridgeSideL", room, c + new Vector3(w * 0.5f - t * 0.5f, 0f, 0f), new Vector3(t, h, d), body);
+            Box("FridgeSideR", room, c + new Vector3(-w * 0.5f + t * 0.5f, 0f, 0f), new Vector3(t, h, d), body);
+            Box("FridgeTop", room, pos + new Vector3(0f, h - t * 0.5f, 0f), new Vector3(w, t, d), body);
+            Box("FridgeBottom", room, pos + new Vector3(0f, 0.12f, 0f), new Vector3(w, t, d), body);
+            Box("FridgePlinth", room, pos + new Vector3(0f, 0.06f, 0f), new Vector3(w - 0.04f, 0.12f, d - 0.04f), steel);
+            var glow = Mat("Sc04FridgeLight", new Color(0.92f, 0.96f, 0.98f), 0f, 0f, null, new Color(1.5f, 1.6f, 1.6f), true);
+            Box("FridgeLight", room, pos + new Vector3(0f, h - 0.1f, d * 0.5f - 0.1f), new Vector3(w - 0.2f, 0.02f, 0.03f), glow, false);
+            var shelfZ = -0.02f;
+            var shelfYs = new[] { 0.5f, 0.88f, 1.26f, 1.58f };
+            foreach (var sy in shelfYs)
+                Box("FridgeShelf", room, pos + new Vector3(0f, sy, shelfZ), new Vector3(w - 0.1f, 0.012f, d - 0.1f),
+                    Mat("Sc04ShelfGlass", new Color(0.8f, 0.9f, 0.92f), 0.8f, 0.2f), false);
+            StockFridge(room, pos, w, d, shelfYs);
             var doorZ = pos.z + d * 0.5f + 0.01f;
             var door = GameObject.CreatePrimitive(PrimitiveType.Quad);
             door.name = "FridgeDoor";
@@ -563,21 +581,13 @@ namespace ChemicalSafety.Editor
             door.transform.position = new Vector3(pos.x, c.y, doorZ);
             door.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
             door.transform.localScale = new Vector3(w - 0.12f, h - 0.22f, 1f);
-            door.GetComponent<MeshRenderer>().sharedMaterial = LabGlass();
+            door.GetComponent<MeshRenderer>().sharedMaterial = FridgeDoorGlass();
             Box("FridgeTrimTop", room, new Vector3(pos.x, pos.y + h - 0.035f, doorZ), new Vector3(w, 0.04f, 0.02f), steel, false);
             Box("FridgeTrimBot", room, new Vector3(pos.x, pos.y + 0.05f, doorZ), new Vector3(w, 0.05f, 0.02f), steel, false);
             Box("FridgeTrimL", room, new Vector3(pos.x + w * 0.5f - 0.02f, c.y, doorZ), new Vector3(0.035f, h, 0.02f), steel, false);
             Box("FridgeTrimR", room, new Vector3(pos.x - w * 0.5f + 0.02f, c.y, doorZ), new Vector3(0.035f, h, 0.02f), steel, false);
             Box("FridgeHandle", room, new Vector3(pos.x - w * 0.5f + 0.09f, c.y, doorZ + 0.025f),
                 new Vector3(0.028f, 0.46f, 0.03f), gasket, false);
-            var low = pos.y + 0.42f;
-            var high = pos.y + 0.95f;
-            UseGlass(PlacePiece("chemistry_glassware.glb", "Glass jar", room,
-                pos + new Vector3(0.02f, 0f, -0.04f), 15f, 0.16f, low));
-            UseGlass(PlacePiece("chemistry_glassware.glb", "jar.001", room,
-                pos + new Vector3(0.02f, 0f, 0.1f), -20f, 0.13f, low));
-            UseGlass(PlacePiece("chemistry_glassware.glb", "lab_beaker_a", room,
-                pos + new Vector3(0.02f, 0f, 0.02f), 0f, 0.1f, high));
         }
 
         private static Material LabGlass()
