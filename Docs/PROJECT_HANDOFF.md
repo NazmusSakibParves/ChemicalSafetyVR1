@@ -346,7 +346,7 @@ Quest APK (manual):
 
 ## 14. Presentable demo — full state & next steps (latest: 2026-10-23, §14.11)
 
-> Read **§14.11** first if you are a new agent / Cursor session. §14.1–14.10 are history. This section supersedes the older Presentable bullets in §2b.
+> **Newest state: read §14.12 first** (2026-10-24, everything committed and pushed, latest APK built), then §14.11 for the SC04 lab background. If a sentence in §14.11 or the line below says "uncommitted" or "not pushed", §14.12 supersedes it. §14.1–14.10 are history. This section supersedes the older Presentable bullets in §2b.
 > Rules that still apply: **change only the Presentable client demo** (never `ChemicalSafety_Demo` / the Learning APK), generate the scene with the builder menu (never hand-edit the `.unity`), never edit scripts while in Play mode, author is the user (no Claude / Cursor co-author trailers), do **not** merge, push, or commit unless the user says so. Current branch: `Implement-Scenario3-Scenario4-Scenario5-and-fix-UI-feedback`. Last commit `3372c17` (not pushed). Everything in §14.11 after that commit is **uncommitted**. Do not build an APK unless the user asks.
 
 ### 14.1 How to work
@@ -487,9 +487,24 @@ Everything below is **after** that commit and is **not committed**. The scene fi
 - Instruction panel `Reflow`, glove style default 0 (black original), and SC01–SC03 question text were not changed.
 - On-device confirmation of the 22:37 APK (seated and standing bench, glove poke, SDS readable, fridge door, AC 25°C, no wall shimmer) is waiting on the user.
 
-### 14.12 Quest feedback round 2 (2026-10-23, smoke test 0 errors, committed)
+### 14.12 Quest feedback round 2 + SC04 realism (2026-10-23/24, smoke test 0 errors, committed and pushed)
+
+**Status in one place**
+- Branch `Implement-Scenario3-Scenario4-Scenario5-and-fix-UI-feedback`. Commits of this round: `66e6c06` (SC02/SC03/SC04 fixes), `023e93e` (SC04 realism), plus this docs/handoff commit on top. Pushed to `origin` (no force, nothing merged). Author NazmusSakibParves, no Claude trailer (commits are made with `git commit-tree` + `git reset --soft`, see §14.6).
+- APK on disk: `Builds/Android/ChemicalSafetyVR_Presentable.apk`, about 175 MB, built 2026-10-24 00:41, release, `Build Finished, Result: Success`. It has everything below. The user has **not yet** reported a Quest check of it.
+- Scenarios 1-4 are playable end to end. Scenario 5 is not built.
+- Language: the user writes Bangla and English; reply in Bangla (see `CLAUDE.md`, which is git-ignored).
+
+**What the user reported on the Quest and what was done**
+
 - SC02: the details card shows on every pick (also at the cabinet), keeps clear of the held container (eye level, 0.6-0.8 m, side chosen from the container position), and the only "CORRECT PLACEMENT" card appears after the container is down, with the counter already raised. `ContainerPlacement.TryPlace` no longer shows a card on the correct door.
 - SC03: `PresentableMcqPanel.PopIn` takes input only after the pop-in and once no fingertip is in front of the panel (fixes the blast right after Continue). Blast stays on a wrong answer only.
 - SC04: `Quad` primitives show their face toward -Z. AC display, SDS page, fridge door and bottle label were rotated with `LookRotation(forward)` and were culled for the player at +Z; now `LookRotation(back)`. SC04 MCQ is placed with `PlaceAtEyeLevel` like SC03. Gloves rest on a lit cloth with `ContactShadow.png` decals (`GroundGloves`).
-- Not done: SC04 room realism pass (textures, lighting, props), Quest check of this round.
+- SC04 floating gloves: `GroundGloves` in `PresentableSceneBuilder.Sc04.cs` drops each glove so its lowest vertex is 2 mm above the cloth and puts a soft `ContactShadow.png` quad under it; the cloth is a lit material (`Sc04ClothLit`).
+- The SDS binder, AC display, fridge door and bottle label were invisible only because of the Quad facing described above. If a future Quad "disappears" from the player's side, check `LookRotation(Vector3.back, ...)` first.
+
+**How to verify (same as always)**: Unity menu *Chemical Safety/Presentable/Build Presentable Scene*, then *Run Smoke Test*, look for `[SMOKE] DONE runtime errors/exceptions = 0` in `Logs/Editor.log`. The smoke test now also saves SC04 screenshots `Temp/Smoke/29_sc04_instruction.png`, `30_sc04_lab.png`, `31_sc04_sds_held.png` and checks the details card at the cabinet (expected True) and that placements reach 6 / 6. After editing scripts, `refresh_unity` times out while Unity recompiles; wait for the domain reload (poll `http://127.0.0.1:8080/health`, then about 40 s), then run the menu items. The `Setting the parent of a transform which resides in a Prefab instance` errors for SC02 `Object_4.*` are old and expected.
+
+**SC04 realism pass (2026-10-24, user asked for the lab to look like the designer's `Step01.jpg` and to feel less empty):**
+- Not done: a Quest check of this round, the floor still shows bright specular streaks in the desk screenshot, the cloth is a flat white card, and the lab still has fewer props than the designer image. The user said it is "much better than before" but wanted the glass-door fridge with visible contents (done) and a fuller room (done in part).
 - SC04 realism pass (2026-10-24): `Tools/generate_sc04_env.py` makes PBR textures in `Art/Presentable/2D/Sc04Tex` (30 cm wall tiles, epoxy floor, brushed steel, T-bar ceiling, AO decal). `PresentableSceneBuilder.Sc04Env.cs` holds the PBR material helper (`Sc04Pbr`), set dressing (cove base, ceiling panels, under-cabinet strip, door, extinguisher, sockets, floor AO) and the new props: hollow glass-door fridge stocked with bottles (`Fridge` + `StockFridge`), back bench with balance and centrifuge (`LabBackBench`), reagent shelves (`LabShelving`). The room is 7 m wide (right wall at ox-3.0) so it no longer feels empty. Smoke test 0 errors; Quest check of the look is pending.
