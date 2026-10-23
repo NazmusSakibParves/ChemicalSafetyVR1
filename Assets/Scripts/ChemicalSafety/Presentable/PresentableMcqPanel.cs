@@ -304,7 +304,9 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PopIn()
         {
-            _group.interactable = true;
+            // A fingertip left over from the previous card (Continue) must not answer by accident:
+            // the panel takes input only after the pop-in and once no fingertip is in front of it.
+            _group.interactable = false;
             _group.blocksRaycasts = true;
             transform.localScale = Vector3.one * 0.8f;
             yield return PresentableFx.Tween(0.45f, t =>
@@ -312,12 +314,42 @@ namespace ChemicalSafety.Presentable
                 _group.alpha = Mathf.Clamp01(t * 1.5f);
                 transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.8f, 1f, t);
             }, PresentableFx.EaseOutBack);
+            var guard = 0f;
+            while (FingerInFront() && guard < 4f)
+            {
+                guard += Time.deltaTime;
+                yield return null;
+            }
+
+            yield return PresentableFx.Wait(0.25f);
+            if (IsOpen && !_locked)
+                _group.interactable = true;
 
             for (var i = 0; i < _rows.Count; i++)
             {
                 if (_rows[i].root.gameObject.activeSelf)
                     StartCoroutine(RowIn(_rows[i], i * 0.07f));
             }
+        }
+
+        private bool FingerInFront()
+        {
+            return TipInFront(GlovedHandPose.Right) || TipInFront(GlovedHandPose.Left);
+        }
+
+        private bool TipInFront(GlovedHandPose hand)
+        {
+            if (hand == null || !hand.HasTip)
+                return false;
+            var rt = GetComponentInChildren<RectTransform>();
+            if (rt == null)
+                return false;
+            var local = rt.InverseTransformPoint(hand.PressPoint);
+            var depth = -local.z * rt.lossyScale.z;
+            if (depth < -0.05f || depth > 0.12f)
+                return false;
+            var r = rt.rect;
+            return local.x >= r.xMin - 60f && local.x <= r.xMax + 60f && local.y >= r.yMin - 60f && local.y <= r.yMax + 60f;
         }
 
         private IEnumerator RowIn(Row row, float delay)

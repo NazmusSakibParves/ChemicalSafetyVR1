@@ -89,9 +89,18 @@ namespace ChemicalSafety.Editor
             {
                 if (rp != null && androidLevel >= 0)
                 {
-                    QualitySettings.renderPipeline = previousRp;
+                    // Never write a null pipeline. That is what turned the editor view magenta:
+                    // Mobile had no Universal RP asset, so Unity painted the whole background pink.
+                    var restore = previousRp != null
+                        ? previousRp
+                        : AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(
+                            "Assets/Settings/Mobile_RPAsset.asset");
+                    QualitySettings.SetQualityLevel(androidLevel, false);
+                    if (restore != null)
+                        QualitySettings.renderPipeline = restore;
                     QualitySettings.SetQualityLevel(previousLevel, false);
-                    AssetDatabase.SaveAssets();
+                    if (restore != null)
+                        AssetDatabase.SaveAssets();
                 }
             }
 

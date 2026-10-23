@@ -75,6 +75,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private GameObject envSc04;
         [SerializeField] private Transform spawnSc04;
         [SerializeField] private GloveInspect gloves;
+        [SerializeField] private Sc04BenchHeight gloveBench;
         [SerializeField] private PresentableMcqPanel mcqSc04;
 
         [Header("Timing")]
@@ -409,6 +410,8 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
 
+            if (gloveBench != null && _cam != null)
+                gloveBench.SnapTo(_cam.position.y);
             if (gloves != null)
                 yield return Glide(gloves.StandInFront(), 0.7f);
 
@@ -417,11 +420,15 @@ namespace ChemicalSafety.Presentable
             {
                 gloves.Begin();
                 while (!gloves.NextChosen)
+                {
+                    if (gloveBench != null && _cam != null)
+                        gloveBench.Follow(_cam.position.y);
                     yield return null;
+                }
             }
 
             Stage("sc04Question");
-            PlaceInFrontOfHead(mcqSc04.transform, panelDistance);
+            PlaceAtEyeLevel(mcqSc04.transform, panelDistance, false);
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
         }
 
@@ -738,7 +745,7 @@ namespace ChemicalSafety.Presentable
                     placement.AdjustRows(_cam != null ? _cam.position.y - rig.position.y : 1.6f);
                 // at the cabinet: no details card (its chart box sits where the finger works) and the large chart
                 // opens close enough not to land inside the compartment
-                inspect.SetCardAllowed(false);
+                // the details card stays available at the cabinet; it hides itself while a door is being tried
                 chart.SetDistance(0.58f);
                 var before = placement.Placed;
                 while (placement.Placed == before)

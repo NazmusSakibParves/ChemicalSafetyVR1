@@ -12,6 +12,8 @@ namespace ChemicalSafety.Presentable
 
         private Vector3[] _offset;
 
+        public Transform[] Parts => parts;
+
         public void SetParts(Transform[] value)
         {
             parts = value;

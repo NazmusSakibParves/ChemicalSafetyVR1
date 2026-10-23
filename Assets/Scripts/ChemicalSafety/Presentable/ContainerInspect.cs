@@ -62,6 +62,7 @@ namespace ChemicalSafety.Presentable
         private bool _cardAllowed = true;
         private bool _chartOpen;
         private bool _placementHidden;
+        private bool _cardPlaced;
         private Vector3 _holdPos;
         private Vector3 _holdVel;
         private LineRenderer _beam;
@@ -263,6 +264,8 @@ namespace ChemicalSafety.Presentable
             }
 
             _held = item;
+            _placementHidden = false; // a new pick always shows its card
+            _cardAllowed = true;
             if (item.poke != null)
                 item.poke.SetInteractable(false); // no accidental pokes on the container in the hand
             Pick(item);
@@ -534,11 +537,23 @@ namespace ChemicalSafety.Presentable
                 }
             }
 
-            var fwd = _cardFwd;
+            // The card keeps its own distance from the container: it hangs at eye level, about 0.7 m from the head
+            // (never further, so it stays in reach and in view) and always clear of the container's width.
+            var fwd = camFwd;
             var right = Vector3.Cross(Vector3.up, fwd);
-            // eye level, just right of centre (the container is in the left hand), about 0.7 m away so the whole
-            // card, chart box included, can be touched
-            var pos = new Vector3(cam.position.x, cam.position.y - 0.02f, cam.position.z) + fwd * 0.68f + right * 0.17f;
+            var toC = _holdPos - cam.position;
+            var latC = Vector3.Dot(toC, right);
+            var depthC = Vector3.Dot(toC, fwd);
+            var cardHalf = 900f * _cardScale.x * 0.5f * _unfoldX;
+            var gap = _held.holdRadius + cardHalf + 0.05f;
+            var dist = Mathf.Clamp(Mathf.Max(0.68f, depthC + 0.12f), 0.6f, 0.8f);
+            // normally right of the container (it is in the left hand); flip to the left if the container drifts far right
+            var side = latC > 0.22f ? -1f : 1f;
+            var lat = Mathf.Clamp(latC + side * gap, -dist * 0.58f, dist * 0.58f);
+            var pos = new Vector3(cam.position.x, cam.position.y - 0.02f, cam.position.z) + fwd * dist + right * lat;
+            if (_cardPlaced && visible)
+                pos = Vector3.Lerp(_card.position, pos, 1f - Mathf.Exp(-10f * Time.deltaTime));
+            _cardPlaced = true;
             var toHead = cam.position - pos;
             toHead.y = 0f;
             var want = Quaternion.LookRotation(-toHead.normalized, Vector3.up);

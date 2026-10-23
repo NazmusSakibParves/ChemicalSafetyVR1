@@ -634,7 +634,7 @@ namespace ChemicalSafety.Presentable
                         ", place voice-over = " + (Get<AudioSource>(_director, "voice").clip != null
                             ? Get<AudioSource>(_director, "voice").clip.name : "none"));
                 if (oi == 0)
-                    Say("details card visible at the cabinet = " + inspect.CardVisible + " (expected False)");
+                    Say("details card visible at the cabinet = " + inspect.CardVisible + " (expected True)");
 
                 if (oi == 0)
                 {
@@ -865,20 +865,26 @@ namespace ChemicalSafety.Presentable
 
             yield return new WaitForSeconds(0.4f);
             Say("SC04 instruction clip = " + (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
+            yield return Shot("29_sc04_instruction");
             Click(panel.transform, "ContinueButton");
             yield return WaitStage("sc04Explore", 20f);
             var gloves = Get<GloveInspect>(_director, "gloves");
             var clip4 = Get<SdsClipboardController>(_director, "clipboard");
             yield return new WaitForSeconds(0.4f);
             Say("SC04 SDS starts hidden = " + !clip4.IsVisible);
+            yield return Shot("30_sc04_lab");
             clip4.Toggle();
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(0.9f);
+            yield return Shot("31_sc04_sds_held");
             Say("SC04 SDS after X = " + clip4.IsVisible);
             clip4.Toggle();
             for (var g = 0; g < 3; g++)
             {
-                var glove = gloves.transform.parent.Find("Glove" + g);
-                var poke = glove != null ? glove.GetComponent<PokeTarget>() : null;
+                var covers = gloves.MeshWithinReach(g);
+                Say("SC04 glove " + g + " mesh in reach = " + covers);
+                if (!covers)
+                    Debug.LogError("[SMOKE] SC04 glove " + g + " collider does not cover the visible mesh");
+                var poke = gloves.PokeOf(g);
                 if (poke != null)
                     Poke(poke);
                 var waitHold = 0f;

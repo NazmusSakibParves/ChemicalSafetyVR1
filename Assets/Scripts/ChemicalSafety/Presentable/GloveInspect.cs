@@ -16,8 +16,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform arrow;
 
         private readonly bool[] _seen = new bool[3];
-        private Vector3[] _homePos;
-        private Quaternion[] _homeRot;
+        private Vector3[] _homeLocal;
+        private Quaternion[] _homeLocalRot;
         private PokeTarget[] _pokes;
         private int _current;
         private int _held = -1;
@@ -32,6 +32,32 @@ namespace ChemicalSafety.Presentable
         public bool NextChosen { get; private set; }
         public int Seen { get; private set; }
         public bool Holding => _held >= 0;
+
+        public PokeTarget PokeOf(int index)
+        {
+            if (_pokes == null || index < 0 || index >= _pokes.Length)
+                return null;
+            return _pokes[index];
+        }
+
+        /// <summary>
+        /// True when the visible mesh centre is inside the poke volume. The smoke test uses this
+        /// because calling Fire() never checks that a fingertip can actually reach the glove.
+        /// </summary>
+        public bool MeshWithinReach(int index)
+        {
+            if (index < 0 || gloves == null || index >= gloves.Length || gloves[index] == null)
+                return false;
+            var col = gloves[index].GetComponent<BoxCollider>();
+            var follow = gloves[index].GetComponent<GloveParts>();
+            if (col == null || !col.isTrigger || follow == null || follow.Parts == null || follow.Parts.Length == 0)
+                return false;
+            var solid = LayerMask.NameToLayer("SolidProps");
+            if (solid >= 0 && gloves[index].gameObject.layer == solid)
+                return false;
+            var b = BoundsOf(gloves[index]);
+            return Vector3.Distance(col.ClosestPoint(b.center), b.center) <= 0.07f;
+        }
 
         /// <summary>Floor point just in front of the gloves (+Z, the side the player faces from).</summary>
         public Vector3 StandInFront()
@@ -54,15 +80,14 @@ namespace ChemicalSafety.Presentable
 
         private void Start()
         {
-            _homePos = new Vector3[gloves.Length];
-            _homeRot = new Quaternion[gloves.Length];
+            _homeLocal = new Vector3[gloves.Length];
+            _homeLocalRot = new Quaternion[gloves.Length];
             _pokes = new PokeTarget[gloves.Length];
+            CaptureHomes();
             for (var i = 0; i < gloves.Length; i++)
             {
                 if (gloves[i] == null)
                     continue;
-                _homePos[i] = gloves[i].position;
-                _homeRot[i] = gloves[i].rotation;
                 _pokes[i] = gloves[i].GetComponent<PokeTarget>();
                 if (_pokes[i] != null)
                 {
@@ -80,6 +105,7 @@ namespace ChemicalSafety.Presentable
 
         public void Begin()
         {
+            CaptureHomes();
             NextChosen = false;
             Seen = 0;
             for (var i = 0; i < _seen.Length; i++)
@@ -146,11 +172,12 @@ namespace ChemicalSafety.Presentable
             var from = glove.position;
             for (var t = 0f; t < 0.35f; t += Time.deltaTime)
             {
-                glove.position = Vector3.Lerp(from, _homePos[index], Mathf.SmoothStep(0f, 1f, t / 0.35f));
+                glove.position = Vector3.Lerp(from, HomeWorld(index), Mathf.SmoothStep(0f, 1f, t / 0.35f));
                 yield return null;
             }
 
-            glove.SetPositionAndRotation(_homePos[index], _homeRot[index]);
+            glove.localPosition = _homeLocal[index];
+            glove.localRotation = _homeLocalRot[index];
             _held = -1;
             _busy = false;
             if (!_seen[index])
@@ -388,15 +415,64 @@ namespace ChemicalSafety.Presentable
                 new Color(0.05f, 0.12f, 0.16f), TextAlignmentOptions.Center, true, art.englishFont);
         }
 
+        private void CaptureHomes()
+        {
+            if (gloves == null || _homeLocal == null)
+                return;
+            for (var i = 0; i < gloves.Length; i++)
+            {
+                if (gloves[i] == null)
+                    continue;
+                _homeLocal[i] = gloves[i].localPosition;
+                _homeLocalRot[i] = gloves[i].localRotation;
+            }
+        }
+
+        private Vector3 HomeWorld(int index)
+        {
+            var glove = gloves[index];
+            if (glove == null || glove.parent == null)
+                return _homeLocal[index];
+            return glove.parent.TransformPoint(_homeLocal[index]);
+        }
+
         private static Bounds BoundsOf(Transform t)
         {
+            var follow = t.GetComponent<GloveParts>();
+            var parts = follow != null ? follow.Parts : null;
+            if (parts != null && parts.Length > 0)
+            {
+                Bounds b = default;
+                var any = false;
+                for (var i = 0; i < parts.Length; i++)
+                {
+                    if (parts[i] == null)
+                        continue;
+                    var rend = parts[i].GetComponent<Renderer>();
+                    if (rend == null)
+                        continue;
+                    if (!any)
+                    {
+                        b = rend.bounds;
+                        any = true;
+                    }
+                    else
+                    {
+                        b.Encapsulate(rend.bounds);
+                    }
+                }
+
+                if (any)
+                    return b;
+            }
+
             var rs = t.GetComponentsInChildren<Renderer>();
             if (rs.Length == 0)
                 return new Bounds(t.position, Vector3.one * 0.2f);
-            var b = rs[0].bounds;
+            var box = rs[0].bounds;
             for (var i = 1; i < rs.Length; i++)
-                b.Encapsulate(rs[i].bounds);
-            return b;
+                box.Encapsulate(rs[i].bounds);
+            return box;
         }
 
         private static Vector3 Flat(Vector3 v)

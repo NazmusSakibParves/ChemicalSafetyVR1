@@ -194,6 +194,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("envSc04").objectReferenceValue = env4.gameObject;
             so.FindProperty("spawnSc04").objectReferenceValue = sc4.spawn;
             so.FindProperty("gloves").objectReferenceValue = sc4.inspect;
+            so.FindProperty("gloveBench").objectReferenceValue = sc4.bench;
             so.FindProperty("mcqSc04").objectReferenceValue = mcq4;
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;

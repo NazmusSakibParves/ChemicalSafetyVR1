@@ -248,8 +248,7 @@ namespace ChemicalSafety.Presentable
             }
 
             door.SetState(DoorState.Correct);
-            ShowCard(door, true, "CORRECT PLACEMENT!", "(" + title + " to " + CompartmentNames[target] + ")",
-                "Touch the blinking space to put it down.");
+            _placedLine = "(" + title + " to " + CompartmentNames[target] + ")";
             var slot = FreeSlot(target);
             if (slot < 0)
             {
@@ -283,6 +282,8 @@ namespace ChemicalSafety.Presentable
             _busy = false;
         }
 
+        private string _placedLine = "";
+
         private IEnumerator PlaceHeld(int slot, int held, CompartmentDoor door)
         {
             _slotUsed[slot] = true;
@@ -312,7 +313,9 @@ namespace ChemicalSafety.Presentable
             ContainerPlaced?.Invoke(Placed);
             UpdateCount(true);
             door.SetState(DoorState.Neutral);
-            yield return PresentableFx.Wait(0.5f);
+            // the only "correct placement" card: shown after the container is down, with the counter already raised
+            ShowCard(door, true, "CORRECT PLACEMENT!", _placedLine, "Container stored safely.");
+            yield return PresentableFx.Wait(1.4f);
             HideCard();
             yield return door.CloseRoutine();
 

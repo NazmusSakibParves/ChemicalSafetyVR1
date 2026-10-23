@@ -16,6 +16,7 @@ namespace ChemicalSafety.Editor
         {
             public Transform spawn;
             public GloveInspect inspect;
+            public Sc04BenchHeight bench;
         }
 
         private const float Sc04Ox = 120f;
@@ -28,12 +29,15 @@ namespace ChemicalSafety.Editor
             room.SetParent(env, false);
             var solid = SolidLayer;
 
-            var floorMat = Mat("Sc04Floor", new Color(0.74f, 0.76f, 0.78f), 0.72f, 0.12f);
+            var floorMat = Mat("Sc04Floor", Color.white, 0.88f, 0.02f, FloorTex());
+            floorMat.SetTextureScale("_BaseMap", new Vector2(6f, 5f));
             var tile = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/WallTile.png");
-            var wallMat = Mat("Sc04Wall", Color.white, 0.12f, 0f, tile);
-            wallMat.SetTextureScale("_BaseMap", new Vector2(10f, 5f));
+            var wallMat = Mat("Sc04Wall", Color.white, 0.22f, 0.02f, tile);
+            // About 15 cm squares on the 8 m × 3.3 m walls. The tile image is an 8×8 grid.
+            wallMat.SetTextureScale("_BaseMap", new Vector2(6.7f, 2.8f));
             var ceilMat = Mat("Sc04Ceil", new Color(0.93f, 0.94f, 0.93f), 0.08f, 0f);
-            var cloth = Mat("Sc04Cloth", Color.white, 0.04f, 0f);
+            // lit (not unlit) so the cloth shades and the gloves sit on it instead of floating over a flat white card
+            var cloth = Mat("Sc04ClothLit", new Color(0.9f, 0.9f, 0.88f), 0.04f, 0f);
             var lampMat = Mat("Sc04Lamp", new Color(0.92f, 0.94f, 0.93f), 0f, 0f, null, new Color(0.35f, 0.38f, 0.36f), true);
 
             void Shell(string name, Vector3 pos, Vector3 size, Material mat)
@@ -83,8 +87,17 @@ namespace ChemicalSafety.Editor
                 gloveTop = gloveBox.max.y;
             }
 
+            DressSteel(side);
+            DressSteel(gloveTable);
+
+            var benchGo = new GameObject("BenchRoot");
+            var bench = benchGo.transform;
+            bench.SetParent(room, false);
+            if (gloveTable != null)
+                gloveTable.transform.SetParent(bench, true);
+
             var clothAt = new Vector3(gloveBox.center.x - 0.05f, gloveTop + 0.008f, gloveBox.center.z);
-            Box("Cloth", room, clothAt, new Vector3(1.05f, 0.01f, 0.48f), cloth, false);
+            Box("Cloth", bench, clothAt, new Vector3(1.22f, 0.008f, 0.58f), cloth, false);
 
             // Near (+Z, toward the player) to far (-Z): water beaker, two corked flasks, then the tray.
             var benchX = sideBox.center.x;
@@ -127,7 +140,7 @@ namespace ChemicalSafety.Editor
                 Object.DestroyImmediate(label.GetComponent<Collider>());
                 label.transform.SetParent(room, true);
                 label.transform.position = bb.center + Vector3.forward * (bb.extents.z + 0.006f);
-                label.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                label.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up); // Quad shows its face toward -Z, so turn it to face the player (+Z)
                 label.transform.localScale = new Vector3(Mathf.Max(0.1f, bb.size.x * 0.82f),
                     Mathf.Max(0.12f, bb.size.y * 0.5f), 1f);
                 label.GetComponent<MeshRenderer>().sharedMaterial =
@@ -166,16 +179,27 @@ namespace ChemicalSafety.Editor
                 CapHorizontal(hood, 1.7f);
                 SitOn(hood, 0f);
                 var hb = WorldBounds(hood);
-                hood.transform.position += new Vector3((ox + 3.55f) - hb.center.x, 0f, -3.02f - hb.min.z);
-                ClearHoodGlass(hood);
+                hood.transform.position += new Vector3((ox + 3.55f) - hb.center.x, 0f, -2.88f - hb.min.z);
+                DressHood(hood);
+                hb = WorldBounds(hood);
+                Box("HoodMouth", room,
+                    new Vector3(hb.center.x, hb.center.y + 0.08f, hb.max.z - 0.06f),
+                    new Vector3(Mathf.Min(1.15f, hb.size.x * 0.62f), Mathf.Min(1.2f, hb.size.y * 0.48f), 0.04f),
+                    Mat("Sc04HoodMouth", new Color(0.16f, 0.18f, 0.2f), 0.12f, 0.04f), false);
+                var shelf = sideTop;
+                UseGlass(PlacePiece("chemistry_glassware.glb", "Glass jar", room,
+                    new Vector3(hb.center.x - 0.12f, 0f, hb.center.z), 12f, 0.12f, shelf));
+                UseGlass(PlacePiece("chemistry_glassware.glb", "jar.001", room,
+                    new Vector3(hb.center.x + 0.1f, 0f, hb.center.z - 0.06f), -18f, 0.1f, shelf));
             }
 
             // On the back wall, screen facing into the room so 25°C is readable from the bench.
-            BuildAc(room, new Vector3(ox - 0.4f, 2.35f, -3.02f));
+            BuildAc(room, new Vector3(ox - 0.4f, 2.15f, -2.96f));
 
             var glovesModel = SpawnSc04("gloves1.glb", room, clothAt + new Vector3(0f, 0.02f, 0f), 0f, 0.72f);
             if (glovesModel != null)
             {
+                glovesModel.transform.SetParent(bench, true);
                 foreach (var rend in glovesModel.GetComponentsInChildren<Renderer>(true))
                 {
                     // The file includes flat shadow cards. They read as a rotating dark wedge.
@@ -191,10 +215,16 @@ namespace ChemicalSafety.Editor
                 SitOn(glovesModel, gloveTop + 0.004f);
             }
 
-            DressLab(room, ox, gloveTop, gloveBox, sideTop, sideBox);
+            DressLab(room, bench, ox, gloveTop, gloveBox, sideTop, sideBox);
             Transform[] gloveGroups = null;
             if (glovesModel != null)
-                gloveGroups = SplitGloves(glovesModel, room);
+                gloveGroups = SplitGloves(glovesModel, bench, gloveTop + 0.008f);
+
+            var height = benchGo.AddComponent<Sc04BenchHeight>();
+            var hso = new SerializedObject(height);
+            hso.FindProperty("builtTopY").floatValue = gloveTop;
+            hso.ApplyModifiedPropertiesWithoutUndo();
+            refs.bench = height;
 
             var arrow = new GameObject("GloveArrow");
             arrow.transform.SetParent(room, false);
@@ -218,13 +248,13 @@ namespace ChemicalSafety.Editor
             return refs;
         }
 
-        private static void DressLab(Transform room, float ox, float gloveTop, Bounds gloveBox, float sideTop, Bounds sideBox)
+        private static void DressLab(Transform room, Transform bench, float ox, float gloveTop, Bounds gloveBox, float sideTop, Bounds sideBox)
         {
             var white = Mat("Sc04Cabinet", new Color(0.96f, 0.97f, 0.97f), 0.28f, 0.04f);
             var seam = Mat("Sc04CabinetSeam", new Color(0.75f, 0.78f, 0.8f), 0.2f, 0.08f);
             var green = Mat("Sc04Eyewash", new Color(0.1f, 0.45f, 0.18f), 0.4f, 0.15f);
             var yellow = Mat("Sc04Basin", new Color(0.95f, 0.78f, 0.12f), 0.45f, 0.05f);
-            var steel = Mat("Sc04Steel", new Color(0.78f, 0.8f, 0.82f), 0.7f, 0.85f);
+            var steel = Steel();
 
             var cabX = ox + 3.72f;
             var cabY = 2.15f;
@@ -249,40 +279,50 @@ namespace ChemicalSafety.Editor
             Disc("FloorDrain", room, new Vector3(ex + 0.7f, 0.012f, ez + 0.15f), 0.26f, 0.008f,
                 Mat("Sc04Drain", new Color(0.15f, 0.16f, 0.17f), 0.2f, 0.4f));
 
-            Binder(room, new Vector3(gloveBox.min.x + 0.28f, gloveTop, gloveBox.center.z + 0.02f), gloveTop, steel);
-            TestTubes(room, new Vector3(gloveBox.center.x + 0.42f, gloveTop, gloveBox.center.z - 0.08f), gloveTop);
+            Binder(bench, new Vector3(gloveBox.min.x + 0.32f, gloveTop, gloveBox.center.z), gloveTop, steel);
+            TestTubes(bench, new Vector3(gloveBox.max.x - 0.22f, gloveTop, gloveBox.center.z), gloveTop);
             Fridge(room, new Vector3(ox - 2.7f, 0f, -1.6f));
         }
 
-        // White rack. The model contributes the pipettes (the huge empty helper is hidden).
+        // White angled rack with four blue pipettes standing in a row, as on the return bench.
         private static void PipetteRack(Transform room, Vector3 at, float surfaceY)
         {
-            var stand = Mat("Sc04PipetteStand", Color.white, 0.3f, 0.04f);
-            var blue = Mat("Sc04Pipette", new Color(0.12f, 0.32f, 0.72f), 0.4f, 0.12f);
-            Box("PipetteBase", room, at + new Vector3(0f, 0.012f, 0f), new Vector3(0.28f, 0.018f, 0.12f), stand, false);
-            var back = Box("PipetteBack", room, at + new Vector3(0f, 0.08f, -0.03f), new Vector3(0.26f, 0.11f, 0.018f), stand, false);
-            back.transform.rotation = Quaternion.Euler(-28f, 0f, 0f);
+            var stand = Mat("Sc04PipetteStand", Color.white, 0.45f, 0.02f);
+            var blue = Mat("Sc04Pipette", new Color(0.12f, 0.38f, 0.82f), 0.55f, 0.04f);
+            Box("PipetteBase", room, at + new Vector3(0f, 0.012f, 0f), new Vector3(0.1f, 0.016f, 0.28f), stand, false);
+            var back = Box("PipetteBack", room, at + new Vector3(0.02f, 0.07f, 0f), new Vector3(0.012f, 0.1f, 0.26f), stand, false);
+            back.transform.rotation = Quaternion.Euler(0f, 0f, -22f);
 
-            var model = SpawnRaw("mechanical_pipette.glb", room, at, 0f);
-            if (model == null)
-                return;
-            HideNamed(model, "empty");
-            foreach (var rend in model.GetComponentsInChildren<Renderer>(true))
+            var donor = SpawnRaw("mechanical_pipette.glb", room, at, 0f);
+            Mesh mesh = null;
+            if (donor != null)
             {
-                if (rend.name.Contains("Cube_Plastic"))
-                    rend.sharedMaterial = blue;
+                HideNamed(donor, "empty");
+                foreach (var rend in donor.GetComponentsInChildren<Renderer>(true))
+                {
+                    var filter = rend.GetComponent<MeshFilter>();
+                    if (filter != null && filter.sharedMesh != null && rend.name.Contains("Cube_Plastic"))
+                    {
+                        mesh = filter.sharedMesh;
+                        break;
+                    }
+                }
+
+                donor.SetActive(false);
             }
 
-            FitHeight(model, 0.24f);
-            PlaceOn(model, at + new Vector3(0f, 0f, 0.01f), surfaceY + 0.02f);
-            var b = WorldBounds(model);
-            var extra = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            extra.name = "PipetteExtra";
-            Object.DestroyImmediate(extra.GetComponent<Collider>());
-            extra.transform.SetParent(room, true);
-            extra.transform.position = new Vector3(b.max.x + 0.03f, b.center.y, b.center.z);
-            extra.transform.localScale = new Vector3(0.012f, Mathf.Max(0.08f, b.size.y * 0.45f), 0.012f);
-            extra.GetComponent<MeshRenderer>().sharedMaterial = blue;
+            if (mesh == null)
+                return;
+            for (var i = 0; i < 4; i++)
+            {
+                var go = new GameObject("Pipette" + i);
+                go.transform.SetParent(room, true);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                go.AddComponent<MeshRenderer>().sharedMaterial = blue;
+                OrientUpright(go);
+                FitHeight(go, 0.18f);
+                PlaceOn(go, at + new Vector3(0.01f, 0f, -0.09f + i * 0.06f), surfaceY + 0.02f);
+            }
         }
 
         private static void Hotplate(Transform room, Vector3 at, float surfaceY)
@@ -405,114 +445,158 @@ namespace ChemicalSafety.Editor
             go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         }
 
+        private static Material Steel()
+        {
+            return Mat("Sc04Steel", new Color(0.72f, 0.74f, 0.76f), 0.82f, 0.9f);
+        }
+
+        private static void DressSteel(GameObject table)
+        {
+            if (table == null)
+                return;
+            var steel = Steel();
+            foreach (var rend in table.GetComponentsInChildren<Renderer>(true))
+                rend.sharedMaterial = steel;
+        }
+
         private static void Binder(Transform room, Vector3 at, float top, Material steel)
         {
-            var board = Mat("Sc04BinderBoard", new Color(0.16f, 0.32f, 0.52f), 0.35f, 0.12f);
-            var y = top + 0.26f;
-            Box("BinderFoot", room, new Vector3(at.x, top + 0.012f, at.z), new Vector3(0.26f, 0.018f, 0.18f), steel, false);
-            Box("BinderBoard", room, new Vector3(at.x, y, at.z), new Vector3(0.30f, 0.42f, 0.016f), board, false);
-            // Clip rings across the top of the board, facing the player.
-            for (var i = 0; i < 3; i++)
-            {
-                var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                ring.name = "BinderRing" + i;
-                Object.DestroyImmediate(ring.GetComponent<Collider>());
-                ring.transform.SetParent(room, true);
-                ring.transform.position = new Vector3(at.x - 0.06f + i * 0.06f, y + 0.16f, at.z + 0.02f);
-                ring.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                ring.transform.localScale = new Vector3(0.045f, 0.008f, 0.045f);
-                ring.GetComponent<MeshRenderer>().sharedMaterial = steel;
-            }
+            var y = top + 0.36f;
+            Box("BinderBack", room, new Vector3(at.x, y, at.z - 0.014f), new Vector3(0.46f, 0.62f, 0.012f),
+                Mat("Sc04BinderBack", new Color(0.36f, 0.22f, 0.14f), 0.25f, 0.04f), false);
 
             var sds = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/SDS_SC04.png");
             var page = GameObject.CreatePrimitive(PrimitiveType.Quad);
             page.name = "TableSds";
             Object.DestroyImmediate(page.GetComponent<Collider>());
             page.transform.SetParent(room, true);
-            page.transform.position = new Vector3(at.x, y - 0.01f, at.z + 0.012f);
-            page.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-            page.transform.localScale = new Vector3(0.26f, 0.36f, 1f);
+            page.transform.position = new Vector3(at.x, y, at.z + 0.012f);
+            page.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+            page.transform.localScale = new Vector3(0.44f, 0.6f, 1f);
             page.GetComponent<MeshRenderer>().sharedMaterial =
                 Mat("Sc04TableSds", Color.white, 0.2f, 0f, sds, new Color(0.15f, 0.15f, 0.15f), true);
+
+            for (var i = 0; i < 3; i++)
+            {
+                var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                ring.name = "BinderRing" + i;
+                Object.DestroyImmediate(ring.GetComponent<Collider>());
+                ring.transform.SetParent(room, true);
+                ring.transform.position = new Vector3(at.x - 0.1f + i * 0.1f, y + 0.28f, at.z + 0.02f);
+                ring.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                ring.transform.localScale = new Vector3(0.05f, 0.006f, 0.05f);
+                ring.GetComponent<MeshRenderer>().sharedMaterial = steel;
+            }
+
             var tabs = new[]
             {
                 new Color(0.2f, 0.45f, 0.85f),
                 new Color(0.2f, 0.65f, 0.3f),
                 new Color(0.9f, 0.55f, 0.12f),
-                new Color(0.75f, 0.18f, 0.16f)
+                new Color(0.85f, 0.35f, 0.55f)
             };
             for (var i = 0; i < tabs.Length; i++)
             {
-                Box("SdsTab" + i, room, new Vector3(at.x + 0.155f, y + 0.12f - i * 0.07f, at.z),
-                    new Vector3(0.028f, 0.045f, 0.012f), Mat("Sc04Tab" + i, tabs[i], 0.2f, 0f), false);
+                Box("SdsTab" + i, room, new Vector3(at.x - 0.24f, y + 0.12f - i * 0.09f, at.z + 0.01f),
+                    new Vector3(0.035f, 0.055f, 0.012f), Mat("Sc04Tab" + i, tabs[i], 0.25f, 0f), false);
             }
         }
 
         private static void BuildAc(Transform room, Vector3 pos)
         {
-            var body = Mat("Sc04Ac", new Color(0.75f, 0.77f, 0.78f), 0.35f, 0.2f);
-            var vent = Mat("Sc04Vent", new Color(0.25f, 0.28f, 0.3f), 0.2f, 0.4f);
-            Box("AC", room, pos, new Vector3(1.05f, 0.38f, 0.18f), body);
-            Box("ACVent", room, pos + new Vector3(0f, -0.08f, 0.07f), new Vector3(0.78f, 0.05f, 0.02f), vent, false);
+            var body = Mat("Sc04Ac", new Color(0.78f, 0.8f, 0.82f), 0.4f, 0.35f);
+            var vent = Mat("Sc04Vent", new Color(0.12f, 0.13f, 0.15f), 0.25f, 0.55f);
+            var bezel = Mat("Sc04AcBezel", new Color(0.06f, 0.08f, 0.09f), 0.45f, 0.4f);
+            Box("AC", room, pos, new Vector3(1.1f, 0.46f, 0.24f), body);
+            Box("ACVent", room, pos + new Vector3(0f, -0.15f, 0.12f), new Vector3(0.94f, 0.07f, 0.02f), vent, false);
+            Box("ACBezel", room, pos + new Vector3(0.18f, 0.05f, 0.12f), new Vector3(0.46f, 0.22f, 0.016f), bezel, false);
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/AC_Display.png");
             var screen = GameObject.CreatePrimitive(PrimitiveType.Quad);
             screen.name = "ACDisplay";
             Object.DestroyImmediate(screen.GetComponent<Collider>());
             screen.transform.SetParent(room, true);
-            screen.transform.position = pos + new Vector3(0f, 0.05f, 0.1f);
-            screen.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-            screen.transform.localScale = new Vector3(0.48f, 0.16f, 1f);
+            screen.transform.position = pos + new Vector3(0.18f, 0.05f, 0.135f);
+            screen.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+            screen.transform.localScale = new Vector3(0.4f, 0.18f, 1f);
             screen.GetComponent<MeshRenderer>().sharedMaterial =
-                Mat("Sc04AcDisplay", Color.white, 0f, 0f, tex, new Color(0.25f, 0.55f, 0.4f), true);
+                Mat("Sc04AcDisplay", Color.white, 0f, 0f, tex, new Color(0.25f, 0.7f, 0.5f), true);
+            screen.AddComponent<Sc04DisplayPulse>();
         }
 
         private static void TestTubes(Transform room, Vector3 at, float surfaceY)
         {
-            var stand = Mat("Sc04TubeRack", Color.white, 0.3f, 0.04f);
+            var stand = Mat("Sc04TubeRack", Color.white, 0.35f, 0.04f);
             var y = surfaceY + 0.02f;
-            Box("TubeRack", room, new Vector3(at.x, y, at.z), new Vector3(0.22f, 0.035f, 0.08f), stand, false);
-            var glass = LabGlass();
+            Box("TubeRack", room, new Vector3(at.x, y, at.z), new Vector3(0.28f, 0.04f, 0.1f), stand, false);
+            Box("TubeRackLip", room, new Vector3(at.x, y + 0.03f, at.z), new Vector3(0.28f, 0.012f, 0.1f), stand, false);
+            var glass = TubeGlass();
             for (var i = 0; i < 6; i++)
             {
                 var tube = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 tube.name = "TestTube" + i;
                 Object.DestroyImmediate(tube.GetComponent<Collider>());
                 tube.transform.SetParent(room, true);
-                tube.transform.position = new Vector3(at.x - 0.075f + i * 0.03f, y + 0.07f, at.z);
-                tube.transform.localScale = new Vector3(0.012f, 0.055f, 0.012f);
+                tube.transform.position = new Vector3(at.x - 0.1f + i * 0.04f, y + 0.09f, at.z);
+                tube.transform.localScale = new Vector3(0.016f, 0.07f, 0.016f);
                 tube.GetComponent<MeshRenderer>().sharedMaterial = glass;
             }
         }
 
         private static void Fridge(Transform room, Vector3 pos)
         {
-            var white = Mat("Sc04Fridge", new Color(0.94f, 0.95f, 0.96f), 0.45f, 0.2f);
-            var inside = Mat("Sc04FridgeInside", new Color(0.72f, 0.8f, 0.82f), 0.2f, 0.05f);
-            const float h = 1.65f;
-            Box("Fridge", room, pos + new Vector3(0f, h * 0.5f, 0f), new Vector3(0.7f, h, 0.58f), white);
-            Box("FridgeInside", room, pos + new Vector3(0.04f, h * 0.5f, 0f), new Vector3(0.52f, h - 0.16f, 0.46f), inside, false);
-            Box("FridgeShelf", room, pos + new Vector3(0.04f, 0.78f, 0f), new Vector3(0.5f, 0.02f, 0.44f), white, false);
+            var body = Mat("Sc04Fridge", new Color(0.86f, 0.88f, 0.9f), 0.35f, 0.12f);
+            var steel = Steel();
+            var gasket = Mat("Sc04Gasket", new Color(0.1f, 0.1f, 0.11f), 0.25f, 0.05f);
+            var inside = Mat("Sc04FridgeInside", new Color(0.78f, 0.86f, 0.88f), 0.18f, 0.02f);
+            const float h = 1.7f;
+            const float w = 0.72f;
+            const float d = 0.62f;
+            var c = pos + new Vector3(0f, h * 0.5f, 0f);
+            Box("Fridge", room, c, new Vector3(w, h, d), body);
+            Box("FridgeInside", room, c + new Vector3(0f, 0.02f, 0.02f), new Vector3(w - 0.14f, h - 0.22f, d - 0.18f), inside, false);
+            Box("FridgeShelf", room, pos + new Vector3(0f, 0.78f, 0.02f), new Vector3(w - 0.18f, 0.02f, d - 0.24f), steel, false);
+            var doorZ = pos.z + d * 0.5f + 0.01f;
             var door = GameObject.CreatePrimitive(PrimitiveType.Quad);
             door.name = "FridgeDoor";
             Object.DestroyImmediate(door.GetComponent<Collider>());
             door.transform.SetParent(room, true);
-            door.transform.position = pos + new Vector3(0.36f, h * 0.5f, 0f);
-            door.transform.rotation = Quaternion.LookRotation(Vector3.right, Vector3.up);
-            door.transform.localScale = new Vector3(0.52f, h - 0.18f, 1f);
+            door.transform.position = new Vector3(pos.x, c.y, doorZ);
+            door.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+            door.transform.localScale = new Vector3(w - 0.12f, h - 0.22f, 1f);
             door.GetComponent<MeshRenderer>().sharedMaterial = LabGlass();
+            Box("FridgeTrimTop", room, new Vector3(pos.x, pos.y + h - 0.035f, doorZ), new Vector3(w, 0.04f, 0.02f), steel, false);
+            Box("FridgeTrimBot", room, new Vector3(pos.x, pos.y + 0.05f, doorZ), new Vector3(w, 0.05f, 0.02f), steel, false);
+            Box("FridgeTrimL", room, new Vector3(pos.x + w * 0.5f - 0.02f, c.y, doorZ), new Vector3(0.035f, h, 0.02f), steel, false);
+            Box("FridgeTrimR", room, new Vector3(pos.x - w * 0.5f + 0.02f, c.y, doorZ), new Vector3(0.035f, h, 0.02f), steel, false);
+            Box("FridgeHandle", room, new Vector3(pos.x - w * 0.5f + 0.09f, c.y, doorZ + 0.025f),
+                new Vector3(0.028f, 0.46f, 0.03f), gasket, false);
             var low = pos.y + 0.42f;
             var high = pos.y + 0.95f;
             UseGlass(PlacePiece("chemistry_glassware.glb", "Glass jar", room,
-                pos + new Vector3(0.02f, 0f, -0.08f), 15f, 0.16f, low));
+                pos + new Vector3(0.02f, 0f, -0.04f), 15f, 0.16f, low));
             UseGlass(PlacePiece("chemistry_glassware.glb", "jar.001", room,
                 pos + new Vector3(0.02f, 0f, 0.1f), -20f, 0.13f, low));
             UseGlass(PlacePiece("chemistry_glassware.glb", "lab_beaker_a", room,
-                pos + new Vector3(0.02f, 0f, 0f), 0f, 0.1f, high));
+                pos + new Vector3(0.02f, 0f, 0.02f), 0f, 0.1f, high));
         }
 
         private static Material LabGlass()
         {
             var glass = Mat("Sc04Glass", new Color(0.78f, 0.9f, 0.95f, 0.28f), 0.94f, 0.02f);
+            glass.SetFloat("_Surface", 1f);
+            glass.SetOverrideTag("RenderType", "Transparent");
+            glass.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            glass.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            glass.SetInt("_ZWrite", 0);
+            glass.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            glass.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            glass.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            return glass;
+        }
+
+        private static Material TubeGlass()
+        {
+            var glass = Mat("Sc04TubeGlass", new Color(0.82f, 0.9f, 0.93f, 0.82f), 0.75f, 0.02f);
             glass.SetFloat("_Surface", 1f);
             glass.SetOverrideTag("RenderType", "Transparent");
             glass.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
@@ -544,14 +628,80 @@ namespace ChemicalSafety.Editor
             }
         }
 
-        private static void ClearHoodGlass(GameObject hood)
+        private static void DressHood(GameObject hood)
         {
+            var white = Mat("Sc04Hood", new Color(0.94f, 0.95f, 0.96f), 0.42f, 0.06f);
             var glass = LabGlass();
             foreach (var r in hood.GetComponentsInChildren<Renderer>(true))
             {
-                if (r.gameObject.name.ToLowerInvariant().Contains("glass"))
+                var n = r.gameObject.name.ToLowerInvariant();
+                if (n.Contains("air"))
+                    r.gameObject.SetActive(false);
+                else if (n.Contains("glass"))
                     r.sharedMaterial = glass;
+                else if (n.Contains("mesa"))
+                    r.sharedMaterial = Mat("Sc04HoodInner", new Color(0.22f, 0.24f, 0.26f), 0.2f, 0.08f);
+                else
+                    r.sharedMaterial = white;
             }
+        }
+
+        // Soft gray so the floor is glossy epoxy, not a flat plastic colour and not a tile grid.
+        private static Texture2D FloorTex()
+        {
+            var path = ArtRoot + "/2D/Sc04/FloorGray.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null)
+                return existing;
+
+            const int n = 64;
+            var tex = new Texture2D(n, n, TextureFormat.RGB24, false);
+            var rnd = new System.Random(4);
+            for (var y = 0; y < n; y++)
+            for (var x = 0; x < n; x++)
+            {
+                var g = 0.56f + (float)rnd.NextDouble() * 0.07f;
+                tex.SetPixel(x, y, new Color(g, g + 0.012f, g + 0.02f));
+            }
+
+            tex.Apply();
+            System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(path);
+            var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (imp != null)
+            {
+                imp.wrapMode = TextureWrapMode.Repeat;
+                imp.sRGBTexture = true;
+                imp.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        private static void OrientUpright(GameObject go)
+        {
+            var best = go.transform.rotation;
+            var bestH = WorldBounds(go).size.y;
+            var turns = new[]
+            {
+                Quaternion.Euler(90f, 0f, 0f),
+                Quaternion.Euler(-90f, 0f, 0f),
+                Quaternion.Euler(0f, 0f, 90f),
+                Quaternion.Euler(0f, 0f, -90f)
+            };
+            foreach (var turn in turns)
+            {
+                go.transform.rotation = turn;
+                var h = WorldBounds(go).size.y;
+                if (h > bestH)
+                {
+                    bestH = h;
+                    best = turn;
+                }
+            }
+
+            go.transform.rotation = best;
         }
 
         private static GameObject SpawnSc04(string file, Transform parent, Vector3 pos, float yaw, float targetSize)
@@ -655,7 +805,7 @@ namespace ChemicalSafety.Editor
         }
 
         // Left to right in the player's view (+X to -X): cotton, nitrile, neoprene.
-        private static Transform[] SplitGloves(GameObject model, Transform room)
+        private static Transform[] SplitGloves(GameObject model, Transform room, float restY)
         {
             var rends = model.GetComponentsInChildren<Renderer>();
             System.Array.Sort(rends, (a, b) => b.bounds.center.x.CompareTo(a.bounds.center.x));
@@ -674,12 +824,8 @@ namespace ChemicalSafety.Editor
                     center += rends[i].bounds.center;
                 parent.position = center / (to - from);
                 var parts = new Transform[to - from];
-                var bb = rends[from].bounds;
                 for (var i = from; i < to; i++)
-                {
                     parts[i - from] = rends[i].transform;
-                    bb.Encapsulate(rends[i].bounds);
-                }
 
                 var follow = parent.gameObject.AddComponent<GloveParts>();
                 var fso = new SerializedObject(follow);
@@ -689,18 +835,150 @@ namespace ChemicalSafety.Editor
                     partProp.GetArrayElementAtIndex(i).objectReferenceValue = parts[i];
                 fso.ApplyModifiedPropertiesWithoutUndo();
                 var col = parent.gameObject.AddComponent<BoxCollider>();
-                col.center = parent.InverseTransformPoint(bb.center);
-                col.size = bb.size;
-                if (SolidLayer >= 0)
-                    parent.gameObject.layer = SolidLayer;
+                col.isTrigger = true;
                 var poke = parent.gameObject.AddComponent<PokeTarget>();
                 var pso = new SerializedObject(poke);
                 pso.FindProperty("reach").floatValue = 0.07f;
                 pso.ApplyModifiedPropertiesWithoutUndo();
                 groups[g] = parent;
+                PaintGlove(parts, g);
+                var grown = rends[from].bounds;
+                for (var i = from; i < to; i++)
+                    grown.Encapsulate(rends[i].bounds);
+                var padded = grown.center + new Vector3(0f, 0.05f, 0.03f);
+                col.center = parent.InverseTransformPoint(padded);
+                col.size = grown.size + new Vector3(0.06f, 0.14f, 0.1f);
             }
 
+            SeatGlovesInOrder(groups);
+            GroundGloves(groups, restY, room);
             return groups;
+        }
+
+        // Each glove lies on the cloth (lowest vertex 2 mm above it) with a soft contact shadow under it, so it
+        // reads as resting on the table instead of hovering above it.
+        private static void GroundGloves(Transform[] groups, float restY, Transform bench)
+        {
+            var shadowTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/ContactShadow.png");
+            var shadowMat = ShadowMat(shadowTex);
+            for (var g = 0; g < groups.Length; g++)
+            {
+                if (groups[g] == null)
+                    continue;
+                var parts = groups[g].GetComponent<GloveParts>();
+                var so = new SerializedObject(parts);
+                var prop = so.FindProperty("parts");
+                var rends = new System.Collections.Generic.List<Renderer>();
+                for (var i = 0; i < prop.arraySize; i++)
+                {
+                    var part = prop.GetArrayElementAtIndex(i).objectReferenceValue as Transform;
+                    var r = part != null ? part.GetComponent<Renderer>() : null;
+                    if (r != null)
+                        rends.Add(r);
+                }
+
+                if (rends.Count == 0)
+                    continue;
+                var b = rends[0].bounds;
+                foreach (var r in rends)
+                    b.Encapsulate(r.bounds);
+                var dy = restY + 0.002f - b.min.y;
+                foreach (var r in rends)
+                    r.transform.position += new Vector3(0f, dy, 0f);
+                groups[g].position += new Vector3(0f, dy, 0f);
+                b.center += new Vector3(0f, dy, 0f);
+
+                var shadow = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                shadow.name = "GloveShadow" + g;
+                Object.DestroyImmediate(shadow.GetComponent<Collider>());
+                shadow.transform.SetParent(bench, true);
+                shadow.transform.position = new Vector3(b.center.x + 0.012f, restY + 0.0015f, b.center.z - 0.012f);
+                shadow.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                shadow.transform.localScale = new Vector3(b.size.x * 1.12f, b.size.z * 1.12f, 1f);
+                shadow.GetComponent<MeshRenderer>().sharedMaterial = shadowMat;
+                shadow.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+        }
+
+        private static Material ShadowMat(Texture2D tex)
+        {
+            var m = Mat("Sc04ContactShadow", new Color(0f, 0f, 0f, 0.55f), 0f, 0f, tex, null, true);
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", 0f);
+            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.renderQueue = 3000;
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.SetColor("_BaseColor", new Color(0f, 0f, 0f, 0.55f));
+            return m;
+        }
+
+        // Viewer's left to right: white cotton, blue nitrile, large black neoprene.
+        private static void PaintGlove(Transform[] parts, int group)
+        {
+            var mats = new[]
+            {
+                Mat("Sc04GloveWhite", new Color(0.97f, 0.97f, 0.98f), 0.08f, 0f),
+                Mat("Sc04GloveBlue", new Color(0.30f, 0.62f, 0.95f), 0.4f, 0.02f),
+                Mat("Sc04GloveBlack", new Color(0.05f, 0.05f, 0.06f), 0.55f, 0.06f)
+            };
+            var mat = mats[Mathf.Clamp(group, 0, 2)];
+            var grow = group == 2 ? 1.38f : 1f;
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (parts[i] == null)
+                    continue;
+                var rend = parts[i].GetComponent<Renderer>();
+                if (rend == null)
+                    continue;
+                rend.sharedMaterial = mat;
+                if (grow <= 1.01f)
+                    continue;
+                var center = rend.bounds.center;
+                parts[i].localScale *= grow;
+                parts[i].position += center - rend.bounds.center;
+            }
+        }
+
+        private static void SeatGlovesInOrder(Transform[] groups)
+        {
+            var origin = Vector3.zero;
+            var n = 0;
+            for (var g = 0; g < groups.Length; g++)
+            {
+                if (groups[g] == null)
+                    continue;
+                origin += groups[g].position;
+                n++;
+            }
+
+            if (n == 0)
+                return;
+            origin /= n;
+            var slots = new[] { 0.28f, 0f, -0.3f };
+            for (var g = 0; g < groups.Length && g < slots.Length; g++)
+            {
+                if (groups[g] == null)
+                    continue;
+                var follow = groups[g].GetComponent<GloveParts>();
+                var desired = new Vector3(origin.x + slots[g], groups[g].position.y, origin.z);
+                var delta = desired - groups[g].position;
+                if (follow != null)
+                {
+                    var so = new SerializedObject(follow);
+                    var prop = so.FindProperty("parts");
+                    for (var i = 0; i < prop.arraySize; i++)
+                    {
+                        var part = prop.GetArrayElementAtIndex(i).objectReferenceValue as Transform;
+                        if (part != null)
+                            part.position += delta;
+                    }
+                }
+
+                groups[g].position = desired;
+            }
         }
     }
 }

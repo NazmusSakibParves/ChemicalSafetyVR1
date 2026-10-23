@@ -335,6 +335,7 @@ Quest APK (manual):
 | 2026-10-15 | Separate `ChemicalSafety_Presentable` client scene (designer art, VO, hotspot, step05/06/07 MCQ, SC02, gloves, SDS clipboard, zoom) + two APK menus |
 | 2026-10-16/17 | Presentable: designer art, poke flow, Instructions panel, warehouse polish (committed `52e6d71`); then set 4 from Quest test, verified + APK built 2026-10-17, pushed as `117226f` - see section 14 |
 | 2026-10-18 | Presentable only, uncommitted: SC01 carrier text/VO, scenario-complete VO, new SC02 storage room (glass doors, wall chart, new SDS, MCQ 2.1). Container-in-hand inspect is NOT built yet - see §14.7 |
+| 2026-10-23 | Presentable SC04 lab after commit `3372c17` (uncommitted): realistic lab props, glove colours, eye-level bench, poke fix, APK 171.5 MB at 22:37. Read §14.11. Do not treat §14.1–14.10 as the current scene. |
 
 ---
 
@@ -343,10 +344,10 @@ Quest APK (manual):
 
 ---
 
-## 14. Presentable demo — full state & next steps (updated 2026-10-18)
+## 14. Presentable demo — full state & next steps (latest: 2026-10-23, §14.11)
 
-> Read this section first if you are a new agent / Cursor session. It supersedes the older Presentable bullets in §2b.
-> Rules that still apply: **change only the Presentable client demo** (never `ChemicalSafety_Demo` / the Learning APK), generate the scene with the builder menu (never hand-edit the `.unity`), never edit scripts while in Play mode, author is the user (no Claude / Cursor co-author trailers), do **not** merge to `master` unless the user says so. Branch: `feature/Modify-Scenario1-as-per-feedback`. Pushed through `117226f`. The 2026-10-18 SC02 work below is **uncommitted**. Do not build an APK unless the user asks.
+> Read **§14.11** first if you are a new agent / Cursor session. §14.1–14.10 are history. This section supersedes the older Presentable bullets in §2b.
+> Rules that still apply: **change only the Presentable client demo** (never `ChemicalSafety_Demo` / the Learning APK), generate the scene with the builder menu (never hand-edit the `.unity`), never edit scripts while in Play mode, author is the user (no Claude / Cursor co-author trailers), do **not** merge, push, or commit unless the user says so. Current branch: `Implement-Scenario3-Scenario4-Scenario5-and-fix-UI-feedback`. Last commit `3372c17` (not pushed). Everything in §14.11 after that commit is **uncommitted**. Do not build an APK unless the user asks.
 
 ### 14.1 How to work
 - Regenerate the scene: Unity menu **Chemical Safety/Presentable/Build Presentable Scene** (`Editor/PresentableSceneBuilder.cs`). Runtime scripts: `Assets/Scripts/ChemicalSafety/Presentable/`.
@@ -455,3 +456,39 @@ Reference pack: `C:\Users\msi\Downloads\Scene03 workflow-20261020T164953Z-1-001\
 - **Common right-answer voice** (user, 2026-10-22): `VO_Correct_bn` = "সঠিক। চমৎকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।" for every scenario (defined in `Tools/generate_vo.py` `CLIPS`; no scenario-specific words like label or drum). It is followed by the scenario-ending line.
 - 2026-10-22: by listening the user chose plain "সঠিক" (no respelling any more, so SC01/SC02 instruction clips were regenerated) and "চমৎকার" -> "চমতকারর" (the voice drops the final র) at speaking rate -8% for `VO_Correct_bn`. `generate_vo.py --correct DIR` makes listening variants.
 - **Panel layout (2026-10-22, after the Quest video)**: the `pop up screen` frame is drawn larger than its canvas, so text must stay inside the measured safe area: MCQ panel header y 0.845-0.93, prompt 0.738-0.822 (below the title underline ~0.83), rows from 0.715, height 0.13, gap 0.02 (last row ends 0.135, clear of the bottom arc ~0.06-0.10), row labels inset to y 0.1-0.9 with font 20-34; `pop02` correct/wrong cards: glass area x 0.12-0.88, y 0.12-0.83 (title 0.68-0.81, body from 0.16 / 0.28, wrong card X at the bottom right). `LabelPickPopup` (SC01) now uses the same step05 row style (dark fill + `answerBox`, centred text) with orange corner accents (`PresentableUi.CornerAccents`). The smoke test runs `LayoutCheck` on every panel (violations must be 0).
+
+### 14.11 Scenario 4 lab, 2026-10-23 (done in the editor, uncommitted, APK built)
+
+Last commit on the branch is `3372c17` (VR feedback: instruction card stays in reach, MCQ fills its frame, Scenario 3 blasts only on a wrong answer, first glove-lab pass). It is **not pushed**. Do not amend it. A later `git commit` from this environment injects `Co-authored-by: Cursor`; the clean commit was written with `git hash-object`, not `git commit`.
+
+Everything below is **after** that commit and is **not committed**. The scene file `Assets/Scenes/ChemicalSafety_Presentable.unity` is dirty because the builder regenerated it. Do not hand-edit it. Change `PresentableSceneBuilder.Sc04.cs`, then menu **Chemical Safety/Presentable/Build Presentable Scene**.
+
+**Done (Presentable only, SC01–SC03 questions, answers, rooms, and poke distances were not retuned):**
+
+- SC04 room matches the lab photo more closely. Builder: `Assets/Scripts/ChemicalSafety/Editor/PresentableSceneBuilder.Sc04.cs`. Viewer spawn `Spawn_SC04` is `(120, 0, 3.15)`, yaw 180, facing -Z. Viewer-left is +X.
+- Four blue pipettes upright on a white angled rack. White fume hood with glass and a dark opening (`HoodMouth`), pulled off the back wall (`min.z` about -2.88). SDS sheet `Assets/Art/Presentable/2D/Sc04/SDS_SC04.png` is the front face of the clipboard (quad faces +Z), on the viewer's right of the black glove, with coloured tabs. Glossy cool-gray floor texture `Assets/Art/Presentable/2D/Sc04/FloorGray.png`. Wall tiles stay, smoothness lowered from 0.58 to 0.22 so the Quest specular shimmer stops. Floor stays glossy. No new realtime shadows.
+- Gloves, left to right in the player's view: white cotton, blue nitrile, larger black neoprene. Materials `M_Sc04GloveWhite/Blue/Black`. Black glove scale about 1.38. They sit on an unlit white towel (`Sc04Cloth`). Sort is still world X descending. Poke reach stays **0.07**.
+- Glove poke was broken on device even though smoke passed. Smoke used to call `PokeTarget.Fire()` directly, so a collider the finger cannot reach still passed. The glove box was on `SolidProps`, and the palm push lifted the fingertip off the glove. Handles are triggers now, not `SolidProps`, padded upward and toward the player. `GloveParts.Parts` is public. The gold arrow uses those meshes (`GloveInspect.BoundsOf`). Smoke logs `SC04 glove N mesh in reach` and `Debug.LogError` if that is false. Do not put the glove handles back on `SolidProps`.
+- Test tubes are real cylinders, not a shadow. They were ghostly (`LabGlass` alpha 0.28) and sat against the gloves. They are now at the viewer's left end of the glove table (`gloveBox.max.x - 0.22`) with `Sc04TubeGlass` (alpha 0.82) on a white rack.
+- Fridge door faces the player (+Z), with a glass door, stainless trim, and a dark handle. The old door faced +X, so the player saw a blank white box. AC is right-way up on the back wall: dark bottom vent, `25°C` from `AC_Display.png`, pulsed about once a second by `Sc04DisplayPulse`. Hood interior/mesa is darker so the opening reads as open.
+- Both `table02` benches are stainless (`Sc04Steel`). Only the glove bench moves with the head. `BenchRoot` holds the glove table, cloth, glove model, glove handles, SDS, and tubes. `Sc04BenchHeight` puts the tabletop 0.32 m below the eyes (clamp 0.55–1.45). An 8 cm dead zone ignores head bob; a sit/stand change eases. `PresentableSequenceDirector` calls `SnapTo` before the glide into SC04 and `Follow` while the glove stage runs. Glove home positions are **local** to the bench, so a height change does not leave a glove floating. The side bench, walls, fridge, and AC stay on the floor.
+- Desk smoke after this pass: glove mesh in reach 3/3, holding 3/3, layout violations 0, `[SMOKE] DONE runtime errors/exceptions = 0`. Prefab `SetParent` errors on SC02 `Object_4.*` are old and expected.
+
+**APK on disk (install this one):** `Builds/Android/ChemicalSafetyVR_Presentable.apk`, **171.5 MB**, 2026-10-23 22:37, release, errors 0. It includes the lab pass above. The 19:03 file (173.1 MB) was the earlier prop/glove-colour build and has been replaced. The user has not yet reported a Quest check of the 22:37 build.
+
+**Pink Game view (fixed the same evening, do not "fix" it again by clearing a pipeline):** Unity paints the whole Game view magenta when the active quality level has no Universal RP asset. The Presentable APK build had saved `QualitySettings` with Mobile's `customRenderPipeline` set to `{fileID: 0}`. Mobile is what the editor uses on the Android target. Restored to `Assets/Settings/Mobile_RPAsset.asset` (guid `5e6cbd92db86f4b18aec3ed561671858`). PC stays `PC_RPAsset` (guid `4b83569d67af61e458304325a23e5dfd`). `ProjectSettings/QualitySettings.asset` matches git again. `ChemicalSafetyApkBuilder` now switches back to the Mobile quality level and refuses to save a null pipeline (falls back to `Mobile_RPAsset`). That builder change is uncommitted. Do not commit `ProjectSettings/` or `Assets/Settings/`.
+
+**Not done (do not invent these as finished):**
+
+- No commit and no push of the SC04 lab work or the APK-builder guard.
+- Scenario 5 is not built. The branch name mentions it; the scene does not.
+- Learning scene `ChemicalSafety_Demo` and `Builds/Android/ChemicalSafetyVR.apk` were not touched.
+- Voice was not regenerated for this lab pass. ElevenLabs is paused (HTTP 402). Bangla voice stays edge-tts `bn-BD-NabanitaNeural`. Do not add সঠিক to the global `PRON` table. The শঠিক respelling is one clip only: `VO_SC01_Instruction_bn`. Screen text stays সঠিক.
+- Instruction panel `Reflow`, glove style default 0 (black original), and SC01–SC03 question text were not changed.
+- On-device confirmation of the 22:37 APK (seated and standing bench, glove poke, SDS readable, fridge door, AC 25°C, no wall shimmer) is waiting on the user.
+
+### 14.12 Quest feedback round 2 (2026-10-23, smoke test 0 errors, committed)
+- SC02: the details card shows on every pick (also at the cabinet), keeps clear of the held container (eye level, 0.6-0.8 m, side chosen from the container position), and the only "CORRECT PLACEMENT" card appears after the container is down, with the counter already raised. `ContainerPlacement.TryPlace` no longer shows a card on the correct door.
+- SC03: `PresentableMcqPanel.PopIn` takes input only after the pop-in and once no fingertip is in front of the panel (fixes the blast right after Continue). Blast stays on a wrong answer only.
+- SC04: `Quad` primitives show their face toward -Z. AC display, SDS page, fridge door and bottle label were rotated with `LookRotation(forward)` and were culled for the player at +Z; now `LookRotation(back)`. SC04 MCQ is placed with `PlaceAtEyeLevel` like SC03. Gloves rest on a lit cloth with `ContactShadow.png` decals (`GroundGloves`).
+- Not done: SC04 room realism pass (textures, lighting, props), Quest check of this round.
