@@ -86,6 +86,21 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableMcqPanel mcqSc05;
         [SerializeField] private Sc05Ambience sc05Ambience;
 
+        [Header("SC06")]
+        [SerializeField] private GameObject envSc06;
+        [Tooltip("In front of the steel table, facing the back wall.")]
+        [SerializeField] private Transform spawnSc06;
+        [SerializeField] private Transform sc06TableStand;
+        [SerializeField] private Transform sc06HoodStand;
+        [Tooltip("Between the table and the hood, about 0.7 m from the control panel and the solvent.")]
+        [SerializeField] private Transform sc06PanelStand;
+        [SerializeField] private Sc06Pour sc06Pour;
+        [SerializeField] private Sc06Gate sc06Gate;
+        [SerializeField] private Sc06Lab lab;
+        [SerializeField] private Sc06Jug sc06Jug;
+        [SerializeField] private PresentableMcqPanel mcqSc06;
+        [SerializeField] private Sc06Ambience sc06Ambience;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -134,6 +149,14 @@ namespace ChemicalSafety.Presentable
             yield return null;
             yield return null;
 
+#if UNITY_EDITOR
+            // developer shortcut (menu Chemical Safety/Presentable/Dev: start at Scenario 6): skips straight to the lab
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
+            {
+                yield return RunScenario6();
+                yield break;
+            }
+#endif
             foreach (var d in drums)
                 d?.SetCalloutVisible(false, 0.01f);
 
@@ -541,6 +564,171 @@ namespace ChemicalSafety.Presentable
             yield return RunQuestion(mcqSc05, BuildSc05Question(), false, 5);
             if (sc05Ambience != null)
                 sc05Ambience.End();
+
+            // SC06 (chemistry lab) starts after the SC05 question's NEXT
+            if (envSc06 != null)
+                yield return RunScenario6();
+        }
+
+        // SC06 starts after the SC05 question's NEXT. Chemistry lab: switch the fume hood on, lift the solvent, open the sash, pour.
+        private IEnumerator RunScenario6()
+        {
+            Stage("sc06");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc05Ambience != null)
+                sc05Ambience.End();
+            envSc06.SetActive(true);
+            clipboard.SetSheet(art.sdsSc06);
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            sc06Jug.ReturnHome();
+            PlaceRig(spawnSc06.position, spawnSc06.forward);
+            sc06Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc06Intro");
+            _instructionClip = art.voSc06Instruction != null ? art.voSc06Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc06Content.InstructionEnglish, art.bnSc06InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            // the inspection: switch, solvent, sash, pour. BACK on the "Inspection completed" card runs it again from the start.
+            var again = true;
+            while (again)
+            {
+                yield return Sc06InspectionRound();
+
+                // done: the sash closes, the user is taken back to the steel table and the card opens
+                Stage("sc06Gate");
+                yield return PresentableFx.Wait(0.6f);
+                lab.CloseSash();
+                yield return fader.FadeTo(1f, 0.35f);
+                PlaceRig(sc06TableStand.position, sc06TableStand.forward);
+                subtitle.Hide();
+                yield return fader.FadeTo(0f, 0.5f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc06Gate.Back += OnBack;
+                sc06Gate.Next += OnNext;
+                sc06Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc06Gate));
+                while (choice == 0)
+                    yield return null;
+                sc06Gate.Back -= OnBack;
+                sc06Gate.Next -= OnNext;
+                sc06Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    // review again: the lab goes back to how it was at the start
+                    yield return fader.FadeTo(1f, 0.3f);
+                    lab.ResetLab();
+                    sc06Jug.ReturnHome();
+                    sc06Pour.ResetPour();
+                    yield return PresentableFx.Wait(0.3f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc06Question");
+            PlaceAtEyeLevel(mcqSc06.transform, panelDistance, false);
+            yield return RunQuestion(mcqSc06, BuildSc06Question(), false, 6);
+            Stage("sc06Done");
+        }
+
+        private IEnumerator Sc06InspectionRound()
+        {
+            // to the corridor between the table and the hood: the control panel and the solvent are within arm's reach
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc06PanelStand.position, sc06PanelStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+
+            // 1. switch the fume hood on (green arrow over its switch)
+            Stage("sc06Hood");
+            lab.SetSwitchesInteractable(true);
+            lab.PointAt(lab.Rocker(0), new Vector3(0f, 0.2f, 0.06f));
+            StartCoroutine(SubtitledVoice(art.bnSc06HoodHint, Sc06Content.HoodHint, art.voSc06Hood));
+            while (!lab.HoodOn)
+                yield return null;
+            lab.HideArrow();
+            StartCoroutine(SubtitledVoice(null, Sc06Content.HoodOnHint, art.voSc06HoodOn));
+
+            // 2. lift the Volatile Solvent container into the left hand
+            Stage("sc06Jug");
+            sc06Jug.SetInteractable(true);
+            lab.PointAt(sc06Jug.JugTransform, new Vector3(0f, 0.42f, 0.02f));
+            yield return PresentableFx.Wait(2.2f);
+            StartCoroutine(SubtitledVoice(art.bnSc06JugHint, Sc06Content.JugHint, art.voSc06Jug));
+            while (!sc06Jug.Held)
+                yield return null;
+            lab.HideArrow();
+
+            // 3. to the hood, touch the glass door; it opens from the bottom upwards (only while the hood runs)
+            Stage("sc06Sash");
+            StopVoice();
+            subtitle.Hide();
+            yield return Glide(sc06HoodStand.position, 0.9f);
+            PlaceRig(sc06HoodStand.position, sc06HoodStand.forward);
+            lab.SetSashInteractable(true);
+            lab.PointAt(lab.Sash, new Vector3(0f, 0.85f, 0.08f));
+            void OnBlocked()
+            {
+                StopVoice();
+                StartCoroutine(SubtitledVoice(art.bnSc06HoodWarn, Sc06Content.HoodWarn, art.voSc06HoodWarn));
+                lab.PointAt(lab.Rocker(0), new Vector3(0f, 0.2f, 0.06f));
+            }
+
+            lab.SashBlocked += OnBlocked;
+            StartCoroutine(SubtitledVoice(art.bnSc06SashHint, Sc06Content.SashHint, art.voSc06Sash));
+            while (!lab.SashOpen)
+                yield return null;
+            lab.SashBlocked -= OnBlocked;
+            lab.HideArrow();
+            lab.SetSashInteractable(false);
+
+            Stage("sc06Pour");
+            StartCoroutine(SubtitledVoice(art.bnSc06PourHint, Sc06Content.PourHint, art.voSc06Pour));
+            sc06Pour.SetInteractable(true);
+            lab.PointAt(sc06Pour.Jar, new Vector3(0f, 0.55f, 0.04f));
+            var poured = false;
+            void OnPoured() => poured = true;
+            sc06Pour.PourFinished += OnPoured;
+            while (!poured)
+                yield return null;
+            sc06Pour.PourFinished -= OnPoured;
+            lab.HideArrow();
+            Stage("sc06PourDone");
         }
 
         private bool _eyeInstruction;
@@ -999,7 +1187,12 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(1f);
             AudioClip doneBn;
             AudioClip doneEn;
-            if (scenario == 5)
+            if (scenario == 6)
+            {
+                doneBn = art.voSc06CompleteBn;
+                doneEn = art.voSc06CompleteEn;
+            }
+            else if (scenario == 5)
             {
                 doneBn = art.voSc05CompleteBn;
                 doneEn = art.voSc05CompleteEn;
@@ -1213,6 +1406,31 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc06Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc06Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc06Content.OptionLabels[i],
+                    feedback = Sc06Content.OptionFeedback[i],
+                    wrongTitle = Sc06Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc06Content.QuestionHeader,
+                prompt = Sc06Content.QuestionPrompt,
+                correctIndex = Sc06Content.CorrectIndex,
+                correctTitle = Sc06Content.CorrectTitle,
+                nextLabel = Sc06Content.FinishLabel,
+                options = options,
+                fancy = true // the wow look is Scenario 6 only; set it on another scenario's question to try it there
             };
         }
 

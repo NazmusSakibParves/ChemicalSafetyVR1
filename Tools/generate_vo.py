@@ -47,9 +47,9 @@ SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF)
 
 # scenario number -> how it is spoken
 CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven"}
 
 
 def complete_bn(n):
@@ -124,6 +124,24 @@ CLIPS = {
     ),
     "VO_Sc05Complete_bn": (BN_VOICE, complete_bn(5)),
     "VO_Sc05Complete_en": (EN_VOICE, complete_en(5)),
+    # Scenario 6
+    "VO_SC06_Instruction_bn": (
+        BN_VOICE,
+        "আপনি একজন মিক্সিং অপারেটর। আপনাকে একটি উদ্বায়ী দ্রাবক ঢালতে হবে, কিন্তু পাত্রটি খোলা থাকায় বাষ্প বাতাসে ছড়িয়ে পড়ছে। "
+        "ঢালার আগে শঠিক ইঞ্জিনিয়ারিং কন্ট্রোল নিন।",  # শঠিক: the voice read সঠিক here as ছঠিক (same fix as VO_SC01_Instruction_bn); screen text keeps সঠিক
+    ),
+    "VO_Sc06Hood_bn": (BN_VOICE, "কন্ট্রোল প্যানেলে ফিউম হুডের সুইচটি চালু করুন।"),
+    "VO_Sc06HoodOn_bn": (BN_VOICE, "ফিউম হুড চালু হয়েছে। এবার উদ্বায়ী দ্রাবকের পাত্রটি তুলুন।"),
+    "VO_Sc06HoodWarn_bn": (BN_VOICE, "আগে ফিউম হুড চালু করুন।"),
+    "VO_Sc06Jug_bn": (BN_VOICE, "উদ্বায়ী দ্রাবকের পাত্রটি আঙুল দিয়ে ছুঁয়ে তুলুন।"),
+    "VO_Sc06Sash_bn": (BN_VOICE, "এবার ফিউম হুডের কাচের দরজা ছুঁয়ে খুলুন।"),
+    "VO_Sc06Pour_bn": (BN_VOICE, "কাচের জারটি ছুঁয়ে ধীরে ধীরে দ্রাবক ঢালুন।"),
+    "VO_Sc06Gate_bn": (
+        BN_VOICE,
+        "পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
+    ),
+    "VO_Sc06Complete_bn": (BN_VOICE, complete_bn(6)),
+    "VO_Sc06Complete_en": (EN_VOICE, complete_en(6)),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"

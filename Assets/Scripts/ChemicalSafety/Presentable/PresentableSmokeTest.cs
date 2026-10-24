@@ -179,6 +179,218 @@ namespace ChemicalSafety.Presentable
                 .Invoke(b, new object[] { false });
         }
 
+        // A real fingertip poke: the right glove tip goes into the target's volume and PokeTarget.Update must fire. Falls back to the
+        // direct event when there is no glove (then it only proves the wiring, not the reach).
+        private IEnumerator FingerPoke(PokeTarget p, string what)
+        {
+            var hand = GlovedHandPose.Right;
+            var fired = false;
+            void On(PokeTarget t) => fired = true;
+            p.Poked += On;
+            var col = p.GetComponentInChildren<Collider>();
+            if (hand != null && hand.HasTip && col != null)
+            {
+                var ctl = hand.transform;
+                var target = col.bounds.center + Vector3.forward * 0.02f;
+                // leave the volume first so the poke is a fresh entry (a finger already inside does not fire again)
+                ctl.position += (target + Vector3.up * 0.4f) - hand.TipPosition;
+                yield return null;
+                yield return null;
+                ctl.position += target - hand.TipPosition;
+                var w = 0f;
+                while (!fired && w < 1.2f)
+                {
+                    w += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            p.Poked -= On;
+            if (!fired)
+            {
+                Say("SC06 " + what + ": the real fingertip did NOT fire the poke, using the direct event");
+                Poke(p);
+            }
+            else
+            {
+                Say("SC06 " + what + ": real fingertip poke fired");
+            }
+
+            yield return new WaitForSeconds(0.3f);
+        }
+
+        private IEnumerator Sc06Round(string tag, Sc06Lab lab, Sc06Jug jug, Sc06Pour pour, bool shots)
+        {
+            yield return WaitStage("sc06Hood", 40f);
+            yield return new WaitForSeconds(1.2f);
+            Say("SC06 " + tag + ": hood on = " + lab.HoodOn + " (expected False), sash open = " + lab.SashOpen + ", vapor particles = " + lab.VaporParticles);
+            if (shots)
+            {
+                yield return Shot("50_sc06_room");
+                var camT = Camera.main.transform;
+                var keep = camT.localRotation;
+                camT.localRotation = Quaternion.Euler(10f, 22f, 0f);
+                yield return Shot("51_sc06_panel");
+                camT.localRotation = keep;
+            }
+
+            // a wrong order first: the sash must refuse to open while the hood is off
+            var blocked = false;
+            void OnBlocked() => blocked = true;
+            lab.SashBlocked += OnBlocked;
+            lab.SetSashInteractable(true);
+            Poke(lab.SashPoke);
+            yield return new WaitForSeconds(0.4f);
+            lab.SashBlocked -= OnBlocked;
+            lab.SetSashInteractable(false);
+            Say("SC06 " + tag + ": sash refused while the hood is off = " + blocked + " (expected True), sash open = " + lab.SashOpen + " (expected False)");
+
+            // LEV arm and general ventilation switches flip, the hood switch starts the airflow
+            yield return FingerPoke(lab.SwitchPoke(1), "LEV switch");
+            Say("SC06 " + tag + ": LEV on = " + lab.LevOn + " (expected True)");
+            yield return FingerPoke(lab.SwitchPoke(1), "LEV switch back");
+            yield return FingerPoke(lab.SwitchPoke(0), "fume hood switch");
+            yield return new WaitForSeconds(1.8f);
+            Say("SC06 " + tag + ": hood on = " + lab.HoodOn + ", air streak particles = " + lab.AirParticles + " (expected > 0), paper strip angle = " +
+                lab.StripAngle.ToString("0") + " (expected about 30)");
+            if (shots)
+                yield return Shot("52_sc06_hood_on");
+
+            yield return WaitStage("sc06Jug", 20f);
+            yield return new WaitForSeconds(2.4f);
+            Say("SC06 " + tag + ": arrow visible = " + lab.ArrowVisible);
+            yield return FingerPoke(jug.Poke, "solvent jug");
+            var wj = 0f;
+            while (!jug.Held && wj < 4f)
+            {
+                wj += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC06 " + tag + ": jug held = " + jug.Held);
+            if (shots)
+                yield return Shot("53_sc06_jug_held");
+            yield return WaitStage("sc06Sash", 20f);
+            yield return new WaitForSeconds(1.5f);
+            lab.SetSashInteractable(true);
+            yield return FingerPoke(lab.SashPoke, "glass sash");
+            var ws = 0f;
+            while (!lab.SashOpen && ws < 5f)
+            {
+                ws += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC06 " + tag + ": sash open = " + lab.SashOpen + ", air particles through the opening = " + lab.AirParticles);
+            yield return WaitStage("sc06Pour", 20f);
+            yield return new WaitForSeconds(0.8f);
+            if (shots)
+                yield return Shot("54_sc06_sash_open");
+            yield return FingerPoke(pour.Poke, "glass jar");
+            var wp = 0f;
+            var sawStream = false;
+            while (!pour.Done && wp < 30f)
+            {
+                if (pour.StreamVisible && pour.Fill > 0.1f)
+                    sawStream = true;
+                if (shots && pour.Flow > 0.9f && pour.Fill > 0.3f && pour.Fill < 0.4f)
+                {
+                    yield return Shot("55_sc06_pour");
+                }
+
+                wp += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC06 " + tag + ": pour done = " + pour.Done + ", stream seen = " + sawStream + ", jar fill = " + pour.Fill.ToString("0.00") +
+                ", cap on = " + jug.CapIsOn + " (expected True), vapor particles after the cap = " + lab.VaporParticles);
+        }
+
+        private IEnumerator Sc06Smoke(InstructionPanelView panel, AudioSource voiceSrc, PresentableMcqPanel mcq5)
+        {
+            yield return WaitStage("sc06Intro", 40f);
+            var lab = Get<Sc06Lab>(_director, "lab");
+            var jug = Get<Sc06Jug>(_director, "sc06Jug");
+            var pour = Get<Sc06Pour>(_director, "sc06Pour");
+            var gate = Get<Sc06Gate>(_director, "sc06Gate");
+            var mcq6 = Get<PresentableMcqPanel>(_director, "mcqSc06");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("49b_sc06_instruction");
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var wc = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && wc < 40f)
+            {
+                wc += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Click(panel.transform, "ContinueButton");
+
+            yield return Sc06Round("round 1", lab, jug, pour, true);
+            yield return WaitStage("sc06Gate", 40f);
+            var wg = 0f;
+            while (!gate.Visible && wg < 15f)
+            {
+                wg += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.5f);
+            Say("SC06 gate card visible = " + gate.Visible + ", sash closed again = " + !lab.SashOpen + ", hood still on = " + lab.HoodOn);
+            LayoutCheck("SC06 gate card", gate.Card);
+            yield return Shot("56_sc06_gate");
+            // BACK runs the inspection again from the start
+            Click(gate.transform, "BackButton");
+            yield return Sc06Round("round 2 (after BACK)", lab, jug, pour, false);
+            yield return WaitStage("sc06Gate", 40f);
+            var wg2 = 0f;
+            while (!gate.Visible && wg2 < 15f)
+            {
+                wg2 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.2f);
+            Click(gate.transform, "NextButton");
+
+            yield return WaitStage("sc06Question", 20f);
+            var q = 0f;
+            while (!mcq6.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.4f);
+            Say("SC06 MCQ wow look = " + mcq6.Fancy + " (expected True), SC05 MCQ wow look = " + mcq5.Fancy + " (expected False), chevrons = " +
+                (mcq6.Fx != null ? mcq6.Fx.ChevronCount : 0) + ", comet pieces = " + (mcq6.Fx != null ? mcq6.Fx.CometCount : 0) +
+                ", rows landed = " + (mcq6.Fx != null && mcq6.Fx.RowsLanded));
+            LayoutCheck("SC06 MCQ", mcq6.transform);
+            yield return Shot("57_sc06_question");
+            Click(mcq6.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("58_sc06_wrong");
+            Click(mcq6.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq6.transform, "Row3");
+            var heard = "";
+            var h = 0f;
+            while (h < 14f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc06Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC06 MCQ correct card", mcq6.transform);
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 6 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("59_sc06_correct");
+            Click(mcq6.transform, "NextButton");
+        }
+
         private static void Poke(PokeTarget p)
         {
             typeof(PokeTarget).GetMethod("Fire", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -1070,6 +1282,9 @@ namespace ChemicalSafety.Presentable
             Say("scenario 5 complete vo = " + (heard5.Length > 0 ? heard5 : "NOT HEARD"));
             yield return Shot("46_sc05_correct");
             Click(mcq5.transform, "NextButton");
+
+            // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT
+            yield return Sc06Smoke(panel, voiceSrc, mcq5);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

@@ -72,6 +72,10 @@ namespace ChemicalSafety.Editor
             var env5 = new GameObject("Environment_SC05").transform;
             var sc5 = BuildSc05Room(env5, art);
             env5.gameObject.SetActive(false);
+            var env6 = new GameObject("Environment_SC06").transform;
+            var sc6 = BuildSc06Room(env6, art);
+            Sc06BakeProbe(env, env6);
+            env6.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -137,6 +141,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq4, "art", art);
             var mcq5 = Child("McqPanel_SC05", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq5, "art", art);
+            var mcq6 = Child("McqPanel_SC06", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq6, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -207,6 +213,18 @@ namespace ChemicalSafety.Editor
             so.FindProperty("mcqSc05").objectReferenceValue = mcq5;
             so.FindProperty("sc05Ambience").objectReferenceValue = sc5.ambience;
             SetRef(sc5.ambience, "voice", voice);
+            so.FindProperty("envSc06").objectReferenceValue = env6.gameObject;
+            so.FindProperty("spawnSc06").objectReferenceValue = sc6.spawn;
+            so.FindProperty("sc06TableStand").objectReferenceValue = sc6.tableStand;
+            so.FindProperty("sc06HoodStand").objectReferenceValue = sc6.hoodStand;
+            so.FindProperty("sc06PanelStand").objectReferenceValue = sc6.panelStand;
+            so.FindProperty("sc06Pour").objectReferenceValue = sc6.pour;
+            so.FindProperty("sc06Gate").objectReferenceValue = sc6.gate;
+            so.FindProperty("lab").objectReferenceValue = sc6.lab;
+            so.FindProperty("sc06Jug").objectReferenceValue = sc6.jug;
+            so.FindProperty("mcqSc06").objectReferenceValue = mcq6;
+            so.FindProperty("sc06Ambience").objectReferenceValue = sc6.ambience;
+            SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
             var doorProp = so.FindProperty("doors");
@@ -272,7 +290,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -295,6 +313,17 @@ namespace ChemicalSafety.Editor
                         if (ti.spriteBorder != border)
                         {
                             ti.spriteBorder = border;
+                            changed = true;
+                        }
+                    }
+
+                    // Scenario 6 "Inspection completed" card: chamfered 9-slice plates
+                    if (path.Contains("/Sc06/Gate_"))
+                    {
+                        var border6 = path.Contains("Gate_Panel") ? new Vector4(64f, 64f, 64f, 64f) : new Vector4(40f, 34f, 40f, 34f);
+                        if (ti.spriteBorder != border6)
+                        {
+                            ti.spriteBorder = border6;
                             changed = true;
                         }
                     }
@@ -434,6 +463,16 @@ namespace ChemicalSafety.Editor
             art.sdsSc04 = LoadSprite("2D/Sc04/SDS_SC04");
             art.bnSc05InstructionPanel = B("BN_Sc05InstructionPanel");
             art.sdsSc05 = LoadSprite("2D/Sc05/SDS_SC05");
+            art.sdsSc06 = LoadSprite("2D/Sc06/SDS_SC06");
+            art.gatePanel = LoadSprite("2D/Sc06/Gate_Panel");
+            art.gateButton = LoadSprite("2D/Sc06/Gate_Button");
+            art.gateButtonPrimary = LoadSprite("2D/Sc06/Gate_ButtonPrimary");
+            art.bnSc06InstructionPanel = B("BN_Sc06InstructionPanel");
+            art.bnSc06HoodHint = B("BN_Sc06HoodHint");
+            art.bnSc06JugHint = B("BN_Sc06JugHint");
+            art.bnSc06SashHint = B("BN_Sc06SashHint");
+            art.bnSc06PourHint = B("BN_Sc06PourHint");
+            art.bnSc06HoodWarn = B("BN_Sc06HoodWarn");
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
             art.holoButtonPrimary = LoadSprite("2D/Sc05/Holo_ButtonPrimary");
@@ -519,6 +558,22 @@ namespace ChemicalSafety.Editor
             var sc05DoneEn = V("VO_Sc05Complete_en.mp3");
             if (sc05DoneEn != null)
                 art.voSc05CompleteEn = sc05DoneEn;
+            AudioClip Keep(string file, AudioClip current)
+            {
+                var c = V(file);
+                return c != null ? c : current;
+            }
+
+            art.voSc06Instruction = Keep("VO_SC06_Instruction_bn.mp3", art.voSc06Instruction);
+            art.voSc06Hood = Keep("VO_Sc06Hood_bn.mp3", art.voSc06Hood);
+            art.voSc06HoodOn = Keep("VO_Sc06HoodOn_bn.mp3", art.voSc06HoodOn);
+            art.voSc06HoodWarn = Keep("VO_Sc06HoodWarn_bn.mp3", art.voSc06HoodWarn);
+            art.voSc06Jug = Keep("VO_Sc06Jug_bn.mp3", art.voSc06Jug);
+            art.voSc06Sash = Keep("VO_Sc06Sash_bn.mp3", art.voSc06Sash);
+            art.voSc06Pour = Keep("VO_Sc06Pour_bn.mp3", art.voSc06Pour);
+            art.voSc06Gate = Keep("VO_Sc06Gate_bn.mp3", art.voSc06Gate);
+            art.voSc06CompleteBn = Keep("VO_Sc06Complete_bn.mp3", art.voSc06CompleteBn);
+            art.voSc06CompleteEn = Keep("VO_Sc06Complete_en.mp3", art.voSc06CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

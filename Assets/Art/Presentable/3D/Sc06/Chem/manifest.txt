@@ -1,0 +1,30 @@
+jerry size 0.205 x 0.300 x 0.107 (x,y,z) height 0.300
+jerry mouth x 0.0704 y(top) 0.3000 z 0.0000  cap radius 0.0201  cap bottom y 0.2641  cap faces 27393 body faces 23805->13000
+jerry bounds x -0.103..0.103 z -0.054..0.054
+NaOH glass tris 3199
+NaOH cap tris 1200
+NaOH label tris 768
+NaOH height 0.211
+Alcohol glassdark tris 3200
+Alcohol label tris 768
+Alcohol liquid tris 1499
+Alcohol height 0.170
+Phenyl glass tris 4094
+Phenyl capblue tris 1500
+Phenyl label tris 1200
+Phenyl height 0.161
+Napthol glassdark tris 3199
+Napthol capblack tris 1498
+Napthol label tris 924
+Napthol height 0.147
+Beaker glass tris 3500
+Beaker liquid tris 1200
+Beaker height 0.149
+PillBottle plastic tris 2499
+PillBottle label tris 620
+PillBottle capwhite tris 1200
+PillBottle height 0.122
+Dropper glass tris 3500
+Dropper plastic tris 2200
+Dropper capwhite tris 448
+Dropper height 0.141

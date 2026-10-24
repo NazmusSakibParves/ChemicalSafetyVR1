@@ -38,6 +38,8 @@ namespace ChemicalSafety.Presentable
             public string correctTitle = "CORRECT SELECTION!";
             public string wrongTitle = "WRONG SELECTION!";
             public string nextLabel = "NEXT";
+            [Tooltip("Scenario 6 look: options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
+            public bool fancy;
         }
 
         private sealed class Row
@@ -81,6 +83,14 @@ namespace ChemicalSafety.Presentable
         private TextMeshProUGUI _nextLabel;
         private bool _locked;
         private bool _built;
+        private Sc06McqFx _fx;
+
+        public PresentableArt Art => art;
+        public RectTransform CanvasRect { get; private set; }
+        public int RowCount => _rows.Count;
+        public RectTransform RowRoot(int index) => _rows[index].root;
+        public bool Fancy => _fx != null;
+        public Sc06McqFx Fx => _fx;
 
         /// <summary>(index, isCorrect)</summary>
         public event Action<int, bool> Answered;
@@ -151,12 +161,26 @@ namespace ChemicalSafety.Presentable
             _wrongPopup.gameObject.SetActive(false);
             _nextButton.gameObject.SetActive(false);
             StopAllCoroutines();
+            _fx = null;
+            var oldFx = GetComponent<Sc06McqFx>();
+            if (question.fancy)
+            {
+                _fx = oldFx != null ? oldFx : gameObject.AddComponent<Sc06McqFx>();
+                _fx.Attach(this);
+            }
+            else if (oldFx != null)
+            {
+                oldFx.Detach();
+            }
+
             StartCoroutine(PopIn());
         }
 
         public void Hide()
         {
             IsOpen = false;
+            if (_fx != null)
+                _fx.Stop();
             StopAllCoroutines();
             StartCoroutine(PopOut());
         }
@@ -193,6 +217,8 @@ namespace ChemicalSafety.Presentable
                     _rows[i].root.GetComponent<CanvasGroup>().alpha = 0.55f;
             }
 
+            if (_fx != null)
+                _fx.OnResult(true, index);
             _correctTitle.text = _question.correctTitle;
             _correctBody.text = opt.feedback;
             yield return PopupIn(_correctPopup);
@@ -220,6 +246,8 @@ namespace ChemicalSafety.Presentable
             if (!string.IsNullOrEmpty(opt.wrongLabel))
                 _rows[index].label.text = opt.wrongLabel;
 
+            if (_fx != null)
+                _fx.OnResult(false, index);
             _wrongTitle.text = string.IsNullOrEmpty(opt.wrongTitle) ? _question.wrongTitle : opt.wrongTitle;
             _wrongBody.text = opt.feedback;
             StartCoroutine(Shake(_rows[index].root));
@@ -244,6 +272,13 @@ namespace ChemicalSafety.Presentable
             }
 
             ApplyNormalState();
+            if (_fx != null)
+            {
+                _fx.OnRetry();
+                for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
+                    _rows[i].root.GetComponent<CanvasGroup>().alpha = 1f;
+            }
+
             _locked = false;
             WrongClosed?.Invoke();
         }
@@ -322,6 +357,15 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return PresentableFx.Wait(0.25f);
+            if (_fx != null)
+            {
+                // Scenario 6: the options land one by one, input opens when the last one has landed
+                yield return _fx.RowsIn();
+                if (IsOpen && !_locked)
+                    _group.interactable = true;
+                yield break;
+            }
+
             if (IsOpen && !_locked)
                 _group.interactable = true;
 
@@ -419,6 +463,7 @@ namespace ChemicalSafety.Presentable
             var canvas = PresentableUi.WorldCanvas("McqCanvas", transform, sizePx, metersPerPixel, true, 200);
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             var root = canvas.transform;
+            CanvasRect = (RectTransform)root;
             var font = art.englishFont;
 
             var panel = root;

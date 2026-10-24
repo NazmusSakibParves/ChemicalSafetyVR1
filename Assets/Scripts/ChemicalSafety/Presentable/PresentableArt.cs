@@ -101,6 +101,16 @@ namespace ChemicalSafety.Presentable
         public Sprite bnSc03Touch;
         public Sprite bnSc04InstructionPanel;
         public Sprite bnSc05InstructionPanel;
+        public Sprite sdsSc06;
+        public Sprite gatePanel;
+        public Sprite gateButton;
+        public Sprite gateButtonPrimary;
+        public Sprite bnSc06InstructionPanel;
+        public Sprite bnSc06HoodHint;
+        public Sprite bnSc06JugHint;
+        public Sprite bnSc06SashHint;
+        public Sprite bnSc06PourHint;
+        public Sprite bnSc06HoodWarn;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -133,6 +143,16 @@ namespace ChemicalSafety.Presentable
         public AudioClip[] voSc05Mask = new AudioClip[4];
         public AudioClip voSc05CompleteBn;
         public AudioClip voSc05CompleteEn;
+        public AudioClip voSc06Instruction;
+        public AudioClip voSc06Hood;
+        public AudioClip voSc06HoodOn;
+        public AudioClip voSc06HoodWarn;
+        public AudioClip voSc06Jug;
+        public AudioClip voSc06Sash;
+        public AudioClip voSc06Pour;
+        public AudioClip voSc06Gate;
+        public AudioClip voSc06CompleteBn;
+        public AudioClip voSc06CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

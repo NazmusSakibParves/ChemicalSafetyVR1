@@ -58,7 +58,7 @@ MonoBehaviour:
   holoButtonPrimary: {fileID: 21300000, guid: 7cca478a99656ee4ba6dc310a70b699b, type: 3}
   iconBack: {fileID: 21300000, guid: fb85d64df5dc7bf45a1d17d5a709c298, type: 3}
   iconNext: {fileID: 21300000, guid: 7f3e8bbddaa2f134a9ec3b7714a9d876, type: 3}
-  iconClose: {fileID: 0}
+  iconClose: {fileID: 21300000, guid: 9dad42ade93ce2b4c9e9638de62c746e, type: 3}
   iconSpeaker: {fileID: 21300000, guid: deb164b1c8ab40b498850b6a4ab02da6, type: 3}
   maskIcons:
   - {fileID: 21300000, guid: e7023a931279be34eb6370b234a72ecc, type: 3}
@@ -87,6 +87,16 @@ MonoBehaviour:
   bnSc03Touch: {fileID: 21300000, guid: 35cb5e82e1731f04a9615abf48b31679, type: 3}
   bnSc04InstructionPanel: {fileID: 21300000, guid: e3a2dbef8755add43ab10fcd4340cb0a, type: 3}
   bnSc05InstructionPanel: {fileID: 21300000, guid: c19da18270124d74b8645b75546146c6, type: 3}
+  sdsSc06: {fileID: 21300000, guid: 212bb24e10dbfaf479db34efc5fe746e, type: 3}
+  gatePanel: {fileID: 21300000, guid: 4c0beb29add6a024ca8fcb0c0ad8334e, type: 3}
+  gateButton: {fileID: 21300000, guid: 44b5c7f6cad88fa42888f5fd2d3d6caf, type: 3}
+  gateButtonPrimary: {fileID: 21300000, guid: 56fa291785c39bf41a3bc94eca60d8e6, type: 3}
+  bnSc06InstructionPanel: {fileID: 21300000, guid: 2fe575b0b8f3a8e4d98aed89a1d48d30, type: 3}
+  bnSc06HoodHint: {fileID: 21300000, guid: 84631daae2436724485a329df5530811, type: 3}
+  bnSc06JugHint: {fileID: 21300000, guid: 0ba771f04c19b7d49ba02794ea05f8ac, type: 3}
+  bnSc06SashHint: {fileID: 21300000, guid: 4afaf1f560952a04aa6a34a84cae604d, type: 3}
+  bnSc06PourHint: {fileID: 21300000, guid: 3382618132bbd3b4cb8f8453855d3207, type: 3}
+  bnSc06HoodWarn: {fileID: 21300000, guid: e69cd8021886d314eb6f6718700d0f7e, type: 3}
   voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
   voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
   voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
@@ -118,5 +128,15 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 42ead6ea71b67e6478808ab065aacf1c, type: 3}
   voSc05CompleteBn: {fileID: 8300000, guid: 93efddf033a82f946aa0a3fb8da440c9, type: 3}
   voSc05CompleteEn: {fileID: 8300000, guid: 641827a4b8f798a4785cc0dc2644acc5, type: 3}
+  voSc06Instruction: {fileID: 8300000, guid: a8e1196d3de5cc6439f0c8a98181712c, type: 3}
+  voSc06Hood: {fileID: 8300000, guid: 556488f195bf37c4c94f57bdd3f7e50f, type: 3}
+  voSc06HoodOn: {fileID: 8300000, guid: d0bb102b578b1f34698b5d55bfee7b32, type: 3}
+  voSc06HoodWarn: {fileID: 8300000, guid: f2e7f92eff3eb9941bb658eae672655b, type: 3}
+  voSc06Jug: {fileID: 8300000, guid: 2c1bcf503b0cf084e90fbb287c3b8cf7, type: 3}
+  voSc06Sash: {fileID: 8300000, guid: cab8d5bd01a620143b4b42983e494165, type: 3}
+  voSc06Pour: {fileID: 8300000, guid: 9541e28c43c9fbc46ba9304cda82f625, type: 3}
+  voSc06Gate: {fileID: 8300000, guid: 9f745d9660e451f498ef4f264e60776c, type: 3}
+  voSc06CompleteBn: {fileID: 8300000, guid: de5f04f3298020a498b3debc409b9ea9, type: 3}
+  voSc06CompleteEn: {fileID: 8300000, guid: 348981037c2b60246bc060c755537d2f, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
