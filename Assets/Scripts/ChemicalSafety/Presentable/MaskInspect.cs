@@ -17,7 +17,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform[] masks = new Transform[4];
         [SerializeField] private Transform arrow;
 
-        private const float HoldScale = 0.85f;
+        private const float HoldHeight = 0.36f; // height of a mask in the hand, so the big full-face respirator is not bigger than the rest
         private readonly bool[] _seen = new bool[4];
         private Vector3[] _homePos;
         private Quaternion[] _homeRot;
@@ -50,6 +50,38 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Raised when the card is closed and the mask goes back on its hook.</summary>
         public event System.Action Closed;
+
+        /// <summary>Raised when the speaker button on the card is pressed (replay the voice of this mask).</summary>
+        public event System.Action<int> SpeakerClicked;
+
+        private Image _maskPicture;
+        private Image _speaker;
+        private bool _speaking;
+
+        public bool WorkflowStyle => _maskPicture != null;
+        public Sprite CardPicture => _maskPicture != null ? _maskPicture.sprite : null;
+        public Transform CardTransform => _card;
+        public Transform GateTransform => _gate;
+
+        /// <summary>Director: true while a mask voice-over plays, so the speaker button shows it is playing.</summary>
+        public void SetSpeaking(bool on) => _speaking = on;
+
+        /// <summary>True when the mask in the hand touches another mask's bounds (the smoke test uses this).</summary>
+        public bool HeldOverlapsOthers()
+        {
+            if (_held < 0 || masks[_held] == null)
+                return false;
+            var held = BoundsOf(masks[_held]);
+            for (var i = 0; i < masks.Length; i++)
+            {
+                if (i == _held || masks[i] == null)
+                    continue;
+                if (held.Intersects(BoundsOf(masks[i])))
+                    return true;
+            }
+
+            return false;
+        }
 
         public PokeTarget PokeOf(int index)
         {
@@ -135,6 +167,13 @@ namespace ChemicalSafety.Presentable
 
         private void Update()
         {
+            if (_speaker != null && _card != null && _card.gameObject.activeSelf)
+            {
+                // the speaker breathes while its voice-over plays
+                var pulse = _speaking ? 0.5f + 0.5f * Mathf.Sin(Time.time * 9f) : 0f;
+                _speaker.color = Color.Lerp(Color.white, new Color(0.45f, 1f, 0.7f), pulse);
+            }
+
             if (arrow == null || !arrow.gameObject.activeSelf || _current < 0 || _current >= masks.Length)
                 return;
             // tick, tick: the arrow bobs and pulses over the marked mask
@@ -165,20 +204,25 @@ namespace ChemicalSafety.Presentable
             var cam = Camera.main != null ? Camera.main.transform : null;
             var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, fwd);
-            // far enough that even the big full-face respirator does not fill the view, near enough to inspect
-            var dest = (cam != null ? cam.position : from) + fwd * 0.66f - right * 0.2f + Vector3.down * 0.08f;
+            // In front of the rail with a clear gap (>= 0.40 m from the masks that still hang there) so straps and loops
+            // never go through them, and near enough to inspect. The big full-face respirator must not fill the view.
+            var camPos = cam != null ? cam.position : from;
+            var railDistance = Vector3.Dot(_homePos[index] - camPos, fwd);
+            var distance = Mathf.Clamp(railDistance - 0.50f, 0.34f, 0.60f);
+            var holdScale = Mathf.Clamp(HoldHeight / Mathf.Max(0.05f, BoundsOf(mask).size.y), 0.55f, 0.95f);
+            var dest = camPos + fwd * distance - right * 0.2f + Vector3.down * 0.12f;
             var destRot = Quaternion.LookRotation(-fwd, Vector3.up); // local +Z (the mask's front) turns to the user
             for (var t = 0f; t < 0.45f; t += Time.deltaTime)
             {
                 var k = Mathf.SmoothStep(0f, 1f, t / 0.45f);
                 mask.position = Vector3.Lerp(from, dest, k);
                 mask.rotation = Quaternion.Slerp(fromRot, destRot, k);
-                mask.localScale = Vector3.Lerp(fromScale, _homeScale[index] * HoldScale, k);
+                mask.localScale = Vector3.Lerp(fromScale, _homeScale[index] * holdScale, k);
                 yield return null;
             }
 
             mask.SetPositionAndRotation(dest, destRot);
-            mask.localScale = _homeScale[index] * HoldScale;
+            mask.localScale = _homeScale[index] * holdScale;
             ShowCard(index);
             _busy = false;
             Opened?.Invoke(index);
@@ -321,6 +365,8 @@ namespace ChemicalSafety.Presentable
             _card.position = (cam != null ? cam.position : Vector3.zero) + fwd * 0.58f + right * 0.24f + Vector3.up * 0.0f;
             _card.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             _nameText.text = Sc05Content.MaskNames[index];
+            if (_maskPicture != null && art.maskIcons != null && index < art.maskIcons.Length && art.maskIcons[index] != null)
+                _maskPicture.sprite = art.maskIcons[index]; // the picked mask, upright, instead of a tick or cross
             var ok = Sc05Content.Compatible[index];
             _compatText.text = Sc05Content.Compatibility(index).ToUpperInvariant();
             _compatText.color = ok ? new Color(0.4f, 1f, 0.6f) : new Color(1f, 0.45f, 0.4f);
@@ -373,6 +419,129 @@ namespace ChemicalSafety.Presentable
         }
 
         private void BuildCard()
+        {
+            if (Sc05Content.WorkflowStyleCards && art.holoPanel != null && art.iconSpeaker != null)
+                BuildCardWorkflow();
+            else
+                BuildCardClassic();
+        }
+
+        private void BuildGate()
+        {
+            if (Sc05Content.WorkflowStyleCards && art.holoPanel != null && art.iconNext != null)
+                BuildGateWorkflow();
+            else
+                BuildGateClassic();
+        }
+
+        private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
+        private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
+
+        private RectTransform IconButton(Transform parent, string name, Sprite icon, Vector2 min, Vector2 max,
+            UnityEngine.Events.UnityAction action, out Image image)
+        {
+            var rt = PresentableUi.Rect(name, parent, min, max);
+            image = PresentableUi.Img(rt, icon, Color.white, raycast: true, preserveAspect: true);
+            var btn = rt.gameObject.AddComponent<Button>();
+            btn.targetGraphic = image;
+            btn.transition = Selectable.Transition.None;
+            btn.onClick.AddListener(action);
+            var lift = rt.gameObject.AddComponent<HoverLift>();
+            lift.Init(rt);
+            btn.onClick.AddListener(lift.Press);
+            return rt;
+        }
+
+        // The designer's MASK INFORMATION card: title with speaker + close at the top right, the mask picture on the
+        // left, name and compatibility on the right.
+        private void BuildCardWorkflow()
+        {
+            var canvas = PresentableUi.WorldCanvas("MaskCard", transform, new Vector2(900f, 620f), 0.00058f, true, 30);
+            _card = canvas.transform;
+            var plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, art.holoPanel, Color.white);
+            plate.type = Image.Type.Sliced;
+            plate.raycastTarget = true;
+            var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.07f, 0.83f), new Vector2(0.70f, 0.95f),
+                Sc05Content.CardTitle, 32f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
+            title.enableAutoSizing = true;
+            title.fontSizeMin = 20f;
+            title.fontSizeMax = 32f;
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+
+            IconButton(canvas.transform, "SpeakerButton", art.iconSpeaker, new Vector2(0.775f, 0.825f), new Vector2(0.862f, 0.955f),
+                () => { if (_held >= 0) SpeakerClicked?.Invoke(_held); }, out _speaker);
+            IconButton(canvas.transform, "CloseButton", art.iconClose != null ? art.iconClose : art.cross,
+                new Vector2(0.872f, 0.825f), new Vector2(0.959f, 0.955f), CloseCard, out _);
+
+            var pic = PresentableUi.Rect("MaskPicture", canvas.transform, new Vector2(0.05f, 0.14f), new Vector2(0.40f, 0.80f));
+            _maskPicture = PresentableUi.Img(pic, art.maskIcons != null && art.maskIcons.Length > 0 ? art.maskIcons[0] : null,
+                Color.white, preserveAspect: true);
+
+            Label(canvas.transform, "NameLabel", Sc05Content.NameLabel, new Vector2(0.44f, 0.64f), new Vector2(0.95f, 0.76f));
+            _nameText = Value(canvas.transform, "NameValue", new Vector2(0.44f, 0.40f), new Vector2(0.95f, 0.64f), 28f, HoloWhite);
+            Label(canvas.transform, "CompatLabel", Sc05Content.CompatLabel, new Vector2(0.44f, 0.30f), new Vector2(0.95f, 0.40f));
+            _compatText = Value(canvas.transform, "CompatValue", new Vector2(0.44f, 0.08f), new Vector2(0.95f, 0.30f), 28f,
+                new Color(0.4f, 1f, 0.6f));
+            _compatText.fontStyle = FontStyles.Bold;
+            PresentableUi.AlwaysOnTop(canvas);
+            _card.gameObject.SetActive(false);
+        }
+
+        // The designer's RESPIRATOR INSPECTION COMPLETE card: left-aligned text, [BACK with its icon] and [NEXT with a check].
+        private void BuildGateWorkflow()
+        {
+            var canvas = PresentableUi.WorldCanvas("MaskGate", transform, new Vector2(1000f, 560f), 0.0005f, true, 31);
+            _gate = canvas.transform;
+            var plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, art.holoPanel, Color.white);
+            plate.type = Image.Type.Sliced;
+            plate.raycastTarget = true;
+            var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.07f, 0.70f), new Vector2(0.95f, 0.92f),
+                Sc05Content.GateTitle, 36f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
+            title.enableAutoSizing = true;
+            title.fontSizeMin = 20f;
+            title.fontSizeMax = 36f;
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+            PresentableUi.Text("Question", canvas.transform, new Vector2(0.07f, 0.50f), new Vector2(0.95f, 0.70f),
+                Sc05Content.GateQuestion, 28f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, art.englishFont);
+            PresentableUi.Text("Hint", canvas.transform, new Vector2(0.07f, 0.32f), new Vector2(0.95f, 0.50f),
+                Sc05Content.GateBody, 28f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, art.englishFont);
+            HoloButton("BackButton", canvas.transform, new Vector2(0.07f, 0.07f), new Vector2(0.44f, 0.29f), "BACK",
+                art.iconBack, true, OnBack, art.holoButton);
+            HoloButton("NextButton", canvas.transform, new Vector2(0.50f, 0.07f), new Vector2(0.93f, 0.29f), "NEXT",
+                art.iconNext, false, OnNext, art.holoButtonPrimary != null ? art.holoButtonPrimary : art.holoButton);
+            PresentableUi.AlwaysOnTop(canvas);
+            _gate.gameObject.SetActive(false);
+        }
+
+        private void HoloButton(string name, Transform parent, Vector2 min, Vector2 max, string label, Sprite icon,
+            bool iconFirst, UnityEngine.Events.UnityAction action, Sprite background)
+        {
+            var rt = PresentableUi.Rect(name, parent, min, max);
+            var img = PresentableUi.Img(rt, background, Color.white, sliced: true, raycast: true);
+            img.type = Image.Type.Sliced;
+            var btn = rt.gameObject.AddComponent<Button>();
+            btn.targetGraphic = img;
+            btn.transition = Selectable.Transition.None;
+            btn.onClick.AddListener(action);
+            var lift = rt.gameObject.AddComponent<HoverLift>();
+            lift.Init(rt);
+            btn.onClick.AddListener(lift.Press);
+            var iconRt = iconFirst
+                ? PresentableUi.Rect("Icon", rt, new Vector2(0.07f, 0.18f), new Vector2(0.27f, 0.82f))
+                : PresentableUi.Rect("Icon", rt, new Vector2(0.72f, 0.18f), new Vector2(0.92f, 0.82f));
+            if (icon != null)
+                PresentableUi.Img(iconRt, icon, Color.white, preserveAspect: true);
+            var textMin = iconFirst ? new Vector2(0.30f, 0.08f) : new Vector2(0.08f, 0.08f);
+            var textMax = iconFirst ? new Vector2(0.94f, 0.92f) : new Vector2(0.70f, 0.92f);
+            var text = PresentableUi.Text("Label", rt, textMin, textMax, label, 34f, HoloWhite, TextAlignmentOptions.Center, true,
+                art.englishFont);
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 18f;
+            text.fontSizeMax = 34f;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+        }
+
+        private void BuildCardClassic()
         {
             var frame = art.frameWide != null ? art.frameWide : art.roundedPanel;
             var canvas = PresentableUi.WorldCanvas("MaskCard", transform, new Vector2(980f, 520f), 0.00052f, true, 30);
@@ -429,7 +598,7 @@ namespace ChemicalSafety.Presentable
             return t;
         }
 
-        private void BuildGate()
+        private void BuildGateClassic()
         {
             var frame = art.frameWide != null ? art.frameWide : art.roundedPanel;
             var canvas = PresentableUi.WorldCanvas("MaskGate", transform, new Vector2(980f, 520f), 0.00055f, true, 31);

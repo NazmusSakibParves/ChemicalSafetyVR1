@@ -494,22 +494,46 @@ namespace ChemicalSafety.Presentable
             if (masks != null)
             {
                 // opening a respirator: the Bangla voice says what it is and whether it suits toluene
+                Coroutine maskVoice = null;
+
+                IEnumerator SayMask(int index)
+                {
+                    masks.SetSpeaking(true);
+                    yield return PlayVoice(art.voSc05Mask[index]);
+                    masks.SetSpeaking(false);
+                    maskVoice = null;
+                }
+
                 void OnMaskOpened(int index)
                 {
                     StopVoice();
+                    if (maskVoice != null)
+                        StopCoroutine(maskVoice);
+                    maskVoice = null;
+                    masks.SetSpeaking(false);
                     if (art.voSc05Mask != null && index >= 0 && index < art.voSc05Mask.Length && art.voSc05Mask[index] != null)
-                        StartCoroutine(PlayVoice(art.voSc05Mask[index]));
+                        maskVoice = StartCoroutine(SayMask(index));
                 }
 
-                void OnMaskClosed() => StopVoice();
+                void OnMaskClosed()
+                {
+                    if (maskVoice != null)
+                        StopCoroutine(maskVoice);
+                    maskVoice = null;
+                    StopVoice();
+                    masks.SetSpeaking(false);
+                }
+
                 masks.Opened += OnMaskOpened;
                 masks.Closed += OnMaskClosed;
+                masks.SpeakerClicked += OnMaskOpened; // the speaker on the card plays the same voice-over again
                 masks.Begin();
                 while (!masks.NextChosen)
                     yield return null;
                 masks.Opened -= OnMaskOpened;
                 masks.Closed -= OnMaskClosed;
-                StopVoice();
+                masks.SpeakerClicked -= OnMaskOpened;
+                OnMaskClosed();
             }
 
             Stage("sc05Question");

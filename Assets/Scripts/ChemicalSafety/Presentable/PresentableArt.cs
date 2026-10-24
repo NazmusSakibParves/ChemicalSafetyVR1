@@ -66,6 +66,17 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Thin glowing gold ring for the SC03 inspection.")]
         public Sprite ringThin;
 
+        [Header("Scenario 5 hologram cards")]
+        public Sprite holoPanel;
+        public Sprite holoButton;
+        public Sprite holoButtonPrimary;
+        public Sprite iconBack;
+        public Sprite iconNext;
+        public Sprite iconClose;
+        public Sprite iconSpeaker;
+        [Tooltip("Upright line-art picture of each respirator: N95, half-face, surgical, full-face.")]
+        public Sprite[] maskIcons = new Sprite[4];
+
         [Header("Bangla text (pre-shaped images)")]
         public Sprite bnSalam;
         public Sprite bnWelcomeSub;

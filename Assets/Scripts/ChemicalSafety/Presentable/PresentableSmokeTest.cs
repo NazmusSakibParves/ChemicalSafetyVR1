@@ -998,8 +998,21 @@ namespace ChemicalSafety.Presentable
                 Say("SC05 holding " + masks5.HeldIndex + ": card = [" + masks5.CardName + "] / [" + masks5.CardCompat + "], voice = " +
                     (voiceSrc.isPlaying && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + ", machine target volume = " +
                     amb.TargetVolume.ToString("0.00"));
+                var pictureName = masks5.CardPicture != null ? masks5.CardPicture.name : "none";
+                Say("SC05 mask " + idx + ": picture = " + pictureName + " (expected MaskIcon_" + idx + "), workflow style = " +
+                    masks5.WorkflowStyle + ", overlaps another mask = " + masks5.HeldOverlapsOthers() + " (expected False)");
+                LayoutCheck("SC05 mask card " + idx, masks5.CardTransform);
                 yield return Shot("42_sc05_mask_" + idx);
+                // the speaker on the card plays the voice-over again
+                voiceSrc.Stop();
+                yield return null;
+                Click(masks5.transform, "SpeakerButton");
+                yield return new WaitForSeconds(0.5f);
+                Say("SC05 mask " + idx + " speaker click: voice = " +
+                    (voiceSrc.isPlaying && voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
                 Click(masks5.transform, "CloseButton");
+                yield return new WaitForSeconds(0.2f);
+                Say("SC05 mask " + idx + " after close: voice playing = " + voiceSrc.isPlaying + " (expected False)");
                 var wb = 0f;
                 while (masks5.Holding && wb < 3f)
                 {
@@ -1020,6 +1033,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("SC05 masks seen = " + masks5.Seen + " / " + masks5.Count);
+            LayoutCheck("SC05 gate card", masks5.GateTransform);
             yield return Shot("43_sc05_gate");
             Click(masks5.transform, "NextButton");
             yield return WaitStage("sc05Question", 20f);

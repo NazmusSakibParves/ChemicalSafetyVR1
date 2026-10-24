@@ -11,6 +11,12 @@ namespace ChemicalSafety.Presentable
             "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. " +
             "The vapor level is high in there today. Put on the right mask before you go in.";
 
+        /// <summary>
+        /// true: the MASK INFORMATION and RESPIRATOR INSPECTION COMPLETE cards copy the designer's hologram look
+        /// (Scenario 5 only). false: the shared blue boxes used by the other scenarios. One line to switch back.
+        /// </summary>
+        public const bool WorkflowStyleCards = true;
+
         public const string CardTitle = "MASK INFORMATION";
         public const string NameLabel = "MASK NAME:";
         public const string CompatLabel = "COMPATIBILITY:";

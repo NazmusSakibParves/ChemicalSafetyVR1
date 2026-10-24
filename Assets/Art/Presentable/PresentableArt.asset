@@ -53,6 +53,18 @@ MonoBehaviour:
   sc03Label: {fileID: 21300000, guid: 0cc2ccf62a12bb740994fa06faa83f5d, type: 3}
   scanFrame: {fileID: 21300000, guid: b62be6570af1d324f86e67b594d7d4cd, type: 3}
   ringThin: {fileID: 21300000, guid: d1034a8b78db1eb4ca45550aa1f32188, type: 3}
+  holoPanel: {fileID: 21300000, guid: de89a7b4eeceac240bc84c6c407c3c13, type: 3}
+  holoButton: {fileID: 21300000, guid: 48afb8a19b52e6741be5f666b9b84cda, type: 3}
+  holoButtonPrimary: {fileID: 21300000, guid: 7cca478a99656ee4ba6dc310a70b699b, type: 3}
+  iconBack: {fileID: 21300000, guid: fb85d64df5dc7bf45a1d17d5a709c298, type: 3}
+  iconNext: {fileID: 21300000, guid: 7f3e8bbddaa2f134a9ec3b7714a9d876, type: 3}
+  iconClose: {fileID: 0}
+  iconSpeaker: {fileID: 21300000, guid: deb164b1c8ab40b498850b6a4ab02da6, type: 3}
+  maskIcons:
+  - {fileID: 21300000, guid: e7023a931279be34eb6370b234a72ecc, type: 3}
+  - {fileID: 21300000, guid: b106282e47eda1c47a3945d84fe785d7, type: 3}
+  - {fileID: 21300000, guid: aa7e8168fb35f0d4889ae1a7197778fc, type: 3}
+  - {fileID: 21300000, guid: b165a70697429ce4195688ea4cdedb35, type: 3}
   bnSalam: {fileID: 21300000, guid: 9e2011f2a3e4a4b4f8acfc78a4a5d4f8, type: 3}
   bnWelcomeSub: {fileID: 21300000, guid: 6a4079b75df08264ab370789700935ba, type: 3}
   bnInstructionSub: {fileID: 21300000, guid: b2aedd7790fb06549a306a6634a65808, type: 3}

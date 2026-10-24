@@ -288,6 +288,17 @@ namespace ChemicalSafety.Editor
                         changed = true;
                     }
 
+                    // Scenario 5 hologram cards are 9-slice sprites
+                    if (path.Contains("/Sc05/Holo_"))
+                    {
+                        var border = path.Contains("Holo_Panel") ? new Vector4(40f, 40f, 40f, 40f) : new Vector4(30f, 30f, 30f, 30f);
+                        if (ti.spriteBorder != border)
+                        {
+                            ti.spriteBorder = border;
+                            changed = true;
+                        }
+                    }
+
                     var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096
                         : path.EndsWith("Background.png") || path.EndsWith("Chart.png") || path.Contains("/BanglaText/") ||
                           path.Contains("/Designer/")
@@ -423,6 +434,16 @@ namespace ChemicalSafety.Editor
             art.sdsSc04 = LoadSprite("2D/Sc04/SDS_SC04");
             art.bnSc05InstructionPanel = B("BN_Sc05InstructionPanel");
             art.sdsSc05 = LoadSprite("2D/Sc05/SDS_SC05");
+            art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
+            art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
+            art.holoButtonPrimary = LoadSprite("2D/Sc05/Holo_ButtonPrimary");
+            art.iconBack = LoadSprite("2D/Sc05/Icon_Back");
+            art.iconNext = LoadSprite("2D/Sc05/Icon_Next");
+            art.iconClose = LoadSprite("2D/Sc05/Icon_Close");
+            art.iconSpeaker = LoadSprite("2D/Sc05/Icon_Speaker");
+            art.maskIcons = new Sprite[4];
+            for (var mi = 0; mi < 4; mi++)
+                art.maskIcons[mi] = LoadSprite("2D/Sc05/MaskIcon_" + mi);
             art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
