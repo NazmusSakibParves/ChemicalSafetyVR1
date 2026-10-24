@@ -254,6 +254,10 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
+            // the container travelled closed: the cap comes off over the jar and a thin vapor shows that the hood pulls away
+            lab.SetVaporOn(true);
+            yield return jug.CapOff(_jar.position + new Vector3(-0.19f, 0.02f, 0.02f));
+
             Pouring = true;
             PourStarted?.Invoke();
             if (ambience != null)

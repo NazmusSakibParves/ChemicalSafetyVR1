@@ -204,8 +204,8 @@ def label_panel():
         top = 20 + i * 312
         centred(d, (w / 2, top + 42), en, f(46 if i < 2 else 40), (26, 28, 30, 255))
         bn_text(d, (w / 2, top + 98), bnt, 34, (60, 62, 66, 255))
-        centred(d, (150, top + 150), "ON", f(34), (26, 28, 30, 255))
-        centred(d, (150, top + 262), "OFF", f(34), (26, 28, 30, 255))
+        centred(d, (150, top + 116), "OFF", f(34), (26, 28, 30, 255))  # up = off, down = on (as at home)
+        centred(d, (150, top + 296), "ON", f(34), (26, 28, 30, 255))
         d.ellipse((470 - 40, top + 206 - 40, 470 + 40, top + 206 + 40), fill=(48, 50, 52, 255), outline=(150, 154, 156, 255), width=5)
         centred(d, (470, top + 278), "STATUS", f(22), (90, 94, 98, 255))
         d.line((40, top + 306, w - 40, top + 306), fill=(170, 172, 170, 255), width=3)

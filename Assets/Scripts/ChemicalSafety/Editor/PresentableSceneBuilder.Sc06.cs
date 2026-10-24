@@ -24,6 +24,7 @@ namespace ChemicalSafety.Editor
             public Transform tableStand;
             public Transform hoodStand;
             public Transform panelStand;
+            public Transform benchStand;
             public Sc06Lab lab;
             public Sc06Jug jug;
             public Sc06Pour pour;
@@ -330,8 +331,12 @@ namespace ChemicalSafety.Editor
             QuadObj("PanelFace", room, new Vector3(ox + panelX, panelY, panelZ + 0.062f), new Vector3(0f, 180f, 0f),
                 new Vector2(0.36f, 0.54f), Sc06Label("Sc06PanelFace", "Label_Panel", false, 0.35f));
             panelBack.name = "PanelBox";
-            var ledRed = Mat("Sc06LedRed", new Color(0.45f, 0.02f, 0.02f), 0.4f, 0f, null, new Color(2.2f, 0.12f, 0.1f), false);
-            var ledGreen = Mat("Sc06LedGreen", new Color(0.02f, 0.4f, 0.06f), 0.4f, 0f, null, new Color(0.15f, 2.2f, 0.3f), false);
+            var ledRed = Mat("Sc06LedRed", new Color(0.55f, 0.03f, 0.02f), 0.5f, 0f, null, new Color(5.0f, 0.2f, 0.12f), false);
+            var ledGreen = Mat("Sc06LedGreen", new Color(0.03f, 0.5f, 0.08f), 0.5f, 0f, null, new Color(0.3f, 5.0f, 0.7f), false);
+            var ledBezel = Mat("Sc06LedBezel", new Color(0.10f, 0.10f, 0.11f), 0.6f, 0.3f);
+            var ledGlowTex = art.radialGlow != null ? art.radialGlow.texture : null;
+            var ledGlowGreen = MatAlpha("Sc06LedGlowGreen", ledGlowTex, new Color(0.2f, 1f, 0.35f, 0.7f), true);
+            var ledGlowRed = MatAlpha("Sc06LedGlowRed", ledGlowTex, new Color(1f, 0.15f, 0.1f, 0.6f), true);
             var rockerMat = Mat("Sc06Rocker", new Color(0.12f, 0.13f, 0.14f), 0.5f, 0f);
             var rockerPlate = Mat("Sc06RockerPlate", new Color(0.85f, 0.86f, 0.84f), 0.4f, 0f);
             const float k = 0.36f / 640f;
@@ -343,13 +348,16 @@ namespace ChemicalSafety.Editor
                 float Wx(float px) => ox + panelX - (px - 320f) * k;
                 float Wy(float py) => panelY + (480f - py) * k;
                 var rockerAt = new Vector3(Wx(150f), Wy(top + 206f), panelZ + 0.075f);
-                var plate = Box("RockerPlate" + i, room, rockerAt, new Vector3(0.06f, 0.115f, 0.014f), rockerPlate, false);
+                var plate = Box("RockerPlate" + i, room, rockerAt, new Vector3(0.06f, 0.078f, 0.014f), rockerPlate, false);
                 var rocker = Box("Rocker" + i, room, rockerAt + new Vector3(0f, 0f, 0.016f), new Vector3(0.040f, 0.07f, 0.022f), rockerMat, false);
-                rocker.transform.rotation = Quaternion.Euler(startOn[i] ? -16f : 16f, 0f, 0f);
+                rocker.transform.rotation = Quaternion.Euler(startOn[i] ? 16f : -16f, 0f, 0f); // down = ON, up = OFF (as at home)
                 var ledAt = new Vector3(Wx(470f), Wy(top + 206f), panelZ + 0.078f);
                 var led = Prim("Led" + i, PrimitiveType.Sphere, room, Vector3.zero, Vector3.one * 0.05f, startOn[i] ? ledGreen : ledRed);
                 led.transform.position = ledAt;
                 led.transform.localScale = new Vector3(0.05f, 0.05f, 0.03f);
+                Sc06Disc("LedBezel" + i, room, ledAt - new Vector3(0f, 0f, 0.004f), 0.074f, 0.005f, ledBezel).transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                var ledGlow = QuadObj("LedGlow" + i, room, ledAt + new Vector3(0f, 0f, 0.008f), new Vector3(0f, 180f, 0f), new Vector2(0.17f, 0.17f), startOn[i] ? ledGlowGreen : ledGlowRed);
+                Object.DestroyImmediate(ledGlow.GetComponent<Collider>());
             }
 
             // the hood model carries its own three valve knobs per side (colours set above)
@@ -507,6 +515,18 @@ namespace ChemicalSafety.Editor
             if (table != null)
             {
                 table.name = "SteelTable";
+                // the glb's thin top, frame and shelf look like bent sheet metal: only its drawer cabinet is kept
+                Renderer cabinetR = null;
+                var thin = new List<Renderer>();
+                foreach (var r in table.GetComponentsInChildren<Renderer>(true))
+                {
+                    var mn = r.sharedMaterial != null ? r.sharedMaterial.name : "";
+                    if (mn.Contains("Scratched"))
+                        thin.Add(r);
+                    else
+                        cabinetR = r;
+                }
+
                 var tb = BoundsOfTree(table.transform);
                 if (tb.size.z > tb.size.x)
                     table.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * table.transform.rotation;
@@ -514,19 +534,29 @@ namespace ChemicalSafety.Editor
                 table.transform.localScale *= 2.1f / Mathf.Max(0.01f, tb.size.x);
                 tb = BoundsOfTree(table.transform);
                 // drawer cabinet on the viewer's left (+X) end: flip if it landed on the other side
-                var cabinet = FindNode(table.transform, "Cube.001");
-                if (cabinet != null && BoundsOfTree(cabinet).center.x < tb.center.x)
+                if (cabinetR != null && cabinetR.bounds.center.x < tb.center.x)
                 {
                     table.transform.RotateAround(tb.center, Vector3.up, 180f);
                     tb = BoundsOfTree(table.transform);
                 }
 
                 table.transform.position += new Vector3(ox + tableX - tb.center.x, -tb.min.y, tableZ - tb.center.z);
-                foreach (var r in table.GetComponentsInChildren<Renderer>(true))
-                    r.sharedMaterial = steelMat;
                 tb = BoundsOfTree(table.transform);
                 tableTop = tb.max.y;
-                Debug.Log("[SC06] table bounds " + tb.min.ToString("F2") + " " + tb.max.ToString("F2"));
+                foreach (var r in thin)
+                    r.gameObject.SetActive(false);
+                var cabinetBounds = new Bounds(Vector3.zero, Vector3.zero);
+                if (cabinetR != null)
+                {
+                    var ms = cabinetR.sharedMaterials;
+                    for (var mi = 0; mi < ms.Length; mi++)
+                        ms[mi] = steelMat;
+                    cabinetR.sharedMaterials = ms;
+                    cabinetBounds = cabinetR.bounds;
+                }
+
+                Sc06SolidTable(room, new Vector3(ox + tableX, tableTop, tableZ), cabinetBounds, steelMat);
+                Debug.Log("[SC06] table top " + tableTop.ToString("F3") + " cabinet " + cabinetBounds.min.ToString("F2") + " " + cabinetBounds.max.ToString("F2"));
             }
 
             // carton under the table (as in the pictures)
@@ -589,13 +619,13 @@ namespace ChemicalSafety.Editor
             Box("ClipPaper", room, new Vector3(Bx(0.66f), T + 0.013f, Bz(0.16f)), new Vector3(0.19f, 0.002f, 0.26f), Mat("Sc06Paper", new Color(0.96f, 0.96f, 0.93f), 0.2f, 0f), false)
                 .transform.rotation = Quaternion.Euler(0f, 12f, 0f);
             // red cap bowl (watch glass style)
-            Disc("CapBowl", room, new Vector3(Bx(-0.78f), T + 0.012f, Bz(0.1f)), 0.085f, 0.012f, Mat("Sc06RedBowl", new Color(0.6f, 0.06f, 0.07f), 0.5f, 0f));
+            Disc("CapBowl", room, new Vector3(Bx(-0.95f), T + 0.012f, Bz(0.22f)), 0.085f, 0.012f, Mat("Sc06RedBowl", new Color(0.6f, 0.06f, 0.07f), 0.5f, 0f));
 
             // the Volatile Solvent jug, open, with a loose cap beside it
-            var jugAt = new Vector3(Bx(-0.45f), T, Bz(-0.28f));
+            var jugAt = new Vector3(Bx(-0.45f), T, Bz(0.0f));
             var jug = Sc06BuildJug(room, jugAt, art, out var mouth, out var jugCap);
             jugCap.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
-            jugCap.transform.position = new Vector3(Bx(-0.62f), T + 0.02f, Bz(0.12f));
+            jugCap.transform.position = new Vector3(Bx(-0.70f), T + 0.02f, Bz(0.2f));
 
             // soft contact shadows so nothing floats on the steel
             var shadowMat = ShadowMat(AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/ContactShadow.png"));
@@ -615,8 +645,8 @@ namespace ChemicalSafety.Editor
             }
 
             Shadow("ShadowJug", jugAt.x, jugAt.z, 0.34f, 0.28f, T);
-            Shadow("ShadowCap", Bx(-0.62f), Bz(0.12f), 0.1f, 0.1f, T);
-            Shadow("ShadowBowl", Bx(-0.78f), Bz(0.1f), 0.15f, 0.15f, T);
+            Shadow("ShadowCap", Bx(-0.70f), Bz(0.2f), 0.1f, 0.1f, T);
+            Shadow("ShadowBowl", Bx(-0.95f), Bz(0.22f), 0.15f, 0.15f, T);
             Shadow("ShadowBottleA", Bx(0.95f), Bz(-0.12f), 0.16f, 0.16f, T);
             Shadow("ShadowBottleB", Bx(0.78f), Bz(0.0f), 0.18f, 0.18f, T);
             Shadow("ShadowSample", Bx(-0.92f), Bz(-0.2f), 0.1f, 0.1f, T);
@@ -637,7 +667,7 @@ namespace ChemicalSafety.Editor
             // a faint wisp from the red bowl (the open solvent jug makes its own vapor: Sc06Lab)
             var wispMat = ParticleMat("Sc06Wisp", Sc06Tex("Fx_Wisp"), false);
             var vaporMat = ParticleMat("Sc06Vapor", Sc06Tex("Fx_Vapor"), false);
-            Steam(room, "BowlWisp", new Vector3(Bx(-0.78f), T + 0.03f, Bz(0.1f)), 0.08f, 1.6f, 0.12f, wispMat, 0.22f, 3f);
+            Steam(room, "BowlWisp", new Vector3(Bx(-0.95f), T + 0.03f, Bz(0.22f)), 0.08f, 1.6f, 0.12f, wispMat, 0.22f, 3f);
 
             // ---------------------------------------------------------------- extras: extinguisher, stool, waste bin, floor tape, flammables cabinet
             var ext = SpawnSc05("Extinguisher.glb", room);
@@ -693,6 +723,10 @@ namespace ChemicalSafety.Editor
                 MatAlpha("Sc06JarRing", Sc06Tex("Fx_Ripple"), new Color(0.25f, 1f, 0.45f, 0.8f), true));
             jarRing.SetActive(false);
             var glowTex = art.radialGlow != null ? art.radialGlow.texture : null;
+            MakePoke("CapPoke", room, jugCap.transform.position + new Vector3(0f, 0.02f, 0.05f), new Vector3(0.15f, 0.12f, 0.17f), 0.05f);
+            var capGlow = QuadObj("CapGlow", room, jugCap.transform.position + new Vector3(0f, 0.03f, 0.07f), new Vector3(0f, 180f, 0f), new Vector2(0.3f, 0.3f),
+                MatAlpha("Sc06CapGlow", glowTex, new Color(0.2f, 1f, 0.4f, 0.6f), true));
+            capGlow.SetActive(false);
             var jugGlow = QuadObj("JugGlow", room, jugRoot.position + new Vector3(0f, JugH * 0.5f, JugD * 0.5f + 0.1f), new Vector3(0f, 180f, 0f),
                 new Vector2(0.55f, 0.55f), MatAlpha("Sc06JugGlow", glowTex, new Color(0.2f, 1f, 0.4f, 0.55f), true));
             jugGlow.SetActive(false);
@@ -735,6 +769,8 @@ namespace ChemicalSafety.Editor
             lso.FindProperty("ambience").objectReferenceValue = refs.ambience;
             lso.FindProperty("ledOn").objectReferenceValue = ledGreen;
             lso.FindProperty("ledOff").objectReferenceValue = ledRed;
+            lso.FindProperty("glowOn").objectReferenceValue = ledGlowGreen;
+            lso.FindProperty("glowOff").objectReferenceValue = ledGlowRed;
             lso.FindProperty("tubeOn").objectReferenceValue = tubeMat;
             lso.FindProperty("tubeOff").objectReferenceValue = tubeOffMat;
             lso.FindProperty("plateOn").objectReferenceValue = plateOnMat;
@@ -764,7 +800,10 @@ namespace ChemicalSafety.Editor
 
             // ---------------------------------------------------------------- spawn and stands
             refs.spawn = Marker("Spawn_SC06", room, new Vector3(ox + tableX + 0.1f, 0f, 1.35f), 180f);
-            refs.tableStand = Marker("Stand_SC06_Table", room, new Vector3(ox + tableX - 0.3f, 0f, 0.3f), 180f);
+            // where the cards open: back at the start spot, so the whole room is in view behind them
+            refs.tableStand = Marker("Stand_SC06_Table", room, new Vector3(ox + tableX + 0.1f, 0f, 1.35f), 180f);
+            // in front of the table, the loose cap and the solvent container within arm's reach
+            refs.benchStand = Marker("Stand_SC06_Bench", room, new Vector3(ox + tableX - 0.45f, 0f, 0.42f), 180f);
             refs.panelStand = Marker("Stand_SC06_Panel", room, new Vector3(ox - 2.15f, 0f, -1.3f), 180f);
             refs.hoodStand = Marker("Stand_SC06_Hood", room, new Vector3(ox - 1.2f, 0f, -1.3f), 180f);
             return refs;

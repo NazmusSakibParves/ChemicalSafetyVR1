@@ -94,6 +94,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform sc06HoodStand;
         [Tooltip("Between the table and the hood, about 0.7 m from the control panel and the solvent.")]
         [SerializeField] private Transform sc06PanelStand;
+        [Tooltip("In front of the table: the loose cap and the solvent container are within arm's reach.")]
+        [SerializeField] private Transform sc06BenchStand;
         [SerializeField] private Sc06Pour sc06Pour;
         [SerializeField] private Sc06Gate sc06Gate;
         [SerializeField] private Sc06Lab lab;
@@ -684,11 +686,28 @@ namespace ChemicalSafety.Presentable
             lab.HideArrow();
             StartCoroutine(SubtitledVoice(null, Sc06Content.HoodOnHint, art.voSc06HoodOn));
 
-            // 2. lift the Volatile Solvent container into the left hand
+            // 2. to the table: close the open container with its cap (the vapor stops), then lift it into the left hand
+            Stage("sc06Cap");
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc06BenchStand.position, sc06BenchStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            sc06Jug.SetCapInteractable(true);
+            lab.PointAt(sc06Jug.CapTransform, new Vector3(0f, 0.2f, 0.04f));
+            yield return PresentableFx.Wait(2.4f);
+            StartCoroutine(SubtitledVoice(art.bnSc06CapHint, Sc06Content.CapHint, art.voSc06Cap));
+            var closed = false;
+            void OnClosed() => closed = true;
+            sc06Jug.CapClosed += OnClosed;
+            while (!closed)
+                yield return null;
+            sc06Jug.CapClosed -= OnClosed;
+            lab.HideArrow();
+            lab.SetVaporOn(false);
+            yield return PresentableFx.Wait(0.5f);
+
             Stage("sc06Jug");
             sc06Jug.SetInteractable(true);
             lab.PointAt(sc06Jug.JugTransform, new Vector3(0f, 0.42f, 0.02f));
-            yield return PresentableFx.Wait(2.2f);
             StartCoroutine(SubtitledVoice(art.bnSc06JugHint, Sc06Content.JugHint, art.voSc06Jug));
             while (!sc06Jug.Held)
                 yield return null;
@@ -698,8 +717,9 @@ namespace ChemicalSafety.Presentable
             Stage("sc06Sash");
             StopVoice();
             subtitle.Hide();
-            yield return Glide(sc06HoodStand.position, 0.9f);
+            yield return fader.FadeTo(1f, 0.25f);
             PlaceRig(sc06HoodStand.position, sc06HoodStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
             lab.SetSashInteractable(true);
             lab.PointAt(lab.Sash, new Vector3(0f, 0.85f, 0.08f));
             void OnBlocked()

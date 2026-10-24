@@ -16,6 +16,9 @@ namespace ChemicalSafety.Presentable
         private PokeTarget _poke;
         private Transform _glow;
         private Transform _cap;
+        private PokeTarget _capPoke;
+        private Transform _capGlow;
+        private bool _capBusy;
         private Vector3 _capPos;
         private Quaternion _capRot;
         private Transform _capParent;
@@ -54,6 +57,10 @@ namespace ChemicalSafety.Presentable
                     _glow = t;
                 else if (t.name == "JugCap")
                     _cap = t;
+                else if (t.name == "CapPoke")
+                    _capPoke = t.GetComponent<PokeTarget>();
+                else if (t.name == "CapGlow")
+                    _capGlow = t;
             }
 
             if (_jug != null)
@@ -77,6 +84,15 @@ namespace ChemicalSafety.Presentable
                 _poke.Poked += _ => Pick();
                 _poke.SetInteractable(false);
             }
+
+            if (_capPoke != null)
+            {
+                _capPoke.Poked += _ => CloseFromTable();
+                _capPoke.SetInteractable(false);
+            }
+
+            if (_capGlow != null)
+                _capGlow.gameObject.SetActive(false);
 
             if (_glow != null)
                 _glow.gameObject.SetActive(false);
@@ -191,29 +207,115 @@ namespace ChemicalSafety.Presentable
         }
 
         public bool CapIsOn { get; private set; }
+        public PokeTarget CapPoke => _capPoke;
+        public Transform CapTransform => _cap;
 
-        /// <summary>The loose red cap flies onto the neck (close the container immediately after use).</summary>
+        /// <summary>Raised when the cap has been screwed on at the table (the container is closed).</summary>
+        public event Action CapClosed;
+
+        /// <summary>The loose cap can be touched (arrow and glow on it) until the container is closed.</summary>
+        public void SetCapInteractable(bool on)
+        {
+            if (_capPoke != null)
+                _capPoke.SetInteractable(on && !CapIsOn && !_capBusy);
+            if (_capGlow != null)
+                _capGlow.gameObject.SetActive(on && !CapIsOn && !_capBusy);
+        }
+
+        private void CloseFromTable()
+        {
+            if (CapIsOn || _capBusy || _cap == null)
+                return;
+            SetCapInteractable(false);
+            StartCoroutine(CloseRoutine());
+        }
+
+        private IEnumerator CloseRoutine()
+        {
+            yield return CapOn();
+            CapClosed?.Invoke();
+        }
+
+        private Vector3 NeckWorld() => _jug.TransformPoint(new Vector3(-0.0704f, 0.2641f, 0f));
+
+        /// <summary>The cap lifts over the neck and screws on (about one and a half turns), then the container is closed.</summary>
         public IEnumerator CapOn()
         {
             if (_cap == null || _jug == null)
                 yield break;
+            _capBusy = true;
+            if (_capGlow != null)
+                _capGlow.gameObject.SetActive(false);
+            _cap.SetParent(_capParent, true);
             var from = _cap.position;
             var fromRot = _cap.rotation;
-            const float dur = 0.7f;
-            for (var t = 0f; t < dur; t += Time.deltaTime)
+            // 1) up and over the neck
+            const float flyT = 0.55f;
+            for (var t = 0f; t < flyT; t += Time.deltaTime)
             {
-                var k = Mathf.SmoothStep(0f, 1f, t / dur);
-                var dest = _jug.TransformPoint(new Vector3(-0.0704f, 0.2641f, 0f));
-                _cap.position = Vector3.Lerp(from, dest, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.1f);
+                var k = Mathf.SmoothStep(0f, 1f, t / flyT);
+                var dest = NeckWorld() + Vector3.up * 0.07f;
+                _cap.position = Vector3.Lerp(from, dest, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.08f);
                 _cap.rotation = Quaternion.Slerp(fromRot, _jug.rotation, k);
                 yield return null;
             }
 
+            // 2) screw down while spinning
+            const float screwT = 0.75f;
+            PresentableFx.Play(PresentableFx.Tick, 0.5f);
+            for (var t = 0f; t < screwT; t += Time.deltaTime)
+            {
+                var k = Mathf.SmoothStep(0f, 1f, t / screwT);
+                _cap.position = NeckWorld() + Vector3.up * (0.07f * (1f - k));
+                _cap.rotation = _jug.rotation * Quaternion.Euler(0f, (1f - k) * 540f, 0f);
+                yield return null;
+            }
+
             _cap.SetParent(_jug, true);
-            _cap.position = _jug.TransformPoint(new Vector3(-0.0704f, 0.2641f, 0f));
+            _cap.position = NeckWorld();
             _cap.rotation = _jug.rotation;
             CapIsOn = true;
-            PresentableFx.Play(PresentableFx.Tick, 0.8f);
+            _capBusy = false;
+            PresentableFx.Play(PresentableFx.Tick, 0.9f);
+            PresentableFx.Haptic(false, 0.35f, 0.06f);
+        }
+
+        /// <summary>The cap unscrews and goes to 'restWorld' (lying on its side) so the container can be poured.</summary>
+        public IEnumerator CapOff(Vector3 restWorld)
+        {
+            if (_cap == null || _jug == null || !CapIsOn)
+                yield break;
+            _capBusy = true;
+            _cap.SetParent(_capParent, true);
+            var start = _cap.position;
+            // 1) unscrew upwards
+            const float upT = 0.7f;
+            for (var t = 0f; t < upT; t += Time.deltaTime)
+            {
+                var k = Mathf.SmoothStep(0f, 1f, t / upT);
+                _cap.position = NeckWorld() + Vector3.up * (0.07f * k);
+                _cap.rotation = _jug.rotation * Quaternion.Euler(0f, -k * 540f, 0f);
+                yield return null;
+            }
+
+            // 2) lay it down on the hood surface
+            var from = _cap.position;
+            var fromRot = _cap.rotation;
+            var restRot = Quaternion.Euler(0f, 20f, 90f);
+            const float layT = 0.6f;
+            for (var t = 0f; t < layT; t += Time.deltaTime)
+            {
+                var k = Mathf.SmoothStep(0f, 1f, t / layT);
+                _cap.position = Vector3.Lerp(from, restWorld, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.05f);
+                _cap.rotation = Quaternion.Slerp(fromRot, restRot, k);
+                yield return null;
+            }
+
+            _cap.position = restWorld;
+            _cap.rotation = restRot;
+            CapIsOn = false;
+            _capBusy = false;
+            PresentableFx.Play(PresentableFx.Tick, 0.7f);
         }
 
         /// <summary>Puts the container back on the table (reset).</summary>
@@ -238,6 +340,11 @@ namespace ChemicalSafety.Presentable
             }
 
             CapIsOn = false;
+            _capBusy = false;
+            if (_capPoke != null)
+                _capPoke.SetInteractable(false);
+            if (_capGlow != null)
+                _capGlow.gameObject.SetActive(false);
             if (_poke != null)
                 _poke.SetInteractable(false);
             if (_glow != null)

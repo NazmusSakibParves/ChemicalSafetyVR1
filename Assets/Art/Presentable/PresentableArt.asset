@@ -97,6 +97,7 @@ MonoBehaviour:
   bnSc06SashHint: {fileID: 21300000, guid: 4afaf1f560952a04aa6a34a84cae604d, type: 3}
   bnSc06PourHint: {fileID: 21300000, guid: 3382618132bbd3b4cb8f8453855d3207, type: 3}
   bnSc06HoodWarn: {fileID: 21300000, guid: e69cd8021886d314eb6f6718700d0f7e, type: 3}
+  bnSc06CapHint: {fileID: 21300000, guid: 3a1983349914bfd479d592bcf41246f0, type: 3}
   voSalam: {fileID: 8300000, guid: 099108ce3c1567d4384b6467a3148ac4, type: 3}
   voInstruction: {fileID: 8300000, guid: 2a1e16f89cd0527449b8355ea20d9b60, type: 3}
   voCorrect: {fileID: 8300000, guid: 5c6c1ff752032974291f86f8c9d39bda, type: 3}
@@ -133,6 +134,7 @@ MonoBehaviour:
   voSc06HoodOn: {fileID: 8300000, guid: d0bb102b578b1f34698b5d55bfee7b32, type: 3}
   voSc06HoodWarn: {fileID: 8300000, guid: f2e7f92eff3eb9941bb658eae672655b, type: 3}
   voSc06Jug: {fileID: 8300000, guid: 2c1bcf503b0cf084e90fbb287c3b8cf7, type: 3}
+  voSc06Cap: {fileID: 8300000, guid: 56c60af362e5c8d41a9387139ac74a0c, type: 3}
   voSc06Sash: {fileID: 8300000, guid: cab8d5bd01a620143b4b42983e494165, type: 3}
   voSc06Pour: {fileID: 8300000, guid: 9541e28c43c9fbc46ba9304cda82f625, type: 3}
   voSc06Gate: {fileID: 8300000, guid: 9f745d9660e451f498ef4f264e60776c, type: 3}

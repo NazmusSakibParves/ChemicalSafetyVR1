@@ -111,6 +111,7 @@ namespace ChemicalSafety.Presentable
         public Sprite bnSc06SashHint;
         public Sprite bnSc06PourHint;
         public Sprite bnSc06HoodWarn;
+        public Sprite bnSc06CapHint;
 
         [Header("Voice")]
         public AudioClip voSalam;
@@ -148,6 +149,7 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc06HoodOn;
         public AudioClip voSc06HoodWarn;
         public AudioClip voSc06Jug;
+        public AudioClip voSc06Cap;
         public AudioClip voSc06Sash;
         public AudioClip voSc06Pour;
         public AudioClip voSc06Gate;

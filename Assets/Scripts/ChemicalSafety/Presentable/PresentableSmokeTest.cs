@@ -253,11 +253,32 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(1.8f);
             Say("SC06 " + tag + ": hood on = " + lab.HoodOn + ", air streak particles = " + lab.AirParticles + " (expected > 0), paper strip angle = " +
                 lab.StripAngle.ToString("0") + " (expected about 30)");
+            // lever down = ON (as at home), the lamp glows
+            Say("SC06 " + tag + ": hood lever x angle = " + Mathf.DeltaAngle(0f, lab.Rocker(0).localEulerAngles.x).ToString("0") +
+                " (expected +16 = down), LEV lever = " + Mathf.DeltaAngle(0f, lab.Rocker(1).localEulerAngles.x).ToString("0") +
+                " (expected -16 = up), lamp glow hood = " + lab.LedGlow(0).ToString("0.00") + " / LEV = " + lab.LedGlow(1).ToString("0.00"));
             if (shots)
                 yield return Shot("52_sc06_hood_on");
 
+            // close the open container with its cap at the table: the vapor stops
+            yield return WaitStage("sc06Cap", 20f);
+            yield return new WaitForSeconds(2.8f);
+            Say("SC06 " + tag + ": arrow on the cap = " + lab.ArrowVisible + ", vapor particles before closing = " + lab.VaporParticles + ", cap on = " + jug.CapIsOn + " (expected False)");
+            if (shots)
+                yield return Shot("52b_sc06_cap_step");
+            yield return FingerPoke(jug.CapPoke, "loose cap");
+            var wcap = 0f;
+            while (!jug.CapIsOn && wcap < 6f)
+            {
+                wcap += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(5f);
+            Say("SC06 " + tag + ": container closed = " + jug.CapIsOn + " (expected True), vapor particles 5 s later = " + lab.VaporParticles + " (expected < 6)");
+
             yield return WaitStage("sc06Jug", 20f);
-            yield return new WaitForSeconds(2.4f);
+            yield return new WaitForSeconds(1.0f);
             Say("SC06 " + tag + ": arrow visible = " + lab.ArrowVisible);
             yield return FingerPoke(jug.Poke, "solvent jug");
             var wj = 0f;
@@ -289,8 +310,11 @@ namespace ChemicalSafety.Presentable
             yield return FingerPoke(pour.Poke, "glass jar");
             var wp = 0f;
             var sawStream = false;
+            var capOffSeen = false;
             while (!pour.Done && wp < 30f)
             {
+                if (pour.Pouring && !jug.CapIsOn)
+                    capOffSeen = true;
                 if (pour.StreamVisible && pour.Fill > 0.1f)
                     sawStream = true;
                 if (shots && pour.Flow > 0.9f && pour.Fill > 0.3f && pour.Fill < 0.4f)
@@ -303,7 +327,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("SC06 " + tag + ": pour done = " + pour.Done + ", stream seen = " + sawStream + ", jar fill = " + pour.Fill.ToString("0.00") +
-                ", cap on = " + jug.CapIsOn + " (expected True), vapor particles after the cap = " + lab.VaporParticles);
+                ", cap was off while pouring = " + capOffSeen + " (expected True), cap on after = " + jug.CapIsOn + " (expected True), vapor particles after the cap = " + lab.VaporParticles);
         }
 
         private IEnumerator Sc06Smoke(InstructionPanelView panel, AudioSource voiceSrc, PresentableMcqPanel mcq5)
@@ -337,6 +361,7 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return new WaitForSeconds(1.5f);
+            Say("SC06 gate: head z = " + Camera.main.transform.position.z.ToString("0.00") + " (expected about 1.35: back from the table, whose front edge is at 0.13)");
             Say("SC06 gate card visible = " + gate.Visible + ", sash closed again = " + !lab.SashOpen + ", hood still on = " + lab.HoodOn);
             LayoutCheck("SC06 gate card", gate.Card);
             yield return Shot("56_sc06_gate");

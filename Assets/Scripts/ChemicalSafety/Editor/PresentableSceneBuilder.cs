@@ -218,6 +218,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc06TableStand").objectReferenceValue = sc6.tableStand;
             so.FindProperty("sc06HoodStand").objectReferenceValue = sc6.hoodStand;
             so.FindProperty("sc06PanelStand").objectReferenceValue = sc6.panelStand;
+            so.FindProperty("sc06BenchStand").objectReferenceValue = sc6.benchStand;
             so.FindProperty("sc06Pour").objectReferenceValue = sc6.pour;
             so.FindProperty("sc06Gate").objectReferenceValue = sc6.gate;
             so.FindProperty("lab").objectReferenceValue = sc6.lab;
@@ -473,6 +474,7 @@ namespace ChemicalSafety.Editor
             art.bnSc06SashHint = B("BN_Sc06SashHint");
             art.bnSc06PourHint = B("BN_Sc06PourHint");
             art.bnSc06HoodWarn = B("BN_Sc06HoodWarn");
+            art.bnSc06CapHint = B("BN_Sc06CapHint");
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
             art.holoButtonPrimary = LoadSprite("2D/Sc05/Holo_ButtonPrimary");
@@ -569,6 +571,7 @@ namespace ChemicalSafety.Editor
             art.voSc06HoodOn = Keep("VO_Sc06HoodOn_bn.mp3", art.voSc06HoodOn);
             art.voSc06HoodWarn = Keep("VO_Sc06HoodWarn_bn.mp3", art.voSc06HoodWarn);
             art.voSc06Jug = Keep("VO_Sc06Jug_bn.mp3", art.voSc06Jug);
+            art.voSc06Cap = Keep("VO_Sc06Cap_bn.mp3", art.voSc06Cap);
             art.voSc06Sash = Keep("VO_Sc06Sash_bn.mp3", art.voSc06Sash);
             art.voSc06Pour = Keep("VO_Sc06Pour_bn.mp3", art.voSc06Pour);
             art.voSc06Gate = Keep("VO_Sc06Gate_bn.mp3", art.voSc06Gate);

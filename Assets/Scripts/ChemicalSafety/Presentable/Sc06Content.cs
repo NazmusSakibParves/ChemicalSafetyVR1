@@ -11,14 +11,15 @@ namespace ChemicalSafety.Presentable
             "vapors are spreading into the air. Take the right Engineering Control before pouring.";
 
         public const string HoodHint = "Switch on the Fume Hood at the control panel.";
-        public const string HoodOnHint = "The fume hood is running. Now pick up the Volatile Solvent.";
+        public const string HoodOnHint = "The fume hood is running. Go to the table and close the solvent container.";
+        public const string CapHint = "Touch the cap to close the container.";
         public const string JugHint = "Touch the Volatile Solvent container to pick it up.";
         public const string SashHint = "Touch the glass door of the fume hood to open it.";
         public const string HoodWarn = "Switch on the fume hood first.";
         public const string PourHint = "Touch the glass jar to pour the solvent slowly.";
 
         // "Inspection completed" card (workflow step08)
-        public const string GateTitle = "Inspection completed";
+        public const string GateTitle = "Inspection Completed";
         public const string GateQuestion = "Are you ready for the multiple choice questions?";
         public const string GateBody = "To proceed click next button or to review again press back button.";
 

@@ -16,6 +16,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc06Ambience ambience;
         [SerializeField] private Material ledOn;
         [SerializeField] private Material ledOff;
+        [SerializeField] private Material glowOn;
+        [SerializeField] private Material glowOff;
         [SerializeField] private Material tubeOn;
         [SerializeField] private Material tubeOff;
         [SerializeField] private Material plateOn;
@@ -33,6 +35,9 @@ namespace ChemicalSafety.Presentable
         private static readonly bool[] StartOn = { false, false, true };
         private readonly Transform[] _rocker = new Transform[3];
         private readonly Renderer[] _led = new Renderer[3];
+        private readonly Renderer[] _glow = new Renderer[3];
+        private readonly float[] _glowAlpha = new float[3];
+        private MaterialPropertyBlock _mpb;
         private readonly PokeTarget[] _switchPoke = new PokeTarget[3];
         private readonly bool[] _on = new bool[3];
         private readonly Coroutine[] _rockerRoutine = new Coroutine[3];
@@ -75,6 +80,9 @@ namespace ChemicalSafety.Presentable
         public bool ArrowVisible => _arrow != null && _arrow.gameObject.activeSelf;
         public Transform Rocker(int i) => i >= 0 && i < 3 ? _rocker[i] : null;
         public float StripAngle => _stripAngle;
+
+        /// <summary>Current brightness (alpha) of the glow round LED i; green = switch on, red = off.</summary>
+        public float LedGlow(int i) => i >= 0 && i < 3 ? _glowAlpha[i] : 0f;
         public int AirParticles => (_airInside != null ? _airInside.particleCount : 0) + (_airFront != null ? _airFront.particleCount : 0);
         public int VaporParticles => (_vaporPuff != null ? _vaporPuff.particleCount : 0) + (_vaporWisp != null ? _vaporWisp.particleCount : 0);
 
@@ -103,6 +111,8 @@ namespace ChemicalSafety.Presentable
                 _rocker[i] = Find(root, "Rocker" + i);
                 var led = Find(root, "Led" + i);
                 _led[i] = led != null ? led.GetComponent<Renderer>() : null;
+                var gl = Find(root, "LedGlow" + i);
+                _glow[i] = gl != null ? gl.GetComponent<Renderer>() : null;
                 var poke = Find(root, "SwitchPoke" + i);
                 _switchPoke[i] = poke != null ? poke.GetComponent<PokeTarget>() : null;
                 _on[i] = StartOn[i];
@@ -221,7 +231,7 @@ namespace ChemicalSafety.Presentable
                 for (var i = 0; i < 3; i++)
                 {
                     if (_rocker[i] != null)
-                        _rocker[i].localRotation = Quaternion.Euler(_on[i] ? -16f : 16f, 0f, 0f);
+                        _rocker[i].localRotation = Quaternion.Euler(_on[i] ? 16f : -16f, 0f, 0f);
                 }
             }
         }
@@ -230,9 +240,11 @@ namespace ChemicalSafety.Presentable
         {
             if (_led[i] != null)
                 _led[i].sharedMaterial = _on[i] ? ledOn : ledOff;
+            if (_glow[i] != null)
+                _glow[i].sharedMaterial = _on[i] ? glowOn : glowOff;
             if (_rocker[i] != null)
             {
-                var target = Quaternion.Euler(_on[i] ? -16f : 16f, 0f, 0f);
+                var target = Quaternion.Euler(_on[i] ? 16f : -16f, 0f, 0f);
                 if (animate && isActiveAndEnabled)
                 {
                     if (_rockerRoutine[i] != null)
@@ -564,6 +576,21 @@ namespace ChemicalSafety.Presentable
 
         private void Update()
         {
+            if (_mpb == null)
+                _mpb = new MaterialPropertyBlock();
+            // the panel lamps glow: a slow breathing halo while on, a steady dim one while off
+            for (var gi = 0; gi < 3; gi++)
+            {
+                if (_glow[gi] == null)
+                    continue;
+                var on = _on[gi];
+                var a = on ? 0.62f + 0.2f * Mathf.Sin(Time.time * 2.2f + gi * 1.3f) : 0.34f + 0.06f * Mathf.Sin(Time.time * 1.1f + gi);
+                _glowAlpha[gi] = a;
+                var c = on ? new Color(0.2f, 1f, 0.35f, a) : new Color(1f, 0.15f, 0.1f, a);
+                _mpb.SetColor("_BaseColor", c);
+                _glow[gi].SetPropertyBlock(_mpb);
+            }
+
             var hood = _on[0];
             SetRate(_airInside, hood ? 24f : 0f, hood);
             SetRate(_airFront, hood && (_sashOpen || _sashMoving) ? 46f : 0f, hood);

@@ -302,6 +302,55 @@ namespace ChemicalSafety.Editor
             return root.gameObject;
         }
 
+        // A solid steel table: thick top with rolled edges, an apron, square legs, a lower shelf with a lip. The drawer cabinet of the glb
+        // carries the +X end (no legs there).
+        private static void Sc06SolidTable(Transform parent, Vector3 top, Bounds cabinet, Material steel)
+        {
+            var dark = Mat("Sc06TableDark", new Color(0.30f, 0.32f, 0.34f), 0.5f, 0.2f);
+            var trim = Mat("Sc06SteelPlain", new Color(0.76f, 0.78f, 0.81f), 0.72f, 0.15f); // plain steel for edges, apron and legs (no stretched texture)
+            const float L = 2.1f, D = 0.96f, th = 0.05f;
+            var cx = top.x;
+            var cz = top.z;
+            var T = top.y;
+            Box("TableTop", parent, new Vector3(cx, T - th * 0.5f, cz), new Vector3(L, th, D), steel, false);
+            var er = th * 0.52f;
+            Sc06Rod("TableEdgeFront", parent, new Vector3(cx - L * 0.5f, T - th * 0.5f, cz + D * 0.5f), new Vector3(cx + L * 0.5f, T - th * 0.5f, cz + D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeBack", parent, new Vector3(cx - L * 0.5f, T - th * 0.5f, cz - D * 0.5f), new Vector3(cx + L * 0.5f, T - th * 0.5f, cz - D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeLeft", parent, new Vector3(cx + L * 0.5f, T - th * 0.5f, cz - D * 0.5f), new Vector3(cx + L * 0.5f, T - th * 0.5f, cz + D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeRight", parent, new Vector3(cx - L * 0.5f, T - th * 0.5f, cz - D * 0.5f), new Vector3(cx - L * 0.5f, T - th * 0.5f, cz + D * 0.5f), er, trim);
+            var ay = T - th - 0.05f;
+            Box("ApronFront", parent, new Vector3(cx, ay, cz + D * 0.5f - 0.05f), new Vector3(L - 0.1f, 0.1f, 0.022f), trim, false);
+            Box("ApronBack", parent, new Vector3(cx, ay, cz - D * 0.5f + 0.05f), new Vector3(L - 0.1f, 0.1f, 0.022f), trim, false);
+            Box("ApronLeft", parent, new Vector3(cx + L * 0.5f - 0.05f, ay, cz), new Vector3(0.022f, 0.1f, D - 0.1f), trim, false);
+            Box("ApronRight", parent, new Vector3(cx - L * 0.5f + 0.05f, ay, cz), new Vector3(0.022f, 0.1f, D - 0.1f), trim, false);
+            var legH = T - th;
+            var hasCabinet = cabinet.size.sqrMagnitude > 0.01f;
+            var lastLegX = cx - L * 0.5f + 0.08f;
+            foreach (var lx in new[] { cx - L * 0.5f + 0.08f, cx + L * 0.5f - 0.08f })
+            {
+                if (hasCabinet && lx > cabinet.min.x - 0.03f && lx < cabinet.max.x + 0.03f)
+                    continue;
+                foreach (var lz in new[] { cz - D * 0.5f + 0.07f, cz + D * 0.5f - 0.07f })
+                {
+                    Box("TableLeg", parent, new Vector3(lx, legH * 0.5f + 0.01f, lz), new Vector3(0.055f, legH - 0.02f, 0.055f), trim, false);
+                    Cyl("TableFoot", parent, new Vector3(lx, 0f, lz), 0.02f, 0.032f, dark);
+                }
+            }
+
+            var xMin = lastLegX;
+            var xMax = hasCabinet ? cabinet.min.x : cx + L * 0.5f - 0.08f;
+            if (xMax - xMin > 0.3f)
+            {
+                var sx = (xMin + xMax) * 0.5f;
+                var sl = xMax - xMin;
+                Box("TableShelf", parent, new Vector3(sx, 0.2f, cz), new Vector3(sl, 0.03f, D - 0.12f), steel, false);
+                Box("TableShelfLipF", parent, new Vector3(sx, 0.225f, cz + D * 0.5f - 0.06f), new Vector3(sl, 0.03f, 0.015f), trim, false);
+                Box("TableShelfLipB", parent, new Vector3(sx, 0.225f, cz - D * 0.5f + 0.06f), new Vector3(sl, 0.03f, 0.015f), trim, false);
+                Box("TableRailF", parent, new Vector3(sx, 0.17f, cz + D * 0.5f - 0.07f), new Vector3(sl, 0.04f, 0.03f), dark, false);
+                Box("TableRailB", parent, new Vector3(sx, 0.17f, cz - D * 0.5f + 0.07f), new Vector3(sl, 0.04f, 0.03f), dark, false);
+            }
+        }
+
         // ---------------------------------------------------------------- the designer's bottles (every part with its own material)
 
         private static Material Sc06ChemMat(string role)

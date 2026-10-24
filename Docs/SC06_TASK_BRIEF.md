@@ -124,6 +124,8 @@ Keep tuning knobs in one place (`Sc06Content`/`Sc06McqFx` constants) so the user
 
 **2026-10-24 second feedback round done** (see `PROJECT_HANDOFF.md` section 14.14, "Second feedback round"): jerrycan mirror/pour-side bug (Unity OBJ import negates x), LEV arm on a counter with the ceiling duct, jug label with a big 5L, the Inspection completed card in the designer's teal glass style, white clean ceiling with egg-crate panels and an air diffuser, AO strips, exit door. Smoke test: `[SMOKE] DONE runtime errors/exceptions = 0`.
 
+**2026-10-25 third round done** (Quest feedback): solid table, down = ON switches with glowing lamps, cards open from the back spot with the room in view, "Inspection Completed", the new cap step (close at the table, open at the hood). See `PROJECT_HANDOFF.md` section 14.14 "Third round". Smoke test: `[SMOKE] DONE runtime errors/exceptions = 0`.
+
 ## Checklist
 - [x] 1 Resources: models + 2D done via Tools/prepare_sc06_models.py (Assets/Art/Presentable/3D/Sc06, 2D/Sc06; not yet imported in Unity). Still to do: env/fx textures (generate_sc06_env.py, generate_sc06_fx.py), Bangla images, glb part inspection in Unity
 - [x] 2 Room matches step02/step04 (static; first pass, tune after playing it)
