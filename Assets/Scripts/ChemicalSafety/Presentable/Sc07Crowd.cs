@@ -33,7 +33,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private AudioClip hiss;
         [Tooltip("Where the extinguisher hangs in the hero's carry pose: metres in front of / above his feet, relative to his root.")]
         [SerializeField] private Vector3 carryOffset = new Vector3(0.02f, 1.02f, 0.40f);
-        [SerializeField] private Vector3 carryEuler = new Vector3(8f, 0f, 0f);
+        [SerializeField] private Vector3 carryEuler = new Vector3(8f, 90f, 0f); // the CO2 horn is at the model's -X: yaw 90 turns it to the front
 
         // reaction of bystander 1..4, seconds after they have stopped, speed on the way in, entry lane (z offset at the door)
         private static readonly Sc07Reaction[] Reactions = { Sc07Reaction.Head, Sc07Reaction.Shocked, Sc07Reaction.Confused, Sc07Reaction.Frozen };
@@ -48,6 +48,8 @@ namespace ChemicalSafety.Presentable
         private Quaternion _co2HomeRot;
         private Transform _co2HomeParent;
         private bool _co2Captured;
+        private Vector3 _hornLocal;
+        private bool _hasHorn;
 
         public Sc07Human Hero => people.Length > 0 ? people[0] : null;
         public int Count => people.Length;
@@ -77,6 +79,50 @@ namespace ChemicalSafety.Presentable
             _co2Home = co2Extinguisher.position;
             _co2HomeRot = co2Extinguisher.rotation;
             _co2HomeParent = co2Extinguisher.parent;
+            // the horn tip = the mesh point farthest from the cylinder axis (found once, kept in the extinguisher's own space)
+            var pts = new List<Vector3>();
+            foreach (var mf in co2Extinguisher.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (mf.sharedMesh == null)
+                    continue;
+                foreach (var v in mf.sharedMesh.vertices)
+                    pts.Add(co2Extinguisher.InverseTransformPoint(mf.transform.TransformPoint(v)));
+            }
+
+            if (pts.Count > 0)
+            {
+                float minY = float.MaxValue, maxY = float.MinValue;
+                foreach (var v in pts)
+                {
+                    minY = Mathf.Min(minY, v.y);
+                    maxY = Mathf.Max(maxY, v.y);
+                }
+
+                var axis = Vector2.zero;
+                var n = 0;
+                foreach (var v in pts)
+                {
+                    if (v.y < minY + (maxY - minY) * 0.4f)
+                    {
+                        axis += new Vector2(v.x, v.z);
+                        n++;
+                    }
+                }
+
+                axis /= Mathf.Max(1, n);
+                var far = 0f;
+                foreach (var v in pts)
+                {
+                    var d = new Vector2(v.x - axis.x, v.z - axis.y).magnitude;
+                    if (d > far)
+                    {
+                        far = d;
+                        _hornLocal = v;
+                    }
+                }
+
+                _hasHorn = true;
+            }
         }
 
         /// <summary>Everything back to the calm start: no fire, no alarm, nobody in the hall, the door shut, the CO2 extinguisher on its wall.</summary>
@@ -337,7 +383,7 @@ namespace ChemicalSafety.Presentable
             var s = Mathf.Max(0.01f, hero.transform.lossyScale.y);
             var extra = aim ? new Vector3(0f, 0.08f, 0.05f) : Vector3.zero;
             co2Extinguisher.localPosition = (carryOffset + extra) / s;
-            co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x - (aim ? 10f : 0f), 0f, 0f);
+            co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x - (aim ? 10f : 0f), carryEuler.y, 0f);
         }
 
         public IEnumerator HeroExtinguish()
@@ -377,7 +423,7 @@ namespace ChemicalSafety.Presentable
             if (co2Extinguisher != null)
             {
                 co2Extinguisher.localPosition = (carryOffset + new Vector3(0f, 0.08f, 0.05f)) / Mathf.Max(0.01f, hero.transform.lossyScale.y);
-                co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x - 10f, 0f, 0f);
+                co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x - 10f, carryEuler.y, 0f);
             }
 
             yield return PresentableFx.Wait(0.6f);
@@ -437,10 +483,9 @@ namespace ChemicalSafety.Presentable
         {
             if (_nozzle == null)
                 return;
-            var origin = co2Extinguisher != null ? co2Extinguisher.position : hero.transform.position + Vector3.up;
-            var fwd = hero.transform.forward;
-            // the horn tip: in front of the extinguisher and a little above its middle
-            var tip = origin + fwd * 0.34f + Vector3.up * 0.14f;
+            var tip = _hasHorn && co2Extinguisher != null
+                ? co2Extinguisher.TransformPoint(_hornLocal)
+                : (co2Extinguisher != null ? co2Extinguisher.position : hero.transform.position + Vector3.up) + hero.transform.forward * 0.34f + Vector3.up * 0.14f;
             var aim = new Vector3(firePos.x, firePos.y + 0.55f, firePos.z) - tip;
             _nozzle.position = tip;
             _nozzle.rotation = Quaternion.LookRotation(aim.normalized, Vector3.up);
