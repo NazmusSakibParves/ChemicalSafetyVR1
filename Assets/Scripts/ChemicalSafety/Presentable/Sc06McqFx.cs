@@ -349,7 +349,8 @@ namespace ChemicalSafety.Presentable
             var glowSprite = _art.radialGlow;
             for (var i = 0; i < 9; i++)
             {
-                var size = i == 0 ? 120f : Mathf.Lerp(86f, 22f, i / 8f);
+                // 0.72 of the first version: the comet is smaller in Scenarios 4, 5 and 6
+                var size = i == 0 ? 86f : Mathf.Lerp(62f, 16f, i / 8f);
                 var rt = PresentableUi.Centered("Comet" + i, _fx, Vector2.zero, Vector2.one * size);
                 _comet.Add(PresentableUi.Img(rt, glowSprite, Color.white));
             }

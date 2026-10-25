@@ -206,6 +206,8 @@ namespace ChemicalSafety.Editor
             so.FindProperty("spawnSc04").objectReferenceValue = sc4.spawn;
             so.FindProperty("gloves").objectReferenceValue = sc4.inspect;
             so.FindProperty("gloveBench").objectReferenceValue = sc4.bench;
+            so.FindProperty("sc04Gate").objectReferenceValue = sc4.gate;
+            so.FindProperty("sc04GateStand").objectReferenceValue = sc4.gateStand;
             so.FindProperty("mcqSc04").objectReferenceValue = mcq4;
             so.FindProperty("envSc05").objectReferenceValue = env5.gameObject;
             so.FindProperty("spawnSc05").objectReferenceValue = sc5.spawn;
@@ -465,6 +467,10 @@ namespace ChemicalSafety.Editor
             art.bnSc05InstructionPanel = B("BN_Sc05InstructionPanel");
             art.sdsSc05 = LoadSprite("2D/Sc05/SDS_SC05");
             art.sdsSc06 = LoadSprite("2D/Sc06/SDS_SC06");
+            art.gloveCardGlove = LoadSprite("2D/Sc04/GloveCard_Glove");
+            art.gloveCardMaterial = LoadSprite("2D/Sc04/GloveCard_Material");
+            art.gloveCardRating = LoadSprite("2D/Sc04/GloveCard_Rating");
+            art.gloveCardTime = LoadSprite("2D/Sc04/GloveCard_Time");
             art.gatePanel = LoadSprite("2D/Sc06/Gate_Panel");
             art.gateButton = LoadSprite("2D/Sc06/Gate_Button");
             art.gateButtonPrimary = LoadSprite("2D/Sc06/Gate_ButtonPrimary");

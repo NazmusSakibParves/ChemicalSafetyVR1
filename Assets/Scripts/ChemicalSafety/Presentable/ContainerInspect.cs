@@ -106,6 +106,23 @@ namespace ChemicalSafety.Presentable
             position = anchor - rotation * Vector3.Scale(lossy, item.localBottom);
         }
 
+        /// <summary>
+        /// World half extents (x, z) of the held container once placed with <paramref name="scaleMul"/>, so the
+        /// placement code can shrink it to fit a shelf cell. Returns zero when nothing is held.
+        /// </summary>
+        public Vector2 HeldFootprintHalf(float scaleMul)
+        {
+            var item = _held;
+            if (item == null || item.mesh == null)
+                return Vector2.zero;
+            var parentScale = item.entry.model.parent != null ? item.entry.model.parent.lossyScale : Vector3.one;
+            var ext = Vector3.Scale(item.mesh.bounds.extents, Vector3.Scale(item.homeScale * scaleMul, parentScale));
+            var m = Matrix4x4.Rotate(item.homeRot);
+            var x = Mathf.Abs(m.m00) * ext.x + Mathf.Abs(m.m01) * ext.y + Mathf.Abs(m.m02) * ext.z;
+            var z = Mathf.Abs(m.m20) * ext.x + Mathf.Abs(m.m21) * ext.y + Mathf.Abs(m.m22) * ext.z;
+            return new Vector2(x, z);
+        }
+
         /// <summary>Raised whenever a container is picked up, put back or placed.</summary>
         public event Action HeldChanged;
 

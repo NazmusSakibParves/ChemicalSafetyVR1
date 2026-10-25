@@ -13,6 +13,10 @@ namespace ChemicalSafety.Presentable
     public sealed class Sc06Gate : MonoBehaviour
     {
         [SerializeField] private PresentableArt art;
+        [Tooltip("Texts of another scenario's card (Scenario 4 reuses this card); empty = the Scenario 6 texts.")]
+        [SerializeField] private string titleText;
+        [SerializeField] private string questionText;
+        [SerializeField] private string bodyText;
 
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
@@ -106,19 +110,19 @@ namespace ChemicalSafety.Presentable
                 art.gatePanel != null ? art.gatePanel : art.holoPanel, Color.white);
             plate.type = Image.Type.Sliced;
             plate.raycastTarget = true;
-            var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.09f, 0.70f), new Vector2(0.95f, 0.90f),
-                Sc06Content.GateTitle, 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
+            var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.09f, 0.70f), new Vector2(0.90f, 0.90f),
+                string.IsNullOrEmpty(titleText) ? Sc06Content.GateTitle : titleText, 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
             title.enableAutoSizing = true;
             title.fontSizeMin = 30f;
             title.fontSizeMax = 64f;
             title.textWrappingMode = TextWrappingModes.NoWrap;
             var q = PresentableUi.Text("Question", canvas.transform, new Vector2(0.09f, 0.47f), new Vector2(0.91f, 0.69f),
-                Sc06Content.GateQuestion, 38f, HoloWhite, TextAlignmentOptions.TopLeft, false, art.englishFont);
+                string.IsNullOrEmpty(questionText) ? Sc06Content.GateQuestion : questionText, 38f, HoloWhite, TextAlignmentOptions.TopLeft, false, art.englishFont);
             q.enableAutoSizing = true;
             q.fontSizeMin = 24f;
             q.fontSizeMax = 38f;
             var hint = PresentableUi.Text("Hint", canvas.transform, new Vector2(0.09f, 0.25f), new Vector2(0.91f, 0.46f),
-                Sc06Content.GateBody, 38f, HoloWhite, TextAlignmentOptions.TopLeft, false, art.englishFont);
+                string.IsNullOrEmpty(bodyText) ? Sc06Content.GateBody : bodyText, 38f, HoloWhite, TextAlignmentOptions.TopLeft, false, art.englishFont);
             hint.enableAutoSizing = true;
             hint.fontSizeMin = 24f;
             hint.fontSizeMax = 38f;

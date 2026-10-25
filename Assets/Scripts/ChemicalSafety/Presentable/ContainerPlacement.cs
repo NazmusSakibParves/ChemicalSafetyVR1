@@ -287,7 +287,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator PlaceHeld(int slot, int held, CompartmentDoor door)
         {
             _slotUsed[slot] = true;
-            var mul = held < placedScale.Length ? placedScale[held] : 0.8f;
+            var mul = FitScale(slot, held);
             inspect.HeldPlacementPose(slotAnchors[slot].position, mul, out var endPos, out var endRot, out var endScale);
             var t = inspect.DetachHeld();
             if (t == null)
@@ -324,6 +324,26 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(0.4f);
                 AllPlaced?.Invoke();
             }
+        }
+
+        // Scale used for the final pose (ghost and placed container share it). The configured scale is shrunk until the
+        // container's footprint fits its shelf cell: 0.19 m deep (the shelf is about 0.5 m deep and the slot sits behind
+        // the glass) and, when the compartment holds several slots, narrower than the slot pitch, so a second or third
+        // container never overlaps its neighbour or sticks out through the front.
+        private float FitScale(int slot, int held)
+        {
+            var mul = held < placedScale.Length ? placedScale[held] : 0.8f;
+            var half = inspect.HeldFootprintHalf(mul);
+            if (half.x <= 0f || half.y <= 0f)
+                return mul;
+            var slots = 0;
+            for (var i = 0; i < slotCompartment.Length; i++)
+                if (slotCompartment[i] == slotCompartment[slot])
+                    slots++;
+            var maxX = slots > 1 ? 0.12f : 0.26f;
+            const float maxZ = 0.19f;
+            var k = Mathf.Min(1f, maxX / half.x, maxZ / half.y);
+            return mul * k;
         }
 
         private int FreeSlot(int compartment)
@@ -363,7 +383,7 @@ namespace ChemicalSafety.Presentable
         private void ShowGhost(int slot, int held)
         {
             var mesh = inspect.HeldMesh;
-            var mul = held < placedScale.Length ? placedScale[held] : 0.8f;
+            var mul = FitScale(slot, held);
             inspect.HeldPlacementPose(slotAnchors[slot].position, mul, out var pos, out var rot, out var scale);
             var parent = inspect.HeldTransform != null ? inspect.HeldTransform.parent : null;
             _ghost.transform.SetPositionAndRotation(pos, rot);

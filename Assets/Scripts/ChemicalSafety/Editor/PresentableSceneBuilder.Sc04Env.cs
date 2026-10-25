@@ -218,6 +218,55 @@ namespace ChemicalSafety.Editor
             }
         }
 
+        // A solid stainless lab table (same build as the Scenario 6 table, without a drawer cabinet): thick top with rolled edges,
+        // an apron, square legs and, for the fixed benches, a lower shelf. 'follower' tables (the glove bench moves with the
+        // head) get legs that reach far below the floor so they never hang in the air when raised. 'alongZ' = the long side runs
+        // along Z. 'bounds' is the footprint (and top height = bounds.max.y) of the thin glb table it replaces.
+        private static void Sc04SolidTable(Transform parent, Bounds bounds, bool alongZ, Material steel, bool follower)
+        {
+            var trim = Mat("Sc06SteelPlain", new Color(0.76f, 0.78f, 0.81f), 0.72f, 0.15f);
+            var dark = Mat("Sc06TableDark", new Color(0.30f, 0.32f, 0.34f), 0.5f, 0.2f);
+            const float th = 0.05f;
+            var L = alongZ ? bounds.size.z : bounds.size.x;
+            var D = alongZ ? bounds.size.x : bounds.size.z;
+            var cx = bounds.center.x;
+            var cz = bounds.center.z;
+            var T = bounds.max.y;
+            Vector3 M(float u, float y, float v) => new Vector3(cx + (alongZ ? v : u), y, cz + (alongZ ? u : v));
+            Vector3 S(float a, float h, float b) => alongZ ? new Vector3(b, h, a) : new Vector3(a, h, b);
+
+            Box("TableTop", parent, M(0f, T - th * 0.5f, 0f), S(L, th, D), steel, false);
+            var er = th * 0.52f;
+            var ey = T - th * 0.5f;
+            Sc06Rod("TableEdgeA", parent, M(-L * 0.5f, ey, D * 0.5f), M(L * 0.5f, ey, D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeB", parent, M(-L * 0.5f, ey, -D * 0.5f), M(L * 0.5f, ey, -D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeC", parent, M(L * 0.5f, ey, -D * 0.5f), M(L * 0.5f, ey, D * 0.5f), er, trim);
+            Sc06Rod("TableEdgeD", parent, M(-L * 0.5f, ey, -D * 0.5f), M(-L * 0.5f, ey, D * 0.5f), er, trim);
+            var ay = T - th - 0.05f;
+            Box("ApronA", parent, M(0f, ay, D * 0.5f - 0.05f), S(L - 0.1f, 0.1f, 0.022f), trim, false);
+            Box("ApronB", parent, M(0f, ay, -D * 0.5f + 0.05f), S(L - 0.1f, 0.1f, 0.022f), trim, false);
+            Box("ApronC", parent, M(L * 0.5f - 0.05f, ay, 0f), S(0.022f, 0.1f, D - 0.1f), trim, false);
+            Box("ApronD", parent, M(-L * 0.5f + 0.05f, ay, 0f), S(0.022f, 0.1f, D - 0.1f), trim, false);
+            var legBottom = follower ? -1.2f : 0f;
+            var legH = T - th - legBottom;
+            foreach (var lu in new[] { -L * 0.5f + 0.08f, L * 0.5f - 0.08f })
+            {
+                foreach (var lv in new[] { -D * 0.5f + 0.07f, D * 0.5f - 0.07f })
+                {
+                    Box("TableLeg", parent, M(lu, legBottom + legH * 0.5f, lv), S(0.055f, legH, 0.055f), trim, false);
+                    if (!follower)
+                        Cyl("TableFoot", parent, M(lu, 0f, lv), 0.02f, 0.032f, dark);
+                }
+            }
+
+            if (follower)
+                return;
+            var sl = L - 0.16f;
+            Box("TableShelf", parent, M(0f, 0.2f, 0f), S(sl, 0.03f, D - 0.12f), steel, false);
+            Box("TableShelfLipA", parent, M(0f, 0.225f, D * 0.5f - 0.06f), S(sl, 0.03f, 0.015f), trim, false);
+            Box("TableShelfLipB", parent, M(0f, 0.225f, -D * 0.5f + 0.06f), S(sl, 0.03f, 0.015f), trim, false);
+        }
+
         // Stainless bench along the back wall with a balance, centrifuge, glassware and a waste bin beside it.
         private static void LabBackBench(Transform room, float ox)
         {
@@ -227,9 +276,10 @@ namespace ChemicalSafety.Editor
             SitOn(bench, 0f);
             var b0 = WorldBounds(bench);
             bench.transform.position += new Vector3(0f, 0f, -3.1f - b0.min.z);
-            DressSteel(bench);
             var b = WorldBounds(bench);
             var top = b.max.y;
+            Object.DestroyImmediate(bench);
+            Sc04SolidTable(room, b, false, Steel(), false);
             FloorAo(room, "AoBackBench", b, 0.4f, 0.4f);
 
             var white = Mat("Sc04Balance", new Color(0.92f, 0.93f, 0.94f), 0.4f, 0.05f);

@@ -75,6 +75,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private GameObject envSc04;
         [SerializeField] private Transform spawnSc04;
         [SerializeField] private GloveInspect gloves;
+        [Tooltip("Scenario 4 'Glove inspection complete' card (the Scenario 6 card style) and the back spot it opens from.")]
+        [SerializeField] private Sc06Gate sc04Gate;
+        [SerializeField] private Transform sc04GateStand;
         [SerializeField] private Sc04BenchHeight gloveBench;
         [SerializeField] private PresentableMcqPanel mcqSc04;
 
@@ -452,11 +455,52 @@ namespace ChemicalSafety.Presentable
             if (gloves != null)
             {
                 gloves.Begin();
-                while (!gloves.NextChosen)
+                var again4 = true;
+                while (again4)
                 {
-                    if (gloveBench != null && _cam != null)
-                        gloveBench.Follow(_cam.position.y);
-                    yield return null;
+                    while (!gloves.AllSeen)
+                    {
+                        if (gloveBench != null && _cam != null)
+                            gloveBench.Follow(_cam.position.y);
+                        yield return null;
+                    }
+
+                    // all three seen: back to the spot behind the table (whole lab in view) for the card and the question
+                    Stage("sc04Gate");
+                    yield return PresentableFx.Wait(0.4f);
+                    if (sc04GateStand != null)
+                    {
+                        yield return fader.FadeTo(1f, 0.3f);
+                        PlaceRig(sc04GateStand.position, sc04GateStand.forward);
+                        yield return fader.FadeTo(0f, 0.4f);
+                    }
+
+                    var choice4 = 0; // 1 = BACK, 2 = NEXT
+                    void OnBack4() => choice4 = 1;
+                    void OnNext4() => choice4 = 2;
+                    sc04Gate.Back += OnBack4;
+                    sc04Gate.Next += OnNext4;
+                    sc04Gate.Show();
+                    while (choice4 == 0)
+                        yield return null;
+                    sc04Gate.Back -= OnBack4;
+                    sc04Gate.Next -= OnNext4;
+                    sc04Gate.Hide();
+                    if (choice4 == 1)
+                    {
+                        // review again: back to the glove table, the three gloves are new again
+                        yield return fader.FadeTo(1f, 0.3f);
+                        if (gloveBench != null && _cam != null)
+                            gloveBench.SnapTo(_cam.position.y);
+                        yield return Glide(gloves.StandInFront(), 0.01f);
+                        gloves.Begin();
+                        yield return fader.FadeTo(0f, 0.4f);
+                        Stage("sc04Explore");
+                    }
+                    else
+                    {
+                        again4 = false;
+                    }
                 }
             }
 
@@ -1450,7 +1494,7 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc06Content.CorrectTitle,
                 nextLabel = Sc06Content.FinishLabel,
                 options = options,
-                fancy = true // the wow look is Scenario 6 only; set it on another scenario's question to try it there
+                fancy = true // the wow look is shared by Scenarios 4, 5 and 6
             };
         }
 
@@ -1474,7 +1518,8 @@ namespace ChemicalSafety.Presentable
                 correctIndex = Sc05Content.CorrectIndex,
                 correctTitle = Sc05Content.CorrectTitle,
                 nextLabel = Sc05Content.FinishLabel,
-                options = options
+                options = options,
+                fancy = true
             };
         }
 
@@ -1498,7 +1543,8 @@ namespace ChemicalSafety.Presentable
                 correctIndex = Sc04Content.CorrectIndex,
                 correctTitle = Sc04Content.CorrectTitle,
                 nextLabel = Sc04Content.FinishLabel,
-                options = options
+                options = options,
+                fancy = true
             };
         }
 

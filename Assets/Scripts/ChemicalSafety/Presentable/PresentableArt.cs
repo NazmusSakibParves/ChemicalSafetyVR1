@@ -102,6 +102,11 @@ namespace ChemicalSafety.Presentable
         public Sprite bnSc04InstructionPanel;
         public Sprite bnSc05InstructionPanel;
         public Sprite sdsSc06;
+        [Tooltip("Scenario 4 GLOVE PROPERTIES card icons: glove outline, material, rating, permeation time.")]
+        public Sprite gloveCardGlove;
+        public Sprite gloveCardMaterial;
+        public Sprite gloveCardRating;
+        public Sprite gloveCardTime;
         public Sprite gatePanel;
         public Sprite gateButton;
         public Sprite gateButtonPrimary;

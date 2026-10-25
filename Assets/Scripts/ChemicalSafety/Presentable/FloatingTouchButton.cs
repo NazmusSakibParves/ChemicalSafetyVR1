@@ -82,6 +82,13 @@ namespace ChemicalSafety.Presentable
             gameObject.SetActive(true);
         }
 
+        /// <summary>Moves the hover point of the arrow (used when what it marks can move, like the Scenario 4 gloves).</summary>
+        public void SetBase(Vector3 worldPos)
+        {
+            _basePos = worldPos;
+            transform.position = worldPos;
+        }
+
         /// <summary>Fade the button in and make it touchable.</summary>
         public void Arm(bool pulseHint = false)
         {

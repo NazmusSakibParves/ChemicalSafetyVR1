@@ -17,6 +17,8 @@ namespace ChemicalSafety.Editor
             public Transform spawn;
             public GloveInspect inspect;
             public Sc04BenchHeight bench;
+            public Sc06Gate gate;
+            public Transform gateStand;
         }
 
         private const float Sc04Ox = 120f;
@@ -89,17 +91,21 @@ namespace ChemicalSafety.Editor
                 gloveTop = gloveBox.max.y;
             }
 
-            DressSteel(side);
-            DressSteel(gloveTable);
+            // The glb tables are thin sheets: keep only their measured footprint and build solid steel tables instead.
+            var steelMat = Steel();
+            if (side != null)
+                Object.DestroyImmediate(side);
+            if (gloveTable != null)
+                Object.DestroyImmediate(gloveTable);
+            Sc04SolidTable(room, sideBox, true, steelMat, false);
 
             var benchGo = new GameObject("BenchRoot");
             var bench = benchGo.transform;
             bench.SetParent(room, false);
-            if (gloveTable != null)
-                gloveTable.transform.SetParent(bench, true);
+            Sc04SolidTable(bench, gloveBox, false, steelMat, true);
 
             var clothAt = new Vector3(gloveBox.center.x - 0.05f, gloveTop + 0.008f, gloveBox.center.z);
-            Box("Cloth", bench, clothAt, new Vector3(1.22f, 0.008f, 0.58f), cloth, false);
+            Box("Cloth", bench, clothAt, new Vector3(1.55f, 0.008f, 0.82f), cloth, false);
 
             // Near (+Z, toward the player) to far (-Z): water beaker, two corked flasks, then the tray.
             var benchX = sideBox.center.x;
@@ -221,7 +227,8 @@ namespace ChemicalSafety.Editor
             DressLabDetails(room, ox, sideBox, gloveBox);
             Transform[] gloveGroups = null;
             if (glovesModel != null)
-                gloveGroups = SplitGloves(glovesModel, bench, gloveTop + 0.008f);
+                // rest height = cloth top (gloveTop + 0.012) + 8 mm: a glove that sank into the cloth looked like it came out from under it
+                gloveGroups = SplitGloves(glovesModel, bench, gloveTop + 0.020f);
 
             var height = benchGo.AddComponent<Sc04BenchHeight>();
             var hso = new SerializedObject(height);
@@ -229,16 +236,46 @@ namespace ChemicalSafety.Editor
             hso.ApplyModifiedPropertiesWithoutUndo();
             refs.bench = height;
 
-            var arrow = new GameObject("GloveArrow");
-            arrow.transform.SetParent(room, false);
-            arrow.SetActive(false);
+            // The same floating arrow as over the SC01 drums, one per glove. GloveInspect moves each one above its glove.
+            var arrows = new FloatingTouchButton[3];
+            for (var i = 0; i < 3; i++)
+            {
+                var abGo = new GameObject("GloveTouchArrow_" + (i + 1));
+                abGo.transform.SetParent(room, false);
+                var at = gloveGroups != null && i < gloveGroups.Length && gloveGroups[i] != null
+                    ? gloveGroups[i].position + Vector3.up * 0.3f
+                    : new Vector3(gloveBox.center.x, gloveTop + 0.3f, gloveBox.center.z);
+                abGo.transform.position = at;
+                arrows[i] = abGo.AddComponent<FloatingTouchButton>();
+                SetRef(arrows[i], "art", art);
+                var tso = new SerializedObject(arrows[i]);
+                tso.FindProperty("touchOffset").vector3Value = new Vector3(0f, -0.08f, 0.1f); // the fingertip meets it toward the player (+Z)
+                tso.FindProperty("pressRadius").floatValue = 0.12f;
+                tso.FindProperty("hoverRadius").floatValue = 0.22f;
+                tso.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // card + MCQ open from a spot well behind the glove table, so the whole lab is in view
+            refs.gateStand = Marker("Stand_SC04_Gate", room, new Vector3(gloveBox.center.x, 0f, 3.15f), 180f);
+            var gateGo = new GameObject("Sc04GateHost");
+            gateGo.transform.SetParent(room, false);
+            refs.gate = gateGo.AddComponent<Sc06Gate>();
+            SetRef(refs.gate, "art", art);
+            var gso = new SerializedObject(refs.gate);
+            gso.FindProperty("titleText").stringValue = Sc04Content.GateTitle;
+            gso.FindProperty("questionText").stringValue = Sc04Content.GateQuestion;
+            gso.FindProperty("bodyText").stringValue = Sc04Content.GateBody;
+            gso.ApplyModifiedPropertiesWithoutUndo();
 
             var inspectGo = new GameObject("GloveInspect");
             inspectGo.transform.SetParent(room, false);
             var inspect = inspectGo.AddComponent<GloveInspect>();
             var so = new SerializedObject(inspect);
             so.FindProperty("art").objectReferenceValue = art;
-            so.FindProperty("arrow").objectReferenceValue = arrow.transform;
+            var arrowProp = so.FindProperty("arrows");
+            arrowProp.arraySize = 3;
+            for (var i = 0; i < 3; i++)
+                arrowProp.GetArrayElementAtIndex(i).objectReferenceValue = arrows[i];
             var arr = so.FindProperty("gloves");
             arr.arraySize = 3;
             for (var i = 0; i < 3; i++)
@@ -862,6 +899,7 @@ namespace ChemicalSafety.Editor
 
             SeatGlovesInOrder(groups);
             GroundGloves(groups, restY, room);
+            KeepGlovesOnCloth(groups, restY, room);
             return groups;
         }
 
@@ -902,11 +940,70 @@ namespace ChemicalSafety.Editor
                 shadow.name = "GloveShadow" + g;
                 Object.DestroyImmediate(shadow.GetComponent<Collider>());
                 shadow.transform.SetParent(bench, true);
-                shadow.transform.position = new Vector3(b.center.x + 0.012f, restY + 0.0015f, b.center.z - 0.012f);
+                shadow.transform.position = new Vector3(b.center.x + 0.012f, restY - 0.0055f, b.center.z - 0.012f);
                 shadow.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 shadow.transform.localScale = new Vector3(b.size.x * 1.12f, b.size.z * 1.12f, 1f);
                 shadow.GetComponent<MeshRenderer>().sharedMaterial = shadowMat;
                 shadow.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+        }
+
+        // Every glove (both pieces of a pair) must lie fully inside the cloth rectangle: a piece that overhangs the cloth edge
+        // looks like it comes out from under the towel. Shifts a whole glove (and its contact shadow) into the cloth, with a margin.
+        private static void KeepGlovesOnCloth(Transform[] groups, float restY, Transform bench)
+        {
+            var cloth = bench.Find("Cloth");
+            if (cloth == null)
+                return;
+            var cb = cloth.GetComponent<Renderer>().bounds;
+            const float margin = 0.03f;
+            for (var g = 0; g < groups.Length; g++)
+            {
+                if (groups[g] == null)
+                    continue;
+                var follow = groups[g].GetComponent<GloveParts>();
+                if (follow == null || follow.Parts == null || follow.Parts.Length == 0)
+                    continue;
+                Bounds b = default;
+                var any = false;
+                foreach (var p in follow.Parts)
+                {
+                    var r = p != null ? p.GetComponent<Renderer>() : null;
+                    if (r == null)
+                        continue;
+                    if (!any)
+                    {
+                        b = r.bounds;
+                        any = true;
+                    }
+                    else
+                    {
+                        b.Encapsulate(r.bounds);
+                    }
+                }
+
+                if (!any)
+                    continue;
+                var dx = 0f;
+                var dz = 0f;
+                if (b.min.x < cb.min.x + margin)
+                    dx = cb.min.x + margin - b.min.x;
+                else if (b.max.x > cb.max.x - margin)
+                    dx = cb.max.x - margin - b.max.x;
+                if (b.min.z < cb.min.z + margin)
+                    dz = cb.min.z + margin - b.min.z;
+                else if (b.max.z > cb.max.z - margin)
+                    dz = cb.max.z - margin - b.max.z;
+                if (Mathf.Abs(dx) < 1e-4f && Mathf.Abs(dz) < 1e-4f)
+                    continue;
+                var delta = new Vector3(dx, 0f, dz);
+                foreach (var p in follow.Parts)
+                    if (p != null)
+                        p.position += delta;
+                groups[g].position += delta;
+                var shadow = bench.Find("GloveShadow" + g);
+                if (shadow != null)
+                    shadow.position += delta;
             }
         }
 
@@ -935,7 +1032,27 @@ namespace ChemicalSafety.Editor
                 Mat("Sc04GloveBlack", new Color(0.05f, 0.05f, 0.06f), 0.55f, 0.06f)
             };
             var mat = mats[Mathf.Clamp(group, 0, 2)];
-            var grow = group == 2 ? 1.38f : 1f;
+            var grow = group == 2 ? 1.25f : 1f;
+            // grow the pair as one piece (positions scale about the group centre too), so the two gloves of the pair keep their
+            // spacing: scaling each only about its own centre pushed one glove through the other.
+            var all = default(Bounds);
+            var anyPart = false;
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var r0 = parts[i] != null ? parts[i].GetComponent<Renderer>() : null;
+                if (r0 == null)
+                    continue;
+                if (!anyPart)
+                {
+                    all = r0.bounds;
+                    anyPart = true;
+                }
+                else
+                {
+                    all.Encapsulate(r0.bounds);
+                }
+            }
+
             for (var i = 0; i < parts.Length; i++)
             {
                 if (parts[i] == null)
@@ -948,7 +1065,8 @@ namespace ChemicalSafety.Editor
                     continue;
                 var center = rend.bounds.center;
                 parts[i].localScale *= grow;
-                parts[i].position += center - rend.bounds.center;
+                var wanted = all.center + (center - all.center) * grow;
+                parts[i].position += wanted - rend.bounds.center;
             }
         }
 
@@ -967,7 +1085,7 @@ namespace ChemicalSafety.Editor
             if (n == 0)
                 return;
             origin /= n;
-            var slots = new[] { 0.28f, 0f, -0.3f };
+            var slots = new[] { 0.34f, 0f, -0.38f }; // the black glove is the widest, keep it clear of the blue one
             for (var g = 0; g < groups.Length && g < slots.Length; g++)
             {
                 if (groups[g] == null)

@@ -17,7 +17,7 @@ namespace ChemicalSafety.Presentable
         public const string FinishLabel = "NEXT";
         public const int CorrectIndex = 2;
         public const string ModuleComplete = "Scenario 4 completed successfully.";
-        public const string GateTitle = "GLOVE INSPECTION COMPLETE.";
+        public const string GateTitle = "GLOVE INSPECTION COMPLETE";
         public const string GateQuestion = "Are you ready for the Multiple Choice Questions (MCQ)?";
         public const string GateBody = "Press NEXT to proceed or BACK to review again.";
 

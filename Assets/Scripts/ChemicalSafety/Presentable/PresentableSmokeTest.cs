@@ -388,7 +388,7 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return new WaitForSeconds(2.4f);
-            Say("SC06 MCQ wow look = " + mcq6.Fancy + " (expected True), SC05 MCQ wow look = " + mcq5.Fancy + " (expected False), chevrons = " +
+            Say("SC06 MCQ wow look = " + mcq6.Fancy + " (expected True), SC05 MCQ wow look = " + mcq5.Fancy + " (expected True), chevrons = " +
                 (mcq6.Fx != null ? mcq6.Fx.ChevronCount : 0) + ", comet pieces = " + (mcq6.Fx != null ? mcq6.Fx.CometCount : 0) +
                 ", rows landed = " + (mcq6.Fx != null && mcq6.Fx.RowsLanded));
             LayoutCheck("SC06 MCQ", mcq6.transform);
@@ -1121,6 +1121,24 @@ namespace ChemicalSafety.Presentable
                 Say("SC04 glove " + g + " mesh in reach = " + covers);
                 if (!covers)
                     Debug.LogError("[SMOKE] SC04 glove " + g + " collider does not cover the visible mesh");
+                var arrow4 = gloves.ArrowOf(g);
+                var armed4 = arrow4 != null && arrow4.IsArmed;
+                Say("SC04 glove " + g + " floating arrow armed = " + armed4);
+                if (!armed4)
+                    Debug.LogError("[SMOKE] SC04 glove " + g + " has no armed floating arrow");
+                var gb = gloves.GloveBounds(g);
+                var cl = GameObject.Find("Cloth");
+                if (cl != null)
+                {
+                    var cb = cl.GetComponent<Renderer>().bounds;
+                    var inside = gb.min.x >= cb.min.x && gb.max.x <= cb.max.x && gb.min.z >= cb.min.z && gb.max.z <= cb.max.z &&
+                                 gb.min.y >= cb.max.y - 0.02f;
+                    Say("SC04 glove " + g + " fully on the cloth = " + inside + " glove " + gb.min.ToString("F2") + gb.max.ToString("F2") +
+                        " cloth " + cb.min.ToString("F2") + cb.max.ToString("F2"));
+                    if (!inside)
+                        Debug.LogError("[SMOKE] SC04 glove " + g + " is not fully on the cloth");
+                }
+
                 var poke = gloves.PokeOf(g);
                 if (poke != null)
                     Poke(poke);
@@ -1133,6 +1151,11 @@ namespace ChemicalSafety.Presentable
 
                 yield return new WaitForSeconds(0.5f);
                 Say("SC04 holding glove " + g + " = " + gloves.Holding);
+                var cardT = FindDeep(gloves.transform, "GloveCard");
+                if (cardT != null)
+                    LayoutCheck("SC04 glove card " + g, cardT);
+                if (g == 2)
+                    yield return Shot("31b_sc04_glove_card");
                 Click(gloves.transform, "CloseButton");
                 var waitBack = 0f;
                 while (gloves.Holding && waitBack < 3f)
@@ -1142,17 +1165,21 @@ namespace ChemicalSafety.Presentable
                 }
             }
 
+            yield return WaitStage("sc04Gate", 20f);
+            var gate4 = Get<Sc06Gate>(_director, "sc04Gate");
             var gateWait = 0f;
-            var next4 = FindDeep(gloves.transform, "NextButton");
-            while ((next4 == null || !next4.gameObject.activeInHierarchy) && gateWait < 8f)
+            while (!gate4.Visible && gateWait < 8f)
             {
                 gateWait += Time.unscaledDeltaTime;
-                next4 = FindDeep(gloves.transform, "NextButton");
                 yield return null;
             }
 
-            Say("SC04 gloves seen = " + gloves.Seen + " / 3");
-            Click(gloves.transform, "NextButton");
+            yield return new WaitForSeconds(0.6f);
+            Say("SC04 gloves seen = " + gloves.Seen + " / 3, gate visible = " + gate4.Visible);
+            Say("SC04 gate: head z = " + Camera.main.transform.position.z.ToString("0.00") + " (expected about 3.15: back from the glove table)");
+            LayoutCheck("SC04 gate", gate4.Card);
+            yield return Shot("32_sc04_gate");
+            gate4.PressNext();
             yield return WaitStage("sc04Question", 20f);
             var mcq4 = Get<PresentableMcqPanel>(_director, "mcqSc04");
             var q4 = 0f;
@@ -1162,6 +1189,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
+            yield return new WaitForSeconds(2.4f);
             LayoutCheck("SC04 MCQ", mcq4.transform);
             Click(mcq4.transform, "Row1");
             yield return new WaitForSeconds(0.8f);
@@ -1282,7 +1310,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            yield return new WaitForSeconds(1.2f);
+            yield return new WaitForSeconds(2.4f);
             LayoutCheck("SC05 MCQ", mcq5.transform);
             yield return Shot("44_sc05_question");
             // rows are named Row1..Row4 (A..D): A (N95) is wrong, B (half-face) is right
