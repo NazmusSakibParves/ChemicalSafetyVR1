@@ -1072,6 +1072,8 @@ namespace ChemicalSafety.Editor
             RenderSettings.reflectionIntensity = oldRef;
             if (sun != null)
                 sun.intensity = oldSun;
+            // the preview poses workers, parents the extinguisher to the hero and runs the fire: reload the saved scene so a later Play starts clean
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Debug.Log("[SC07] preview written to Temp/Smoke/sc07_*.png");
         }
     }

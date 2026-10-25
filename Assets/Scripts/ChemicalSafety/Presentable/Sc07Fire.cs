@@ -190,12 +190,12 @@ namespace ChemicalSafety.Presentable
                 shape.radius = 0.02f;
                 var sol = _spray.sizeOverLifetime;
                 sol.enabled = true;
-                sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.5f), new Keyframe(1f, 5.2f)));
+                sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.8f), new Keyframe(1f, 5.2f)));
                 var col = _spray.colorOverLifetime;
                 col.enabled = true;
                 var g = new Gradient();
                 g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(0.85f, 0.9f, 1f), 1f) },
-                    new[] { new GradientAlphaKey(0.2f, 0f), new GradientAlphaKey(0.85f, 0.15f), new GradientAlphaKey(0f, 1f) });
+                    new[] { new GradientAlphaKey(0.8f, 0f), new GradientAlphaKey(0.9f, 0.12f), new GradientAlphaKey(0f, 1f) });
                 col.color = g;
                 var noise = _spray.noise;
                 noise.enabled = true;
