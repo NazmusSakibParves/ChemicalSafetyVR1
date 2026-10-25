@@ -224,27 +224,22 @@ namespace ChemicalSafety.Editor
         {
             public string name;
             public Color skin;
-            public Color overall;
-            public Color helmet;
-            public Color boots;
             public float height;   // metres
             public float girth;    // width scale
+            public int facial;
+            public Color overall = new Color(0.42f, 0.46f, 0.50f);   // everybody wears the same grey-blue coveralls
+            public Color helmet = new Color(1f, 0.74f, 0.04f);       // and a yellow helmet
+            public Color boots = new Color(0.12f, 0.10f, 0.08f);
         }
 
+        // 0 = clean shaven, 1 = moustache, 2 = moustache and short beard
         private static readonly Sc07Person[] Sc07People =
         {
-            new Sc07Person { name = "Hero", skin = new Color(0.96f, 0.82f, 0.70f), overall = new Color(0.42f, 0.46f, 0.50f), helmet = new Color(1f, 0.74f, 0.04f), boots = new Color(0.10f, 0.09f, 0.08f), height = 1.80f, girth = 1.00f },
-            new Sc07Person { name = "P1", skin = new Color(0.52f, 0.35f, 0.25f), overall = new Color(0.10f, 0.18f, 0.36f), helmet = new Color(0.94f, 0.94f, 0.92f), boots = new Color(0.12f, 0.10f, 0.08f), height = 1.74f, girth = 0.96f },
-            new Sc07Person { name = "P2", skin = new Color(0.80f, 0.60f, 0.44f), overall = new Color(0.33f, 0.38f, 0.22f), helmet = new Color(1f, 0.45f, 0.05f), boots = new Color(0.20f, 0.14f, 0.09f), height = 1.68f, girth = 1.08f },
-            new Sc07Person { name = "P3", skin = new Color(1f, 0.89f, 0.80f), overall = new Color(0.92f, 0.40f, 0.07f), helmet = new Color(0.10f, 0.38f, 0.86f), boots = new Color(0.08f, 0.08f, 0.08f), height = 1.86f, girth = 0.94f },
-            new Sc07Person { name = "P4", skin = new Color(0.64f, 0.43f, 0.31f), overall = new Color(0.20f, 0.20f, 0.22f), helmet = new Color(0.82f, 0.10f, 0.08f), boots = new Color(0.14f, 0.12f, 0.10f), height = 1.64f, girth = 1.04f },
-            new Sc07Person { name = "P5", skin = new Color(0.40f, 0.27f, 0.20f), overall = new Color(0.45f, 0.31f, 0.20f), helmet = new Color(0.78f, 0.92f, 0.12f), boots = new Color(0.09f, 0.08f, 0.07f), height = 1.78f, girth = 1.00f },
-            new Sc07Person { name = "P6", skin = new Color(0.88f, 0.70f, 0.56f), overall = new Color(0.22f, 0.40f, 0.45f), helmet = new Color(1f, 0.74f, 0.04f), boots = new Color(0.10f, 0.09f, 0.08f), height = 1.71f, girth = 1.00f },
-            new Sc07Person { name = "P7", skin = new Color(0.46f, 0.31f, 0.22f), overall = new Color(0.55f, 0.12f, 0.10f), helmet = new Color(0.94f, 0.94f, 0.92f), boots = new Color(0.16f, 0.12f, 0.09f), height = 1.82f, girth = 1.00f },
-            new Sc07Person { name = "P8", skin = new Color(0.94f, 0.80f, 0.68f), overall = new Color(0.62f, 0.64f, 0.66f), helmet = new Color(0.10f, 0.38f, 0.86f), boots = new Color(0.08f, 0.08f, 0.08f), height = 1.67f, girth = 1.00f },
-            new Sc07Person { name = "P9", skin = new Color(0.58f, 0.40f, 0.29f), overall = new Color(0.14f, 0.30f, 0.20f), helmet = new Color(1f, 0.45f, 0.05f), boots = new Color(0.12f, 0.10f, 0.08f), height = 1.77f, girth = 1.00f },
-            new Sc07Person { name = "P10", skin = new Color(0.78f, 0.58f, 0.42f), overall = new Color(0.78f, 0.74f, 0.64f), helmet = new Color(0.82f, 0.10f, 0.08f), boots = new Color(0.18f, 0.13f, 0.09f), height = 1.85f, girth = 1.00f },
-            new Sc07Person { name = "P11", skin = new Color(0.36f, 0.24f, 0.18f), overall = new Color(0.30f, 0.22f, 0.40f), helmet = new Color(0.78f, 0.92f, 0.12f), boots = new Color(0.09f, 0.08f, 0.07f), height = 1.70f, girth = 1.00f },
+            new Sc07Person { name = "Hero", skin = new Color(0.96f, 0.82f, 0.70f), height = 1.80f, girth = 1.00f, facial = 0 },
+            new Sc07Person { name = "P1", skin = new Color(0.52f, 0.35f, 0.25f), height = 1.74f, girth = 0.96f, facial = 0 },
+            new Sc07Person { name = "P2", skin = new Color(0.80f, 0.60f, 0.44f), height = 1.68f, girth = 1.08f, facial = 0 },
+            new Sc07Person { name = "P3", skin = new Color(1f, 0.89f, 0.80f), height = 1.86f, girth = 0.94f, facial = 0 },
+            new Sc07Person { name = "P4", skin = new Color(0.64f, 0.43f, 0.31f), height = 1.64f, girth = 1.04f, facial = 0 },
         };
 
         private static Texture2D Sc07WorkerTex(string n) => Sc07Tex(n);
@@ -260,14 +255,15 @@ namespace ChemicalSafety.Editor
                 {
                     case "Head": smr.sharedMaterial = M("Head", p.skin, Sc07WorkerTex("Worker_Head"), false, 0.3f); break;
                     case "Arms": smr.sharedMaterial = M("Arms", p.skin, Sc07WorkerTex("Worker_Arms"), false, 0.3f); break;
-                    case "Uniform": smr.sharedMaterial = M("Uniform", p.overall, null); break;
-                    case "Collar": smr.sharedMaterial = M("Collar", p.overall * 0.9f, null); break;
-                    case "Boots": smr.sharedMaterial = M("Boots", p.boots, null, false, 0.35f); break;
+                    case "Uniform": smr.sharedMaterial = M("Uniform", new Color(0.52f, 0.58f, 0.64f), Sc07WorkerTex("Worker_Uniform"), false, 0.2f); break;
+                    case "Collar": smr.sharedMaterial = M("Collar", new Color(0.50f, 0.53f, 0.57f), null, false, 0.2f); break;
+                    case "Boots": smr.sharedMaterial = M("Boots", new Color(0.8f, 0.8f, 0.8f), Sc07WorkerTex("Worker_Boot"), false, 0.35f); break;
                     case "Helmet": smr.sharedMaterial = M("Helmet", p.helmet, null, false, 0.6f); break;
                     case "Eyes": smr.sharedMaterial = M("Eyes", Color.white, Sc07WorkerTex("Worker_Eye"), false, 0.8f); break;
                     case "Lashes": smr.sharedMaterial = M("Lashes", Color.white, Sc07WorkerTex("Worker_Lash"), true); break;
                 }
             }
+
         }
     }
 }

@@ -1,21 +1,27 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// Scenario 7 story director for the people. PlayEvent(): the fire catches, the alarm rings, five workers and the hero
-    /// walk in from the far door, see the fire, startle; the five run for the exit, the hero stays beside the player.
-    /// HeroExtinguish(): after the right answer the hero fetches the CO2 extinguisher from the pillar, walks up to the fire,
-    /// sprays it out and the alarm stops.
+    /// Scenario 7 story director for the people. PlayEvent(): the fire catches, the alarm rings, the hero and four workers come in
+    /// through the far door one after the other on their own lanes and at their own pace, stop at irregular places and each reacts
+    /// differently (shocked, hands on the head, confused, frozen); then they flee through the FIRE EXIT door, one by one, the rest
+    /// in a bunch, while the hero stays beside the player. HeroExtinguish(): after the right answer the hero fetches the CO2
+    /// extinguisher, walks up to the fire, sprays it out and the alarm stops.
     /// </summary>
     public sealed class Sc07Crowd : MonoBehaviour
     {
-        [Tooltip("[0] is the hero.")]
+        [Tooltip("[0] is the hero, [1..4] the bystanders: head, shocked, confused, frozen.")]
         [SerializeField] private Sc07Human[] people = new Sc07Human[0];
         [SerializeField] private Transform doorStart;
+        [Tooltip("Where bystanders 1..4 stop and stare (irregular places).")]
         [SerializeField] private Transform[] noticeSpots = new Transform[0];
         [SerializeField] private Transform exitPoint;
+        [Tooltip("About three metres before the fire exit: the first runner opens the door here.")]
+        [SerializeField] private Transform exitApproach;
+        [SerializeField] private Sc07Door fleeDoor;
         [SerializeField] private Transform heroSpot;
         [SerializeField] private Transform pillarGrab;
         [SerializeField] private Transform spraySpot;
@@ -29,6 +35,13 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Vector3 carryOffset = new Vector3(0.02f, 1.02f, 0.40f);
         [SerializeField] private Vector3 carryEuler = new Vector3(8f, 0f, 0f);
 
+        // reaction of bystander 1..4, seconds after they have stopped, speed on the way in, entry lane (z offset at the door)
+        private static readonly Sc07Reaction[] Reactions = { Sc07Reaction.Head, Sc07Reaction.Shocked, Sc07Reaction.Confused, Sc07Reaction.Frozen };
+        private static readonly float[] ReactDelay = { 0.4f, 0.0f, 0.9f, 0.5f };
+        private static readonly float[] EntrySpeed = { 4.3f, 4.9f, 4.6f, 5.0f, 4.5f }; // they run in, hurrying to the fire
+        private static readonly float[] Lane = { 0.2f, -1.1f, 0.9f, -0.4f, 0.65f };
+        private static readonly float[] FaceJitter = { 10f, -18f, 0f, 22f };
+
         private AudioSource _hiss;
         private Transform _nozzle;
         private Vector3 _co2Home;
@@ -39,6 +52,7 @@ namespace ChemicalSafety.Presentable
         public Sc07Human Hero => people.Length > 0 ? people[0] : null;
         public int Count => people.Length;
         public bool HeroHoldsExtinguisher { get; private set; }
+        public bool FleeDoorOpen => fleeDoor != null && fleeDoor.IsOpen;
 
         /// <summary>Raised when the last flame is out (the director plays the "fire is out" voice-over then).</summary>
         public event System.Action FireOut;
@@ -65,9 +79,10 @@ namespace ChemicalSafety.Presentable
             _co2HomeParent = co2Extinguisher.parent;
         }
 
-        /// <summary>Everything back to the calm start: no fire, no alarm, nobody in the hall, the CO2 extinguisher on its wall.</summary>
+        /// <summary>Everything back to the calm start: no fire, no alarm, nobody in the hall, the door shut, the CO2 extinguisher on its wall.</summary>
         public void ResetScene()
         {
+            StopAllCoroutines();
             CaptureCo2();
             if (fire != null)
                 fire.SetIntensity(0f);
@@ -79,14 +94,18 @@ namespace ChemicalSafety.Presentable
                 ambience.SetFire(0f);
             }
 
+            if (fleeDoor != null)
+                fleeDoor.CloseInstant();
             foreach (var p in people)
             {
                 if (p == null)
                     continue;
+                p.StopAllCoroutines();
                 p.SetStartled(false);
                 p.SetCarry(false);
                 p.SetAim(false);
                 p.SetReach(false);
+                p.SetReaction(Sc07Reaction.None);
                 p.gameObject.SetActive(false);
             }
 
@@ -102,6 +121,21 @@ namespace ChemicalSafety.Presentable
 
         // ------------------------------------------------------------------ the event
 
+        private static Vector3 Flat(Vector3 v)
+        {
+            v.y = 0f;
+            return v;
+        }
+
+        // a gently curved path: start -> a waypoint pushed sideways -> target
+        private static List<Vector3> Curve(Vector3 from, Vector3 to, float side)
+        {
+            var mid = Vector3.Lerp(from, to, 0.5f);
+            var dir = Flat(to - from);
+            var perp = dir.sqrMagnitude > 0.001f ? Vector3.Cross(Vector3.up, dir.normalized) : Vector3.right;
+            return new List<Vector3> { mid + perp * side, to };
+        }
+
         public IEnumerator PlayEvent()
         {
             CaptureCo2();
@@ -116,23 +150,25 @@ namespace ChemicalSafety.Presentable
                 ambience.SetFire(1f);
             }
 
-            yield return PresentableFx.Wait(2.2f);
+            yield return PresentableFx.Wait(0.7f);
 
             var door = doorStart != null ? doorStart.position : transform.position;
-            var runners = new Coroutine[people.Length];
+            var firePos = fireAt != null ? fireAt.position : transform.position;
             var arrived = new bool[people.Length];
+            // they come in one after the other, hurrying, each on a lane of his own
             for (var i = 0; i < people.Length; i++)
             {
                 var p = people[i];
                 if (p == null)
                     continue;
                 p.gameObject.SetActive(true);
-                // they come in one after the other through the far door
-                p.transform.position = door + new Vector3(-0.5f * i, 0f, (i % 2 == 0 ? 0.25f : -0.25f));
-                p.transform.rotation = Quaternion.LookRotation(Vector3.right * 0f + (noticeSpots.Length > 0 ? noticeSpots[0].position - door : Vector3.forward), Vector3.up);
-                var index = i;
-                runners[i] = StartCoroutine(Arrive(index, arrived));
-                yield return PresentableFx.Wait(0.45f);
+                p.SetReaction(Sc07Reaction.None);
+                var start = door + new Vector3(Lane[Mathf.Min(i, Lane.Length - 1)] * 0.45f, 0f, 0f); // across the doorway
+                p.transform.position = start;
+                var spot = i == 0 ? (heroSpot != null ? heroSpot.position : start) : SpotOf(i - 1, start);
+                p.transform.rotation = Quaternion.LookRotation(Flat(spot - start).sqrMagnitude > 0.01f ? Flat(spot - start).normalized : Vector3.right, Vector3.up);
+                StartCoroutine(Arrive(i, start, spot, firePos, arrived));
+                yield return PresentableFx.Wait(Random.Range(0.25f, 0.5f));
             }
 
             var wait = 0f;
@@ -142,69 +178,124 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            // they see the fire
-            var firePos = fireAt != null ? fireAt.position : transform.position;
-            for (var i = 0; i < people.Length; i++)
-            {
-                if (people[i] == null)
-                    continue;
-                StartCoroutine(people[i].FaceRoutine(firePos, 300f));
-                people[i].SetStartled(true);
-            }
-
-            yield return PresentableFx.Wait(1.5f);
-
-            // everyone but the hero runs for the door: first one man alone, then two more one after another, then the rest in groups
-            var gone = new bool[people.Length];
-            for (var i = 1; i < people.Length; i++)
-            {
-                var index = i;
-                float delay;
-                if (i <= 3)
-                    delay = (i - 1) * 1.5f;
-                else if (i <= 7)
-                    delay = 4.4f + 0.14f * (i - 4);
-                else
-                    delay = 6.6f + 0.14f * (i - 8);
-                StartCoroutine(RunAway(index, gone, delay));
-            }
-
+            // they stand and react, each in his own way, for a few seconds
             yield return PresentableFx.Wait(2.6f);
-            // the hero stays, steadies himself and steps up next to the player
+
+            // flee: the man holding his head runs first and alone, then the shocked man, then the other two together
+            var gone = new bool[people.Length];
+            gone[0] = true;
+            if (people.Length > 1)
+                StartCoroutine(RunAway(1, gone, 0f));
+            if (people.Length > 2)
+                StartCoroutine(RunAway(2, gone, 1.7f));
+            if (people.Length > 3)
+                StartCoroutine(RunAway(3, gone, 3.6f));
+            if (people.Length > 4)
+                StartCoroutine(RunAway(4, gone, 3.95f));
+
+            // the hero stays calm, steadies himself and steps up next to the player while the others are running
             var hero = Hero;
             if (hero != null)
             {
-                hero.SetStartled(false);
-                var spot = heroSpot != null ? heroSpot.position : hero.transform.position;
-                yield return hero.WalkTo(spot, 1.5f, 0.06f);
+                yield return PresentableFx.Wait(2.4f);
                 yield return hero.FaceRoutine(firePos, 240f);
             }
 
-            gone[0] = true;
             wait = 0f;
-            while (!AllTrue(gone) && wait < 20f)
+            while (!AllTrue(gone) && wait < 25f)
             {
                 wait += Time.deltaTime;
                 yield return null;
             }
         }
 
-        private IEnumerator Arrive(int index, bool[] arrived)
+        private Vector3 SpotOf(int bystander, Vector3 fallback)
+        {
+            if (noticeSpots != null && bystander >= 0 && bystander < noticeSpots.Length && noticeSpots[bystander] != null)
+                return noticeSpots[bystander].position;
+            return fallback;
+        }
+
+        private IEnumerator Arrive(int index, Vector3 start, Vector3 spot, Vector3 firePos, bool[] arrived)
         {
             var p = people[index];
-            var spot = noticeSpots.Length > 0 ? noticeSpots[Mathf.Min(index, noticeSpots.Length - 1)].position : p.transform.position;
-            yield return p.WalkTo(spot, 1.25f + 0.05f * (index % 3), 0.08f);
+            var speed = EntrySpeed[Mathf.Min(index, EntrySpeed.Length - 1)];
+            var side = (index % 2 == 0 ? 1f : -1f) * Random.Range(0.5f, 1.2f);
+            // the hero keeps to the lane and comes round the fire (never through it); the others take a gently curved line
+            var path = index == 0
+                ? new List<Vector3> { start + new Vector3(-0.7f, 0f, 6.8f), spot + new Vector3(-2.6f, 0f, -1.8f), spot }
+                : Curve(start, spot, side);
+            yield return p.WalkPath(path, speed, 0.08f, 300f);
             arrived[index] = true;
+            if (index == 0)
+            {
+                yield return p.FaceRoutine(firePos, 240f);
+                yield break;
+            }
+
+            // stops and stares at the fire (one looks at his neighbour first), then the reaction starts on its own timing
+            var b = index - 1;
+            var look = firePos;
+            if (b == 2 && noticeSpots != null && noticeSpots.Length > 1 && noticeSpots[1] != null)
+                look = noticeSpots[1].position;
+            yield return p.FaceRoutine(look, 220f);
+            var want = Quaternion.LookRotation(Flat(look - p.transform.position).normalized, Vector3.up) * Quaternion.Euler(0f, FaceJitter[Mathf.Min(b, FaceJitter.Length - 1)], 0f);
+            p.transform.rotation = want;
+            yield return PresentableFx.Wait(ReactDelay[Mathf.Min(b, ReactDelay.Length - 1)]);
+            if (b == 2)
+            {
+                // Confused: now looks at the fire, now at the others; takes two small steps toward and away
+                p.SetReaction(Sc07Reaction.Confused);
+                StartCoroutine(ConfusedSteps(p, firePos));
+            }
+            else
+            {
+                p.SetReaction(Reactions[Mathf.Min(b, Reactions.Length - 1)]);
+            }
+        }
+
+        private IEnumerator ConfusedSteps(Sc07Human p, Vector3 firePos)
+        {
+            var home = p.transform.position;
+            var toward = Flat(firePos - home).normalized;
+            var offsets = new[] { 0.55f, -0.35f, 0.3f, -0.5f };
+            for (var k = 0; k < offsets.Length && p != null && p.Reaction == Sc07Reaction.Confused; k++)
+            {
+                yield return PresentableFx.Wait(0.5f);
+                yield return p.WalkTo(home + toward * offsets[k], 0.7f, 0.05f, 120f, true);
+            }
         }
 
         private IEnumerator RunAway(int index, bool[] gone, float delay)
         {
             var p = people[index];
+            if (p == null)
+            {
+                gone[index] = true;
+                yield break;
+            }
+
             yield return PresentableFx.Wait(delay);
+            // the confused one hesitates a moment more
+            if (p.Reaction == Sc07Reaction.Confused)
+                yield return PresentableFx.Wait(0.5f);
+            p.SetReaction(Sc07Reaction.None);
             p.SetStartled(false);
             p.SetHeadYaw(0f);
             var exit = exitPoint != null ? exitPoint.position : p.transform.position + Vector3.left * 8f;
-            yield return p.WalkTo(exit, 3.5f + 0.12f * (index % 5), 0.4f, 720f);
+            var approach = exitApproach != null ? exitApproach.position : exit;
+            // first a quick turn away from the fire, then the run: a curved line to the door, the first one opens it
+            var speed = 3.2f + 0.35f * ((index * 7) % 3);
+            var from = p.transform.position;
+            var side = (index % 2 == 0 ? 1f : -1f) * Random.Range(0.6f, 1.3f);
+            yield return p.WalkPath(Curve(from, approach, side), speed, 0.5f, 520f, false);
+            if (fleeDoor != null && !fleeDoor.IsOpen)
+            {
+                fleeDoor.Open();
+                yield return PresentableFx.Wait(0.1f);
+            }
+
+            yield return p.WalkTo(exit, speed, 0.35f, 520f, false);
             p.gameObject.SetActive(false);
             gone[index] = true;
         }
@@ -212,7 +303,7 @@ namespace ChemicalSafety.Presentable
         private static bool AllTrue(bool[] a)
         {
             for (var i = 0; i < a.Length; i++)
-                if (!a[i] && true)
+                if (!a[i])
                     return false;
             return true;
         }
@@ -227,6 +318,7 @@ namespace ChemicalSafety.Presentable
                 return;
             hero.gameObject.SetActive(true);
             hero.SetStartled(false);
+            hero.SetReaction(Sc07Reaction.None);
             hero.transform.position = at;
             var to = lookAt - at;
             to.y = 0f;

@@ -448,7 +448,7 @@ namespace ChemicalSafety.Presentable
             while (_director.CurrentStage == "sc07Event" && te < 90f)
             {
                 te += Time.unscaledDeltaTime;
-                if (te > 3.0f * (shots + 1) && shots < 11)
+                if (te > 2.5f * (shots + 1) && shots < 14)
                 {
                     shots++;
                     var active = 0;
@@ -465,6 +465,7 @@ namespace ChemicalSafety.Presentable
             Say("SC07 event over after " + te.ToString("0.0") + " s, fire = " + fire.Intensity.ToString("0.00") + " (expected 1), hero active = " + crowd.Hero.gameObject.activeSelf +
                 " (expected True), hero speed = " + crowd.Hero.Speed.ToString("0.00"));
 
+            Say("SC07 fire exit door open after the flight = " + crowd.FleeDoorOpen + " (expected True), people = " + crowd.Count);
             yield return WaitStage("sc07Sds", 20f);
             yield return new WaitForSeconds(1.2f);
             Say("SC07 SDS shown = " + clip7.IsVisible + " (expected True)");
@@ -538,6 +539,12 @@ namespace ChemicalSafety.Presentable
 
             yield return new WaitForSeconds(2.4f);
             Say("SC07 MCQ wow look = " + mcq7.Fancy + " (expected True)");
+            var camM = Camera.main.transform;
+            var toPanel = mcq7.transform.position - camM.position;
+            var flatFwd = Vector3.ProjectOnPlane(camM.forward, Vector3.up).normalized;
+            var lateral = Vector3.Dot(toPanel, Vector3.Cross(Vector3.up, flatFwd));
+            Say("SC07 MCQ placement: distance ahead = " + Vector3.Dot(toPanel, flatFwd).ToString("0.00") + " m (expected 0.70), sideways = " + lateral.ToString("0.00") +
+                " m (expected 0), height above the eyes = " + toPanel.y.ToString("0.00") + " m");
             LayoutCheck("SC07 MCQ", mcq7.transform);
             yield return Shot("70_sc07_question");
             Click(mcq7.transform, "Row4"); // foam: wrong

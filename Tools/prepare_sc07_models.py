@@ -172,12 +172,12 @@ def worker():
     keep_y("face", 2.78)   # head and neck only: the skin under the uniform is never seen
     # sizes: hi = hero/near, lo = crowd
     plan = {
-        "Head": ("face", 5200, 2000, True),
-        "Arms": ("arms", 2600, 900, True),
-        "Uniform": ("pants", 5200, 2200, False),
-        "Collar": ("Material.001", 900, 300, False),
-        "Boots": ("boot", 1500, 500, False),
-        "Helmet": ("helmet", 2200, 700, False),
+        "Head": ("face", 9000, 2600, True),
+        "Arms": ("arms", 3600, 1100, True),
+        "Uniform": ("pants", 24000, 6500, True),
+        "Collar": ("Material.001", 2200, 500, False),
+        "Boots": ("boot", 3500, 900, True),
+        "Helmet": ("helmet", 3500, 900, False),
         "Eyes": ("Material.002", 1520, 300, True),
         "Lashes": ("eyelashes", 104, 60, True),
     }
@@ -209,6 +209,8 @@ def worker():
         print(name, im.size)
 
     save("Worker_Head.jpg", "face", 1024)
+    save("Worker_Uniform.jpg", "pants", 1024)
+    save("Worker_Boot.jpg", "boot", 512)
     save("Worker_Arms.jpg", "arms", 512)
     save("Worker_Eye.png", "Material.002", 256, True)
     save("Worker_Lash.png", "eyelashes", 256, True)

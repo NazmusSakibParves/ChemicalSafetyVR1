@@ -150,6 +150,33 @@ def hall(rng):
     return seamless(hum * 0.7 + pump + air * 0.9, 1.0)
 
 
+def door(rng):
+    """Fire-exit door pushed open: push-bar clack, a hinge creak and a soft bang when it reaches the stop (1.5 s)."""
+    n = int(1.5 * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n, np.float32)
+    # push-bar clack at 0.02 s: two metallic ticks
+    for at, f0, g in ((0.02, 1900, 0.9), (0.075, 1300, 0.6)):
+        m = int(0.07 * SR)
+        tt = np.arange(m) / SR
+        k = int(at * SR)
+        out[k:k + m] += (np.exp(-tt * 90) * np.sin(2 * np.pi * f0 * tt) * g + np.exp(-tt * 300) * rng.uniform(-1, 1, m) * 0.4).astype(np.float32)
+    # hinge creak 0.12 .. 0.8 s: a slow rising squeal with noise
+    lo, hi = int(0.12 * SR), int(0.8 * SR)
+    tt = np.arange(hi - lo) / SR
+    env = np.sin(np.pi * tt / tt[-1]) ** 1.5
+    freq = 380 + 260 * tt / tt[-1] + 30 * np.sin(2 * np.pi * 11 * tt)
+    creak = np.sin(2 * np.pi * np.cumsum(freq) / SR) * 0.22 + np.sin(2 * np.pi * np.cumsum(freq * 2.02) / SR) * 0.1
+    out[lo:hi] += (creak * env + lowpass(rng.uniform(-1, 1, hi - lo).astype(np.float32), 0.2) * 0.15 * env).astype(np.float32)
+    # soft bang at the stop (0.78 s)
+    k = int(0.78 * SR)
+    m = n - k
+    tt = np.arange(m) / SR
+    bang = np.sin(2 * np.pi * (85 + 30 * np.exp(-tt * 18)) * tt) * np.exp(-tt * 9) + 0.5 * lowpass(rng.uniform(-1, 1, m).astype(np.float32), 0.18) * np.exp(-tt * 14)
+    out[k:] += (bang * 0.9).astype(np.float32)
+    return echo(out, [(0.06, 0.25), (0.15, 0.12)])
+
+
 def main():
     rng = np.random.default_rng(7)
     write("Alarm_Loop.wav", alarm(rng), 0.6)
@@ -159,6 +186,7 @@ def main():
     write("Fire_Loop.wav", fire(rng), 0.5)
     write("Co2_Hiss.wav", hiss(rng), 0.5)
     write("Hall_Loop.wav", hall(rng), 0.45)
+    write("Door_Open.wav", door(rng), 0.6)
 
 
 if __name__ == "__main__":

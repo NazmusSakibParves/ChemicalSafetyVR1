@@ -34,6 +34,7 @@ namespace ChemicalSafety.Editor
             public Sc06Gate gate;
             public Sc07Crowd crowd;
             public Transform heroStart;
+            public Sc07Door fleeDoor;
         }
 
         private const float Sc07Ox = 240f;
@@ -158,10 +159,10 @@ namespace ChemicalSafety.Editor
             mso.FindProperty("reflectionIntensity").floatValue = 0.3f;
             mso.ApplyModifiedPropertiesWithoutUndo();
 
-            const float zBack = -14f;
+            const float zBack = -12f;
             const float zFront = 6f;
             const float hallH = 5.6f;
-            var x0 = ox - 15f;
+            var x0 = ox - 19f;
             var x1 = ox + 6.5f;
             var cx = (x0 + x1) * 0.5f;
             var cz = (zBack + zFront) * 0.5f;
@@ -356,7 +357,8 @@ namespace ChemicalSafety.Editor
             FloorLine("LineA", new Vector3(ox - 3.4f, 0f, -0.6f), new Vector3(ox + 4.6f, 0f, -0.6f));
             FloorLine("LineB", new Vector3(ox + 4.6f, 0f, -0.6f), new Vector3(ox + 4.6f, 0f, -2.7f));
             FloorLine("LineC", new Vector3(ox - 3.4f, 0f, -0.6f), new Vector3(ox - 3.4f, 0f, -2.7f));
-            FloorLine("LineAisle", new Vector3(ox - 14f, 0f, 1.6f), new Vector3(ox - 3.4f, 0f, 1.6f));
+            FloorLine("LaneEdgeA", new Vector3(ox - 3.7f, 0f, zBack + 0.6f), new Vector3(ox - 3.7f, 0f, 5.2f));
+            FloorLine("LaneEdgeB", new Vector3(ox - 9.4f, 0f, zBack + 0.6f), new Vector3(ox - 9.4f, 0f, 5.2f));
             var oilMat = MatAlpha("Sc07Oil", Sc07Tex("OilStain"), new Color(1f, 1f, 1f, 0.9f), false);
             QuadObj("Oil0", room, new Vector3(ox + 1.0f, 0.008f, -0.9f), new Vector3(90f, 0f, 0f), new Vector2(1.5f, 0.9f), oilMat);
             QuadObj("Oil1", room, new Vector3(ox - 5.5f, 0.008f, 0.4f), new Vector3(90f, 30f, 0f), new Vector2(1.8f, 1.2f), oilMat);
@@ -390,14 +392,22 @@ namespace ChemicalSafety.Editor
             // ---- the machine hall: stainless tanks and pipe walls (Factory02.glb), scaled to a believable size
             var tankMat = Mat("Sc07Tank", new Color(0.66f, 0.68f, 0.69f), 0.55f, 0.25f);
             var pipeMat = Mat("Sc07Pipe", new Color(0.72f, 0.74f, 0.75f), 0.6f, 0.2f);
-            var factory = SpawnSc07("Factory.glb", room);
-            if (factory != null)
+            // two stainless machine blocks on the viewer's right; the walking lane (x ox-9.4 .. ox-3.7) runs between them and the fire
+            for (var mi = 0; mi < 2; mi++)
             {
-                factory.name = "Machines";
-                factory.transform.localScale = Vector3.one * 0.36f;
-                factory.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+                var factory = SpawnSc07("Factory.glb", room);
+                if (factory == null)
+                    continue;
+                factory.name = mi == 0 ? "Machines" : "Machines2";
+                factory.transform.localScale = Vector3.one * (mi == 0 ? 0.27f : 0.24f);
+                factory.transform.rotation = Quaternion.Euler(0f, mi == 0 ? 0f : 180f, 0f); // the long row runs along the lane
+                var fb0 = BoundsOfTree(factory.transform);
+                var fit = Mathf.Min(1f, 15.5f / fb0.size.z, 6.5f / fb0.size.x);
+                factory.transform.localScale *= fit;
                 var fb = BoundsOfTree(factory.transform);
-                factory.transform.position += new Vector3((ox - 9.0f) - fb.center.x, -fb.min.y, (-10.5f) - fb.center.z);
+                var edge = ox - (mi == 0 ? 9.9f : 15.4f);
+                var zc = mi == 0 ? -4.4f : -3.0f;
+                factory.transform.position += new Vector3(edge - fb.max.x, -fb.min.y, zc - fb.center.z);
                 foreach (var r in factory.GetComponentsInChildren<Renderer>(true))
                 {
                     var mats = r.sharedMaterials;
@@ -418,23 +428,180 @@ namespace ChemicalSafety.Editor
                 Sc07Matte(factory, 0.3f, 0.6f);
             }
 
-            // ---- exit door with the green sign in the hall's far wall
-            // second door in the right wall further back: the workers flee through it, in full view of the player
-            Box("FleeDoor", room, new Vector3(x0 + 0.1f, 1.1f, -4.6f), new Vector3(0.08f, 2.2f, 1.3f), Mat("Sc07DoorGrey", new Color(0.55f, 0.58f, 0.58f), 0.3f, 0.25f), false);
-            QuadObj("FleeSign", room, new Vector3(x0 + 0.17f, 2.55f, -4.6f), new Vector3(0f, 90f, 0f), new Vector2(0.62f, 0.31f),
-                Mat("Sc07ExitSign", Color.white, 0f, 0f, Sc07Tex("ExitSign"), new Color(0.5f, 1.0f, 0.55f), true));
-            var door = Box("ExitDoor", room, new Vector3(x0 + 0.1f, 1.1f, 3.0f), new Vector3(0.08f, 2.2f, 1.3f), Mat("Sc07DoorGrey", new Color(0.55f, 0.58f, 0.58f), 0.3f, 0.25f), false);
-            var sign = QuadObj("ExitSign", room, new Vector3(x0 + 0.17f, 2.55f, 3.0f), new Vector3(0f, 90f, 0f), new Vector2(0.62f, 0.31f),
-                Mat("Sc07ExitSign", Color.white, 0f, 0f, Sc07Tex("ExitSign"), new Color(0.5f, 1.0f, 0.55f), true));
-            var exitLight = new GameObject("ExitGlow");
-            exitLight.transform.SetParent(room, false);
-            exitLight.transform.position = new Vector3(x0 + 0.9f, 2.4f, 3.0f);
-            var el = exitLight.AddComponent<Light>();
-            el.type = LightType.Point;
-            el.color = new Color(0.35f, 1f, 0.5f);
-            el.range = 5f;
-            el.intensity = 0.8f;
-            el.shadows = LightShadows.None;
+            // big horizontal boilers along the lane (workflow step 01/02: round stainless vessels on saddles with a hatch and a gauge)
+            var hatchMat = Mat("Sc07BoilerHatch", new Color(0.60f, 0.62f, 0.64f), 0.5f, 0.3f);
+            var bandMat = Mat("Sc07BoilerBand", new Color(0.50f, 0.52f, 0.54f), 0.35f, 0.3f);
+            var saddleMat = Mat("Sc07BoilerSaddle", new Color(0.32f, 0.35f, 0.38f), 0.3f, 0.2f);
+            var gaugeFace = Mat("Sc07GaugeFace", new Color(0.92f, 0.93f, 0.9f), 0.3f, 0f);
+            var boilerZs = new[] { -8.6f, -4.4f, -0.2f };
+            for (var bi = 0; bi < boilerZs.Length; bi++)
+            {
+                var bc = new Vector3(ox - 11.2f, 1.45f, boilerZs[bi]);
+                var brad = 1.2f;
+                var blen = 3.3f;
+                var shell = Cyl("Boiler" + bi, room, bc, blen, brad, tankMat);
+                shell.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                shell.transform.position = bc;
+                foreach (var sgn in new[] { -1f, 1f })
+                {
+                    var cap = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    cap.name = "BoilerCap" + bi;
+                    Object.DestroyImmediate(cap.GetComponent<Collider>());
+                    cap.transform.SetParent(room, true);
+                    cap.transform.position = bc + new Vector3(0f, 0f, sgn * blen * 0.5f);
+                    cap.transform.localScale = new Vector3(brad * 2f, brad * 2f, brad * 0.8f);
+                    cap.GetComponent<MeshRenderer>().sharedMaterial = tankMat;
+                    // two saddles (steel cradles) under the shell
+                    Box("BoilerSaddle" + bi, room, bc + new Vector3(0f, -1.0f, sgn * 1.05f), new Vector3(1.5f, 0.46f, 0.12f), saddleMat, false);
+                    Box("BoilerBase" + bi, room, new Vector3(bc.x, 0.09f, bc.z + sgn * 1.05f), new Vector3(1.8f, 0.18f, 0.3f), saddleMat, false);
+                }
+
+                // welded seams: thin raised bands around the shell
+                foreach (var bz in new[] { -1.2f, -0.4f, 0.4f, 1.2f })
+                {
+                    var band = Cyl("BoilerBand" + bi, room, bc, 0.07f, brad + 0.015f, bandMat);
+                    band.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                    band.transform.position = bc + new Vector3(0f, 0f, bz);
+                }
+
+                // manway: a flanged ring and a plate facing the lane (+X), bolts around it
+                var flange = Cyl("BoilerFlange" + bi, room, bc, 0.06f, 0.40f, hatchMat);
+                flange.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                flange.transform.position = bc + new Vector3(brad - 0.01f, 0.15f, 0.15f);
+                var plate = Cyl("BoilerPlate" + bi, room, bc, 0.05f, 0.31f, bandMat);
+                plate.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                plate.transform.position = bc + new Vector3(brad + 0.04f, 0.15f, 0.15f);
+                for (var bo = 0; bo < 8; bo++)
+                {
+                    var ang = bo * Mathf.PI * 0.25f;
+                    var bolt = Cyl("BoilerBolt" + bi, room, bc, 0.05f, 0.022f, darkSteel);
+                    bolt.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                    bolt.transform.position = bc + new Vector3(brad + 0.045f, 0.15f + Mathf.Sin(ang) * 0.35f, 0.15f + Mathf.Cos(ang) * 0.35f);
+                }
+
+                // pressure gauge: white dial in a steel rim on a short stub
+                var rim = Cyl("BoilerGaugeRim" + bi, room, bc, 0.05f, 0.11f, hatchMat);
+                rim.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                rim.transform.position = bc + new Vector3(brad + 0.1f, 0.75f, -0.9f);
+                var dial = Cyl("BoilerGaugeDial" + bi, room, bc, 0.052f, 0.09f, gaugeFace);
+                dial.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                dial.transform.position = bc + new Vector3(brad + 0.105f, 0.75f, -0.9f);
+                Cyl("BoilerGaugeStub" + bi, room, bc + new Vector3(brad - 0.05f, 0.75f, -0.9f), 0.01f, 0.025f, hatchMat);
+                // feed pipe up through the top with an elbow toward the ceiling duct
+                var feedPipe = Cyl("BoilerFeed" + bi, room, bc, 1.2f, 0.07f, pipeMat);
+                feedPipe.transform.position = bc + new Vector3(0.2f, brad + 0.55f, 0.6f);
+                var elbow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                elbow.name = "BoilerElbow" + bi;
+                Object.DestroyImmediate(elbow.GetComponent<Collider>());
+                elbow.transform.SetParent(room, true);
+                elbow.transform.position = bc + new Vector3(0.2f, brad + 1.15f, 0.6f);
+                elbow.transform.localScale = Vector3.one * 0.17f;
+                elbow.GetComponent<MeshRenderer>().sharedMaterial = pipeMat;
+                Box("BoilerPanel" + bi, room, new Vector3(ox - 9.9f, 0.9f, boilerZs[bi] - 1.9f), new Vector3(0.12f, 1.2f, 0.5f), panelMat, false);
+            }
+
+            // a steel trolley beside the cabinet (workflow step 02)
+
+            Box("TrolleyTop", room, new Vector3(ox - 4.1f, 0.82f, -1.6f), new Vector3(0.9f, 0.04f, 0.55f), steel, false);
+            Box("TrolleyShelf", room, new Vector3(ox - 4.1f, 0.2f, -1.6f), new Vector3(0.84f, 0.03f, 0.5f), steel, false);
+            foreach (var tx in new[] { -0.4f, 0.4f })
+                foreach (var tz in new[] { -0.22f, 0.22f })
+                    Box("TrolleyLeg", room, new Vector3(ox - 4.1f + tx, 0.42f, -1.6f + tz), new Vector3(0.03f, 0.8f, 0.03f), darkSteel, false);
+            // more equipment so the hall is not empty: stainless process tanks on legs, control cabinets, drums by the back wall
+            var tankSpots = new[] { new Vector3(ox - 11.6f, 0f, 3.4f), new Vector3(ox - 13.6f, 0f, 4.3f), new Vector3(ox - 16.6f, 0f, 3.2f) };
+            for (var ti = 0; ti < tankSpots.Length; ti++)
+            {
+                var tp = tankSpots[ti];
+                var rad = 0.62f + 0.14f * (ti % 2);
+                var body = Cyl("ProcTank" + ti, room, tp + Vector3.up * 0.55f, 1.9f + 0.3f * (ti % 3), rad, tankMat);
+                body.transform.localScale = new Vector3(rad * 2f, body.transform.localScale.y, rad * 2f);
+                var top = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                top.name = "ProcTankDome" + ti;
+                Object.DestroyImmediate(top.GetComponent<Collider>());
+                top.transform.SetParent(room, true);
+                top.transform.position = tp + Vector3.up * (0.55f + 1.9f + 0.3f * (ti % 3));
+                top.transform.localScale = new Vector3(rad * 2f, rad * 0.9f, rad * 2f);
+                top.GetComponent<MeshRenderer>().sharedMaterial = tankMat;
+                foreach (var lx in new[] { -1f, 1f })
+                    foreach (var lz in new[] { -1f, 1f })
+                        Box("ProcTankLeg", room, tp + new Vector3(lx * rad * 0.72f, 0.28f, lz * rad * 0.72f), new Vector3(0.07f, 0.56f, 0.07f), darkSteel, false);
+                var feed = Cyl("ProcTankPipe" + ti, room, tp + new Vector3(rad * 0.9f, 0f, 0f), 3.4f, 0.06f, pipeMat);
+                feed.transform.position = tp + new Vector3(rad * 0.9f, 1.7f, 0f);
+                Box("ProcTankCabinet" + ti, room, tp + new Vector3(-rad - 0.55f, 0.75f, 0.1f), new Vector3(0.5f, 1.5f, 0.35f), panelMat, false);
+                Box("ProcTankScreen" + ti, room, tp + new Vector3(-rad - 0.55f, 1.15f, 0.29f), new Vector3(0.3f, 0.2f, 0.01f), Mat("Sc07Screen", new Color(0.1f, 0.5f, 0.35f), 0f, 0f, null, new Color(0.15f, 0.8f, 0.5f), true), false);
+            }
+
+            var drumBlue = Mat("Sc07DrumBlue", new Color(0.12f, 0.28f, 0.6f), 0.4f, 0.2f);
+            var drumYellow = Mat("Sc07DrumYellow", new Color(0.85f, 0.65f, 0.08f), 0.4f, 0.2f);
+            for (var di = 0; di < 6; di++)
+                Cyl("Drum" + di, room, new Vector3(ox - 9.0f + (di % 3) * 0.6f, 0f, -11.1f + (di / 3) * 0.6f), 0.9f, 0.27f, di % 2 == 0 ? drumBlue : drumYellow);
+            Box("TrolleyHandle", room, new Vector3(ox - 4.55f, 1.0f, -1.6f), new Vector3(0.03f, 0.4f, 0.5f), darkSteel, false);
+
+            // ---- the FIRE EXIT door straight ahead at the far end of the lane (back wall): a hinged green steel door under a big lit
+            // sign, daylight behind it. The first runner opens it (Sc07Door), everyone flees through it along the lane.
+            var fleeX = ox - 7.6f;
+            const float doorW = 1.5f;
+            const float doorH = 2.3f;
+            var doorMat = Mat("Sc07FireDoor", new Color(0.26f, 0.50f, 0.32f), 0.35f, 0.2f);
+            var barMat = Mat("Sc07PushBar", new Color(0.85f, 0.86f, 0.88f), 0.7f, 0.5f);
+            var frameMat = Mat("Sc07DoorFrame", new Color(0.18f, 0.19f, 0.2f), 0.3f, 0.3f);
+            var fleeRoot = new GameObject("FleeDoor").transform;
+            fleeRoot.SetParent(room, false);
+            var hinge = new GameObject("DoorHinge").transform;
+            hinge.SetParent(fleeRoot, false);
+            hinge.position = new Vector3(fleeX + doorW * 0.5f, 0f, zBack + 0.12f); // hinge on the right-hand edge, the leaf extends toward -X and swings into the hall
+            Box("DoorLeaf", hinge, new Vector3(fleeX, doorH * 0.5f, zBack + 0.12f), new Vector3(doorW, doorH, 0.07f), doorMat, false);
+            Box("DoorBar", hinge, new Vector3(fleeX, 1.05f, zBack + 0.18f), new Vector3(doorW * 0.75f, 0.05f, 0.03f), barMat, false);
+            Box("DoorFrameL", fleeRoot, new Vector3(fleeX - doorW * 0.5f - 0.06f, doorH * 0.5f + 0.04f, zBack + 0.1f), new Vector3(0.12f, doorH + 0.1f, 0.14f), frameMat, false);
+            Box("DoorFrameR", fleeRoot, new Vector3(fleeX + doorW * 0.5f + 0.06f, doorH * 0.5f + 0.04f, zBack + 0.1f), new Vector3(0.12f, doorH + 0.1f, 0.14f), frameMat, false);
+            Box("DoorFrameT", fleeRoot, new Vector3(fleeX, doorH + 0.09f, zBack + 0.1f), new Vector3(doorW + 0.24f, 0.12f, 0.14f), frameMat, false);
+            // daylight behind the open door: a bright panel in the wall plane, a white light that is only on while the door is open
+            var daylightMat = Mat("Sc07Daylight", new Color(1f, 1f, 0.95f), 0f, 0f, null, new Color(2.4f, 2.4f, 2.2f), true);
+            QuadObj("DoorDaylight", fleeRoot, new Vector3(fleeX, doorH * 0.5f, zBack + 0.083f), new Vector3(0f, 180f, 0f), new Vector2(doorW, doorH), daylightMat);
+            var dayGo = new GameObject("DoorDaylightLight");
+            dayGo.transform.SetParent(fleeRoot, false);
+            dayGo.transform.position = new Vector3(fleeX, 1.8f, zBack + 1.3f);
+            var dayLight = dayGo.AddComponent<Light>();
+            dayLight.type = LightType.Point;
+            dayLight.color = new Color(1f, 0.98f, 0.9f);
+            dayLight.range = 9f;
+            dayLight.intensity = 0f;
+            dayLight.shadows = LightShadows.None;
+            // the green "FIRE EXIT" board over the door: big (2.6 x 0.975 m), emissive, with a thin dark backing
+            Box("FireExitBacking", fleeRoot, new Vector3(fleeX, 3.55f, zBack + 0.13f), new Vector3(2.72f, 1.08f, 0.06f), frameMat, false);
+            QuadObj("FireExitSign", fleeRoot, new Vector3(fleeX, 3.55f, zBack + 0.162f), new Vector3(0f, 180f, 0f), new Vector2(2.6f, 0.975f),
+                Mat("Sc07FireExitSign", Color.white, 0f, 0f, Sc07Tex("FireExitSign"), new Color(0.85f, 1.0f, 0.88f), true));
+            var fleeGlow = new GameObject("FireExitGlow");
+            fleeGlow.transform.SetParent(fleeRoot, false);
+            fleeGlow.transform.position = new Vector3(fleeX, 3.3f, zBack + 1.4f);
+            var fgl = fleeGlow.AddComponent<Light>();
+            fgl.type = LightType.Point;
+            fgl.color = new Color(0.4f, 1f, 0.55f);
+            fgl.range = 6f;
+            fgl.intensity = 2.2f;
+            fgl.shadows = LightShadows.None;
+            var fleeDoorComp = fleeRoot.gameObject.AddComponent<Sc07Door>();
+            var fdo = new SerializedObject(fleeDoorComp);
+            fdo.FindProperty("leaf").objectReferenceValue = hinge;
+            fdo.FindProperty("daylight").objectReferenceValue = dayLight;
+            fdo.FindProperty("openClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Art/Audio/Sc07/Door_Open.wav");
+            fdo.ApplyModifiedPropertiesWithoutUndo();
+            refs.fleeDoor = fleeDoorComp;
+            // green guide arrows on the floor along the lane toward the exit
+            var arrowFloor = MatAlpha("Sc07FloorArrow", Sc07Tex("FloorArrow"), new Color(1f, 1f, 1f, 0.92f), false);
+            for (var ai = 0; ai < 3; ai++)
+            {
+                var fa = QuadObj("FloorArrow" + ai, room, new Vector3(fleeX, 0.01f, -3.0f - ai * 2.4f), Vector3.zero, new Vector2(0.5f, 1.0f), arrowFloor);
+                fa.transform.rotation = Quaternion.Euler(90f, 180f, 0f);
+            }
+
+            // the entry doorway (open, dark) in the back wall at the lane's near edge, where the workers come from
+            var entryX = ox - 4.6f;
+            Box("EntryFrameL", room, new Vector3(entryX - 0.75f, 1.2f, zBack + 0.08f), new Vector3(0.1f, 2.4f, 0.14f), frameMat, false);
+            Box("EntryFrameR", room, new Vector3(entryX + 0.75f, 1.2f, zBack + 0.08f), new Vector3(0.1f, 2.4f, 0.14f), frameMat, false);
+            Box("EntryFrameT", room, new Vector3(entryX, 2.4f, zBack + 0.08f), new Vector3(1.6f, 0.1f, 0.14f), frameMat, false);
+            QuadObj("EntryDark", room, new Vector3(entryX, 1.2f, zBack + 0.118f), new Vector3(0f, 180f, 0f), new Vector2(1.5f, 2.4f),
+                Mat("Sc07EntryDark", new Color(0.05f, 0.06f, 0.06f), 0f, 0f));
 
             // ---- ceiling: steel trusses, purlins, tube lights, greenish skylights (step 01)
             var beam = Mat("Sc07Beam", new Color(0.20f, 0.21f, 0.22f), 0.25f, 0.4f);
@@ -444,14 +611,16 @@ namespace ChemicalSafety.Editor
                 Box("Purlin", room, new Vector3(x, hallH - 0.18f, cz), new Vector3(0.2f, 0.3f, d), beam, false);
             var skyMat = Mat("Sc07Skylight", new Color(0.55f, 0.85f, 0.62f), 0f, 0f, null, new Color(0.55f, 1.0f, 0.65f), true);
             for (var i = 0; i < 5; i++)
-                Box("Skylight" + i, room, new Vector3(ox - 11f + i * 4.4f, hallH - 0.06f, -8f), new Vector3(2.6f, 0.04f, 5.5f), skyMat, false);
+                Box("Skylight" + i, room, new Vector3(ox - 16f + i * 4.6f, hallH - 0.06f, -6.5f), new Vector3(2.6f, 0.04f, 5.5f), skyMat, false);
             var tubeMat = Mat("Sc07Tube", new Color(0.95f, 0.97f, 0.95f), 0.2f, 0f, null, new Color(1.25f, 1.25f, 1.2f), false);
             var housing = Mat("Sc07TubeHousing", new Color(0.55f, 0.56f, 0.56f), 0.4f, 0.3f);
             var spots = new List<Vector3>
             {
                 new Vector3(ox + 3.2f, hallH - 0.5f, 0.0f), new Vector3(ox + 0.4f, hallH - 0.5f, 1.8f), new Vector3(ox - 2.4f, hallH - 0.5f, 0.2f),
-                new Vector3(ox - 6.5f, hallH - 0.5f, -1.5f), new Vector3(ox - 10.5f, hallH - 0.5f, -2.5f), new Vector3(ox - 6.5f, hallH - 0.5f, -8f),
-                new Vector3(ox - 11f, hallH - 0.5f, -9f), new Vector3(ox + 1.5f, hallH - 0.5f, 3.8f)
+                new Vector3(ox - 6.5f, hallH - 0.5f, -1.5f), new Vector3(ox - 12f, hallH - 0.5f, -2.5f), new Vector3(ox - 12f, hallH - 0.5f, -8f),
+                new Vector3(ox - 16f, hallH - 0.5f, -9f), new Vector3(ox + 1.5f, hallH - 0.5f, 3.8f),
+                new Vector3(ox - 6.2f, hallH - 0.5f, 3.0f), new Vector3(ox - 6.2f, hallH - 0.5f, -4.5f), new Vector3(ox - 6.2f, hallH - 0.5f, -9.5f),
+                new Vector3(ox - 14.5f, hallH - 0.5f, -3.0f)
             };
             for (var i = 0; i < spots.Count; i++)
             {
@@ -483,8 +652,42 @@ namespace ChemicalSafety.Editor
                 fl.shadows = LightShadows.None;
             }
 
+            // clerestory windows high on the back wall with louvres (greenish daylight, as in the reference), a painted dado band below
+            var winMat = Mat("Sc07Clerestory", new Color(0.50f, 0.68f, 0.56f), 0f, 0f, null, new Color(0.42f, 0.62f, 0.48f), true);
+            for (var wi = 0; wi < 5; wi++)
+            {
+                var wx = ox - 17f + wi * 3.9f;
+                QuadObj("Clerestory" + wi, room, new Vector3(wx, 4.45f, zBack + 0.09f), new Vector3(0f, 180f, 0f), new Vector2(3.0f, 1.1f), winMat);
+                for (var lv = 0; lv < 6; lv++)
+                    Box("Louvre" + wi + lv, room, new Vector3(wx, 3.95f + lv * 0.2f, zBack + 0.1f), new Vector3(3.0f, 0.03f, 0.04f), beam, false);
+                Box("WinMull" + wi, room, new Vector3(wx - 1.5f, 4.45f, zBack + 0.1f), new Vector3(0.08f, 1.2f, 0.06f), beam, false);
+            }
+
+            // ceiling ducts, a cable tray and wall pipe bundles (workflow step 01: a working factory hall)
+            var ductMat = Mat("Sc07Duct", new Color(0.40f, 0.42f, 0.43f), 0.3f, 0.3f);
+            foreach (var dx in new[] { ox - 8.4f, ox - 13.2f })
+            {
+                Box("CeilingDuct", room, new Vector3(dx, hallH - 0.95f, cz), new Vector3(0.7f, 0.5f, d - 1f), ductMat, false);
+                for (var dz = zBack + 1.5f; dz < zFront - 1f; dz += 2.4f)
+                    Box("DuctFlange", room, new Vector3(dx, hallH - 0.95f, dz), new Vector3(0.88f, 0.68f, 0.04f), darkSteel, false);
+                for (var dz = zBack + 2.5f; dz < zFront - 1f; dz += 4.8f)
+                    Box("DuctHanger", room, new Vector3(dx, hallH - 0.5f, dz), new Vector3(0.03f, 0.5f, 0.03f), darkSteel, false);
+            }
+
+            Box("CableTray", room, new Vector3(ox - 5.4f, hallH - 0.75f, cz - 1f), new Vector3(0.45f, 0.07f, d - 4f), darkSteel, false);
+            for (var cz2 = zBack + 1.5f; cz2 < zFront - 2f; cz2 += 1.6f)
+                Box("CableRung", room, new Vector3(ox - 5.4f, hallH - 0.73f, cz2), new Vector3(0.45f, 0.03f, 0.04f), steel, false);
+            for (var wp = 0; wp < 3; wp++)
+            {
+                var wpipe = Cyl("WallPipe" + wp, room, new Vector3(x0 + 0.25f + wp * 0.18f, 0f, cz), d - 1f, 0.06f, wp == 1 ? hoseRed : pipeMat);
+                wpipe.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                wpipe.transform.position = new Vector3(x0 + 0.25f + wp * 0.18f, 3.2f + wp * 0.0f, cz);
+            }
+
+            Box("BackDado", room, new Vector3(cx, 0.5f, zBack + 0.09f), new Vector3(w, 1.0f, 0.03f), Mat("Sc07Dado", new Color(0.36f, 0.42f, 0.40f), 0.2f, 0.1f), false);
+
             var dustMat = ParticleMat("Sc07Dust", art.radialGlow != null ? art.radialGlow.texture : null, true);
-            BuildDust(room, new Vector3(ox - 3f, 2.4f, -1f), new Vector3(16f, 3.6f, 9f), dustMat);
+            BuildDust(room, new Vector3(ox - 6f, 2.4f, -2f), new Vector3(22f, 3.6f, 12f), dustMat);
 
             // ---- the workers: hero + 5 others, each with their own skin tone, overalls, helmet and height
             var crowdRoot = new GameObject("Crowd").transform;
@@ -506,9 +709,12 @@ namespace ChemicalSafety.Editor
                 inst.transform.localScale = Vector3.one * (person.height / 3.64f);
                 inst.transform.position = i == 0
                     ? new Vector3(ox - 0.55f, 0f, 1.1f)
-                    : new Vector3(ox - 4.8f - (i % 4) * 1.1f, 0f, 0.4f + (i / 4) * 1.1f);
+                    : new Vector3(ox - 3.4f - i * 0.9f, 0f, 1.1f + (i % 2) * 1.3f);
                 inst.transform.rotation = Quaternion.Euler(0f, i == 0 ? 180f : 215f, 0f);
                 Sc07Dress(inst, person);
+                // two of them were at work when the alarm rang: the confused one (3) holds a toolbox, the frozen one (4) a long wrench
+                if (i == 3 || i == 4)
+                    Sc07GiveTool(inst.transform, i == 3, person.height / 3.64f);
                 var human = inst.AddComponent<Sc07Human>();
                 var hso = new SerializedObject(human);
                 FillArray(hso.FindProperty("stepWalk"), walkClips.Length, (pp, k) => pp.objectReferenceValue = walkClips[k]);
@@ -563,18 +769,17 @@ namespace ChemicalSafety.Editor
             gso.ApplyModifiedPropertiesWithoutUndo();
 
             Transform T(string name, Vector3 p, float yaw) => Marker(name, room, p, yaw);
-            var doorStart = T("Sc07DoorStart", new Vector3(x0 + 1.2f, 0f, 3.0f), 90f);
-            var exitP = T("Sc07ExitPoint", new Vector3(x0 + 0.1f, 0f, -4.6f), 90f);
-            // eleven places for the workers to stop and stare, in three loose rows facing the fire
+            var doorStart = T("Sc07DoorStart", new Vector3(entryX, 0f, zBack + 0.9f), 0f);
+            var exitP = T("Sc07ExitPoint", new Vector3(fleeX, 0f, zBack + 0.25f), 180f);
+            // four irregular places for the bystanders to stop and stare (no row, no grid)
             var noticeXZ = new[]
             {
-                new Vector2(-3.3f, 0.3f), new Vector2(-4.2f, 0.4f), new Vector2(-5.1f, 0.2f), new Vector2(-6.0f, 0.4f),
-                new Vector2(-3.0f, 1.5f), new Vector2(-3.9f, 1.6f), new Vector2(-4.8f, 1.4f), new Vector2(-5.7f, 1.6f),
-                new Vector2(-3.4f, 2.7f), new Vector2(-4.4f, 2.8f), new Vector2(-5.4f, 2.6f)
+                new Vector2(-4.4f, 0.4f), new Vector2(-6.2f, 1.6f), new Vector2(-5.0f, 2.8f), new Vector2(-7.4f, -0.6f)
             };
             var notice = new Transform[noticeXZ.Length];
             for (var i = 0; i < notice.Length; i++)
                 notice[i] = T("Notice" + (i + 1), new Vector3(ox + noticeXZ[i].x, 0f, noticeXZ[i].y), 0f);
+            var exitApproach = T("Sc07ExitApproach", new Vector3(fleeX, 0f, zBack + 3.4f), 180f);
             var heroSpot = T("Sc07HeroSpot", new Vector3(ox - 1.7f, 0f, 3.0f), 180f);
             var pillarGrab = T("Sc07PillarGrab", new Vector3(pillarCx, 0f, pillarFace + 0.62f), 180f);
             var spray = T("Sc07SpraySpot", new Vector3(cabX + 1.9f, 0f, cabFrontZ + 1.6f), 180f); // beside the fire, seen in profile from the first view
@@ -593,6 +798,8 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < notice.Length; i++)
                 narr.GetArrayElementAtIndex(i).objectReferenceValue = notice[i];
             cso.FindProperty("exitPoint").objectReferenceValue = exitP;
+            cso.FindProperty("exitApproach").objectReferenceValue = exitApproach;
+            cso.FindProperty("fleeDoor").objectReferenceValue = refs.fleeDoor;
             cso.FindProperty("heroSpot").objectReferenceValue = heroSpot;
             cso.FindProperty("pillarGrab").objectReferenceValue = pillarGrab;
             cso.FindProperty("spraySpot").objectReferenceValue = spray;
@@ -605,12 +812,57 @@ namespace ChemicalSafety.Editor
             cso.ApplyModifiedPropertiesWithoutUndo();
 
             // ---- markers
-            refs.spawn = Marker("Spawn_SC07", room, new Vector3(ox - 0.8f, 0f, 4.3f), 208f); // a little to the right: pillar at the left edge, cabinet left of centre, the hall and the crowd right
+            refs.spawn = Marker("Spawn_SC07", room, new Vector3(ox - 0.8f, 0f, 4.3f), 210f); // a little to the right: pillar at the left edge, cabinet left of centre, the hall and the crowd right
             refs.standB = Marker("Stand_SC07_Pillar", room, new Vector3(pillarCx, 0f, pillarFace + 0.95f), 180f);
             return refs;
         }
 
-        private const string Sc07OnlyKey = "ChemSafetySc07Only";
+        // A hand-held tool glued to a hand bone. The arm hangs down along the bone's local X (right hand +X, left hand -X).
+        private static void Sc07GiveTool(Transform worker, bool box, float scale)
+        {
+            Transform hand = null;
+            foreach (var t in worker.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == (box ? "HandL" : "HandR"))
+                {
+                    hand = t;
+                    break;
+                }
+            }
+
+            if (hand == null)
+                return;
+            var dir = box ? -1f : 1f;
+            GameObject Part(string name, Vector3 meters, Vector3 posMeters, Material mat)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.name = name;
+                Object.DestroyImmediate(go.GetComponent<Collider>());
+                go.transform.SetParent(hand, false);
+                // bone axes: X along the arm. meters are given as (along arm, across, depth)
+                go.transform.localPosition = new Vector3(posMeters.x * dir, posMeters.y, posMeters.z) / scale;
+                go.transform.localScale = new Vector3(meters.x, meters.y, meters.z) / scale;
+                go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+                return go;
+            }
+
+            var metal = Mat("Sc07ToolMetal", new Color(0.55f, 0.57f, 0.60f), 0.7f, 0.45f);
+            var red = Mat("Sc07ToolBoxRed", new Color(0.70f, 0.12f, 0.08f), 0.4f, 0.1f);
+            var dark = Mat("Sc07ToolGrip", new Color(0.10f, 0.10f, 0.11f), 0.2f, 0f);
+            if (box)
+            {
+                Part("ToolBox", new Vector3(0.22f, 0.20f, 0.42f), new Vector3(0.14f, 0f, 0f), red);
+                Part("ToolBoxLid", new Vector3(0.05f, 0.205f, 0.44f), new Vector3(0.03f, 0f, 0f), dark);
+            }
+            else
+            {
+                Part("Wrench", new Vector3(0.62f, 0.035f, 0.05f), new Vector3(0.22f, 0f, 0f), metal);
+                Part("WrenchJaw", new Vector3(0.09f, 0.035f, 0.11f), new Vector3(0.55f, 0f, 0f), metal);
+                Part("WrenchGrip", new Vector3(0.20f, 0.04f, 0.055f), new Vector3(0.08f, 0f, 0f), dark);
+            }
+        }
+
+        private const string Sc07OnlyKey ="ChemSafetySc07Only";
 
         [MenuItem("Chemical Safety/Presentable/Dev: start at Scenario 7")]
         private static void ToggleSc07Only()
@@ -758,6 +1010,10 @@ namespace ChemicalSafety.Editor
                         case "carrywalk": h.SnapPose(1f, 0f, 0f, 1f, 0f, 0f, phase); crowdPreview.PreviewHold(false); break;
                         case "aim": h.SnapPose(0f, 0f, 0f, 0f, 1f, 0f, phase); crowdPreview.PreviewHold(true); break;
                         case "reach": h.SnapPose(0f, 0f, 0f, 0f, 0f, 1f, phase); break;
+                        case "shocked": h.SnapPose(0f, 0f, 0f, 0f, 0f, 0f, phase, Sc07Reaction.Shocked); break;
+                        case "head": h.SnapPose(0f, 0f, 0f, 0f, 0f, 0f, phase, Sc07Reaction.Head); break;
+                        case "confused": h.SnapPose(0f, 0f, 0f, 0f, 0f, 0f, phase, Sc07Reaction.Confused); break;
+                        case "frozen": h.SnapPose(0f, 0f, 0f, 0f, 0f, 0f, phase, Sc07Reaction.Frozen); break;
                         default: h.SnapPose(0f, 0f, 0f, 0f, 0f, 0f, phase); break;
                     }
                 }

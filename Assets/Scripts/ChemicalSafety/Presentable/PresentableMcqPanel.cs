@@ -40,6 +40,7 @@ namespace ChemicalSafety.Presentable
             public string nextLabel = "NEXT";
             [Tooltip("Scenario 6 look: options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
             public bool fancy;
+            [NonSerialized] public Func<bool> holdCorrect; // true while a cutscene must finish before the right-answer card opens
         }
 
         private sealed class Row
@@ -204,9 +205,6 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator ShowCorrect(int index, Option opt)
         {
-            PresentableFx.Play(PresentableFx.Success);
-            PresentableFx.Haptic(true, 0.6f, 0.15f);
-
             SetQuestionChrome(false);
             var row = _rows[index];
             row.check.gameObject.SetActive(true);
@@ -217,10 +215,14 @@ namespace ChemicalSafety.Presentable
                     _rows[i].root.GetComponent<CanvasGroup>().alpha = 0.55f;
             }
 
-            if (_fx != null)
-                _fx.OnResult(true, index);
             _correctTitle.text = _question.correctTitle;
             _correctBody.text = opt.feedback;
+            while (_question.holdCorrect != null && _question.holdCorrect())
+                yield return null;
+            PresentableFx.Play(PresentableFx.Success);
+            PresentableFx.Haptic(true, 0.6f, 0.15f);
+            if (_fx != null)
+                _fx.OnResult(true, index);
             yield return PopupIn(_correctPopup);
             PopupShown?.Invoke(true);
 

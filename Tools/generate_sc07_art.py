@@ -217,6 +217,36 @@ def exit_sign():
     img.save(os.path.join(OUTTEX, "ExitSign.png"))
 
 
+def fire_exit_sign():
+    """Large, high-contrast board (1024x384): white running man on the left, FIRE / EXIT stacked in huge letters, arrow right."""
+    w, h = 1024, 384
+    img = Image.new("RGBA", (w, h), (0, 150, 66, 255))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((8, 8, w - 9, h - 9), 30, outline=(255, 255, 255, 255), width=12)
+    wh = (255, 255, 255, 255)
+    # running man (thick limbs), 250 px column
+    d.ellipse((120, 60, 184, 124), fill=wh)
+    d.line((150, 134, 178, 224), fill=wh, width=34)
+    d.line((172, 160, 238, 138), fill=wh, width=26)
+    d.line((160, 164, 96, 196), fill=wh, width=26)
+    d.line((178, 224, 236, 290), fill=wh, width=30)
+    d.line((178, 224, 124, 306), fill=wh, width=30)
+    big = f(FONTBLK, 168)
+    d.text((560, 100), "FIRE", font=big, fill=wh, anchor="mm")
+    d.text((560, 272), "EXIT", font=big, fill=wh, anchor="mm")
+    d.polygon([(836, 250), (930, 250), (930, 222), (1000, 280), (930, 338), (930, 310), (836, 310)], fill=wh)
+    img.save(os.path.join(OUTTEX, "FireExitSign.png"))
+
+
+def floor_arrow():
+    """Green guide arrow painted on the floor (points up in the image = along the lane to the exit)."""
+    img = Image.new("RGBA", (256, 512), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    g = (40, 200, 90, 235)
+    d.polygon([(128, 20), (244, 220), (170, 220), (170, 490), (86, 490), (86, 220), (12, 220)], fill=g)
+    img.save(os.path.join(OUTTEX, "FloorArrow.png"))
+
+
 def oil():
     n = 256
     y, x = np.mgrid[0:n, 0:n]
@@ -269,6 +299,8 @@ def main():
     label_band("Label_ABC.png", "ABC", (20, 62, 170), (255, 255, 255))
     breakers()
     exit_sign()
+    fire_exit_sign()
+    floor_arrow()
     oil()
     print("done")
 

@@ -893,20 +893,27 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc07Question");
-            PlaceAtEyeLevel(mcqSc07.transform, panelDistance, false);
-            TurnAroundHead(mcqSc07.transform, -16f); // a little to the left so the fire stays visible
-            yield return RunQuestion(mcqSc07, BuildSc07Question(), false, 7);
+            // straight ahead at eye level, 0.7 m: a slightly extended arm reaches it, it is not at the eyes (the right / wrong cards share the canvas)
+            PlaceAtEyeLevel(mcqSc07.transform, 0.7f, false);
+            var q7 = BuildSc07Question();
+            _sc07WinDone = false;
+            q7.holdCorrect = () => !_sc07WinDone; // the right-answer card opens only after the fire is out
+            yield return RunQuestion(mcqSc07, q7, false, 7);
             if (sc07Ambience != null)
                 sc07Ambience.End();
             Stage("sc07Done");
         }
 
         // The right answer: back to the first view, the hero fetches the CO2 extinguisher and puts the fire out.
+        private bool _sc07WinDone = true;
+
         private IEnumerator Sc07Win(PresentableMcqPanel panel)
         {
             Stage("sc07Extinguish");
             yield return PresentableFx.Wait(0.4f);
-            panel.gameObject.SetActive(false);
+            // hidden by scale (the panel keeps running its own coroutine, which waits for this scene)
+            var panelScale = panel.transform.localScale;
+            panel.transform.localScale = Vector3.zero;
             yield return fader.FadeTo(1f, 0.35f);
             if (spawnSc07 != null)
                 PlaceRig(spawnSc07.position, spawnSc07.forward);
@@ -924,7 +931,8 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(1f, 0.35f);
             if (sc07PillarStand != null)
                 PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
-            panel.gameObject.SetActive(true);
+            panel.transform.localScale = panelScale;
+            _sc07WinDone = true;
             yield return fader.FadeTo(0f, 0.45f);
         }
 
@@ -1416,6 +1424,8 @@ namespace ChemicalSafety.Presentable
                 StopVoice();
                 if (scenario == 3 && !correct && sc03Detonation != null)
                     sc03Detonation.Explode();
+                if (scenario == 7 && correct)
+                    StartCoroutine(Sc07Win(panel)); // the fire is put out first, then the right-answer card opens
             }
 
             void OnWrongClosed()
@@ -1474,8 +1484,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(1f);
             if (scenario == 7)
             {
-                // the hero puts the fire out between the right-choice card and the completion line
-                yield return Sc07Win(mcqSc07);
+                // the fire is already out (the card opened after it); the completion lines follow
                 yield return PlayVoice(art.voSc07CompleteBn);
                 yield return PlayVoice(art.voSc07CompleteEn);
                 yield break;
