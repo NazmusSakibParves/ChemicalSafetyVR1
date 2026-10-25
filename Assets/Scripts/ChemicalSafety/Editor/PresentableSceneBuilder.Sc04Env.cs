@@ -222,7 +222,7 @@ namespace ChemicalSafety.Editor
         // an apron, square legs and, for the fixed benches, a lower shelf. 'follower' tables (the glove bench moves with the
         // head) get legs that reach far below the floor so they never hang in the air when raised. 'alongZ' = the long side runs
         // along Z. 'bounds' is the footprint (and top height = bounds.max.y) of the thin glb table it replaces.
-        private static void Sc04SolidTable(Transform parent, Bounds bounds, bool alongZ, Material steel, bool follower)
+        private static void Sc04SolidTable(Transform parent, Bounds bounds, bool alongZ, Material steel, bool movable = true)
         {
             var trim = Mat("Sc06SteelPlain", new Color(0.76f, 0.78f, 0.81f), 0.72f, 0.15f);
             var dark = Mat("Sc06TableDark", new Color(0.30f, 0.32f, 0.34f), 0.5f, 0.2f);
@@ -247,24 +247,26 @@ namespace ChemicalSafety.Editor
             Box("ApronB", parent, M(0f, ay, -D * 0.5f + 0.05f), S(L - 0.1f, 0.1f, 0.022f), trim, false);
             Box("ApronC", parent, M(L * 0.5f - 0.05f, ay, 0f), S(0.022f, 0.1f, D - 0.1f), trim, false);
             Box("ApronD", parent, M(-L * 0.5f + 0.05f, ay, 0f), S(0.022f, 0.1f, D - 0.1f), trim, false);
-            var legBottom = follower ? -1.2f : 0f;
+            var legBottom = movable ? -1.2f : 0f;
             var legH = T - th - legBottom;
             foreach (var lu in new[] { -L * 0.5f + 0.08f, L * 0.5f - 0.08f })
             {
                 foreach (var lv in new[] { -D * 0.5f + 0.07f, D * 0.5f - 0.07f })
                 {
                     Box("TableLeg", parent, M(lu, legBottom + legH * 0.5f, lv), S(0.055f, legH, 0.055f), trim, false);
-                    if (!follower)
+                    if (!movable)
                         Cyl("TableFoot", parent, M(lu, 0f, lv), 0.02f, 0.032f, dark);
                 }
             }
 
-            if (follower)
-                return;
+            // lower shelf with a lip and two rails; on a movable bench it hangs 0.7 m under the top so it rises and sinks with it
+            var shelfY = movable ? T - 0.7f : 0.2f;
             var sl = L - 0.16f;
-            Box("TableShelf", parent, M(0f, 0.2f, 0f), S(sl, 0.03f, D - 0.12f), steel, false);
-            Box("TableShelfLipA", parent, M(0f, 0.225f, D * 0.5f - 0.06f), S(sl, 0.03f, 0.015f), trim, false);
-            Box("TableShelfLipB", parent, M(0f, 0.225f, -D * 0.5f + 0.06f), S(sl, 0.03f, 0.015f), trim, false);
+            Box("TableShelf", parent, M(0f, shelfY, 0f), S(sl, 0.03f, D - 0.12f), steel, false);
+            Box("TableShelfLipA", parent, M(0f, shelfY + 0.025f, D * 0.5f - 0.06f), S(sl, 0.03f, 0.015f), trim, false);
+            Box("TableShelfLipB", parent, M(0f, shelfY + 0.025f, -D * 0.5f + 0.06f), S(sl, 0.03f, 0.015f), trim, false);
+            Box("TableRailA", parent, M(0f, shelfY - 0.03f, D * 0.5f - 0.07f), S(sl, 0.04f, 0.03f), dark, false);
+            Box("TableRailB", parent, M(0f, shelfY - 0.03f, -D * 0.5f + 0.07f), S(sl, 0.04f, 0.03f), dark, false);
         }
 
         // Stainless bench along the back wall with a balance, centrifuge, glassware and a waste bin beside it.
@@ -277,8 +279,9 @@ namespace ChemicalSafety.Editor
             var b0 = WorldBounds(bench);
             bench.transform.position += new Vector3(0f, 0f, -3.1f - b0.min.z);
             var b = WorldBounds(bench);
-            var top = b.max.y;
             Object.DestroyImmediate(bench);
+            const float top = 0.9f; // same 0.9 m as the front benches
+            b = new Bounds(new Vector3(b.center.x, top * 0.5f, b.center.z), new Vector3(b.size.x, top, b.size.z));
             Sc04SolidTable(room, b, false, Steel(), false);
             FloorAo(room, "AoBackBench", b, 0.4f, 0.4f);
 

@@ -67,46 +67,55 @@ namespace ChemicalSafety.Editor
             // Viewer's left (+X) is the return bench against the tiled wall. The near bench
             // meets it and holds the gloves. The player stands at +Z looking toward -Z.
             var side = SpawnSc04("table02.glb", room, new Vector3(ox + 3.15f, 0f, -0.2f), 0f, 2.35f);
-            var sideTop = 0.9f;
-            var sideBox = new Bounds(new Vector3(ox + 3.15f, 0.9f, -0.2f), new Vector3(0.8f, 0.02f, 2.2f));
+            var sideBox = new Bounds(new Vector3(ox + 3.15f, 0.45f, -0.2f), new Vector3(0.8f, 0.9f, 2.2f));
             if (side != null)
             {
                 SitOn(side, 0f);
                 var sb = WorldBounds(side);
                 side.transform.position += new Vector3((ox + 3.82f) - sb.max.x, 0f, 0f);
                 sideBox = WorldBounds(side);
-                sideTop = sideBox.max.y;
             }
 
             var gloveTable = SpawnSc04("table02.glb", room, new Vector3(ox + 1.15f, 0f, 1.2f), 90f, 2.4f);
-            var gloveTop = sideTop;
             var gloveBox = sideBox;
             if (gloveTable != null)
             {
                 SitOn(gloveTable, 0f);
                 gloveBox = WorldBounds(gloveTable);
-                // Meet the return bench: the near bench's left end tucks under the return bench's near edge.
-                gloveTable.transform.position += new Vector3(0f, 0f, sideBox.max.z - gloveBox.min.z - 0.08f);
+                // meets the return bench exactly at its near end: the two benches form an L
+                gloveTable.transform.position += new Vector3(0f, 0f, sideBox.max.z - gloveBox.min.z);
                 gloveBox = WorldBounds(gloveTable);
-                gloveTop = gloveBox.max.y;
             }
 
-            // The glb tables are thin sheets: keep only their measured footprint and build solid steel tables instead.
+            // The glb tables are thin sheets and 1.07 m high: keep only their measured footprint and build solid steel benches of
+            // 0.9 m. The glove table is stretched along +X to the wall so it joins the return bench like in the lab photo. Both
+            // benches (and what stands on the return bench) live under BenchRoot and move together with the head height
+            // (Sc04BenchHeight, clamp 0.75-1.1 m): not too high when seated, not too low when standing.
+            const float tableTop = 0.9f;
             var steelMat = Steel();
             if (side != null)
                 Object.DestroyImmediate(side);
             if (gloveTable != null)
                 Object.DestroyImmediate(gloveTable);
-            Sc04SolidTable(room, sideBox, true, steelMat, false);
-
+            var sideTop = tableTop;
+            var gloveTop = tableTop;
+            sideBox = new Bounds(new Vector3(sideBox.center.x, tableTop * 0.5f, sideBox.center.z),
+                new Vector3(sideBox.size.x, tableTop, sideBox.size.z));
+            gloveBox = new Bounds(new Vector3(gloveBox.center.x, tableTop * 0.5f, gloveBox.center.z),
+                new Vector3(gloveBox.size.x, tableTop, gloveBox.size.z));
             var benchGo = new GameObject("BenchRoot");
             var bench = benchGo.transform;
             bench.SetParent(room, false);
-            Sc04SolidTable(bench, gloveBox, false, steelMat, true);
+            Sc04SolidTable(bench, sideBox, true, steelMat);
+            var lMin = gloveBox.min.x;
+            var lMax = sideBox.max.x;
+            Sc04SolidTable(bench, new Bounds(new Vector3((lMin + lMax) * 0.5f, tableTop * 0.5f, gloveBox.center.z),
+                new Vector3(lMax - lMin, tableTop, gloveBox.size.z)), false, steelMat);
 
             var clothAt = new Vector3(gloveBox.center.x - 0.05f, gloveTop + 0.008f, gloveBox.center.z);
             Box("Cloth", bench, clothAt, new Vector3(1.55f, 0.008f, 0.82f), cloth, false);
 
+            var sideItemsFrom = room.childCount; // everything from here to the fume hood stands on the return bench
             // Near (+Z, toward the player) to far (-Z): water beaker, two corked flasks, then the tray.
             var benchX = sideBox.center.x;
             var zNear = sideBox.max.z - 0.22f;
@@ -170,6 +179,9 @@ namespace ChemicalSafety.Editor
 
             PipetteRack(room, new Vector3(benchX, sideTop, zNear - 1.22f), sideTop);
             Hotplate(room, new Vector3(benchX, sideTop, zNear - 1.5f), sideTop);
+            var sideItemsTo = room.childCount;
+            for (var ci = sideItemsTo - 1; ci >= sideItemsFrom; ci--)
+                room.GetChild(ci).SetParent(bench, true);
 
             var lampA = room.Find("LampA");
             var lampB = room.Find("LampB");
@@ -233,6 +245,8 @@ namespace ChemicalSafety.Editor
             var height = benchGo.AddComponent<Sc04BenchHeight>();
             var hso = new SerializedObject(height);
             hso.FindProperty("builtTopY").floatValue = gloveTop;
+            hso.FindProperty("minTop").floatValue = 0.75f;
+            hso.FindProperty("maxTop").floatValue = 1.1f;
             hso.ApplyModifiedPropertiesWithoutUndo();
             refs.bench = height;
 

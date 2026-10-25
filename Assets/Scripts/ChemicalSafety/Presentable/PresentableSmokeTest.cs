@@ -1151,6 +1151,11 @@ namespace ChemicalSafety.Presentable
 
                 yield return new WaitForSeconds(0.5f);
                 Say("SC04 holding glove " + g + " = " + gloves.Holding);
+                var hb = gloves.GloveBounds(g);
+                var upright = hb.size.y > hb.size.z;
+                Say("SC04 held glove " + g + " upright = " + upright + " size " + hb.size.ToString("F2"));
+                if (!upright)
+                    Debug.LogError("[SMOKE] SC04 held glove " + g + " is not upright");
                 var cardT = FindDeep(gloves.transform, "GloveCard");
                 if (cardT != null)
                     LayoutCheck("SC04 glove card " + g, cardT);

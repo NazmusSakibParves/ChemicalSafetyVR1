@@ -152,7 +152,8 @@ namespace ChemicalSafety.Presentable
 
         private Vector3 HandPoint(Transform cam, Vector3 fwd, Vector3 right)
         {
-            return (cam != null ? cam.position : Vector3.zero) + fwd * 0.5f - right * 0.23f + Vector3.down * 0.1f;
+            // centred a little below eye level so the upright glove spans the view
+            return (cam != null ? cam.position : Vector3.zero) + fwd * 0.5f - right * 0.23f + Vector3.down * 0.12f;
         }
 
         private IEnumerator Hold(int index)
@@ -167,13 +168,18 @@ namespace ChemicalSafety.Presentable
             var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, fwd);
             var dest = HandPoint(cam, fwd, right);
+            // held upright (fingers up, leaning a little away from the user) instead of lying flat; the model rests with the
+            // fingers toward world -Z, so first turn it to the user's facing, then stand it up by 75 degrees
+            var fromRot = glove.rotation;
+            var destRot = Quaternion.LookRotation(fwd, Vector3.up) * Quaternion.Euler(0f, 180f, 0f) * Quaternion.Euler(75f, 0f, 0f);
             for (var t = 0f; t < 0.4f; t += Time.deltaTime)
             {
-                glove.position = Vector3.Lerp(from, dest, Mathf.SmoothStep(0f, 1f, t / 0.4f));
+                var k = Mathf.SmoothStep(0f, 1f, t / 0.4f);
+                glove.SetPositionAndRotation(Vector3.Lerp(from, dest, k), Quaternion.Slerp(fromRot, destRot, k));
                 yield return null;
             }
 
-            glove.position = dest;
+            glove.SetPositionAndRotation(dest, destRot);
             ShowCard(index);
             _busy = false;
         }
@@ -191,9 +197,12 @@ namespace ChemicalSafety.Presentable
             HideCard();
             var glove = gloves[index];
             var from = glove.position;
+            var fromRot = glove.rotation;
+            var homeRot = glove.parent != null ? glove.parent.rotation * _homeLocalRot[index] : _homeLocalRot[index];
             for (var t = 0f; t < 0.35f; t += Time.deltaTime)
             {
-                glove.position = Vector3.Lerp(from, HomeWorld(index), Mathf.SmoothStep(0f, 1f, t / 0.35f));
+                var k = Mathf.SmoothStep(0f, 1f, t / 0.35f);
+                glove.SetPositionAndRotation(Vector3.Lerp(from, HomeWorld(index), k), Quaternion.Slerp(fromRot, homeRot, k));
                 yield return null;
             }
 
