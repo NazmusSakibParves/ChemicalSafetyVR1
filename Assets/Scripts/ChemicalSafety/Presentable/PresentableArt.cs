@@ -160,6 +160,19 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc06Gate;
         public AudioClip voSc06CompleteBn;
         public AudioClip voSc06CompleteEn;
+        [Header("Scenario 7")]
+        public Sprite sdsSc07;
+        public Sprite bnSc07InstructionPanel;
+        public Sprite extIconExtinguisher;
+        public Sprite extIconFlammable;
+        public Sprite extBadgeBc;
+        public AudioClip voSc07Instruction;
+        [Tooltip("Water, CO2, ABC: what the extinguisher is and what it is for.")]
+        public AudioClip[] voSc07Ext = new AudioClip[3];
+        public AudioClip voSc07Gate;
+        public AudioClip voSc07Hero;
+        public AudioClip voSc07CompleteBn;
+        public AudioClip voSc07CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

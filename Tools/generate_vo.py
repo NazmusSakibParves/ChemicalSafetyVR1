@@ -41,15 +41,16 @@ PRON = {
     "সিদ্ধান্ত": "শিদ্ধান্ত",    # the voice said "chiddhanto"
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
     "ঘন": "ঘনো",                # concentrated: the voice did not say the word clearly
+    "বড় ": "বড়ো ",            # "big": the voice said a short "bor"; the user asked for "boro" (trailing space: whole word only)
 }
 
 SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF). Do not type this letter; editors save it as য + nukta.
 
 # scenario number -> how it is spoken
 CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven"}
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
 
 
 def complete_bn(n):
@@ -143,6 +144,29 @@ CLIPS = {
     ),
     "VO_Sc06Complete_bn": (BN_VOICE, complete_bn(6)),
     "VO_Sc06Complete_en": (EN_VOICE, complete_en(6)),
+    # Scenario 7 (factory fire, choose the extinguisher). শঠিক in the instruction like VO_SC06_Instruction_bn.
+    "VO_SC07_Instruction_bn": (
+        BN_VOICE,
+        "আপনি একজন মেশিন অপারেটর। বৈদ্যুতিক প্যানেলের পাশে রাখা একটি দাহ্য দ্রাবকের পাত্র অতিরিক্ত গরম হয়ে আগুন ধরে গেছে। "
+        "আগুন ছোট এবং নিয়ন্ত্রণে আছে। শঠিক ফায়ার এক্সটিংগুইশারটি নিন।",
+    ),
+    "VO_Sc07Ext0_bn": (
+        BN_VOICE,
+        "এটি ওয়াটার এক্সটিংগুইশার। এটি কাঠ, কাগজ ও কাপড়ের মতো সাধারণ দাহ্য পদার্থের আগুনে কার্যকর। "
+        "বৈদ্যুতিক আগুন বা দাহ্য তরলের আগুনে এটি কখনো ব্যবহার করবেন না।",
+    ),
+    "VO_Sc07Ext1_bn": (BN_VOICE, "এটি কার্বন ডাই-অক্সাইড এক্সটিংগুইশার। এটি দাহ্য তরল এবং বৈদ্যুতিক আগুনে কার্যকর।"),
+    "VO_Sc07Ext2_bn": (
+        BN_VOICE,
+        "এটি এবিসি ড্রাই পাউডার এক্সটিংগুইশার। এটি সাধারণ দাহ্য পদার্থ, দাহ্য তরল এবং বৈদ্যুতিক আগুনে কার্যকর।",
+    ),
+    "VO_Sc07Gate_bn": (
+        BN_VOICE,
+        "পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
+    ),
+    "VO_Sc07Hero_bn": (BN_VOICE, "আগুন নিভে গেছে। সঠিক এক্সটিংগুইশার ব্যবহার করায় বড় দুর্ঘটনা এড়ানো গেছে।"),
+    "VO_Sc07Complete_bn": (BN_VOICE, complete_bn(7)),
+    "VO_Sc07Complete_en": (EN_VOICE, complete_en(7)),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"

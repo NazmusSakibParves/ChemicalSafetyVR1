@@ -76,6 +76,9 @@ namespace ChemicalSafety.Editor
             var sc6 = BuildSc06Room(env6, art);
             Sc06BakeProbe(env, env6);
             env6.gameObject.SetActive(false);
+            var env7 = new GameObject("Environment_SC07").transform;
+            var sc7 = BuildSc07Room(env7, art);
+            env7.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -143,6 +146,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq5, "art", art);
             var mcq6 = Child("McqPanel_SC06", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq6, "art", art);
+            var mcq7 = Child("McqPanel_SC07", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq7, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -227,6 +232,17 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc06Jug").objectReferenceValue = sc6.jug;
             so.FindProperty("mcqSc06").objectReferenceValue = mcq6;
             so.FindProperty("sc06Ambience").objectReferenceValue = sc6.ambience;
+            so.FindProperty("envSc07").objectReferenceValue = env7.gameObject;
+            so.FindProperty("spawnSc07").objectReferenceValue = sc7.spawn;
+            so.FindProperty("sc07PillarStand").objectReferenceValue = sc7.standB;
+            so.FindProperty("sc07HeroStart").objectReferenceValue = sc7.heroStart;
+            so.FindProperty("extinguishers").objectReferenceValue = sc7.inspect;
+            so.FindProperty("sc07Gate").objectReferenceValue = sc7.gate;
+            so.FindProperty("sc07Crowd").objectReferenceValue = sc7.crowd;
+            so.FindProperty("sc07Fire").objectReferenceValue = sc7.fire;
+            so.FindProperty("sc07Ambience").objectReferenceValue = sc7.ambience;
+            so.FindProperty("mcqSc07").objectReferenceValue = mcq7;
+            SetRef(sc7.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
@@ -293,7 +309,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -467,6 +483,10 @@ namespace ChemicalSafety.Editor
             art.bnSc05InstructionPanel = B("BN_Sc05InstructionPanel");
             art.sdsSc05 = LoadSprite("2D/Sc05/SDS_SC05");
             art.sdsSc06 = LoadSprite("2D/Sc06/SDS_SC06");
+            art.sdsSc07 = LoadSprite("2D/Sc07/SDS_SC07");
+            art.extIconExtinguisher = LoadSprite("2D/Sc07/Icon_Extinguisher");
+            art.extIconFlammable = LoadSprite("2D/Sc07/Icon_Flammable");
+            art.extBadgeBc = LoadSprite("2D/Sc07/Icon_Badge_BC");
             art.gloveCardGlove = LoadSprite("2D/Sc04/GloveCard_Glove");
             art.gloveCardMaterial = LoadSprite("2D/Sc04/GloveCard_Material");
             art.gloveCardRating = LoadSprite("2D/Sc04/GloveCard_Rating");
@@ -475,6 +495,7 @@ namespace ChemicalSafety.Editor
             art.gateButton = LoadSprite("2D/Sc06/Gate_Button");
             art.gateButtonPrimary = LoadSprite("2D/Sc06/Gate_ButtonPrimary");
             art.bnSc06InstructionPanel = B("BN_Sc06InstructionPanel");
+            art.bnSc07InstructionPanel = B("BN_Sc07InstructionPanel");
             art.bnSc06HoodHint = B("BN_Sc06HoodHint");
             art.bnSc06JugHint = B("BN_Sc06JugHint");
             art.bnSc06SashHint = B("BN_Sc06SashHint");
@@ -583,6 +604,15 @@ namespace ChemicalSafety.Editor
             art.voSc06Gate = Keep("VO_Sc06Gate_bn.mp3", art.voSc06Gate);
             art.voSc06CompleteBn = Keep("VO_Sc06Complete_bn.mp3", art.voSc06CompleteBn);
             art.voSc06CompleteEn = Keep("VO_Sc06Complete_en.mp3", art.voSc06CompleteEn);
+            art.voSc07Instruction = Keep("VO_SC07_Instruction_bn.mp3", art.voSc07Instruction);
+            if (art.voSc07Ext == null || art.voSc07Ext.Length != 3)
+                art.voSc07Ext = new AudioClip[3];
+            for (var ei = 0; ei < 3; ei++)
+                art.voSc07Ext[ei] = Keep("VO_Sc07Ext" + ei + "_bn.mp3", art.voSc07Ext[ei]);
+            art.voSc07Gate = Keep("VO_Sc07Gate_bn.mp3", art.voSc07Gate);
+            art.voSc07Hero = Keep("VO_Sc07Hero_bn.mp3", art.voSc07Hero);
+            art.voSc07CompleteBn = Keep("VO_Sc07Complete_bn.mp3", art.voSc07CompleteBn);
+            art.voSc07CompleteEn = Keep("VO_Sc07Complete_en.mp3", art.voSc07CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

@@ -106,6 +106,20 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableMcqPanel mcqSc06;
         [SerializeField] private Sc06Ambience sc06Ambience;
 
+        [Header("SC07")]
+        [SerializeField] private GameObject envSc07;
+        [SerializeField] private Transform spawnSc07;
+        [Tooltip("In front of the pillar: the extinguishers are within arm's reach.")]
+        [SerializeField] private Transform sc07PillarStand;
+        [Tooltip("Where the hero appears for the extinguishing cutscene.")]
+        [SerializeField] private Transform sc07HeroStart;
+        [SerializeField] private ExtinguisherInspect extinguishers;
+        [SerializeField] private Sc06Gate sc07Gate;
+        [SerializeField] private Sc07Crowd sc07Crowd;
+        [SerializeField] private Sc07Fire sc07Fire;
+        [SerializeField] private Sc07Ambience sc07Ambience;
+        [SerializeField] private PresentableMcqPanel mcqSc07;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -159,6 +173,12 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Only", false) && envSc07 != null)
+            {
+                yield return RunScenario7();
                 yield break;
             }
 #endif
@@ -311,7 +331,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc04 != null ? Sc04Content.ModuleComplete
+            var doneLine = envSc07 != null ? Sc07Content.ModuleComplete
+                : envSc04 != null ? Sc04Content.ModuleComplete
                 : envSc03 != null ? Sc03Content.ModuleComplete
                 : "Module complete. Well done!";
             subtitle.Show(null, doneLine, 8f);
@@ -711,7 +732,209 @@ namespace ChemicalSafety.Presentable
             PlaceAtEyeLevel(mcqSc06.transform, panelDistance, false);
             yield return RunQuestion(mcqSc06, BuildSc06Question(), false, 6);
             Stage("sc06Done");
+            if (sc06Ambience != null)
+                sc06Ambience.End();
+
+            // SC07 (factory fire) starts after the SC06 question's NEXT
+            if (envSc07 != null)
+                yield return RunScenario7();
         }
+
+        // SC07: factory fire. Instruction card, the fire starts and the workers flee, SDS, inspect the three extinguishers,
+        // "inspection complete" card, the MCQ; the right answer makes the hero put the fire out.
+        private IEnumerator RunScenario7()
+        {
+            Stage("sc07");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc06Ambience != null)
+                sc06Ambience.End();
+            envSc07.SetActive(true);
+            clipboard.SetSheet(art.sdsSc07);
+            clipboard.SetVisible(false);
+            if (sc07Crowd != null)
+                sc07Crowd.ResetScene();
+            PlaceRig(spawnSc07.position, spawnSc07.forward);
+            if (sc07Ambience != null)
+                sc07Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc07Intro");
+            _instructionClip = art.voSc07Instruction != null ? art.voSc07Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc07Content.InstructionEnglish, art.bnSc07InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            // the fire starts, the alarm rings, the workers see it and run; the hero stays
+            Stage("sc07Event");
+            if (sc07Crowd != null)
+                yield return sc07Crowd.PlayEvent();
+            else
+                yield return PresentableFx.Wait(3f);
+
+            // the safety data sheet comes up in the left hand (X shows and hides it any time)
+            Stage("sc07Sds");
+            clipboard.SetVisible(true);
+            var sdsWait = 0f;
+            while (clipboard.IsVisible && sdsWait < 9f)
+            {
+                sdsWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            clipboard.SetVisible(false);
+
+            // to the pillar: the arrow ticks over the extinguishers one by one
+            yield return fader.FadeTo(1f, 0.3f);
+            if (sc07PillarStand != null)
+                PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
+            yield return fader.FadeTo(0f, 0.4f);
+
+            Stage("sc07Explore");
+            var again7 = true;
+            Coroutine extVoice = null;
+
+            IEnumerator SayExt(int index)
+            {
+                extinguishers.SetSpeaking(true);
+                yield return PlayVoice(art.voSc07Ext != null && index < art.voSc07Ext.Length ? art.voSc07Ext[index] : null);
+                extinguishers.SetSpeaking(false);
+                extVoice = null;
+            }
+
+            void OnExtOpened(int index)
+            {
+                StopVoice();
+                if (extVoice != null)
+                    StopCoroutine(extVoice);
+                extVoice = null;
+                extinguishers.SetSpeaking(false);
+                if (art.voSc07Ext != null && index >= 0 && index < art.voSc07Ext.Length && art.voSc07Ext[index] != null)
+                    extVoice = StartCoroutine(SayExt(index));
+            }
+
+            void OnExtClosed()
+            {
+                if (extVoice != null)
+                    StopCoroutine(extVoice);
+                extVoice = null;
+                StopVoice();
+                extinguishers.SetSpeaking(false);
+            }
+
+            if (extinguishers != null)
+            {
+                extinguishers.Opened += OnExtOpened;
+                extinguishers.Closed += OnExtClosed;
+                extinguishers.SpeakerClicked += OnExtOpened;
+                extinguishers.Begin();
+                while (again7)
+                {
+                    while (!extinguishers.AllSeen)
+                        yield return null;
+                    Stage("sc07Gate");
+                    yield return PresentableFx.Wait(0.35f);
+                    var choice7 = 0; // 1 = BACK, 2 = NEXT
+                    void OnBack7() => choice7 = 1;
+                    void OnNext7() => choice7 = 2;
+                    sc07Gate.Back += OnBack7;
+                    sc07Gate.Next += OnNext7;
+                    sc07Gate.Show();
+                    StartCoroutine(PlayVoice(art.voSc07Gate));
+                    while (choice7 == 0)
+                        yield return null;
+                    sc07Gate.Back -= OnBack7;
+                    sc07Gate.Next -= OnNext7;
+                    sc07Gate.Hide();
+                    StopAllVoiceCoroutines();
+                    StopVoice();
+                    if (choice7 == 1)
+                    {
+                        extinguishers.Begin();
+                        Stage("sc07Explore");
+                    }
+                    else
+                    {
+                        again7 = false;
+                    }
+                }
+
+                extinguishers.Opened -= OnExtOpened;
+                extinguishers.Closed -= OnExtClosed;
+                extinguishers.SpeakerClicked -= OnExtOpened;
+                OnExtClosed();
+                extinguishers.Stop();
+            }
+
+            Stage("sc07Question");
+            PlaceAtEyeLevel(mcqSc07.transform, panelDistance, false);
+            TurnAroundHead(mcqSc07.transform, -16f); // a little to the left so the fire stays visible
+            yield return RunQuestion(mcqSc07, BuildSc07Question(), false, 7);
+            if (sc07Ambience != null)
+                sc07Ambience.End();
+            Stage("sc07Done");
+        }
+
+        // The right answer: back to the first view, the hero fetches the CO2 extinguisher and puts the fire out.
+        private IEnumerator Sc07Win(PresentableMcqPanel panel)
+        {
+            Stage("sc07Extinguish");
+            yield return PresentableFx.Wait(0.4f);
+            panel.gameObject.SetActive(false);
+            yield return fader.FadeTo(1f, 0.35f);
+            if (spawnSc07 != null)
+                PlaceRig(spawnSc07.position, spawnSc07.forward);
+            if (sc07Crowd != null && sc07HeroStart != null && sc07PillarStand != null)
+                sc07Crowd.PlaceHero(sc07HeroStart.position, sc07PillarStand.position + Vector3.back * 2f);
+            yield return fader.FadeTo(0f, 0.5f);
+            // "the fire is out" is said only when the flames are really out
+            void OnFireOut() => StartCoroutine(PlayVoice(art.voSc07Hero));
+            if (sc07Crowd != null)
+            {
+                sc07Crowd.FireOut += OnFireOut;
+                yield return sc07Crowd.HeroExtinguish();
+                sc07Crowd.FireOut -= OnFireOut;
+            }
+            yield return fader.FadeTo(1f, 0.35f);
+            if (sc07PillarStand != null)
+                PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
+            panel.gameObject.SetActive(true);
+            yield return fader.FadeTo(0f, 0.45f);
+        }
+
+        private void TurnAroundHead(Transform t, float degrees)
+        {
+            if (_cam == null)
+                return;
+            t.RotateAround(_cam.position, Vector3.up, degrees);
+        }
+
 
         private IEnumerator Sc06InspectionRound()
         {
@@ -1249,6 +1472,15 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 7)
+            {
+                // the hero puts the fire out between the right-choice card and the completion line
+                yield return Sc07Win(mcqSc07);
+                yield return PlayVoice(art.voSc07CompleteBn);
+                yield return PlayVoice(art.voSc07CompleteEn);
+                yield break;
+            }
+
             AudioClip doneBn;
             AudioClip doneEn;
             if (scenario == 6)
@@ -1470,6 +1702,32 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc07Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc07Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc07Content.OptionLabels[i],
+                    feedback = Sc07Content.OptionFeedback[i],
+                    wrongTitle = Sc07Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc07Content.QuestionHeader,
+                prompt = Sc07Content.QuestionPrompt,
+                correctIndex = Sc07Content.CorrectIndex,
+                correctTitle = Sc07Content.CorrectTitle,
+                wrongTitle = Sc07Content.WrongTitle,
+                nextLabel = Sc07Content.FinishLabel,
+                options = options,
+                fancy = true
             };
         }
 

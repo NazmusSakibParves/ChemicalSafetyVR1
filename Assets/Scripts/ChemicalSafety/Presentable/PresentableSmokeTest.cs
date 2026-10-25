@@ -208,12 +208,12 @@ namespace ChemicalSafety.Presentable
             p.Poked -= On;
             if (!fired)
             {
-                Say("SC06 " + what + ": the real fingertip did NOT fire the poke, using the direct event");
+                Say(what + ": the real fingertip did NOT fire the poke, using the direct event");
                 Poke(p);
             }
             else
             {
-                Say("SC06 " + what + ": real fingertip poke fired");
+                Say(what + ": real fingertip poke fired");
             }
 
             yield return new WaitForSeconds(0.3f);
@@ -416,6 +416,179 @@ namespace ChemicalSafety.Presentable
             Click(mcq6.transform, "NextButton");
         }
 
+        // Scenario 7: instruction, the fire event (workers walk in, flee), SDS, the three extinguishers by real fingertip, the gate (BACK once,
+        // then NEXT), the MCQ (wrong, then right), the hero puts the fire out, completion voice.
+        private IEnumerator Sc07Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc07Intro", 40f);
+            var ext = Get<ExtinguisherInspect>(_director, "extinguishers");
+            var gate = Get<Sc06Gate>(_director, "sc07Gate");
+            var mcq7 = Get<PresentableMcqPanel>(_director, "mcqSc07");
+            var fire = Get<Sc07Fire>(_director, "sc07Fire");
+            var crowd = Get<Sc07Crowd>(_director, "sc07Crowd");
+            var clip7 = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(2.5f);
+            Say("SC07 before the event: fire intensity = " + fire.Intensity.ToString("0.00") + " (expected 0), hero active = " + crowd.Hero.gameObject.activeSelf + " (expected False)");
+            yield return Shot("60_sc07_instruction");
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var wc = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && wc < 40f)
+            {
+                wc += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Click(panel.transform, "ContinueButton");
+
+            // the event: fire catches, alarm, workers walk in, startle, run; the hero stays
+            yield return WaitStage("sc07Event", 20f);
+            var shots = 0;
+            var te = 0f;
+            while (_director.CurrentStage == "sc07Event" && te < 90f)
+            {
+                te += Time.unscaledDeltaTime;
+                if (te > 3.0f * (shots + 1) && shots < 11)
+                {
+                    shots++;
+                    var active = 0;
+                    for (var i = 0; i < crowd.Count; i++)
+                        if (crowd.Hero != null && crowd.gameObject != null)
+                            active++;
+                    yield return Shot("61_sc07_event_" + shots);
+                    Say("SC07 event t=" + te.ToString("0.0") + " fire = " + fire.Intensity.ToString("0.00"));
+                }
+
+                yield return null;
+            }
+
+            Say("SC07 event over after " + te.ToString("0.0") + " s, fire = " + fire.Intensity.ToString("0.00") + " (expected 1), hero active = " + crowd.Hero.gameObject.activeSelf +
+                " (expected True), hero speed = " + crowd.Hero.Speed.ToString("0.00"));
+
+            yield return WaitStage("sc07Sds", 20f);
+            yield return new WaitForSeconds(1.2f);
+            Say("SC07 SDS shown = " + clip7.IsVisible + " (expected True)");
+            yield return Shot("64_sc07_sds");
+            clip7.Toggle();
+            yield return WaitStage("sc07Explore", 20f);
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("65_sc07_pillar");
+            for (var round = 0; round < 2; round++)
+            {
+                for (var g = 0; g < 3; g++)
+                {
+                    var covers = ext.MeshWithinReach(g);
+                    Say("SC07 extinguisher " + g + " mesh in reach = " + covers);
+                    if (!covers)
+                        Debug.LogError("[SMOKE] SC07 extinguisher " + g + " collider does not cover the visible mesh");
+                    yield return FingerPoke(ext.PokeOf(g), "extinguisher " + g);
+                    var wh = 0f;
+                    while (!ext.Holding && wh < 3f)
+                    {
+                        wh += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    yield return new WaitForSeconds(0.9f);
+                    Say("SC07 holding " + g + " = " + ext.Holding + ", card = '" + ext.CardTitle + "' / '" + ext.CardName + "' / '" + ext.CardUse + "', class badge = " + ext.BadgeVisible);
+                    var cardT = ext.CardTransform;
+                    if (cardT != null)
+                        LayoutCheck("SC07 card " + g, cardT);
+                    if (round == 0)
+                        yield return Shot("66_sc07_card_" + g);
+                    Click(ext.transform, "CloseButton");
+                    var wb = 0f;
+                    while (ext.Holding && wb < 3f)
+                    {
+                        wb += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+                }
+
+                yield return WaitStage("sc07Gate", 20f);
+                var wg = 0f;
+                while (!gate.Visible && wg < 10f)
+                {
+                    wg += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(1.2f);
+                if (round == 0)
+                {
+                    LayoutCheck("SC07 gate", gate.Card);
+                    yield return Shot("69_sc07_gate");
+                    Click(gate.transform, "BackButton");
+                    yield return WaitStage("sc07Explore", 10f);
+                    yield return new WaitForSeconds(0.6f);
+                }
+                else
+                {
+                    Click(gate.transform, "NextButton");
+                }
+            }
+
+            yield return WaitStage("sc07Question", 20f);
+            var q = 0f;
+            while (!mcq7.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.4f);
+            Say("SC07 MCQ wow look = " + mcq7.Fancy + " (expected True)");
+            LayoutCheck("SC07 MCQ", mcq7.transform);
+            yield return Shot("70_sc07_question");
+            Click(mcq7.transform, "Row4"); // foam: wrong
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("71_sc07_wrong");
+            Click(mcq7.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq7.transform, "Row2"); // CO2: right
+            yield return new WaitForSeconds(1.8f);
+            yield return Shot("72_sc07_right");
+            LayoutCheck("SC07 MCQ right card", mcq7.transform);
+            yield return WaitStage("sc07Extinguish", 30f);
+            var tx = 0f;
+            var sh = 0;
+            var minFire = 1f;
+            while (_director.CurrentStage == "sc07Extinguish" && tx < 60f)
+            {
+                tx += Time.unscaledDeltaTime;
+                minFire = Mathf.Min(minFire, fire.Intensity);
+                if (tx > 3.5f * (sh + 1) && sh < 6)
+                {
+                    sh++;
+                    yield return Shot("73_sc07_hero_" + sh);
+                    Say("SC07 extinguishing t=" + tx.ToString("0.0") + " fire = " + fire.Intensity.ToString("0.00") + " hero holds extinguisher = " + crowd.HeroHoldsExtinguisher +
+                        " jet = " + (fire.Spray != null && fire.Spray.isPlaying));
+                }
+
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc07Complete"))
+                    break;
+                yield return null;
+            }
+
+            Say("SC07 fire out = " + (fire.Intensity < 0.05f) + " (expected True), lowest intensity = " + minFire.ToString("0.00"));
+            var heard = "";
+            var h = 0f;
+            while (h < 16f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc07Complete"))
+                    heard = voiceSrc.clip.name;
+                if (heard.Length > 0 && h > 1f)
+                    break;
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 7 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("74_sc07_done");
+            Click(mcq7.transform, "NextButton");
+        }
+
         private static void Poke(PokeTarget p)
         {
             typeof(PokeTarget).GetMethod("Fire", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -506,6 +679,18 @@ namespace ChemicalSafety.Presentable
             // --- Instructions panel: Continue hidden during the VO, shown after, speaker replays, Continue advances.
             var panel = Get<InstructionPanelView>(_director, "instructionPanel");
             var voiceSrc = Get<AudioSource>(_director, "voice");
+#if UNITY_EDITOR
+            // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Only", false))
+            {
+                Say("SC07-only run (dev start)");
+                yield return Sc07Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+#endif
             yield return WaitStage("instruction");
             yield return new WaitForSeconds(1.5f);
             var cont = FindDeep(panel.transform, "ContinueButton");
@@ -1343,6 +1528,7 @@ namespace ChemicalSafety.Presentable
 
             // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT
             yield return Sc06Smoke(panel, voiceSrc, mcq5);
+            yield return Sc07Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

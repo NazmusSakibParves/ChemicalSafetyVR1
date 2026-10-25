@@ -88,6 +88,10 @@ MonoBehaviour:
   bnSc04InstructionPanel: {fileID: 21300000, guid: e3a2dbef8755add43ab10fcd4340cb0a, type: 3}
   bnSc05InstructionPanel: {fileID: 21300000, guid: c19da18270124d74b8645b75546146c6, type: 3}
   sdsSc06: {fileID: 21300000, guid: 212bb24e10dbfaf479db34efc5fe746e, type: 3}
+  gloveCardGlove: {fileID: 21300000, guid: 1b7760afbcb1a0646b74b60f7b7ee02a, type: 3}
+  gloveCardMaterial: {fileID: 21300000, guid: b9557096105c27b47b2baf6ced6f0430, type: 3}
+  gloveCardRating: {fileID: 21300000, guid: 298dc60eb0ce49f43891a27ada7eb23b, type: 3}
+  gloveCardTime: {fileID: 21300000, guid: 5918e735a1be0054fa8d0baa1a8bee54, type: 3}
   gatePanel: {fileID: 21300000, guid: 4c0beb29add6a024ca8fcb0c0ad8334e, type: 3}
   gateButton: {fileID: 21300000, guid: 44b5c7f6cad88fa42888f5fd2d3d6caf, type: 3}
   gateButtonPrimary: {fileID: 21300000, guid: 56fa291785c39bf41a3bc94eca60d8e6, type: 3}
@@ -140,5 +144,19 @@ MonoBehaviour:
   voSc06Gate: {fileID: 8300000, guid: 9f745d9660e451f498ef4f264e60776c, type: 3}
   voSc06CompleteBn: {fileID: 8300000, guid: de5f04f3298020a498b3debc409b9ea9, type: 3}
   voSc06CompleteEn: {fileID: 8300000, guid: 348981037c2b60246bc060c755537d2f, type: 3}
+  sdsSc07: {fileID: 21300000, guid: b2d678c67547ee24bb94c3eddef57647, type: 3}
+  bnSc07InstructionPanel: {fileID: 21300000, guid: 06d38772e6ce65743a7db91b19159fc7, type: 3}
+  extIconExtinguisher: {fileID: 21300000, guid: 61e20a389e7effd43a4958c38514baf8, type: 3}
+  extIconFlammable: {fileID: 21300000, guid: 3d620620ac974f0418288f2f29bcebf0, type: 3}
+  extBadgeBc: {fileID: 21300000, guid: ae08c667894dd214ba731069cf2e4291, type: 3}
+  voSc07Instruction: {fileID: 8300000, guid: d9de3a308003f3f41a50346f5f23edb6, type: 3}
+  voSc07Ext:
+  - {fileID: 8300000, guid: 9e4b24178e8010947846b0da0a143ef7, type: 3}
+  - {fileID: 8300000, guid: d20edd522e399cd4f94c0e5f3375789b, type: 3}
+  - {fileID: 8300000, guid: 97464f65a84bb2f43bba347fb06e4587, type: 3}
+  voSc07Gate: {fileID: 8300000, guid: 804c2a8a33a155c49a0fcb2478c8df0e, type: 3}
+  voSc07Hero: {fileID: 8300000, guid: 828eb864374859340b89a0041f7b6b72, type: 3}
+  voSc07CompleteBn: {fileID: 8300000, guid: 6c46c2bd6d79d0642822befcb7b70d45, type: 3}
+  voSc07CompleteEn: {fileID: 8300000, guid: 9ff9b2fb2a7664c42894f917ad930588, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
