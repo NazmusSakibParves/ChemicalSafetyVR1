@@ -67,11 +67,11 @@ d.text(((1024 - tw) / 2, 28), t, font=f, fill=(25, 25, 28, 255))
 im.save(os.path.join(TEX, "Label_Sc08PpeTitle.png"))
 
 # ---- slot captions (small black text on transparent) for the board: goggles, respirator, gloves, apron
-caps = ["SPLASH GOGGLES", "RESPIRATOR", "NEOPRENE GLOVES", "ACID-RESISTANT APRON"]
+caps = ["GOGGLES / FACE SHIELD", "RESPIRATOR", "NEOPRENE GLOVES", "ACID-RESISTANT APRON"]
 for i, c in enumerate(caps):
     im = Image.new("RGBA", (768, 96), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    f = font(58 if len(c) < 18 else 48)
+    f = font(58 if len(c) < 18 else 44)
     tw = d.textlength(c, font=f)
     d.text(((768 - tw) / 2, 16), c, font=f, fill=(35, 38, 40, 255))
     im.save(os.path.join(TEX, "Label_Sc08Cap%d.png" % i))
@@ -124,4 +124,91 @@ for y in range(70, 560, 34):
 im.save(os.path.join(TEX, "Label_Sc08Notebook.png"))
 
 # ---- vapor sprite for acid fumes is the SC06 Fx_Vapor/Fx_Wisp; nothing to add
+
+
+import numpy as np
+
+# ---- apron PVC-coated fabric: albedo (fine weave + faint mottling) and normal (weave), tile 512
+N = 512
+rng = np.random.RandomState(5)
+yy, xx = np.mgrid[0:N, 0:N]
+weave = (np.sin(xx / N * 2 * np.pi * 64) * np.sin(yy / N * 2 * np.pi * 64))
+mott = rng.rand(N // 16, N // 16)
+mott = np.array(Image.fromarray((mott * 255).astype(np.uint8)).resize((N, N), Image.BICUBIC)) / 255.0
+base = np.array([150, 156, 158], dtype=np.float32)
+alb = np.zeros((N, N, 3), dtype=np.float32)
+for c in range(3):
+    alb[..., c] = base[c] * (0.94 + 0.05 * mott + 0.012 * weave)
+Image.fromarray(np.clip(alb, 0, 255).astype(np.uint8), "RGB").save(os.path.join(TEX, "Apron_Albedo.png"))
+# ---- venetian blinds seen from inside (slats, daylight gaps, cord), 512x640, alpha
+W, H = 512, 640
+im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+d = ImageDraw.Draw(im)
+n = 40
+sh = H / n
+for i in range(n):
+    y0 = int(i * sh)
+    d.rectangle((0, y0, W, y0 + int(sh * 0.72)), fill=(226, 226, 222, 255))
+    d.rectangle((0, y0 + int(sh * 0.72), W, y0 + int(sh * 0.86)), fill=(150, 150, 146, 255))
+    d.rectangle((0, y0 + int(sh * 0.86), W, y0 + int(sh)), fill=(205, 222, 235, 70))
+d.line((W - 36, 0, W - 36, H), fill=(120, 120, 118, 255), width=3)
+d.rectangle((W - 44, H - 34, W - 28, H - 8), fill=(110, 110, 108, 255))
+im.save(os.path.join(TEX, "Label_Sc08Blinds.png"))
+
+# ---- floor stains / scuffs (soft dark blotches with alpha)
+im = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+px = np.zeros((512, 512), dtype=np.float32)
+for _ in range(14):
+    cx, cy = rng.randint(40, 470, 2)
+    r = rng.randint(20, 70)
+    g = np.exp(-(((xx - cx) ** 2 + (yy - cy) ** 2) / (2.0 * (r * 0.6) ** 2)))
+    px = np.maximum(px, g * rng.uniform(0.25, 0.6))
+a = (px * 150).astype(np.uint8)
+arr = np.zeros((512, 512, 4), dtype=np.uint8)
+arr[..., 0] = 40; arr[..., 1] = 38; arr[..., 2] = 34; arr[..., 3] = a
+Image.fromarray(arr, "RGBA").save(os.path.join(TEX, "Label_Sc08Stain.png"))
+
+# ---- small wall signs: first aid, fire alarm pull station label, exit
+def plate(name, size, bg, draw):
+    im = Image.new("RGBA", size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((0, 0, size[0] - 1, size[1] - 1), radius=14, fill=bg)
+    draw(d, size)
+    im.save(os.path.join(TEX, name + ".png"))
+
+
+def firstaid(d, size):
+    cx, cy = size[0] // 2, size[1] // 2 - 20
+    d.rectangle((cx - 28, cy - 90, cx + 28, cy + 90), fill="white")
+    d.rectangle((cx - 90, cy - 28, cx + 90, cy + 28), fill="white")
+    f = font(46)
+    t = "FIRST AID"
+    d.text(((size[0] - d.textlength(t, font=f)) / 2, size[1] - 70), t, font=f, fill="white")
+
+
+plate("Label_Sc08FirstAid", (360, 360), (20, 130, 70, 255), firstaid)
+
+
+def exitsign(d, size):
+    f = font(120)
+    t = "EXIT"
+    d.text(((size[0] - d.textlength(t, font=f)) / 2, 20), t, font=f, fill="white")
+    d.polygon([(40, 160), (110, 130), (110, 190)], fill="white")
+
+
+plate("Label_Sc08Exit", (512, 220), (14, 140, 64, 255), exitsign)
+
+
+def alarm(d, size):
+    d.rectangle((20, 20, size[0] - 20, size[1] - 20), fill=(190, 30, 30, 255))
+    f = font(34)
+    t = "FIRE ALARM"
+    d.text(((size[0] - d.textlength(t, font=f)) / 2, 60), t, font=f, fill="white")
+    d.rectangle((60, 120, size[0] - 60, size[1] - 70), fill=(230, 230, 230, 255))
+    f2 = font(26)
+    t2 = "PULL DOWN"
+    d.text(((size[0] - d.textlength(t2, font=f2)) / 2, size[1] - 58), t2, font=f2, fill="white")
+
+
+plate("Label_Sc08Alarm", (240, 320), (150, 20, 20, 255), alarm)
 print("SC08 art written")

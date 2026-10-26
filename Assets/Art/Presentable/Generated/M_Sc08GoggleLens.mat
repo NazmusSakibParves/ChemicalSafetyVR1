@@ -25,8 +25,8 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Clear: 0.08
-    - _Edge: 0.85
+    - _Clear: 0.05
+    - _Edge: 0.9
     - _Gloss: 160
     - _Power: 2.6
     - _Reflect: 1.5

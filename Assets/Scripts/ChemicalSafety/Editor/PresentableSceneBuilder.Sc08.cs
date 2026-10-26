@@ -382,24 +382,8 @@ namespace ChemicalSafety.Editor
             const float counterTop = 0.9f;
             var cX0 = ox + 0.95f;
             var cX1 = ox + 2.85f;
-            var counterBody = Mat("Sc08CounterBody", new Color(0.78f, 0.79f, 0.77f), 0.4f, 0f);
-            var epoxy = Mat("Sc08Epoxy", new Color(0.055f, 0.057f, 0.06f), 0.62f, 0f);
-            Box("CounterBody", room, new Vector3((cX0 + cX1) * 0.5f, 0.44f, zBack + 0.31f), new Vector3(cX1 - cX0, 0.88f, 0.62f), counterBody);
-            Box("CounterTop", room, new Vector3((cX0 + cX1) * 0.5f, counterTop - 0.02f, zBack + 0.33f), new Vector3(cX1 - cX0 + 0.03f, 0.04f, 0.68f), epoxy, false);
-            Box("CounterSplash", room, new Vector3((cX0 + cX1) * 0.5f, counterTop + 0.05f, zBack + 0.02f), new Vector3(cX1 - cX0, 0.1f, 0.02f), epoxy, false);
-            for (var i = 0; i <= 3; i++)
-            {
-                var sx = Mathf.Lerp(cX0 + 0.02f, cX1 - 0.02f, i / 3f);
-                Box("CounterSeam" + i, room, new Vector3(sx, 0.44f, zBack + 0.625f), new Vector3(0.012f, 0.8f, 0.01f), darkSteel, false);
-                if (i < 3)
-                    Box("CounterHandle" + i, room, new Vector3(sx + (cX1 - cX0) / 6f - 0.06f, 0.66f, zBack + 0.635f), new Vector3(0.1f, 0.018f, 0.02f), steelPaint, false);
-            }
-
-            // sink basin (steel) and gooseneck tap
-            var sinkSteel = Mat("Sc08SinkSteel", new Color(0.74f, 0.76f, 0.78f), 0.7f, 0.1f);
-            Box("SinkBasin", room, new Vector3(ox + 1.7f, counterTop + 0.002f, zBack + 0.34f), new Vector3(0.62f, 0.006f, 0.42f), sinkSteel, false);
-            Cyl("TapPost", room, new Vector3(ox + 1.7f, counterTop, zBack + 0.1f), 0.28f, 0.013f, sinkSteel);
-            Box("TapArm", room, new Vector3(ox + 1.7f, counterTop + 0.28f, zBack + 0.18f), new Vector3(0.022f, 0.022f, 0.16f), sinkSteel, false);
+            var epoxy = Mat("Sc08Epoxy", new Color(0.05f, 0.052f, 0.056f), 0.78f, 0f);
+            Sc08Counter(room, cX0, cX1, zBack, counterTop, ox + 1.7f, epoxy);
 
             var shower = SpawnSc08("SafetyShower.glb", room);
             if (shower != null)
@@ -426,52 +410,8 @@ namespace ChemicalSafety.Editor
             // ---------------------------------------------------------------- the island table (black epoxy top, grey drawers, like the picture)
             const float tableX = -1.15f;
             const float tableZ = -0.35f;
-            var table = SpawnSc06("Table.glb", room);
             var tableTop = 0.92f;
-            var cabinetMat = Mat("Sc08Cabinet", new Color(0.70f, 0.71f, 0.70f), 0.42f, 0f);
-            if (table != null)
-            {
-                table.name = "IslandTable";
-                Renderer cabinetR = null;
-                var thin = new List<Renderer>();
-                foreach (var r in table.GetComponentsInChildren<Renderer>(true))
-                {
-                    var mn = r.sharedMaterial != null ? r.sharedMaterial.name : "";
-                    if (mn.Contains("Scratched"))
-                        thin.Add(r);
-                    else
-                        cabinetR = r;
-                }
-
-                var tb = BoundsOfTree(table.transform);
-                if (tb.size.z > tb.size.x)
-                    table.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * table.transform.rotation;
-                tb = BoundsOfTree(table.transform);
-                table.transform.localScale *= 2.1f / Mathf.Max(0.01f, tb.size.x);
-                tb = BoundsOfTree(table.transform);
-                if (cabinetR != null && cabinetR.bounds.center.x < tb.center.x)
-                {
-                    table.transform.RotateAround(tb.center, Vector3.up, 180f);
-                    tb = BoundsOfTree(table.transform);
-                }
-
-                table.transform.position += new Vector3(ox + tableX - tb.center.x, -tb.min.y, tableZ - tb.center.z);
-                tb = BoundsOfTree(table.transform);
-                tableTop = tb.max.y;
-                foreach (var r in thin)
-                    r.gameObject.SetActive(false);
-                var cabinetBounds = new Bounds(Vector3.zero, Vector3.zero);
-                if (cabinetR != null)
-                {
-                    var ms = cabinetR.sharedMaterials;
-                    for (var mi = 0; mi < ms.Length; mi++)
-                        ms[mi] = cabinetMat;
-                    cabinetR.sharedMaterials = ms;
-                    cabinetBounds = cabinetR.bounds;
-                }
-
-                Sc06SolidTable(room, new Vector3(ox + tableX, tableTop, tableZ), cabinetBounds, epoxy);
-            }
+            Sc08Island(room, ox + tableX, tableZ, tableTop, epoxy);
 
             // ---------------------------------------------------------------- on the table: the white transparent tray, notebook, goggles
             var T = tableTop;
@@ -481,7 +421,7 @@ namespace ChemicalSafety.Editor
             QuadObj("Notebook", room, new Vector3(ox + tableX - 0.62f, T + 0.006f, 0.22f), new Vector3(90f, 12f, 0f), new Vector2(0.21f, 0.27f),
                 Sc06Label("Sc08Notebook", "Label_Sc08Notebook", false, 0.2f));
             var glassMat = Sc06GlassMat("Sc06BenchGlass", new Color(0.82f, 0.92f, 0.95f), 0.07f, 0.75f);
-            Sc08Goggles(room, "TableGoggles", new Vector3(ox + tableX + 0.62f, T + 0.034f, 0.18f), 0.8f, Quaternion.Euler(0f, 200f, 0f), true);
+            Sc08Goggles(room, "TableGoggles", new Vector3(ox + tableX + 0.62f, T + 0.012f, 0.18f), 1.0f, Quaternion.Euler(-82f, 200f, 0f));
             var shadowMat = ShadowMat(AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/ContactShadow.png"));
             void Shadow(string name, float sx, float sz, float w2, float d2, float y)
             {
@@ -509,6 +449,8 @@ namespace ChemicalSafety.Editor
             rest.position = trayRest;
             Box("HoodRubberMat", room, new Vector3(trayRest.x, surfaceY + 0.004f, trayRest.z), new Vector3(0.9f, 0.006f, 0.62f), Mat("Sc06Rubber", new Color(0.05f, 0.05f, 0.055f), 0.15f, 0f), false);
             Shadow("ShadowHoodTray", trayRest.x, trayRest.z, 0.88f, 0.64f, surfaceY + 0.006f);
+
+            Sc08Dress(room, ox, x0, x1, zBack, zFront, h, winZ);
 
             // ---------------------------------------------------------------- PPE donning station on the right wall
             refs.ppe = Sc08BuildPpeStation(room, x0, art, out refs.ppeStand);

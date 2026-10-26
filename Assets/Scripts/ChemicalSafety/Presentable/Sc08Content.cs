@@ -21,7 +21,7 @@ namespace ChemicalSafety.Presentable
 
         public static readonly string[] PpeNames =
         {
-            "Splash Goggles",
+            "Goggles / Face Shield",
             "Respirator",
             "Neoprene Gloves",
             "Acid-resistant Apron"
