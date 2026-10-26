@@ -158,5 +158,22 @@ MonoBehaviour:
   voSc07Hero: {fileID: 8300000, guid: 828eb864374859340b89a0041f7b6b72, type: 3}
   voSc07CompleteBn: {fileID: 8300000, guid: 6c46c2bd6d79d0642822befcb7b70d45, type: 3}
   voSc07CompleteEn: {fileID: 8300000, guid: 9ff9b2fb2a7664c42894f917ad930588, type: 3}
+  sdsSc08: {fileID: 21300000, guid: cedd1da774d98b54c8a63d6490d5345f, type: 3}
+  bnSc08InstructionPanel: {fileID: 21300000, guid: 034256eb8c6cc4b4ea9ca835b8b25bae, type: 3}
+  bnSc08PpeHint: {fileID: 21300000, guid: d9f8c7cbbc3efe54692f3e64ef2cc0c3, type: 3}
+  bnSc08TrayHint: {fileID: 21300000, guid: e45dbd4540d3b2e49a026c4c31a61a1a, type: 3}
+  bnSc08SashHint: {fileID: 21300000, guid: 2d3ddae8c8d248948860092b1fcb48e6, type: 3}
+  bnSc08MixHint: {fileID: 21300000, guid: 0f6273cecc430a84692e0bc9e45ce50e, type: 3}
+  voSc08Instruction: {fileID: 8300000, guid: 1eb79cde66cbec84a87ecb4d3d49a484, type: 3}
+  voSc08Ppe: {fileID: 8300000, guid: 3d3f53404d76e2447b55047bd817e40d, type: 3}
+  voSc08PpeDone: {fileID: 8300000, guid: 721af6cd90c2da5438d9de3d159dd47a, type: 3}
+  voSc08Hood: {fileID: 8300000, guid: 5dbecec0c5b866d4b89eb236a402daff, type: 3}
+  voSc08HoodOn: {fileID: 8300000, guid: 0429acdae84a54e4b8ed7f8193f731c9, type: 3}
+  voSc08Sash: {fileID: 8300000, guid: fa1a4b906b8961d4ca2865c42b562552, type: 3}
+  voSc08HoodWarn: {fileID: 8300000, guid: daedd34629d16cc40a2552a8199b21ac, type: 3}
+  voSc08Mix: {fileID: 8300000, guid: be6207a3108364a489ec0ab216fb2ba8, type: 3}
+  voSc08Gate: {fileID: 8300000, guid: 37bf82f9c75168e40810644b3bae857f, type: 3}
+  voSc08CompleteBn: {fileID: 8300000, guid: 4d0b17f2ee7db2947b822a10339ac3a6, type: 3}
+  voSc08CompleteEn: {fileID: 8300000, guid: 8a49255fce03943419e1e8f6f8c056be, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

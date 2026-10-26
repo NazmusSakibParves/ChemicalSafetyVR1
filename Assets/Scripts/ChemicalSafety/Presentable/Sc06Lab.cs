@@ -29,6 +29,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Bounds hoodBounds;
         [SerializeField] private float openTravel = 1.05f;
         [SerializeField] private float openSeconds = 1.7f;
+        [Tooltip("Size of the vapor puffs from the Mouth (1 = the 5 L solvent container, smaller for a beaker).")]
+        [SerializeField] private float vaporScale = 1f;
         [Tooltip("World position and direction (forward = into the nozzle) of the LEV arm inlet.")]
         [SerializeField] private Transform levNozzle;
 
@@ -408,7 +410,7 @@ namespace ChemicalSafety.Presentable
             main.duration = 6f;
             main.startLifetime = new ParticleSystem.MinMaxCurve(3.2f, 4.6f);
             main.startSpeed = new ParticleSystem.MinMaxCurve(0.20f, 0.34f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.12f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.07f * vaporScale, 0.12f * vaporScale);
             main.startRotation = new ParticleSystem.MinMaxCurve(0f, 6.28f);
             main.startColor = new Color(0.9f, 0.94f, 0.96f, 0.36f);
             main.maxParticles = 60;
@@ -442,7 +444,7 @@ namespace ChemicalSafety.Presentable
             main.duration = 5f;
             main.startLifetime = new ParticleSystem.MinMaxCurve(2.4f, 3.4f);
             main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.5f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.11f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.07f * vaporScale, 0.11f * vaporScale);
             main.startRotation = new ParticleSystem.MinMaxCurve(-0.4f, 0.4f);
             main.startColor = new Color(0.92f, 0.96f, 0.98f, 0.28f);
             main.maxParticles = 30;

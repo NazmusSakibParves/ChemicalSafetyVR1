@@ -173,6 +173,24 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc07Hero;
         public AudioClip voSc07CompleteBn;
         public AudioClip voSc07CompleteEn;
+        [Header("Scenario 8")]
+        public Sprite sdsSc08;
+        public Sprite bnSc08InstructionPanel;
+        public Sprite bnSc08PpeHint;
+        public Sprite bnSc08TrayHint;
+        public Sprite bnSc08SashHint;
+        public Sprite bnSc08MixHint;
+        public AudioClip voSc08Instruction;
+        public AudioClip voSc08Ppe;
+        public AudioClip voSc08PpeDone;
+        public AudioClip voSc08Hood;
+        public AudioClip voSc08HoodOn;
+        public AudioClip voSc08Sash;
+        public AudioClip voSc08HoodWarn;
+        public AudioClip voSc08Mix;
+        public AudioClip voSc08Gate;
+        public AudioClip voSc08CompleteBn;
+        public AudioClip voSc08CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

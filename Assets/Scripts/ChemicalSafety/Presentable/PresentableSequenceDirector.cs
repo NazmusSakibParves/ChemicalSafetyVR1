@@ -125,6 +125,23 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc07Ambience sc07Ambience;
         [SerializeField] private PresentableMcqPanel mcqSc07;
 
+        [Header("SC08")]
+        [SerializeField] private GameObject envSc08;
+        [SerializeField] private Transform spawnSc08;
+        [SerializeField] private Transform sc08TableStand;
+        [Tooltip("In front of the island table: the tray is within arm reach.")]
+        [SerializeField] private Transform sc08BenchStand;
+        [SerializeField] private Transform sc08HoodStand;
+        [SerializeField] private Transform sc08PanelStand;
+        [Tooltip("In front of the PPE Donning Station on the right wall.")]
+        [SerializeField] private Transform sc08PpeStand;
+        [SerializeField] private Sc06Lab sc08Lab;
+        [SerializeField] private Sc08Mix sc08Mix;
+        [SerializeField] private Sc08Ppe sc08Ppe;
+        [SerializeField] private Sc06Gate sc08Gate;
+        [SerializeField] private Sc06Ambience sc08Ambience;
+        [SerializeField] private PresentableMcqPanel mcqSc08;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -178,6 +195,12 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false) && envSc08 != null)
+            {
+                yield return RunScenario8();
                 yield break;
             }
 
@@ -336,7 +359,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc07 != null ? Sc07Content.ModuleComplete
+            var doneLine = envSc08 != null ? Sc08Content.ModuleComplete
+                : envSc07 != null ? Sc07Content.ModuleComplete
                 : envSc04 != null ? Sc04Content.ModuleComplete
                 : envSc03 != null ? Sc03Content.ModuleComplete
                 : "Module complete. Well done!";
@@ -914,6 +938,10 @@ namespace ChemicalSafety.Presentable
             if (sc07Ambience != null)
                 sc07Ambience.End();
             Stage("sc07Done");
+
+            // SC08 (acid dilution) starts after the SC07 question's NEXT
+            if (envSc08 != null)
+                yield return RunScenario8();
         }
 
         // The right answer: back to the first view, the hero fetches the CO2 extinguisher and puts the fire out.
@@ -946,6 +974,187 @@ namespace ChemicalSafety.Presentable
             panel.transform.localScale = panelScale;
             _sc07WinDone = true;
             yield return fader.FadeTo(0f, 0.45f);
+        }
+
+        // SC08: acid dilution. Instruction card, PPE donning station (four items), fume hood on, carry the tray to the hood,
+        // open the sash, add the acid to the water slowly while stirring, "practice complete" card, the MCQ.
+        private IEnumerator RunScenario8()
+        {
+            Stage("sc08");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc07Ambience != null)
+                sc07Ambience.End();
+            envSc08.SetActive(true);
+            clipboard.SetSheet(art.sdsSc08);
+            clipboard.SetVisible(false);
+            sc08Lab.ResetLab();
+            sc08Mix.ResetAll();
+            sc08Ppe.ResetAll();
+            PlaceRig(spawnSc08.position, spawnSc08.forward);
+            sc08Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc08Intro");
+            _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc08Content.InstructionEnglish, art.bnSc08InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            var again = true;
+            while (again)
+            {
+                yield return Sc08Round();
+
+                Stage("sc08Gate");
+                yield return PresentableFx.Wait(0.6f);
+                sc08Lab.CloseSash();
+                yield return fader.FadeTo(1f, 0.35f);
+                PlaceRig(sc08TableStand.position, sc08TableStand.forward);
+                subtitle.Hide();
+                yield return fader.FadeTo(0f, 0.5f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc08Gate.Back += OnBack;
+                sc08Gate.Next += OnNext;
+                sc08Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc08Gate));
+                while (choice == 0)
+                    yield return null;
+                sc08Gate.Back -= OnBack;
+                sc08Gate.Next -= OnNext;
+                sc08Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    yield return fader.FadeTo(1f, 0.3f);
+                    sc08Lab.ResetLab();
+                    sc08Mix.ResetAll();
+                    sc08Ppe.ResetAll();
+                    yield return PresentableFx.Wait(0.3f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc08Question");
+            PlaceAtEyeLevel(mcqSc08.transform, 0.7f, false);
+            yield return RunQuestion(mcqSc08, BuildSc08Question(), false, 8);
+            if (sc08Ambience != null)
+                sc08Ambience.End();
+            Stage("sc08Done");
+        }
+
+        private IEnumerator Sc08Round()
+        {
+            // 1. the PPE donning station: the four items one by one
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc08PpeStand.position, sc08PpeStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            Stage("sc08Ppe");
+            sc08Ppe.Begin();
+            StartCoroutine(SubtitledVoice(art.bnSc08PpeHint, Sc08Content.PpeHint, art.voSc08Ppe));
+            while (!sc08Ppe.AllDone)
+                yield return null;
+            StopVoice();
+            StartCoroutine(PlayVoice(art.voSc08PpeDone));
+            yield return PresentableFx.Wait(1.4f);
+            sc08Ppe.End();
+
+            // 2. switch the fume hood on
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc08PanelStand.position, sc08PanelStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            Stage("sc08Hood");
+            sc08Lab.SetSwitchesInteractable(true);
+            sc08Lab.PointAt(sc08Lab.Rocker(0), new Vector3(0f, 0.2f, 0.06f));
+            StartCoroutine(SubtitledVoice(art.bnSc06HoodHint, Sc08Content.HoodHint, art.voSc08Hood));
+            while (!sc08Lab.HoodOn)
+                yield return null;
+            sc08Lab.HideArrow();
+            sc08Lab.SetSwitchesInteractable(false); // the hood stays on while the user works
+            StartCoroutine(SubtitledVoice(art.bnSc08TrayHint, Sc08Content.TrayHint, art.voSc08HoodOn));
+
+            // 3. to the table: lift the tray (the acid is fuming in the open beaker)
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc08BenchStand.position, sc08BenchStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            Stage("sc08Tray");
+            sc08Mix.SetTrayInteractable(true);
+            sc08Lab.PointAt(sc08Mix.Tray, new Vector3(0f, 0.42f, 0.02f));
+            while (!sc08Mix.Carrying)
+                yield return null;
+            sc08Lab.HideArrow();
+
+            // 4. carry it to the hood, touch the glass door (only works while the hood runs)
+            Stage("sc08Sash");
+            StopVoice();
+            subtitle.Hide();
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc08HoodStand.position, sc08HoodStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            sc08Lab.SetSashInteractable(true);
+            sc08Lab.PointAt(sc08Lab.Sash, new Vector3(0f, 0.85f, 0.08f));
+            void OnBlocked()
+            {
+                StopVoice();
+                StartCoroutine(SubtitledVoice(art.bnSc06HoodWarn, Sc08Content.HoodWarn, art.voSc08HoodWarn));
+                sc08Lab.PointAt(sc08Lab.Rocker(0), new Vector3(0f, 0.2f, 0.06f));
+            }
+
+            sc08Lab.SashBlocked += OnBlocked;
+            StartCoroutine(SubtitledVoice(art.bnSc08SashHint, Sc08Content.SashHint, art.voSc08Sash));
+            while (!sc08Lab.SashOpen)
+                yield return null;
+            sc08Lab.SashBlocked -= OnBlocked;
+            sc08Lab.HideArrow();
+            sc08Lab.SetSashInteractable(false);
+            yield return sc08Mix.PlaceInHood();
+
+            // 5. add the acid slowly while the other hand stirs
+            Stage("sc08Mix");
+            StopVoice();
+            StartCoroutine(SubtitledVoice(art.bnSc08MixHint, Sc08Content.MixHint, art.voSc08Mix));
+            sc08Mix.SetMixInteractable(true);
+            sc08Lab.PointAt(sc08Mix.WaterBeaker, new Vector3(0f, 0.5f, 0.06f));
+            var mixed = false;
+            void OnMixed() => mixed = true;
+            sc08Mix.MixFinished += OnMixed;
+            while (!mixed)
+                yield return null;
+            sc08Mix.MixFinished -= OnMixed;
+            sc08Lab.HideArrow();
+            Stage("sc08MixDone");
         }
 
         private void TurnAroundHead(Transform t, float degrees)
@@ -1494,6 +1703,13 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 8)
+            {
+                yield return PlayVoice(art.voSc08CompleteBn);
+                yield return PlayVoice(art.voSc08CompleteEn);
+                yield break;
+            }
+
             if (scenario == 7)
             {
                 // the fire is already out (the card opened after it); the completion lines follow
@@ -1723,6 +1939,31 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc08Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc08Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc08Content.OptionLabels[i],
+                    feedback = Sc08Content.OptionFeedback[i],
+                    wrongTitle = Sc08Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc08Content.QuestionHeader,
+                prompt = Sc08Content.QuestionPrompt,
+                correctIndex = Sc08Content.CorrectIndex,
+                correctTitle = Sc08Content.CorrectTitle,
+                nextLabel = Sc08Content.FinishLabel,
+                options = options,
+                fancy = true
             };
         }
 

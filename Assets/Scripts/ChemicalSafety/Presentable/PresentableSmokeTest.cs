@@ -603,6 +603,196 @@ namespace ChemicalSafety.Presentable
         }
 
         // The fingertip must rest on a panel instead of sinking into it, and still press the button.
+        // Scenario 8: instruction, PPE station (four items by real fingertip), fume hood switch, tray, sash, mix (acid into water, stirring),
+        // the gate (BACK once, then NEXT), the MCQ (wrong, then right), completion voice.
+        private IEnumerator Sc08Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc08Intro", 40f);
+            var lab = Get<Sc06Lab>(_director, "sc08Lab");
+            var mix = Get<Sc08Mix>(_director, "sc08Mix");
+            var ppe = Get<Sc08Ppe>(_director, "sc08Ppe");
+            var gate = Get<Sc06Gate>(_director, "sc08Gate");
+            var mcq8 = Get<PresentableMcqPanel>(_director, "mcqSc08");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("75_sc08_instruction");
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var wc = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && wc < 40f)
+            {
+                wc += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Click(panel.transform, "ContinueButton");
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc08Ppe", 40f);
+                yield return new WaitForSeconds(1.2f);
+                Say("SC08 " + tag + ": PPE panel open = " + ppe.PanelOpen + " (expected True), taken = " + ppe.Taken + " (expected 0)");
+                if (shots)
+                    yield return Shot("76_sc08_ppe");
+                for (var i = 0; i < ppe.Count; i++)
+                {
+                    var cur = ppe.Current;
+                    yield return FingerPoke(ppe.PokeOf(cur), "PPE item " + cur);
+                    var wt = 0f;
+                    while (ppe.Taken <= i && wt < 6f)
+                    {
+                        wt += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    if (shots && i == 1)
+                        yield return Shot("77_sc08_ppe_two");
+                    Say("SC08 " + tag + ": item " + cur + " taken, check shown = " + ppe.CheckVisible(cur) + " (expected True), taken = " + ppe.Taken);
+                    yield return new WaitForSeconds(0.3f);
+                }
+
+                var wd = 0f;
+                while (!ppe.AllDone && wd < 6f)
+                {
+                    wd += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC08 " + tag + ": all PPE taken = " + ppe.AllDone + " (expected True)");
+
+                yield return WaitStage("sc08Hood", 20f);
+                yield return new WaitForSeconds(1.4f);
+                Say("SC08 " + tag + ": hood arrow = " + lab.ArrowVisible + " (expected True), hood on = " + lab.HoodOn + " (expected False)");
+                if (shots)
+                    yield return Shot("78_sc08_hood_switch");
+                yield return FingerPoke(lab.SwitchPoke(0), "fume hood switch");
+                yield return new WaitForSeconds(1.5f);
+                Say("SC08 " + tag + ": hood on = " + lab.HoodOn + " (expected True), air streaks = " + lab.AirParticles + ", acid vapor particles = " + lab.VaporParticles);
+
+                yield return WaitStage("sc08Tray", 20f);
+                yield return new WaitForSeconds(1.2f);
+                if (shots)
+                    yield return Shot("79_sc08_tray");
+                yield return FingerPoke(mix.TrayPoke, "tray");
+                var wtr = 0f;
+                while (!mix.Carrying && wtr < 4f)
+                {
+                    wtr += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC08 " + tag + ": tray carried = " + mix.Carrying + " (expected True)");
+                if (shots)
+                    yield return Shot("80_sc08_tray_carried");
+
+                yield return WaitStage("sc08Sash", 20f);
+                yield return new WaitForSeconds(1.5f);
+                Say("SC08 " + tag + ": tray follows the head, distance = " + Vector3.Distance(mix.Tray.position, Camera.main.transform.position).ToString("0.00") + " m");
+                if (shots)
+                    yield return Shot("81_sc08_hood_stand");
+                lab.SetSashInteractable(true);
+                yield return FingerPoke(lab.SashPoke, "glass sash");
+                var ws = 0f;
+                while (!mix.Placed && ws < 8f)
+                {
+                    ws += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC08 " + tag + ": sash open = " + lab.SashOpen + ", tray in the hood = " + mix.Placed + " (expected True)");
+
+                yield return WaitStage("sc08Mix", 20f);
+                yield return new WaitForSeconds(0.8f);
+                if (shots)
+                    yield return Shot("82_sc08_tray_in_hood");
+                var acidStart = mix.AcidFill;
+                var waterStart = mix.WaterFill;
+                yield return FingerPoke(mix.WaterPoke, "water beaker");
+                var wp = 0f;
+                var sawStream = false;
+                var sawStir = false;
+                var shotPour = false;
+                while (!mix.Done && wp < 40f)
+                {
+                    if (mix.StreamVisible && mix.Flow > 0.3f)
+                        sawStream = true;
+                    if (mix.Stirring)
+                        sawStir = true;
+                    if (shots && !shotPour && mix.Flow > 0.9f && mix.WaterFill > 0.62f)
+                    {
+                        shotPour = true;
+                        yield return Shot("83_sc08_pour");
+                    }
+
+                    wp += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC08 " + tag + ": mix done = " + mix.Done + ", stream seen = " + sawStream + ", stirring seen = " + sawStir +
+                    ", water fill " + waterStart.ToString("0.00") + " -> " + mix.WaterFill.ToString("0.00") + " (expected higher), acid fill " +
+                    acidStart.ToString("0.00") + " -> " + mix.AcidFill.ToString("0.00") + " (expected lower), acid beaker upright again = " +
+                    (Vector3.Angle(mix.AcidBeaker.up, Vector3.up) < 2f));
+
+                yield return WaitStage("sc08Gate", 40f);
+                var wg = 0f;
+                while (!gate.Visible && wg < 15f)
+                {
+                    wg += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(1.3f);
+                Say("SC08 " + tag + ": gate card visible = " + gate.Visible + ", sash closed again = " + !lab.SashOpen + ", head z = " +
+                    Camera.main.transform.position.z.ToString("0.00"));
+                LayoutCheck("SC08 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("84_sc08_gate");
+                if (round == 0)
+                {
+                    Click(gate.transform, "BackButton");
+                }
+                else
+                {
+                    Click(gate.transform, "NextButton");
+                }
+            }
+
+            yield return WaitStage("sc08Question", 20f);
+            var q = 0f;
+            while (!mcq8.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.4f);
+            Say("SC08 MCQ wow look = " + mcq8.Fancy + " (expected True)");
+            LayoutCheck("SC08 MCQ", mcq8.transform);
+            yield return Shot("85_sc08_question");
+            Click(mcq8.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("86_sc08_wrong");
+            Click(mcq8.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq8.transform, "Row2");
+            var heard = "";
+            var h = 0f;
+            while (h < 14f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc08Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC08 MCQ correct card", mcq8.transform);
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 8 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("87_sc08_correct");
+            Click(mcq8.transform, "NextButton");
+        }
+
         private IEnumerator PanelStopTest(LabelPickPopup popup)
         {
             var hand = GlovedHandPose.Right;
@@ -688,6 +878,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false))
+            {
+                Say("SC08-only run (dev start)");
+                yield return Sc08Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Only", false))
             {
                 Say("SC07-only run (dev start)");
@@ -1536,6 +1736,7 @@ namespace ChemicalSafety.Presentable
             // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT
             yield return Sc06Smoke(panel, voiceSrc, mcq5);
             yield return Sc07Smoke(panel, voiceSrc);
+            yield return Sc08Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

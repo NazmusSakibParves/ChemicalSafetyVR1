@@ -79,6 +79,9 @@ namespace ChemicalSafety.Editor
             var env7 = new GameObject("Environment_SC07").transform;
             var sc7 = BuildSc07Room(env7, art);
             env7.gameObject.SetActive(false);
+            var env8 = new GameObject("Environment_SC08").transform;
+            var sc8 = BuildSc08Room(env8, art);
+            env8.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -148,6 +151,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq6, "art", art);
             var mcq7 = Child("McqPanel_SC07", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq7, "art", art);
+            var mcq8 = Child("McqPanel_SC08", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq8, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -246,6 +251,20 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc07Ambience").objectReferenceValue = sc7.ambience;
             so.FindProperty("mcqSc07").objectReferenceValue = mcq7;
             SetRef(sc7.ambience, "voice", voice);
+            so.FindProperty("envSc08").objectReferenceValue = env8.gameObject;
+            so.FindProperty("spawnSc08").objectReferenceValue = sc8.spawn;
+            so.FindProperty("sc08TableStand").objectReferenceValue = sc8.tableStand;
+            so.FindProperty("sc08BenchStand").objectReferenceValue = sc8.benchStand;
+            so.FindProperty("sc08HoodStand").objectReferenceValue = sc8.hoodStand;
+            so.FindProperty("sc08PanelStand").objectReferenceValue = sc8.panelStand;
+            so.FindProperty("sc08PpeStand").objectReferenceValue = sc8.ppeStand;
+            so.FindProperty("sc08Lab").objectReferenceValue = sc8.lab;
+            so.FindProperty("sc08Mix").objectReferenceValue = sc8.mix;
+            so.FindProperty("sc08Ppe").objectReferenceValue = sc8.ppe;
+            so.FindProperty("sc08Gate").objectReferenceValue = sc8.gate;
+            so.FindProperty("sc08Ambience").objectReferenceValue = sc8.ambience;
+            so.FindProperty("mcqSc08").objectReferenceValue = mcq8;
+            SetRef(sc8.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
@@ -312,7 +331,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -504,6 +523,12 @@ namespace ChemicalSafety.Editor
             art.bnSc06SashHint = B("BN_Sc06SashHint");
             art.bnSc06PourHint = B("BN_Sc06PourHint");
             art.bnSc06HoodWarn = B("BN_Sc06HoodWarn");
+            art.sdsSc08 = LoadSprite("2D/Sc08/SDS_SC08");
+            art.bnSc08InstructionPanel = B("BN_Sc08InstructionPanel");
+            art.bnSc08PpeHint = B("BN_Sc08PpeHint");
+            art.bnSc08TrayHint = B("BN_Sc08TrayHint");
+            art.bnSc08SashHint = B("BN_Sc08SashHint");
+            art.bnSc08MixHint = B("BN_Sc08MixHint");
             art.bnSc06CapHint = B("BN_Sc06CapHint");
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
@@ -616,6 +641,17 @@ namespace ChemicalSafety.Editor
             art.voSc07Hero = Keep("VO_Sc07Hero_bn.mp3", art.voSc07Hero);
             art.voSc07CompleteBn = Keep("VO_Sc07Complete_bn.mp3", art.voSc07CompleteBn);
             art.voSc07CompleteEn = Keep("VO_Sc07Complete_en.mp3", art.voSc07CompleteEn);
+            art.voSc08Instruction = Keep("VO_SC08_Instruction_bn.mp3", art.voSc08Instruction);
+            art.voSc08Ppe = Keep("VO_Sc08Ppe_bn.mp3", art.voSc08Ppe);
+            art.voSc08PpeDone = Keep("VO_Sc08PpeDone_bn.mp3", art.voSc08PpeDone);
+            art.voSc08Hood = Keep("VO_Sc08Hood_bn.mp3", art.voSc08Hood);
+            art.voSc08HoodOn = Keep("VO_Sc08HoodOn_bn.mp3", art.voSc08HoodOn);
+            art.voSc08Sash = Keep("VO_Sc08Sash_bn.mp3", art.voSc08Sash);
+            art.voSc08HoodWarn = Keep("VO_Sc08HoodWarn_bn.mp3", art.voSc08HoodWarn);
+            art.voSc08Mix = Keep("VO_Sc08Mix_bn.mp3", art.voSc08Mix);
+            art.voSc08Gate = Keep("VO_Sc08Gate_bn.mp3", art.voSc08Gate);
+            art.voSc08CompleteBn = Keep("VO_Sc08Complete_bn.mp3", art.voSc08CompleteBn);
+            art.voSc08CompleteEn = Keep("VO_Sc08Complete_en.mp3", art.voSc08CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;
