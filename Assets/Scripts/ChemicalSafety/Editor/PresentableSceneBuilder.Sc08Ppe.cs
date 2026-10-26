@@ -388,6 +388,50 @@ namespace ChemicalSafety.Editor
             stand = Marker("Stand_SC08_Ppe", room, new Vector3(x0 + 0.85f, 0f, bz + 0.15f), 270f);
             return ppe;
         }
+
+        // The same wraparound safety goggles as the PPE board, laid on the table with the lens toward the player.
+        private static void Sc08TableGoggles(Transform parent, Vector3 at)
+        {
+            var g = Sc08Goggles(parent, "TableGoggles", at, 2.2f, Quaternion.Euler(-8f, 22f, 0f));
+            var lowest = float.MaxValue;
+            foreach (var r in g.GetComponentsInChildren<Renderer>())
+            {
+                if (r.bounds.min.y < lowest)
+                    lowest = r.bounds.min.y;
+            }
+
+            if (lowest < float.MaxValue)
+                g.position += Vector3.up * (at.y + 0.012f - lowest);
+        }
+
+        // Spiral notebook lying on the table: page block, written page, wire rings along the far edge.
+        private static void Sc08TableNotebook(Transform parent, Vector3 at)
+        {
+            var root = new GameObject("Notebook").transform;
+            root.SetParent(parent, false);
+            root.localPosition = at;
+            root.localRotation = Quaternion.Euler(0f, -14f, 0f);
+            var cover = Mat("Sc08NoteCover", new Color(0.90f, 0.90f, 0.88f), 0.25f, 0f);
+            var page = Mat("Sc08NotePage", Color.white, 0.12f, 0f, Sc06Tex("Label_Sc08Notebook"), null, true);
+            var wire = Mat("Sc08NoteWire", new Color(0.72f, 0.74f, 0.76f), 0.55f, 0.35f);
+            Sc08LocalBox("Cover", root, new Vector3(0f, 0.004f, 0f), new Vector3(0.24f, 0.008f, 0.18f), cover);
+            Sc08LocalBox("Pages", root, new Vector3(0.006f, 0.012f, 0.006f), new Vector3(0.210f, 0.012f, 0.155f), cover);
+            var sheet = QuadObj("Page", root, new Vector3(0.006f, 0.019f, 0.006f), new Vector3(90f, 0f, 0f), new Vector2(0.206f, 0.150f), page);
+            sheet.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            for (var i = 0; i < 11; i++)
+            {
+                var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                ring.name = "Spiral";
+                Object.DestroyImmediate(ring.GetComponent<Collider>());
+                ring.transform.SetParent(root, false);
+                ring.transform.localPosition = new Vector3(-0.100f + i * 0.020f, 0.016f, -0.078f);
+                ring.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                ring.transform.localScale = new Vector3(0.014f, 0.004f, 0.014f);
+                var rr = ring.GetComponent<MeshRenderer>();
+                rr.sharedMaterial = wire;
+                rr.shadowCastingMode = ShadowCastingMode.Off;
+            }
+        }
     }
 }
 #endif

@@ -418,10 +418,9 @@ namespace ChemicalSafety.Editor
             var trayCentre = new Vector3(ox + tableX, T, -0.12f);
             var tray = Sc08BuildTray(room, trayCentre, art, out var trayParts);
 
-            QuadObj("Notebook", room, new Vector3(ox + tableX - 0.62f, T + 0.006f, 0.22f), new Vector3(90f, 12f, 0f), new Vector2(0.21f, 0.27f),
-                Sc06Label("Sc08Notebook", "Label_Sc08Notebook", false, 0.2f));
-            var glassMat = Sc06GlassMat("Sc06BenchGlass", new Color(0.82f, 0.92f, 0.95f), 0.07f, 0.75f);
-            Sc08Goggles(room, "TableGoggles", new Vector3(ox + tableX + 0.62f, T + 0.012f, 0.18f), 1.0f, Quaternion.Euler(-82f, 200f, 0f));
+            // viewer faces -Z, so +X is the viewer's left: goggles left of the tray, notebook on the right, both on the top
+            Sc08TableNotebook(room, new Vector3(ox + tableX - 0.56f, T, 0.00f));
+            Sc08TableGoggles(room, new Vector3(ox + tableX + 0.58f, T, -0.06f));
             var shadowMat = ShadowMat(AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/ContactShadow.png"));
             void Shadow(string name, float sx, float sz, float w2, float d2, float y)
             {
@@ -439,8 +438,8 @@ namespace ChemicalSafety.Editor
             }
 
             Shadow("ShadowTray", trayCentre.x, trayCentre.z, 0.88f, 0.64f, T);
-            Shadow("ShadowGoggles", ox + tableX + 0.62f, 0.18f, 0.22f, 0.14f, T);
-            Shadow("ShadowNotebook", ox + tableX - 0.62f, 0.22f, 0.3f, 0.36f, T);
+            Shadow("ShadowGoggles", ox + tableX + 0.58f, -0.06f, 0.22f, 0.14f, T);
+            Shadow("ShadowNotebook", ox + tableX - 0.56f, 0.00f, 0.26f, 0.20f, T);
 
             // the tray's resting place in the hood and the hood-side poke volumes
             var trayRest = new Vector3(hoodCentreX, surfaceY + 0.004f, sashZ - 0.2f);

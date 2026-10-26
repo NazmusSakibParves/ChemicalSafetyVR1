@@ -38,7 +38,7 @@ namespace ChemicalSafety.Presentable
         public const string CorrectTitle = "RIGHT ACTION";
         public const string CorrectBody =
             "Slowly adding acid to the water with continuous stirring (the large water volume safely absorbs the heat, preventing dangerous spattering).";
-        public const string FinishLabel = "FINISH";
+        public const string FinishLabel = "NEXT";
         public const int CorrectIndex = 1;
 
         public static readonly string[] OptionLabels =

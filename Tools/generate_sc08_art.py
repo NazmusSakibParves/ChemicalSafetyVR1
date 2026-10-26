@@ -107,20 +107,28 @@ def green_sign(name, text, pict):
 green_sign("Label_Sc08ShowerSign", ["SAFETY", "SHOWER"], "shower")
 green_sign("Label_Sc08EyewashSign", ["EYE", "WASH"], "eye")
 
-# ---- notebook page on the table (lined paper with scribbles)
-im = Image.new("RGBA", (512, 640), (246, 246, 242, 255))
+# ---- notebook page on the table (lined paper, red margin, dark handwriting, spiral holes)
+im = Image.new("RGBA", (768, 560), (252, 252, 248, 255))
 d = ImageDraw.Draw(im)
-for y in range(70, 620, 34):
-    d.line((24, y, 488, y), fill=(160, 190, 225, 255), width=2)
-d.line((70, 0, 70, 640), fill=(225, 120, 120, 255), width=3)
+for y in range(48, 540, 28):
+    d.line((18, y, 750, y), fill=(70, 130, 190, 255), width=2)
+d.line((78, 0, 78, 560), fill=(210, 60, 60, 255), width=4)
+for i in range(12):
+    cx = 70 + i * 58
+    d.ellipse((cx - 10, 8, cx + 10, 28), fill=(210, 214, 216, 255))
+    d.ellipse((cx - 5, 13, cx + 5, 23), fill=(252, 252, 248, 255))
 import random
 random.seed(8)
-for y in range(70, 560, 34):
-    x = 84
-    while x < 450:
-        w = random.randint(14, 60)
-        d.line((x, y - 8 + random.randint(-3, 3), x + w, y - 8 + random.randint(-3, 3)), fill=(40, 50, 90, 255), width=2)
-        x += w + 10
+ink = (25, 35, 70, 255)
+for row, y in enumerate(range(64, 520, 28)):
+    x = 96
+    while x < 720:
+        w = random.randint(28, 90)
+        y0 = y + random.randint(-2, 2)
+        d.line((x, y0, x + w, y0 + random.randint(-1, 1)), fill=ink, width=3)
+        if random.random() < 0.25:
+            d.line((x + 4, y0 + 4, x + w - 6, y0 + 4), fill=ink, width=2)
+        x += w + random.randint(8, 16)
 im.save(os.path.join(TEX, "Label_Sc08Notebook.png"))
 
 # ---- vapor sprite for acid fumes is the SC06 Fx_Vapor/Fx_Wisp; nothing to add

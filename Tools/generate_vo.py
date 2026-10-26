@@ -42,6 +42,8 @@ PRON = {
     "পারক্সাইড": "পারঅক্সাইড",  # peroxide: the voice swallowed the vowel
     "ঘন": "ঘনো",                # concentrated: the voice did not say the word clearly
     "বড় ": "বড়ো ",            # "big": the voice said a short "bor"; the user asked for "boro" (trailing space: whole word only)
+    # প্রয়োজনীয় must be heard as pro-yo-jo-ni-yo. প্রোযোজনীয় dropped the য় (it sounded like pro-jo). প্রোয়ো keeps that য়.
+    "প্রয়োজনীয়": "\u09aa\u09cd\u09b0\u09cb\u09df\u09cb\u099c\u09a8\u09c0\u09df",
 }
 
 SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF). Do not type this letter; editors save it as য + nukta.
@@ -49,8 +51,8 @@ SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF)
 # scenario number -> how it is spoken
 CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
 NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে", 9: "নয়ে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
 
 
 def complete_bn(n):
@@ -167,7 +169,7 @@ CLIPS = {
     "VO_Sc07Hero_bn": (BN_VOICE, "আগুন নিভে গেছে। কার্বন ডাই অক্সাইড এক্সটিংগুইশার ব্যবহার করায় বড় দুর্ঘটনা এড়ানো গেছে।"),
     "VO_Sc07Complete_bn": (BN_VOICE, complete_bn(7)),
     "VO_Sc07Complete_en": (EN_VOICE, complete_en(7)),
-    # Scenario 8 (acid dilution). শঠিক in the instruction like SC06/SC07; nothing follows SC08, so the completion line is custom.
+    # Scenario 8 (acid dilution). শঠিক in the instruction like SC06/SC07. The ending uses complete_bn(8), same sentence as the others.
     "VO_SC08_Instruction_bn": (
         BN_VOICE,
         "আপনি একজন ল্যাব টেকনিশিয়ান। একটি ডাই ব্যাচের জন্য পাতলা সালফিউরিক অ্যাসিড দরকার। "
@@ -184,8 +186,8 @@ CLIPS = {
         BN_VOICE,
         "অ্যাসিড পাতলা করার অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
-    "VO_Sc08Complete_bn": (BN_VOICE, "আপনি সিনারিও আট সফলভাবে সম্পন্ন করেছেন। প্রশিক্ষণ মডিউল এখানেই শেষ।"),
-    "VO_Sc08Complete_en": (EN_VOICE, "You have successfully completed Scenario eight. This is the end of the training module."),
+    "VO_Sc08Complete_bn": (BN_VOICE, complete_bn(8)),
+    "VO_Sc08Complete_en": (EN_VOICE, complete_en(8)),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
