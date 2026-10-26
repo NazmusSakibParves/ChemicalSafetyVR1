@@ -111,8 +111,13 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform spawnSc07;
         [Tooltip("In front of the pillar: the extinguishers are within arm's reach.")]
         [SerializeField] private Transform sc07PillarStand;
+        [Tooltip("Where the player stands for the MCQ: the three extinguishers and the whole hall are in view.")]
+        [SerializeField] private Transform sc07QuestionStand;
+        [Tooltip("Where the hero waits during the question: right of the MCQ, not in front of the player.")]
+        [SerializeField] private Transform sc07HeroWait;
         [Tooltip("Where the hero appears for the extinguishing cutscene.")]
         [SerializeField] private Transform sc07HeroStart;
+        [SerializeField] private Transform sc07FireAt;
         [SerializeField] private ExtinguisherInspect extinguishers;
         [SerializeField] private Sc06Gate sc07Gate;
         [SerializeField] private Sc07Crowd sc07Crowd;
@@ -892,6 +897,13 @@ namespace ChemicalSafety.Presentable
                 extinguishers.Stop();
             }
 
+            // to a vantage point from where the three extinguishers and the whole hall can be seen next to the MCQ
+            yield return fader.FadeTo(1f, 0.3f);
+            if (sc07QuestionStand != null)
+                PlaceRig(sc07QuestionStand.position, sc07QuestionStand.forward);
+            if (sc07Crowd != null && sc07HeroWait != null && sc07FireAt != null)
+                sc07Crowd.PlaceHero(sc07HeroWait.position, sc07FireAt.position);
+            yield return fader.FadeTo(0f, 0.4f);
             Stage("sc07Question");
             // straight ahead at eye level, 0.7 m: a slightly extended arm reaches it, it is not at the eyes (the right / wrong cards share the canvas)
             PlaceAtEyeLevel(mcqSc07.transform, 0.7f, false);
@@ -929,8 +941,8 @@ namespace ChemicalSafety.Presentable
                 sc07Crowd.FireOut -= OnFireOut;
             }
             yield return fader.FadeTo(1f, 0.35f);
-            if (sc07PillarStand != null)
-                PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
+            if (sc07QuestionStand != null)
+                PlaceRig(sc07QuestionStand.position, sc07QuestionStand.forward);
             panel.transform.localScale = panelScale;
             _sc07WinDone = true;
             yield return fader.FadeTo(0f, 0.45f);

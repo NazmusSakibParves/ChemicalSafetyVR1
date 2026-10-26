@@ -235,6 +235,9 @@ namespace ChemicalSafety.Editor
             so.FindProperty("envSc07").objectReferenceValue = env7.gameObject;
             so.FindProperty("spawnSc07").objectReferenceValue = sc7.spawn;
             so.FindProperty("sc07PillarStand").objectReferenceValue = sc7.standB;
+            so.FindProperty("sc07QuestionStand").objectReferenceValue = sc7.standQ;
+            so.FindProperty("sc07HeroWait").objectReferenceValue = sc7.heroWait;
+            so.FindProperty("sc07FireAt").objectReferenceValue = sc7.fireAt;
             so.FindProperty("sc07HeroStart").objectReferenceValue = sc7.heroStart;
             so.FindProperty("extinguishers").objectReferenceValue = sc7.inspect;
             so.FindProperty("sc07Gate").objectReferenceValue = sc7.gate;

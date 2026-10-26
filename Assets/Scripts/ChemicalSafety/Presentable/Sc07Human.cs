@@ -42,6 +42,7 @@ namespace ChemicalSafety.Presentable
         private float _carry, _carryT;
         private float _aim, _aimT;
         private float _reach, _reachT;
+        private float _pin, _pinT, _hornReach, _hornReachT;
         private float _shock, _headHands, _confused, _frozen;
         private Sc07Reaction _reaction;
         private float _reactionClock;
@@ -61,10 +62,19 @@ namespace ChemicalSafety.Presentable
         /// <summary>Socket on the right hand where the hero holds the extinguisher.</summary>
         public Transform RightSocket => Bone("HandR_Socket");
 
+        /// <summary>Socket on the left hand: the extinguisher hangs from it by its handle.</summary>
+        public Transform LeftSocket => Bone("HandL_Socket");
+
         public void SetStartled(bool on) => _startleT = on ? 1f : 0f;
         public void SetCarry(bool on) => _carryT = on ? 1f : 0f;
         public void SetAim(bool on) => _aimT = on ? 1f : 0f;
         public void SetReach(bool on) => _reachT = on ? 1f : 0f;
+
+        /// <summary>Right hand comes across to the valve (pulls the safety pin).</summary>
+        public void SetPin(bool on) => _pinT = on ? 1f : 0f;
+
+        /// <summary>Right hand goes to the horn that hangs on the right side of the extinguisher.</summary>
+        public void SetHornReach(bool on) => _hornReachT = on ? 1f : 0f;
 
         /// <summary>Starts (or ends, with None) a bystander reaction; the pose blends in and out smoothly.</summary>
         public void SetReaction(Sc07Reaction r)
@@ -87,6 +97,8 @@ namespace ChemicalSafety.Presentable
             _carry = _carryT = carry;
             _aim = _aimT = aim;
             _reach = _reachT = reach;
+            _pin = _pinT = 0f;
+            _hornReach = _hornReachT = 0f;
             _reaction = reaction;
             _shock = reaction == Sc07Reaction.Shocked ? 1f : 0f;
             _headHands = reaction == Sc07Reaction.Head ? 1f : 0f;
@@ -162,6 +174,8 @@ namespace ChemicalSafety.Presentable
             _carry = Mathf.MoveTowards(_carry, _carryT, dt * 3f);
             _aim = Mathf.MoveTowards(_aim, _aimT, dt * 3f);
             _reach = Mathf.MoveTowards(_reach, _reachT, dt * 3.5f);
+            _pin = Mathf.MoveTowards(_pin, _pinT, dt * 3f);
+            _hornReach = Mathf.MoveTowards(_hornReach, _hornReachT, dt * 3f);
             _headYaw = Mathf.MoveTowards(_headYaw, _headYawT, dt * 160f);
             _reactionClock += dt;
             _shock = Mathf.MoveTowards(_shock, _reaction == Sc07Reaction.Shocked ? 1f : 0f, dt * 3.2f);
@@ -282,10 +296,13 @@ namespace ChemicalSafety.Presentable
             Arms(Ease(_confused), 70f + chinFidget, 142f + chinFidget * 0.5f, 20f, 14f + shrug, 36f + shrug * 0.7f, -8f, Follow(_confused, 0.3f));
             // frozen: arms down, a little stiff
             Arms(_frozen, 4f, 12f, 3f, 4f, 12f, 3f);
-            // hero: carrying the extinguisher at the hip / chest, left hand under the horn
-            Arms(_carry, 38f, 78f, 25f, 48f, 70f, 25f);
-            // aiming: arms forward
-            Arms(_aim, 66f, 52f, 16f, 74f, 30f, 16f);
+            // hero: the extinguisher hangs from the left hand by its handle, the right arm swings free
+            Arms(0f, 0f, 0f, 0f, 18f, 62f, 14f, Ease(_carry));
+            // right hand comes across to the valve (safety pin), then down to the horn on the right side of the body
+            Arms(Ease(_pin), 60f, 108f, 24f, 0f, 0f, 0f, 0f);
+            Arms(Ease(_hornReach), 36f, 62f, 6f, 0f, 0f, 0f, 0f);
+            // aiming: the left hand keeps the body, the right arm is stretched out at the fire holding the horn
+            Arms(Ease(_aim), 80f, 14f, -4f, 18f, 62f, 14f, Ease(_aim));
             // reaching for the extinguisher on the wall with the right hand
             if (_reach > 0f)
             {

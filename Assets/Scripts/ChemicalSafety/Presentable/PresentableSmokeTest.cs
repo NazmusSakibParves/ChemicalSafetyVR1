@@ -564,12 +564,12 @@ namespace ChemicalSafety.Presentable
             {
                 tx += Time.unscaledDeltaTime;
                 minFire = Mathf.Min(minFire, fire.Intensity);
-                if (tx > 3.5f * (sh + 1) && sh < 6)
+                if (tx > 2.5f * (sh + 1) && sh < 9)
                 {
                     sh++;
                     yield return Shot("73_sc07_hero_" + sh);
                     Say("SC07 extinguishing t=" + tx.ToString("0.0") + " fire = " + fire.Intensity.ToString("0.00") + " hero holds extinguisher = " + crowd.HeroHoldsExtinguisher +
-                        " jet = " + (fire.Spray != null && fire.Spray.isPlaying));
+                        " jet = " + (fire.Spray != null && fire.Spray.isPlaying) + " horn separated from the body = " + crowd.HornSeparation.ToString("0.00") + " m (in hand = " + crowd.HornInHand + ")");
                 }
 
                 if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc07Complete"))

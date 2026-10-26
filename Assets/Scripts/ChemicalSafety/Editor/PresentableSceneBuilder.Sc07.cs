@@ -21,6 +21,8 @@ namespace ChemicalSafety.Editor
         {
             public Transform spawn;
             public Transform standB;
+            public Transform standQ;
+            public Transform heroWait;
             public Transform fireAt;
             public Transform cabinet;
             public Transform beacon;
@@ -262,6 +264,8 @@ namespace ChemicalSafety.Editor
                     nb = BoundsOfTree(group);
                     // back of the cylinder 2 cm in front of the pillar (the horn and hose stick out toward the player)
                     group.position += new Vector3(0f, 0f, pillarFace + 0.03f + 0.09f - group.position.z);
+                    if (names[i] == "CO2")
+                        Sc07SplitHorn(group, n); // the hose + horn piece becomes its own object so the hero can hold it in the other hand
                     refs.ext[i] = group;
                     // wall bracket straps
                     Box("Strap" + names[i] + "A", room, new Vector3(xs[i], group.position.y + 0.12f, pillarFace + 0.035f), new Vector3(0.13f, 0.035f, 0.04f), darkSteel, false);
@@ -270,8 +274,8 @@ namespace ChemicalSafety.Editor
                     col.isTrigger = true;
                     nb = BoundsOfTree(group);
                     // padded toward the player and upward so the fingertip reaches it before the pillar stops it
-                    col.center = group.InverseTransformPoint(nb.center + new Vector3(0f, 0.03f, 0.12f));
-                    col.size = nb.size + new Vector3(0.14f, 0.14f, 0.30f);
+                    col.center = group.InverseTransformPoint(nb.center + new Vector3(0f, 0.03f, 0.20f));
+                    col.size = nb.size + new Vector3(0.14f, 0.14f, 0.45f);
                     var poke = group.gameObject.AddComponent<PokeTarget>();
                     var pso = new SerializedObject(poke);
                     pso.FindProperty("reach").floatValue = 0.07f;
@@ -808,13 +812,170 @@ namespace ChemicalSafety.Editor
             cso.FindProperty("fire").objectReferenceValue = refs.fire;
             cso.FindProperty("beacon").objectReferenceValue = refs.beaconFx;
             cso.FindProperty("ambience").objectReferenceValue = refs.ambience;
+            cso.FindProperty("hoseMaterial").objectReferenceValue = Mat("Sc07Hose", new Color(0.05f, 0.05f, 0.06f), 0.3f, 0f);
             cso.FindProperty("hiss").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Art/Audio/Sc07/Co2_Hiss.wav");
             cso.ApplyModifiedPropertiesWithoutUndo();
 
             // ---- markers
             refs.spawn = Marker("Spawn_SC07", room, new Vector3(ox - 0.8f, 0f, 4.3f), 210f); // a little to the right: pillar at the left edge, cabinet left of centre, the hall and the crowd right
-            refs.standB = Marker("Stand_SC07_Pillar", room, new Vector3(pillarCx, 0f, pillarFace + 0.95f), 180f);
+            refs.standB = Marker("Stand_SC07_Pillar", room, new Vector3(pillarCx, 0f, pillarFace + 1.15f), 180f); // 1.15 m: the held extinguisher and the card are clear of the wall units
+            // the question: from here the three extinguishers and the cabinet sit left of the MCQ, the hall, boilers and the FIRE EXIT right of it
+            refs.standQ = Marker("Stand_SC07_Question", room, new Vector3(ox - 1.0f, 0f, 5.2f), 198f);
+            refs.heroWait = Marker("Sc07HeroWait", room, new Vector3(ox - 7.6f, 0f, 1.2f), 0f); // in the lane, right of the MCQ as seen from the question stand
             return refs;
+        }
+
+        // New mesh from some sub-meshes of another one (compacted vertices, uv, normals).
+        private static Mesh Sc07SubMesh(Mesh src, IList<int> subs, string name)
+        {
+            var verts = src.vertices;
+            var uv = src.uv;
+            var nrm = src.normals;
+            var map = new Dictionary<int, int>();
+            var nv = new List<Vector3>();
+            var nu = new List<Vector2>();
+            var nn = new List<Vector3>();
+            var tris = new List<List<int>>();
+            foreach (var sm in subs)
+            {
+                var list = new List<int>();
+                foreach (var vi in src.GetIndices(sm))
+                {
+                    if (!map.TryGetValue(vi, out var ni))
+                    {
+                        ni = nv.Count;
+                        map[vi] = ni;
+                        nv.Add(verts[vi]);
+                        if (uv.Length == verts.Length)
+                            nu.Add(uv[vi]);
+                        if (nrm.Length == verts.Length)
+                            nn.Add(nrm[vi]);
+                    }
+
+                    list.Add(ni);
+                }
+
+                tris.Add(list);
+            }
+
+            var m = new Mesh { name = name };
+            m.SetVertices(nv);
+            if (nu.Count == nv.Count)
+                m.SetUVs(0, nu);
+            m.subMeshCount = subs.Count;
+            for (var k = 0; k < subs.Count; k++)
+                m.SetTriangles(tris[k], k);
+            if (nn.Count == nv.Count)
+                m.SetNormals(nn);
+            else
+                m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        // The CO2 model's black hose + horn cone is its own connected sub-mesh (StingrayPBS1): cut it out of the body into a child
+        // "Co2Horn" (same transform, so the wall look is unchanged) with markers HornTop (hose end at the valve), HornGrip (where a hand
+        // holds it), HornMouth (the horn's lower mouth), and a BodyGrip marker on the body top handle. Done here because imported
+        // meshes are not readable at runtime on Quest.
+        private static void Sc07SplitHorn(Transform group, Transform node)
+        {
+            var mf = node.GetComponent<MeshFilter>();
+            var mr = node.GetComponent<MeshRenderer>();
+            if (mf == null || mr == null || mf.sharedMesh == null)
+                return;
+            var mesh = mf.sharedMesh;
+            var mats = mr.sharedMaterials;
+            var hornSub = -1;
+            var bodySubs = new List<int>();
+            for (var k = 0; k < mats.Length && k < mesh.subMeshCount; k++)
+            {
+                if (mats[k] != null && mats[k].name.Contains("StingrayPBS1"))
+                    hornSub = k;
+                else
+                    bodySubs.Add(k);
+            }
+
+            if (hornSub < 0 || bodySubs.Count == 0)
+            {
+                Debug.LogWarning("[Presentable] CO2 horn sub-mesh not found");
+                return;
+            }
+
+            var bodyPath = GenDir + "/Mesh_Sc07Co2Body.asset";
+            var hornPath = GenDir + "/Mesh_Sc07Co2Horn.asset";
+            AssetDatabase.DeleteAsset(bodyPath);
+            AssetDatabase.DeleteAsset(hornPath);
+            var body = Sc07SubMesh(mesh, bodySubs, "Sc07Co2Body");
+            var horn = Sc07SubMesh(mesh, new[] { hornSub }, "Sc07Co2Horn");
+            AssetDatabase.CreateAsset(body, bodyPath);
+            AssetDatabase.CreateAsset(horn, hornPath);
+            var bodyMats = new Material[bodySubs.Count];
+            for (var k = 0; k < bodyMats.Length; k++)
+                bodyMats[k] = mats[bodySubs[k]];
+            var hornMat = mats[hornSub];
+            mf.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(bodyPath);
+            mr.sharedMaterials = bodyMats;
+
+            var hornGo = new GameObject("Co2Horn");
+            hornGo.transform.SetParent(node.parent, false);
+            hornGo.transform.localPosition = node.localPosition;
+            hornGo.transform.localRotation = node.localRotation;
+            hornGo.transform.localScale = node.localScale;
+            hornGo.AddComponent<MeshFilter>().sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(hornPath);
+            var hr = hornGo.AddComponent<MeshRenderer>();
+            hr.sharedMaterial = hornMat;
+            hr.shadowCastingMode = mr.shadowCastingMode;
+            hr.receiveShadows = mr.receiveShadows;
+
+            // marker points in the group space (the body axis is group Y)
+            Vector3 Centroid(Mesh m, Transform t, System.Func<Vector3, bool> pick)
+            {
+                var sum = Vector3.zero;
+                var n = 0;
+                foreach (var v in m.vertices)
+                {
+                    var g = group.InverseTransformPoint(t.TransformPoint(v));
+                    if (pick(g))
+                    {
+                        sum += g;
+                        n++;
+                    }
+                }
+
+                return n > 0 ? sum / n : Vector3.zero;
+            }
+
+            float minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var v in horn.vertices)
+            {
+                var g = group.InverseTransformPoint(hornGo.transform.TransformPoint(v));
+                minY = Mathf.Min(minY, g.y);
+                maxY = Mathf.Max(maxY, g.y);
+            }
+
+            var top = Centroid(horn, hornGo.transform, g => g.y > maxY - 0.03f);
+            var mouth = Centroid(horn, hornGo.transform, g => g.y < minY + 0.03f);
+            var gripY = Mathf.Lerp(maxY, minY, 0.45f);
+            var grip = Centroid(horn, hornGo.transform, g => Mathf.Abs(g.y - gripY) < 0.02f);
+            void HornMarker(string name, Vector3 groupPoint)
+            {
+                var m = new GameObject(name).transform;
+                m.SetParent(hornGo.transform, false);
+                m.localPosition = hornGo.transform.InverseTransformPoint(group.TransformPoint(groupPoint));
+            }
+
+            HornMarker("HornTop", top);
+            HornMarker("HornGrip", grip);
+            HornMarker("HornMouth", mouth);
+
+            float bodyMaxY = float.MinValue;
+            foreach (var v in body.vertices)
+                bodyMaxY = Mathf.Max(bodyMaxY, group.InverseTransformPoint(node.TransformPoint(v)).y);
+            var handle = Centroid(body, node, g => g.y > bodyMaxY - 0.05f);
+            var bodyGrip = new GameObject("BodyGrip").transform;
+            bodyGrip.SetParent(group, false);
+            bodyGrip.localPosition = handle + new Vector3(0f, -0.02f, 0f);
+            Debug.Log("[SC07] CO2 horn split: top " + top + " grip " + grip + " mouth " + mouth + " body grip " + handle);
         }
 
         // A hand-held tool glued to a hand bone. The arm hangs down along the bone's local X (right hand +X, left hand -X).

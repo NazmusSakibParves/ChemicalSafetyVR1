@@ -11,6 +11,7 @@ namespace ChemicalSafety.Presentable
     /// in a bunch, while the hero stays beside the player. HeroExtinguish(): after the right answer the hero fetches the CO2
     /// extinguisher, walks up to the fire, sprays it out and the alarm stops.
     /// </summary>
+    [DefaultExecutionOrder(100)] // after Sc07Human has posed the bones: the extinguisher follows the hands
     public sealed class Sc07Crowd : MonoBehaviour
     {
         [Tooltip("[0] is the hero, [1..4] the bystanders: head, shocked, confused, frozen.")]
@@ -31,9 +32,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc07Beacon beacon;
         [SerializeField] private Sc07Ambience ambience;
         [SerializeField] private AudioClip hiss;
-        [Tooltip("Where the extinguisher hangs in the hero's carry pose: metres in front of / above his feet, relative to his root.")]
-        [SerializeField] private Vector3 carryOffset = new Vector3(0.02f, 1.02f, 0.40f);
-        [SerializeField] private Vector3 carryEuler = new Vector3(-52f, 0f, 0f); // the CO2 horn (black cone) hangs from the valve: tipping the cylinder 52 degrees points the horn forward and down at the fire
+        [Tooltip("Black material of the CO2 hose between the valve and the horn the hero holds.")]
+        [SerializeField] private Material hoseMaterial;
 
         // reaction of bystander 1..4, seconds after they have stopped, speed on the way in, entry lane (z offset at the door)
         private static readonly Sc07Reaction[] Reactions = { Sc07Reaction.Head, Sc07Reaction.Shocked, Sc07Reaction.Confused, Sc07Reaction.Frozen };
@@ -48,8 +48,13 @@ namespace ChemicalSafety.Presentable
         private Quaternion _co2HomeRot;
         private Transform _co2HomeParent;
         private bool _co2Captured;
-        private Vector3 _hornLocal;
-        private bool _hasHorn;
+        // the CO2 extinguisher rig (markers made by the builder): body in the left hand, horn piece in the right
+        private Transform _horn, _hornTop, _hornGrip, _hornMouth, _bodyGrip, _hornHomeParent;
+        private Vector3 _hornHomeLocalPos, _hornHomeLocalScale, _valveLocal, _bodyGripLocal;
+        private Quaternion _hornHomeLocalRot;
+        private float _bodyBlend, _hornBlend, _sweepDeg;
+        private Vector3 _fireTarget;
+        private LineRenderer _hose;
 
         public Sc07Human Hero => people.Length > 0 ? people[0] : null;
         public int Count => people.Length;
@@ -79,83 +84,24 @@ namespace ChemicalSafety.Presentable
             _co2Home = co2Extinguisher.position;
             _co2HomeRot = co2Extinguisher.rotation;
             _co2HomeParent = co2Extinguisher.parent;
-            // the horn tip = the lower mouth of the black horn cone (sub-mesh with the "StingrayPBS1" material: hose, horn and lever), kept in the extinguisher's own space
-            var pts = new List<Vector3>();
-            var hornPts = new List<Vector3>();
-            foreach (var mr in co2Extinguisher.GetComponentsInChildren<MeshRenderer>(true))
+            // markers made by the builder: Co2Horn (cone + hose piece) with HornTop / HornGrip / HornMouth, and BodyGrip (top handle)
+            _horn = FindByName(co2Extinguisher, "Co2Horn");
+            if (_horn != null)
             {
-                var mf = mr.GetComponent<MeshFilter>();
-                if (mf == null || mf.sharedMesh == null)
-                    continue;
-                var mesh = mf.sharedMesh;
-                var verts = mesh.vertices;
-                var mats = mr.sharedMaterials;
-                foreach (var v in verts)
-                    pts.Add(co2Extinguisher.InverseTransformPoint(mf.transform.TransformPoint(v)));
-                for (var sm = 0; sm < mesh.subMeshCount && sm < mats.Length; sm++)
-                {
-                    if (mats[sm] == null || !mats[sm].name.Contains("StingrayPBS1"))
-                        continue;
-                    foreach (var vi in mesh.GetIndices(sm))
-                        hornPts.Add(co2Extinguisher.InverseTransformPoint(mf.transform.TransformPoint(verts[vi])));
-                }
+                _hornTop = FindByName(_horn, "HornTop");
+                _hornGrip = FindByName(_horn, "HornGrip");
+                _hornMouth = FindByName(_horn, "HornMouth");
+                _hornHomeParent = _horn.parent;
+                _hornHomeLocalPos = _horn.localPosition;
+                _hornHomeLocalRot = _horn.localRotation;
+                _hornHomeLocalScale = _horn.localScale;
+                if (_hornTop != null)
+                    _valveLocal = co2Extinguisher.InverseTransformPoint(_hornTop.position);
             }
 
-            if (hornPts.Count > 0)
-            {
-                var lowest = float.MaxValue;
-                foreach (var v in hornPts)
-                    lowest = Mathf.Min(lowest, v.y);
-                var sum = Vector3.zero;
-                var cnt = 0;
-                foreach (var v in hornPts)
-                {
-                    if (v.y < lowest + 0.03f)
-                    {
-                        sum += v;
-                        cnt++;
-                    }
-                }
-
-                _hornLocal = sum / Mathf.Max(1, cnt);
-                _hasHorn = true;
-                return;
-            }
-
-            if (pts.Count > 0)
-            {
-                float minY = float.MaxValue, maxY = float.MinValue;
-                foreach (var v in pts)
-                {
-                    minY = Mathf.Min(minY, v.y);
-                    maxY = Mathf.Max(maxY, v.y);
-                }
-
-                var axis = Vector2.zero;
-                var n = 0;
-                foreach (var v in pts)
-                {
-                    if (v.y < minY + (maxY - minY) * 0.4f)
-                    {
-                        axis += new Vector2(v.x, v.z);
-                        n++;
-                    }
-                }
-
-                axis /= Mathf.Max(1, n);
-                var far = 0f;
-                foreach (var v in pts)
-                {
-                    var d = new Vector2(v.x - axis.x, v.z - axis.y).magnitude;
-                    if (d > far)
-                    {
-                        far = d;
-                        _hornLocal = v;
-                    }
-                }
-
-                _hasHorn = true;
-            }
+            _bodyGrip = FindByName(co2Extinguisher, "BodyGrip");
+            if (_bodyGrip != null)
+                _bodyGripLocal = co2Extinguisher.InverseTransformPoint(_bodyGrip.position);
         }
 
         /// <summary>Everything back to the calm start: no fire, no alarm, nobody in the hall, the door shut, the CO2 extinguisher on its wall.</summary>
@@ -184,6 +130,8 @@ namespace ChemicalSafety.Presentable
                 p.SetCarry(false);
                 p.SetAim(false);
                 p.SetReach(false);
+                p.SetPin(false);
+                p.SetHornReach(false);
                 p.SetReaction(Sc07Reaction.None);
                 p.gameObject.SetActive(false);
             }
@@ -195,6 +143,12 @@ namespace ChemicalSafety.Presentable
                 co2Extinguisher.gameObject.SetActive(true);
             }
 
+            _bodyBlend = 0f;
+            _hornBlend = 0f;
+            _sweepDeg = 0f;
+            RestoreHorn();
+            if (_hose != null)
+                _hose.enabled = false;
             HeroHoldsExtinguisher = false;
         }
 
@@ -405,18 +359,21 @@ namespace ChemicalSafety.Presentable
                 hero.transform.rotation = Quaternion.LookRotation(to.normalized, Vector3.up);
         }
 
-        /// <summary>Editor preview: the hero holds the CO2 extinguisher in the carry (or aim) position without playing the cutscene.</summary>
+        /// <summary>
+        /// Editor preview: the hero holds the CO2 extinguisher in the left hand (carry) or sprays with the horn in the right hand
+        /// (aim) without playing the cutscene. Call after the pose (SnapPose) was set.
+        /// </summary>
         public void PreviewHold(bool aim)
         {
             var hero = Hero;
             if (hero == null || co2Extinguisher == null)
                 return;
             CaptureCo2();
-            co2Extinguisher.SetParent(hero.transform, true);
-            var s = Mathf.Max(0.01f, hero.transform.lossyScale.y);
-            var extra = aim ? new Vector3(0f, 0.08f, 0.05f) : Vector3.zero;
-            co2Extinguisher.localPosition = (carryOffset + extra) / s;
-            co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x + (aim ? 8f : 0f), carryEuler.y, 0f);
+            _fireTarget = (fireAt != null ? fireAt.position : transform.position) + Vector3.up * 0.5f;
+            _bodyBlend = 1f;
+            _hornBlend = aim ? 1f : 0f;
+            _sweepDeg = 0f;
+            ApplyRig();
         }
 
         public IEnumerator HeroExtinguish()
@@ -426,42 +383,52 @@ namespace ChemicalSafety.Presentable
                 yield break;
             CaptureCo2();
             var firePos = fireAt != null ? fireAt.position : transform.position;
-            // to the pillar, reach for the CO2 extinguisher
+            _fireTarget = firePos + Vector3.up * 0.5f;
+            // to the pillar, reach for the CO2 extinguisher with the right hand
             if (pillarGrab != null)
                 yield return hero.WalkTo(pillarGrab.position, 1.6f, 0.05f);
             if (co2Extinguisher != null)
                 yield return hero.FaceRoutine(co2Extinguisher.position, 300f);
             hero.SetReach(true);
             yield return PresentableFx.Wait(0.85f);
-            // take it: it hangs in front of the hero's chest, upright
-            if (co2Extinguisher != null)
-            {
-                co2Extinguisher.SetParent(hero.transform, true);
-                var s = Mathf.Max(0.01f, hero.transform.lossyScale.y);
-                co2Extinguisher.localPosition = carryOffset / s;
-                co2Extinguisher.localRotation = Quaternion.Euler(carryEuler);
-            }
 
+            // it comes off the wall into the LEFT hand: the body hangs from the handle, the right arm is free again
             HeroHoldsExtinguisher = true;
             hero.SetReach(false);
             hero.SetCarry(true);
-            yield return PresentableFx.Wait(0.5f);
+            for (var tb = 0f; tb < 0.5f; tb += Time.deltaTime)
+            {
+                _bodyBlend = Mathf.Clamp01(tb / 0.5f);
+                yield return null;
+            }
+
+            _bodyBlend = 1f;
+            yield return PresentableFx.Wait(0.4f);
 
             // walk up to the fire (about two metres from it) and face it
             if (spraySpot != null)
                 yield return hero.WalkTo(spraySpot.position, 1.7f, 0.05f);
             yield return hero.FaceRoutine(firePos, 280f);
-            hero.SetCarry(false);
-            hero.SetAim(true);
-            if (co2Extinguisher != null)
+            yield return PresentableFx.Wait(0.25f);
+
+            // pull the safety pin with the right hand, then take the horn off its clip on the body and stretch the hose out
+            hero.SetPin(true);
+            yield return PresentableFx.Wait(0.6f);
+            hero.SetPin(false);
+            hero.SetHornReach(true);
+            yield return PresentableFx.Wait(0.55f);
+            for (var th = 0f; th < 0.4f; th += Time.deltaTime)
             {
-                co2Extinguisher.localPosition = (carryOffset + new Vector3(0f, 0.08f, 0.05f)) / Mathf.Max(0.01f, hero.transform.lossyScale.y);
-                co2Extinguisher.localRotation = Quaternion.Euler(carryEuler.x + 8f, carryEuler.y, 0f);
+                _hornBlend = Mathf.Clamp01(th / 0.4f);
+                yield return null;
             }
 
-            yield return PresentableFx.Wait(0.6f);
+            _hornBlend = 1f;
+            hero.SetHornReach(false);
+            hero.SetAim(true);
+            yield return PresentableFx.Wait(0.7f);
 
-            // CO2 jet from the horn, flames shrink and die
+            // CO2 jet from the horn mouth, flames shrink and die; the hero sweeps the horn from side to side and steps a little closer
             if (_nozzle == null)
             {
                 _nozzle = new GameObject("Co2Nozzle").transform;
@@ -476,11 +443,15 @@ namespace ChemicalSafety.Presentable
             }
 
             fire?.Extinguish(4.8f);
+            var toFire = Flat(firePos - hero.transform.position);
+            if (toFire.sqrMagnitude > 0.01f)
+                StartCoroutine(hero.WalkTo(hero.transform.position + toFire.normalized * 0.5f, 0.4f, 0.05f, 90f));
             var t = 0f;
             while (t < 5.4f)
             {
                 t += Time.deltaTime;
-                UpdateNozzle(hero, firePos);
+                _sweepDeg = Mathf.Sin(t * 1.5f) * 12f * Mathf.Clamp01(t / 0.8f);
+                UpdateNozzle();
                 if (_hiss != null)
                     _hiss.volume = Mathf.Min(0.75f, _hiss.volume + Time.deltaTime * 2f);
                 if (ambience != null)
@@ -501,27 +472,156 @@ namespace ChemicalSafety.Presentable
             ambience?.SetFire(0f);
             ambience?.SetAlarm(false);
             beacon?.SetOn(false);
+            // the horn goes back to its clip, the right arm drops; the body stays in the left hand
             hero.SetAim(false);
-            hero.SetCarry(true);
-            if (co2Extinguisher != null)
+            for (var tr = 0f; tr < 0.6f; tr += Time.deltaTime)
             {
-                co2Extinguisher.localPosition = carryOffset / Mathf.Max(0.01f, hero.transform.lossyScale.y);
-                co2Extinguisher.localRotation = Quaternion.Euler(carryEuler);
+                _sweepDeg = Mathf.Lerp(_sweepDeg, 0f, 0.2f);
+                _hornBlend = 1f - Mathf.Clamp01(tr / 0.6f);
+                yield return null;
             }
 
+            _hornBlend = 0f;
+            _sweepDeg = 0f;
+            RestoreHorn();
+            UpdateHose();
             yield return PresentableFx.Wait(1.2f);
         }
 
-        private void UpdateNozzle(Sc07Human hero, Vector3 firePos)
+        /// <summary>Metres between the hose end at the valve and the horn: more than a few centimetres while the hero holds the horn free.</summary>
+        public float HornSeparation => _hornTop != null && co2Extinguisher != null
+            ? Vector3.Distance(_hornTop.position, co2Extinguisher.TransformPoint(_valveLocal))
+            : 0f;
+
+        public bool HornInHand => _hornBlend > 0.99f;
+
+        // ------------------------------------------------------------------ the rig: the extinguisher body in the left hand, the horn in the right
+
+        private static Transform FindByName(Transform root, string name)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == name)
+                    return t;
+            return null;
+        }
+
+        private void LateUpdate()
+        {
+            if (_bodyBlend > 0f || _hornBlend > 0f)
+                ApplyRig();
+        }
+
+        private void RestoreHorn()
+        {
+            if (_horn == null || _hornHomeParent == null)
+                return;
+            _horn.SetParent(_hornHomeParent, false);
+            _horn.localPosition = _hornHomeLocalPos;
+            _horn.localRotation = _hornHomeLocalRot;
+            _horn.localScale = _hornHomeLocalScale;
+        }
+
+        private void ApplyRig()
+        {
+            var hero = Hero;
+            if (hero == null || co2Extinguisher == null)
+                return;
+            // the body: from its place on the wall into the left hand, hanging from the handle, a slight swing
+            if (_bodyBlend > 0f && _bodyGrip != null && hero.LeftSocket != null)
+            {
+                var rot = hero.transform.rotation * Quaternion.Euler(-6f + 1.5f * Mathf.Sin(Time.time * 1.3f), 0f, 0f);
+                var pos = hero.LeftSocket.position - rot * _bodyGripLocal;
+                var k = Mathf.SmoothStep(0f, 1f, _bodyBlend);
+                co2Extinguisher.SetPositionAndRotation(Vector3.Lerp(_co2Home, pos, k), Quaternion.Slerp(_co2HomeRot, rot, k));
+            }
+
+            // the horn: rigid piece (cone + hose) that leaves the body and is held by the right hand, aimed at the fire
+            if (_horn != null && _hornGrip != null && _hornMouth != null && _hornTop != null && hero.RightSocket != null)
+            {
+                if (_hornBlend > 0f)
+                {
+                    var axis = (_hornMouth.localPosition - _hornTop.localPosition).normalized;
+                    var hand = hero.RightSocket.position;
+                    var dir = (_fireTarget - hand).normalized;
+                    dir = Quaternion.AngleAxis(_sweepDeg, Vector3.up) * dir;
+                    var heldRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.FromToRotation(axis, Vector3.forward);
+                    var restPos = co2Extinguisher.TransformPoint(_hornHomeLocalPos);
+                    var restRot = co2Extinguisher.rotation * _hornHomeLocalRot;
+                    var k = Mathf.SmoothStep(0f, 1f, _hornBlend);
+                    // position the piece so that its grip point sits in the hand
+                    var rotNow = Quaternion.Slerp(restRot, heldRot, k);
+                    _horn.rotation = rotNow;
+                    _horn.position = restPos;
+                    var gripShift = hand - _hornGrip.position;
+                    _horn.position = restPos + gripShift * k;
+                }
+                else if (_horn.parent == _hornHomeParent)
+                {
+                    _horn.localPosition = _hornHomeLocalPos;
+                    _horn.localRotation = _hornHomeLocalRot;
+                }
+            }
+
+            UpdateHose();
+        }
+
+        // A black hose from the valve on the body to the top of the horn piece (a sagging Bezier); hidden while the horn sits on the body.
+        private void UpdateHose()
+        {
+            if (_hornTop == null || co2Extinguisher == null || hoseMaterial == null)
+                return;
+            var p0 = co2Extinguisher.TransformPoint(_valveLocal);
+            var p3 = _hornTop.position;
+            var show = _hornBlend > 0.02f && Vector3.Distance(p0, p3) > 0.04f;
+            if (_hose == null)
+            {
+                var go = new GameObject("Co2Hose");
+                go.transform.SetParent(transform, false);
+                _hose = go.AddComponent<LineRenderer>();
+                _hose.useWorldSpace = true;
+                _hose.positionCount = 14;
+                _hose.widthMultiplier = 0.024f;
+                _hose.numCapVertices = 4;
+                _hose.numCornerVertices = 3;
+                _hose.sharedMaterial = hoseMaterial;
+                _hose.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _hose.receiveShadows = false;
+            }
+
+            _hose.enabled = show;
+            if (!show)
+                return;
+            var heroT = Hero != null ? Hero.transform : transform;
+            var p1 = p0 + heroT.right * 0.10f + Vector3.up * 0.04f;
+            var p2 = p3 - (_hornMouth != null ? (_hornMouth.position - _hornTop.position).normalized : heroT.forward) * 0.12f;
+            for (var i = 0; i < 14; i++)
+            {
+                var u = i / 13f;
+                var a = 1f - u;
+                var p = a * a * a * p0 + 3f * a * a * u * p1 + 3f * a * u * u * p2 + u * u * u * p3;
+                p += Vector3.down * (0.09f * Mathf.Sin(u * Mathf.PI) * Mathf.Clamp01(_hornBlend * 1.5f));
+                _hose.SetPosition(i, p);
+            }
+        }
+
+        // The jet leaves the horn mouth along the horn's axis (the horn is aimed at the fire by the rig).
+        private void UpdateNozzle()
         {
             if (_nozzle == null)
                 return;
-            var tip = _hasHorn && co2Extinguisher != null
-                ? co2Extinguisher.TransformPoint(_hornLocal)
-                : (co2Extinguisher != null ? co2Extinguisher.position : hero.transform.position + Vector3.up) + hero.transform.forward * 0.34f + Vector3.up * 0.14f;
-            var aim = new Vector3(firePos.x, firePos.y + 0.55f, firePos.z) - tip;
+            if (_hornMouth != null && _hornTop != null)
+            {
+                _nozzle.position = _hornMouth.position;
+                var dir = _hornMouth.position - _hornTop.position;
+                if (dir.sqrMagnitude > 1e-6f)
+                    _nozzle.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                return;
+            }
+
+            var hero = Hero;
+            var tip = (co2Extinguisher != null ? co2Extinguisher.position : Vector3.zero) + (hero != null ? hero.transform.forward * 0.34f : Vector3.zero);
             _nozzle.position = tip;
-            _nozzle.rotation = Quaternion.LookRotation(aim.normalized, Vector3.up);
+            _nozzle.rotation = Quaternion.LookRotation((_fireTarget - tip).normalized, Vector3.up);
         }
     }
 }

@@ -111,6 +111,7 @@ namespace ChemicalSafety.Presentable
 
         public void Begin()
         {
+            RestoreAll();
             CaptureHomes();
             AllSeen = false;
             Seen = 0;
@@ -127,6 +128,7 @@ namespace ChemicalSafety.Presentable
         public void Stop()
         {
             _on = false;
+            RestoreAll();
             HideCard();
             if (arrow != null)
                 arrow.gameObject.SetActive(false);
@@ -177,7 +179,7 @@ namespace ChemicalSafety.Presentable
             var camPos = cam != null ? cam.position : from;
             // in the hands: upright, label toward the user, 0.5 m away, left of the card
             var holdScale = Mathf.Clamp(0.5f / Mathf.Max(0.05f, BoundsOf(item).size.y), 0.45f, HoldScaleMax);
-            var dest = camPos + fwd * 0.5f - right * 0.2f + Vector3.down * 0.14f;
+            var dest = camPos + fwd * 0.5f - right * 0.24f + Vector3.down * 0.20f;
             var destRot = Quaternion.LookRotation(-fwd, Vector3.up);
             for (var t = 0f; t < 0.5f; t += Time.deltaTime)
             {
@@ -185,11 +187,13 @@ namespace ChemicalSafety.Presentable
                 item.position = Vector3.Lerp(from, dest, k);
                 item.rotation = Quaternion.Slerp(fromRot, destRot, k);
                 item.localScale = Vector3.Lerp(fromScale, _homeScale[index] * holdScale, k);
+                ScaleOthers(index, 1f - k); // the other wall units shrink away while one is in the hands: nothing overlaps behind it
                 yield return null;
             }
 
             item.SetPositionAndRotation(dest, destRot);
             item.localScale = _homeScale[index] * holdScale;
+            ShowOthers(index, false);
             ShowCard(index);
             _busy = false;
             Opened?.Invoke(index);
@@ -211,14 +215,18 @@ namespace ChemicalSafety.Presentable
             var from = item.position;
             var fromRot = item.rotation;
             var fromScale = item.localScale;
+            ShowOthers(index, true);
             for (var t = 0f; t < 0.45f; t += Time.deltaTime)
             {
                 var k = Mathf.SmoothStep(0f, 1f, t / 0.45f);
                 item.position = Vector3.Lerp(from, _homePos[index], k);
                 item.rotation = Quaternion.Slerp(fromRot, _homeRot[index], k);
                 item.localScale = Vector3.Lerp(fromScale, _homeScale[index], k);
+                ScaleOthers(index, k);
                 yield return null;
             }
+
+            ScaleOthers(index, 1f);
 
             item.SetPositionAndRotation(_homePos[index], _homeRot[index]);
             item.localScale = _homeScale[index];
@@ -280,6 +288,43 @@ namespace ChemicalSafety.Presentable
             return best;
         }
 
+        // The other wall extinguishers shrink away while one is held (and grow back when it is hung up again).
+        private void ScaleOthers(int except, float factor)
+        {
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (i == except || items[i] == null)
+                    continue;
+                items[i].localScale = _homeScale[i] * Mathf.Max(0.001f, factor);
+            }
+        }
+
+        private void ShowOthers(int except, bool on)
+        {
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (i == except || items[i] == null)
+                    continue;
+                items[i].gameObject.SetActive(on);
+                if (on)
+                    items[i].localScale = _homeScale[i] * 0.001f;
+            }
+        }
+
+        private void RestoreAll()
+        {
+            if (items == null || _homeScale == null)
+                return;
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (items[i] == null)
+                    continue;
+                items[i].gameObject.SetActive(true);
+                if (i != _held)
+                    items[i].localScale = _homeScale[i];
+            }
+        }
+
         private void SetPokes(bool on)
         {
             for (var i = 0; i < _pokes.Length; i++)
@@ -325,7 +370,7 @@ namespace ChemicalSafety.Presentable
             var right = Vector3.Cross(Vector3.up, fwd);
             // eye level, to the right of the extinguisher in the hands, with a gap, within finger reach
             var head = cam != null ? cam.position : Vector3.zero;
-            _card.position = head + fwd * 0.62f + right * 0.27f + Vector3.down * 0.02f;
+            _card.position = head + fwd * 0.62f + right * 0.34f + Vector3.down * 0.02f;
             _card.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             _titleText.text = Sc07Content.CardTitles[index];
             _nameText.text = Sc07Content.Names[index];
