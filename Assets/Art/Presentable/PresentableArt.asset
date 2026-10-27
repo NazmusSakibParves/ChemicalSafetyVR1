@@ -176,6 +176,7 @@ MonoBehaviour:
   voSc08CompleteBn: {fileID: 8300000, guid: 4d0b17f2ee7db2947b822a10339ac3a6, type: 3}
   voSc08CompleteEn: {fileID: 8300000, guid: 8a49255fce03943419e1e8f6f8c056be, type: 3}
   sdsSc09: {fileID: 21300000, guid: 358f65fe3ddfd654da2df048ab3e5be5, type: 3}
+  holoSc09: {fileID: 21300000, guid: e4141d51688e16b41b7bc5e7c7e08cbd, type: 3}
   bnSc09InstructionPanel: {fileID: 21300000, guid: 35d620e567d745147a13984d81f88fad, type: 3}
   bnSc09SpillInstruction: {fileID: 21300000, guid: 5e12cd5c03fc34b4b88414889d47f966, type: 3}
   bnSc09FlaskHint: {fileID: 21300000, guid: c61ffa2a6a8b3db4da1513c1f4daae15, type: 3}

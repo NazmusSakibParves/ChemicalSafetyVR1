@@ -284,6 +284,7 @@ namespace ChemicalSafety.Editor
             refs.shower = showerGo.AddComponent<Sc09Shower>();
             var sso = new SerializedObject(refs.shower);
             sso.FindProperty("visor").objectReferenceValue = refs.visor;
+            sso.FindProperty("holoSprite").objectReferenceValue = art.holoSc09;
             sso.FindProperty("valveClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(sfx + "Valve.wav");
             sso.FindProperty("waterLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(sfx + "Water_Loop.wav");
             sso.ApplyModifiedPropertiesWithoutUndo();

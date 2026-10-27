@@ -192,6 +192,7 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc08CompleteBn;
         public AudioClip voSc08CompleteEn;
         public Sprite sdsSc09;
+        public Sprite holoSc09;
         public Sprite bnSc09InstructionPanel;
         public Sprite bnSc09SpillInstruction;
         public Sprite bnSc09FlaskHint;

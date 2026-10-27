@@ -548,6 +548,7 @@ namespace ChemicalSafety.Editor
             art.bnSc08SashHint = B("BN_Sc08SashHint");
             art.bnSc08MixHint = B("BN_Sc08MixHint");
             art.sdsSc09 = LoadSprite("2D/Sc09/SDS_SC09");
+            art.holoSc09 = LoadSprite("2D/Sc09/Holo_EyeWash");
             art.bnSc09InstructionPanel = B("BN_Sc09InstructionPanel");
             art.bnSc09SpillInstruction = B("BN_Sc09SpillInstruction");
             art.bnSc09FlaskHint = B("BN_Sc09FlaskHint");

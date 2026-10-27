@@ -389,12 +389,7 @@ namespace ChemicalSafety.Editor
             Box("DrainRibA", drain, drainAt + new Vector3(0f, 0.018f, 0.08f), new Vector3(0.54f, 0.008f, 0.016f), slatM, false);
             Box("DrainRibB", drain, drainAt + new Vector3(0f, 0.018f, -0.08f), new Vector3(0.54f, 0.008f, 0.016f), slatM, false);
 
-            // hologram text (EYE icon, HOLD Eyelids OPEN, 15 MINUTES)
-            var holo = QuadObj("Sc09Holo", room, new Vector3(ox, 1.6f, 0f), new Vector3(0f, 180f, 0f), new Vector2(1.0f, 1.0f * 420f / 1100f),
-                MatAlpha("Sc09HoloMat", Sc06Tex("Label_Sc09Holo"), Color.white, false));
-            Object.DestroyImmediate(holo.GetComponent<Collider>());
-            holo.GetComponent<MeshRenderer>().sharedMaterial.renderQueue = (int)RenderQueue.Transparent + 40;
-            holo.SetActive(false);
+            // the hologram text is a world canvas made at runtime by Sc09Shower (always on top, like the other cards; a plain quad was hidden in the headset)
 
             // water: shower head spray, two eye wash jets, bowl splash and mist, splash on the floor
             var waterMat = ParticleMat("Sc09WaterDrop", Sc06Tex("Fx_Drop"), false);

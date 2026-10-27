@@ -137,6 +137,7 @@ def holo():
     im.alpha_composite(lay)
     glow_text(im, (270, 252), "15 MINUTES", font(88), green, glow)
     im.save(os.path.join(TEX, "Label_Sc09Holo.png"))
+    im.save(os.path.join(SC9, "Holo_EyeWash.png"))
     print("holo", im.size)
 
 

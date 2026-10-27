@@ -13,6 +13,7 @@ namespace ChemicalSafety.Presentable
     public sealed class Sc09Shower : MonoBehaviour
     {
         [SerializeField] private Sc09Visor visor;
+        [SerializeField] private Sprite holoSprite;
         [SerializeField] private AudioClip valveClip;
         [SerializeField] private AudioClip waterLoop;
         [SerializeField, Range(0f, 1f)] private float waterLevel = 0.55f;
@@ -22,7 +23,6 @@ namespace ChemicalSafety.Presentable
         private Transform _pushGlow;
         private Transform _standHere;
         private Transform _holo;
-        private Renderer _holoR;
         private ParticleSystem[] _water;
         private Transform _plate;
         private AudioSource _loop;
@@ -70,8 +70,15 @@ namespace ChemicalSafety.Presentable
             _poke = p != null ? p.GetComponent<PokeTarget>() : null;
             _pushGlow = Find(root, "Sc09PushGlow");
             _standHere = Find(root, "Sc09StandHere");
-            _holo = Find(root, "Sc09Holo");
-            _holoR = _holo != null ? _holo.GetComponent<Renderer>() : null;
+            if (holoSprite != null)
+            {
+                _holo = new GameObject("Sc09Holo").transform;
+                _holo.SetParent(root, false);
+                var canvas = PresentableUi.WorldCanvas("Sc09HoloCanvas", _holo, new Vector2(1100f, 420f), 0.0009f, false, 70);
+                PresentableUi.Img("HoloText", canvas.transform, Vector2.zero, Vector2.one, holoSprite, Color.white);
+                PresentableUi.AlwaysOnTop(canvas);
+                _holo.gameObject.SetActive(false);
+            }
             _plate = Find(root, "Sc09PushPlate");
             var fx = Find(root, "Sc09WaterFx");
             _water = fx != null ? fx.GetComponentsInChildren<ParticleSystem>(true) : new ParticleSystem[0];
