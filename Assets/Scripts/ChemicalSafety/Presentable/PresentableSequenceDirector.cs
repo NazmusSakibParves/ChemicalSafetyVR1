@@ -142,6 +142,19 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc06Ambience sc08Ambience;
         [SerializeField] private PresentableMcqPanel mcqSc08;
 
+        [Header("SC09")]
+        [SerializeField] private GameObject envSc09;
+        [SerializeField] private Transform spawnSc09;
+        [SerializeField] private Transform sc09BenchStand;
+        [SerializeField] private Transform sc09ShowerStand;
+        [SerializeField] private Sc09Flask sc09Flask;
+        [SerializeField] private Sc09Shower sc09Shower;
+        [SerializeField] private Sc09Visor sc09Visor;
+        [SerializeField] private Sc09Guide sc09Guide;
+        [SerializeField] private Sc06Gate sc09Gate;
+        [SerializeField] private Sc06Ambience sc09Ambience;
+        [SerializeField] private PresentableMcqPanel mcqSc09;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -198,6 +211,12 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc09Only", false) && envSc09 != null)
+            {
+                yield return RunScenario9();
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false) && envSc08 != null)
             {
                 yield return RunScenario8();
@@ -213,7 +232,7 @@ namespace ChemicalSafety.Presentable
             foreach (var d in drums)
                 d?.SetCalloutVisible(false, 0.01f);
 
-            _instructionClip = art.voInstruction;
+            _instructionClip = Sc01(art.voInstruction, art.trialInstruction);
             PlaceRig(spawnStart.position, spawnStart.forward);
             yield return fader.FadeTo(0f, 1.4f);
             yield return PresentableFx.Wait(0.4f);
@@ -226,7 +245,7 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             yield return SubtitledVoice(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.",
-                art.voSalam);
+                Sc01(art.voSalam, art.trialSalam));
             instructionPanel.SetSpeaking(false);
 
             Stage("gap");
@@ -237,7 +256,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContinueCentered(true);
             instructionPanel.SetSpeaking(true);
             yield return SubtitledVoice(art.bnInstructionSub,
-                "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", art.voInstruction);
+                "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", _instructionClip);
             instructionPanel.SetSpeaking(false);
 
             // 2b. Voice-over finished: Continue appears (+ hint VO). Speaker replays the instruction any time.
@@ -247,7 +266,8 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.ShowContinue();
             instructionPanel.SetSpeaking(true);
             StartCoroutine(SubtitledVoice(art.bnContinueHint,
-                "Click the speaker to hear the instructions again, or Continue to go on.", art.voContinueHint));
+                "Click the speaker to hear the instructions again, or Continue to go on.",
+                Sc01(art.voContinueHint, art.trialContinueHint)));
             while (!_continuePressed)
                 yield return null;
             instructionPanel.SpeakerClicked -= OnSpeakerClicked;
@@ -359,7 +379,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc08 != null ? Sc08Content.ModuleComplete
+            var doneLine = envSc09 != null ? Sc09Content.ModuleComplete
+                : envSc08 != null ? Sc08Content.ModuleComplete
                 : envSc07 != null ? Sc07Content.ModuleComplete
                 : envSc04 != null ? Sc04Content.ModuleComplete
                 : envSc03 != null ? Sc03Content.ModuleComplete
@@ -1073,6 +1094,10 @@ namespace ChemicalSafety.Presentable
             if (sc08Ambience != null)
                 sc08Ambience.End();
             Stage("sc08Done");
+
+            // SC09 (chemical splash, safety shower) starts after the SC08 question's NEXT
+            if (envSc09 != null)
+                yield return RunScenario9();
         }
 
         private IEnumerator Sc08Round()
@@ -1155,6 +1180,203 @@ namespace ChemicalSafety.Presentable
             sc08Mix.MixFinished -= OnMixed;
             sc08Lab.HideArrow();
             Stage("sc08MixDone");
+        }
+
+        // SC09: chemical splash. Pour the purple sample, the flask slips and breaks, the liquid lands on the face shield, read the SDS,
+        // walk to the safety shower, push it, wash the shield clean; gate card; MCQ.
+        private IEnumerator Sc09Card(string english, Sprite bangla, AudioClip clip)
+        {
+            instructionPanel.SetContent(english, bangla);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            _instructionClip = clip;
+            if (clip != null)
+                yield return PlayVoice(clip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+        }
+
+        private IEnumerator RunScenario9()
+        {
+            Stage("sc09");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc08Ambience != null)
+                sc08Ambience.End();
+            envSc09.SetActive(true);
+            clipboard.SetSheet(art.sdsSc09);
+            clipboard.SetVisible(false);
+            sc09Flask.ResetAll();
+            sc09Shower.ResetAll();
+            PlaceRig(spawnSc09.position, spawnSc09.forward);
+            sc09Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc09Intro");
+            _instructionClip = art.voSc09Instruction != null ? art.voSc09Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc09Content.InstructionEnglish, art.bnSc09InstructionPanel);
+            instructionPanel.SetContinueCentered(true);
+            BeginEyeInstruction();
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
+            yield return instructionPanel.Hide();
+            instructionPanel.SetContinueCentered(false);
+            EndEyeInstruction();
+
+            var again = true;
+            while (again)
+            {
+                yield return Sc09Round();
+
+                Stage("sc09Gate");
+                yield return PresentableFx.Wait(0.8f);
+                sc09Shower.StopWater();
+                sc09Shower.HideHolo();
+                yield return fader.FadeTo(1f, 0.35f);
+                PlaceRig(spawnSc09.position, spawnSc09.forward);
+                subtitle.Hide();
+                yield return fader.FadeTo(0f, 0.5f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc09Gate.Back += OnBack;
+                sc09Gate.Next += OnNext;
+                sc09Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc09Gate));
+                while (choice == 0)
+                    yield return null;
+                sc09Gate.Back -= OnBack;
+                sc09Gate.Next -= OnNext;
+                sc09Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    yield return fader.FadeTo(1f, 0.3f);
+                    sc09Flask.ResetAll();
+                    sc09Shower.ResetAll();
+                    yield return PresentableFx.Wait(0.3f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc09Question");
+            PlaceAtEyeLevel(mcqSc09.transform, 0.7f, false);
+            yield return RunQuestion(mcqSc09, BuildSc09Question(), false, 9);
+            if (sc09Ambience != null)
+                sc09Ambience.End();
+            Stage("sc09Done");
+        }
+
+        private IEnumerator Sc09Round()
+        {
+            // 1. at the bench: touch the purple sample flask, it is lifted and poured
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc09BenchStand.position, sc09BenchStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            Stage("sc09Flask");
+            sc09Flask.SetInteractable(true);
+            sc09Guide.PointAt(sc09Flask.Flask, new Vector3(0f, 0.34f, 0f));
+            StartCoroutine(SubtitledVoice(art.bnSc09FlaskHint, Sc09Content.FlaskHint, art.voSc09Flask));
+            var splashed = false;
+            void OnSplashed() => splashed = true;
+            sc09Flask.Splashed += OnSplashed;
+            while (!splashed)
+            {
+                if (sc09Flask.Carrying || sc09Flask.Broken)
+                    sc09Guide.Hide();
+                yield return null;
+            }
+
+            sc09Flask.Splashed -= OnSplashed;
+            sc09Guide.Hide();
+
+            // 2. the accident: "INSTRUCTIONS" card (the shield is covered with drops)
+            Stage("sc09Spill");
+            StopVoice();
+            subtitle.Hide();
+            yield return PresentableFx.Wait(0.9f);
+            yield return Sc09Card(Sc09Content.SpillInstruction, art.bnSc09SpillInstruction, art.voSc09Spill);
+
+            // 3. the safety data sheet in the left hand
+            Stage("sc09Sds");
+            StartCoroutine(PlayVoice(art.voSc09Sds));
+            clipboard.SetVisible(true);
+            var sdsWait = 0f;
+            while (clipboard.IsVisible && sdsWait < 10f)
+            {
+                sdsWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            clipboard.SetVisible(false);
+            StopVoice();
+
+            // 4. to the safety shower: the green STAND HERE mark, then the push plate
+            yield return fader.FadeTo(1f, 0.3f);
+            PlaceRig(sc09ShowerStand.position - sc09ShowerStand.forward * 2.4f, sc09ShowerStand.forward);
+            sc09Shower.ShowStandMark(true);
+            yield return fader.FadeTo(0f, 0.5f);
+            Stage("sc09Walk");
+            StartCoroutine(SubtitledVoice(art.bnSc09WalkHint, Sc09Content.WalkHint, art.voSc09Walk));
+            yield return PresentableFx.Wait(2.4f);
+            yield return Glide(sc09ShowerStand.position, 1.8f);
+            sc09Shower.ShowStandMark(false);
+
+            Stage("sc09Wash");
+            sc09Shower.SetInteractable(true);
+            sc09Guide.PointAt(sc09Shower.PushPlate, new Vector3(0f, 0.28f, 0.05f));
+            StopVoice();
+            StartCoroutine(SubtitledVoice(art.bnSc09PushHint, Sc09Content.PushHint, art.voSc09Push));
+            while (!sc09Shower.Running)
+                yield return null;
+            sc09Guide.Hide();
+            StopVoice();
+            StartCoroutine(SubtitledVoice(art.bnSc09FlushHint, Sc09Content.FlushHint, art.voSc09Flush));
+            yield return sc09Shower.RunWash();
+            Stage("sc09WashDone");
         }
 
         private void TurnAroundHead(Transform t, float degrees)
@@ -1343,7 +1565,8 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PickLabelVoices()
         {
-            yield return SubtitledVoice(art.bnPickLabel, "Select the correct label for each drum.", art.voPickLabel);
+            yield return SubtitledVoice(art.bnPickLabel, "Select the correct label for each drum.",
+                Sc01(art.voPickLabel, art.trialPickLabel));
             yield return PresentableFx.Wait(0.3f);
             yield return SubtitledVoice(art.bnTouchDrum, "Touch the glowing button in front of a drum with your finger.",
                 art.voTouchDrum);
@@ -1436,7 +1659,8 @@ namespace ChemicalSafety.Presentable
                     StopVoice();
                     yield return PresentableFx.Wait(0.35f);
                     StartCoroutine(SubtitledVoice(art.bnWrongLabel,
-                        "Wrong label for this drum. Select the correct label again.", art.voWrongLabel));
+                        "Wrong label for this drum. Select the correct label again.",
+                        Sc01(art.voWrongLabel, art.trialWrongLabel)));
                 }
 
                 labelPopup.Close();
@@ -1470,7 +1694,7 @@ namespace ChemicalSafety.Presentable
                 baseScale * Mathf.LerpUnclamped(0.5f, 1f, t), PresentableFx.EaseOutBack);
 
             StartCoroutine(SubtitledVoice(art.bnCarrier, "Load the correct drum onto the trolley for transfer.",
-                art.voCarrier));
+                Sc01(art.voCarrier, art.trialCarrier)));
             yield return Glide(trolleyStand.position, 1.2f);
             // the carrier is to the right of the rack; turn to face it behind a short fade (no smooth turn)
             yield return fader.FadeTo(1f, 0.2f);
@@ -1699,10 +1923,24 @@ namespace ChemicalSafety.Presentable
             StopVoice();
             subtitle.Hide();
             var wrongClip = scenario == 3 && art.voSc03Wrong != null ? art.voSc03Wrong : art.voWrong;
-            yield return PlayVoice(correct ? art.voCorrect : wrongClip);
+            var correctClip = art.voCorrect;
+            if (scenario == 1)
+            {
+                correctClip = Sc01(art.voCorrect, art.trialCorrect);
+                wrongClip = Sc01(art.voWrong, art.trialWrong);
+            }
+
+            yield return PlayVoice(correct ? correctClip : wrongClip);
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 9)
+            {
+                yield return PlayVoice(art.voSc09CompleteBn);
+                yield return PlayVoice(art.voSc09CompleteEn);
+                yield break;
+            }
+
             if (scenario == 8)
             {
                 yield return PlayVoice(art.voSc08CompleteBn);
@@ -1747,7 +1985,7 @@ namespace ChemicalSafety.Presentable
             }
             else
             {
-                doneBn = art.voSc01CompleteBn;
+                doneBn = Sc01(art.voSc01CompleteBn, art.trialSc01CompleteBn);
                 doneEn = art.voSc01CompleteEn;
             }
 
@@ -1796,6 +2034,14 @@ namespace ChemicalSafety.Presentable
             yield return PlayVoice(clip);
             if (token == _subtitleToken)
                 subtitle.Hide();
+        }
+
+        // Scenario 1 trial recordings. Scenarios 2-8 keep calling the original slots directly.
+        private AudioClip Sc01(AudioClip original, AudioClip trial)
+        {
+            if (art != null && !art.useSc01OriginalVoice && trial != null)
+                return trial;
+            return original;
         }
 
         private IEnumerator PlayVoice(AudioClip clip)
@@ -1939,6 +2185,31 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private static PresentableMcqPanel.Question BuildSc09Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc09Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc09Content.OptionLabels[i],
+                    feedback = Sc09Content.OptionFeedback[i],
+                    wrongTitle = Sc09Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc09Content.QuestionHeader,
+                prompt = Sc09Content.QuestionPrompt,
+                correctIndex = Sc09Content.CorrectIndex,
+                correctTitle = Sc09Content.CorrectTitle,
+                nextLabel = Sc09Content.FinishLabel,
+                options = options,
+                fancy = true
             };
         }
 

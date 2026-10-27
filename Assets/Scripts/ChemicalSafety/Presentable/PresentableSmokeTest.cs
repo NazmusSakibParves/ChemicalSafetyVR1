@@ -793,6 +793,161 @@ namespace ChemicalSafety.Presentable
             Click(mcq8.transform, "NextButton");
         }
 
+        private IEnumerator Sc09Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc09Intro", 40f);
+            var flask = Get<Sc09Flask>(_director, "sc09Flask");
+            var shower = Get<Sc09Shower>(_director, "sc09Shower");
+            var visor = Get<Sc09Visor>(_director, "sc09Visor");
+            var guide = Get<Sc09Guide>(_director, "sc09Guide");
+            var gate = Get<Sc06Gate>(_director, "sc09Gate");
+            var mcq9 = Get<PresentableMcqPanel>(_director, "mcqSc09");
+            var clipboard = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("88_sc09_instruction");
+            yield return ClickContinue(panel, 40f);
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc09Flask", 40f);
+                yield return new WaitForSeconds(1.5f);
+                Say("SC09 " + tag + ": flask arrow = " + guide.Visible + " (expected True), broken = " + flask.Broken + " (expected False), visor dirty = " + visor.Dirty + " (expected False)");
+                if (shots)
+                    yield return Shot("89_sc09_bench");
+                yield return FingerPoke(flask.Poke, "purple flask");
+                var wc = 0f;
+                while (!flask.Carrying && wc < 4f)
+                {
+                    wc += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC09 " + tag + ": flask lifted = " + flask.Carrying + " (expected True)");
+                yield return new WaitForSeconds(2.2f);
+                if (shots)
+                    yield return Shot("90_sc09_pour");
+                var wb = 0f;
+                while (!flask.Broken && wb < 10f)
+                {
+                    wb += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.5f);
+                if (shots)
+                    yield return Shot("91_sc09_breaking");
+                yield return new WaitForSeconds(1.6f);
+                Say("SC09 " + tag + ": flask broken = " + flask.Broken + " (expected True), visor dirty = " + visor.Dirty + " (expected True), strength = " + visor.Strength.ToString("0.00"));
+                if (shots)
+                    yield return Shot("92_sc09_broken_visor");
+
+                yield return WaitStage("sc09Spill", 20f);
+                yield return new WaitForSeconds(2.5f);
+                if (shots)
+                    yield return Shot("93_sc09_spill_card");
+                yield return ClickContinue(panel, 40f);
+
+                yield return WaitStage("sc09Sds", 20f);
+                yield return new WaitForSeconds(1.8f);
+                Say("SC09 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
+                if (shots)
+                    yield return Shot("94_sc09_sds");
+                clipboard.SetVisible(false);
+
+                yield return WaitStage("sc09Walk", 20f);
+                yield return new WaitForSeconds(1.2f);
+                if (shots)
+                    yield return Shot("95_sc09_stand_here");
+                yield return WaitStage("sc09Wash", 20f);
+                yield return new WaitForSeconds(1.2f);
+                Say("SC09 " + tag + ": push arrow = " + guide.Visible + " (expected True), water running = " + shower.Running + " (expected False)");
+                if (shots)
+                    yield return Shot("96_sc09_push");
+                yield return FingerPoke(shower.PushPoke, "push plate");
+                yield return new WaitForSeconds(3.0f);
+                Say("SC09 " + tag + ": water running = " + shower.Running + " (expected True), jets = " + shower.ActiveJets + ", hologram = " + shower.HoloVisible +
+                    " (expected True), visor strength = " + visor.Strength.ToString("0.00") + ", clean = " + visor.Clean.ToString("0.00"));
+                if (shots)
+                    yield return Shot("97_sc09_water_start");
+                yield return new WaitForSeconds(4.5f);
+                if (shots)
+                    yield return Shot("98_sc09_washing");
+                var ww = 0f;
+                while (!shower.WashDone && ww < 25f)
+                {
+                    ww += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC09 " + tag + ": wash done = " + shower.WashDone + " (expected True), visor clean = " + visor.Clean.ToString("0.00") + " (expected 1.00)");
+
+                yield return WaitStage("sc09Gate", 40f);
+                var wg = 0f;
+                while (!gate.Visible && wg < 15f)
+                {
+                    wg += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(1.3f);
+                Say("SC09 " + tag + ": gate card visible = " + gate.Visible + ", visor hidden = " + !visor.Dirty);
+                LayoutCheck("SC09 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("99_sc09_gate");
+                Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+            }
+
+            yield return WaitStage("sc09Question", 20f);
+            var q = 0f;
+            while (!mcq9.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.4f);
+            Say("SC09 MCQ wow look = " + mcq9.Fancy + " (expected True)");
+            LayoutCheck("SC09 MCQ", mcq9.transform);
+            yield return Shot("100_sc09_question");
+            Click(mcq9.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("101_sc09_wrong");
+            Click(mcq9.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq9.transform, "Row2");
+            var heard = "";
+            var h = 0f;
+            while (h < 16f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc09Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC09 MCQ correct card", mcq9.transform);
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 9 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("102_sc09_correct");
+            Click(mcq9.transform, "NextButton");
+        }
+
+        private IEnumerator ClickContinue(InstructionPanelView panel, float timeout)
+        {
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var wc = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && wc < timeout)
+            {
+                wc += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Click(panel.transform, "ContinueButton");
+        }
+
         private IEnumerator PanelStopTest(LabelPickPopup popup)
         {
             var hand = GlovedHandPose.Right;
@@ -878,6 +1033,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc09Only", false))
+            {
+                Say("SC09-only run (dev start)");
+                yield return Sc09Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false))
             {
                 Say("SC08-only run (dev start)");
@@ -1737,6 +1902,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc06Smoke(panel, voiceSrc, mcq5);
             yield return Sc07Smoke(panel, voiceSrc);
             yield return Sc08Smoke(panel, voiceSrc);
+            yield return Sc09Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

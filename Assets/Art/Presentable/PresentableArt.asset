@@ -175,5 +175,32 @@ MonoBehaviour:
   voSc08Gate: {fileID: 8300000, guid: 37bf82f9c75168e40810644b3bae857f, type: 3}
   voSc08CompleteBn: {fileID: 8300000, guid: 4d0b17f2ee7db2947b822a10339ac3a6, type: 3}
   voSc08CompleteEn: {fileID: 8300000, guid: 8a49255fce03943419e1e8f6f8c056be, type: 3}
+  sdsSc09: {fileID: 21300000, guid: 358f65fe3ddfd654da2df048ab3e5be5, type: 3}
+  bnSc09InstructionPanel: {fileID: 21300000, guid: 35d620e567d745147a13984d81f88fad, type: 3}
+  bnSc09SpillInstruction: {fileID: 21300000, guid: 5e12cd5c03fc34b4b88414889d47f966, type: 3}
+  bnSc09FlaskHint: {fileID: 21300000, guid: c61ffa2a6a8b3db4da1513c1f4daae15, type: 3}
+  bnSc09WalkHint: {fileID: 21300000, guid: 10b8028f8d147d0439c386b65f671427, type: 3}
+  bnSc09PushHint: {fileID: 21300000, guid: e0dbf1aa641af5b499353815658eba5e, type: 3}
+  bnSc09FlushHint: {fileID: 21300000, guid: 5b2125c2264324749945dfc9cd6a5a8b, type: 3}
+  voSc09Instruction: {fileID: 8300000, guid: d28c7b2d26e735f40a6b311798f0a923, type: 3}
+  voSc09Flask: {fileID: 8300000, guid: 4d2b8fa5209a44b4c98b77206c7470ed, type: 3}
+  voSc09Spill: {fileID: 8300000, guid: 6f1f3bead7b471f4a8cd9d32b45cf820, type: 3}
+  voSc09Sds: {fileID: 8300000, guid: df8d59badbde5ff4c8252d11b9f60302, type: 3}
+  voSc09Walk: {fileID: 8300000, guid: b0e0819d1c862aa49aba41287aa64cbe, type: 3}
+  voSc09Push: {fileID: 8300000, guid: 504112a09fd32364695ecffd45a1a42c, type: 3}
+  voSc09Flush: {fileID: 8300000, guid: aa9ebfb65cbf38c479a084cab5b0ad50, type: 3}
+  voSc09Gate: {fileID: 8300000, guid: 452799ec60b2e814994ea0198c0c9e59, type: 3}
+  voSc09CompleteBn: {fileID: 8300000, guid: eaeecf4635890d148962fe6af6649e14, type: 3}
+  voSc09CompleteEn: {fileID: 8300000, guid: 44037f9aee9db034e997e3afe05ef26e, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
+  useSc01OriginalVoice: 0
+  trialSalam: {fileID: 8300000, guid: 9075ddaec63ac2342a2f9788a9e56c67, type: 3}
+  trialInstruction: {fileID: 8300000, guid: 05a12a87e8e6836478cf308255deb794, type: 3}
+  trialContinueHint: {fileID: 8300000, guid: d2f19f2f88d522847aa772e9f62f9da7, type: 3}
+  trialCorrect: {fileID: 8300000, guid: d201f44bfba820547ba40237c4a4d1f9, type: 3}
+  trialWrong: {fileID: 8300000, guid: b4ce0f3ae86bf7d44a80a70be621b687, type: 3}
+  trialPickLabel: {fileID: 8300000, guid: 0b1181a37e1d98b47812c8579a463c8c, type: 3}
+  trialWrongLabel: {fileID: 8300000, guid: a5da457648927bd4193a5427c37f6cf3, type: 3}
+  trialCarrier: {fileID: 8300000, guid: 97c6bf1e61d50c94dbc27941648b14f1, type: 3}
+  trialSc01CompleteBn: {fileID: 8300000, guid: 60d7f100c9a90194f829cf98fa8644e9, type: 3}
   englishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

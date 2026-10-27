@@ -113,7 +113,7 @@ namespace ChemicalSafety.Presentable
             var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.09f, 0.70f), new Vector2(0.90f, 0.90f),
                 string.IsNullOrEmpty(titleText) ? Sc06Content.GateTitle : titleText, 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
             title.enableAutoSizing = true;
-            title.fontSizeMin = 30f;
+            title.fontSizeMin = 20f;
             title.fontSizeMax = 64f;
             title.textWrappingMode = TextWrappingModes.NoWrap;
             var q = PresentableUi.Text("Question", canvas.transform, new Vector2(0.09f, 0.47f), new Vector2(0.91f, 0.69f),

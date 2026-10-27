@@ -191,8 +191,38 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc08Gate;
         public AudioClip voSc08CompleteBn;
         public AudioClip voSc08CompleteEn;
+        public Sprite sdsSc09;
+        public Sprite bnSc09InstructionPanel;
+        public Sprite bnSc09SpillInstruction;
+        public Sprite bnSc09FlaskHint;
+        public Sprite bnSc09WalkHint;
+        public Sprite bnSc09PushHint;
+        public Sprite bnSc09FlushHint;
+        public AudioClip voSc09Instruction;
+        public AudioClip voSc09Flask;
+        public AudioClip voSc09Spill;
+        public AudioClip voSc09Sds;
+        public AudioClip voSc09Walk;
+        public AudioClip voSc09Push;
+        public AudioClip voSc09Flush;
+        public AudioClip voSc09Gate;
+        public AudioClip voSc09CompleteBn;
+        public AudioClip voSc09CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
+
+        [Header("Scenario 1 trial voice")]
+        [Tooltip("Scenario 1 plays the previous Bangla recordings. Leave this off to hear the trial recordings. Other scenarios always use their own slots.")]
+        public bool useSc01OriginalVoice;
+        public AudioClip trialSalam;
+        public AudioClip trialInstruction;
+        public AudioClip trialContinueHint;
+        public AudioClip trialCorrect;
+        public AudioClip trialWrong;
+        public AudioClip trialPickLabel;
+        public AudioClip trialWrongLabel;
+        public AudioClip trialCarrier;
+        public AudioClip trialSc01CompleteBn;
 
         [Header("Fonts")]
         public TMP_FontAsset englishFont;

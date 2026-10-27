@@ -83,6 +83,9 @@ namespace ChemicalSafety.Editor
             var sc8 = BuildSc08Room(env8, art);
             Sc08BakeProbe(env, env8);
             env8.gameObject.SetActive(false);
+            var env9 = new GameObject("Environment_SC09").transform;
+            var sc9 = BuildSc09Room(env9, art);
+            env9.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -154,6 +157,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq7, "art", art);
             var mcq8 = Child("McqPanel_SC08", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq8, "art", art);
+            var mcq9 = Child("McqPanel_SC09", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq9, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -266,6 +271,18 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc08Ambience").objectReferenceValue = sc8.ambience;
             so.FindProperty("mcqSc08").objectReferenceValue = mcq8;
             SetRef(sc8.ambience, "voice", voice);
+            so.FindProperty("envSc09").objectReferenceValue = env9.gameObject;
+            so.FindProperty("spawnSc09").objectReferenceValue = sc9.spawn;
+            so.FindProperty("sc09BenchStand").objectReferenceValue = sc9.benchStand;
+            so.FindProperty("sc09ShowerStand").objectReferenceValue = sc9.showerStand;
+            so.FindProperty("sc09Flask").objectReferenceValue = sc9.flask;
+            so.FindProperty("sc09Shower").objectReferenceValue = sc9.shower;
+            so.FindProperty("sc09Visor").objectReferenceValue = sc9.visor;
+            so.FindProperty("sc09Guide").objectReferenceValue = sc9.guide;
+            so.FindProperty("sc09Gate").objectReferenceValue = sc9.gate;
+            so.FindProperty("sc09Ambience").objectReferenceValue = sc9.ambience;
+            so.FindProperty("mcqSc09").objectReferenceValue = mcq9;
+            SetRef(sc9.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
@@ -332,7 +349,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -530,6 +547,13 @@ namespace ChemicalSafety.Editor
             art.bnSc08TrayHint = B("BN_Sc08TrayHint");
             art.bnSc08SashHint = B("BN_Sc08SashHint");
             art.bnSc08MixHint = B("BN_Sc08MixHint");
+            art.sdsSc09 = LoadSprite("2D/Sc09/SDS_SC09");
+            art.bnSc09InstructionPanel = B("BN_Sc09InstructionPanel");
+            art.bnSc09SpillInstruction = B("BN_Sc09SpillInstruction");
+            art.bnSc09FlaskHint = B("BN_Sc09FlaskHint");
+            art.bnSc09WalkHint = B("BN_Sc09WalkHint");
+            art.bnSc09PushHint = B("BN_Sc09PushHint");
+            art.bnSc09FlushHint = B("BN_Sc09FlushHint");
             art.bnSc06CapHint = B("BN_Sc06CapHint");
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
@@ -653,6 +677,16 @@ namespace ChemicalSafety.Editor
             art.voSc08Gate = Keep("VO_Sc08Gate_bn.mp3", art.voSc08Gate);
             art.voSc08CompleteBn = Keep("VO_Sc08Complete_bn.mp3", art.voSc08CompleteBn);
             art.voSc08CompleteEn = Keep("VO_Sc08Complete_en.mp3", art.voSc08CompleteEn);
+            art.voSc09Instruction = Keep("VO_SC09_Instruction_bn.mp3", art.voSc09Instruction);
+            art.voSc09Flask = Keep("VO_Sc09Flask_bn.mp3", art.voSc09Flask);
+            art.voSc09Spill = Keep("VO_Sc09Spill_bn.mp3", art.voSc09Spill);
+            art.voSc09Sds = Keep("VO_Sc09Sds_bn.mp3", art.voSc09Sds);
+            art.voSc09Walk = Keep("VO_Sc09Walk_bn.mp3", art.voSc09Walk);
+            art.voSc09Push = Keep("VO_Sc09Push_bn.mp3", art.voSc09Push);
+            art.voSc09Flush = Keep("VO_Sc09Flush_bn.mp3", art.voSc09Flush);
+            art.voSc09Gate = Keep("VO_Sc09Gate_bn.mp3", art.voSc09Gate);
+            art.voSc09CompleteBn = Keep("VO_Sc09Complete_bn.mp3", art.voSc09CompleteBn);
+            art.voSc09CompleteEn = Keep("VO_Sc09Complete_en.mp3", art.voSc09CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;
@@ -660,6 +694,7 @@ namespace ChemicalSafety.Editor
                 Debug.LogWarning("[Presentable] VO_PickLabel_bn.mp3 is missing - AudioClip slot left empty.");
             if (art.voWrongLabel == null)
                 Debug.LogWarning("[Presentable] VO_WrongLabel_bn.mp3 is missing - AudioClip slot left empty.");
+            AssignSc01TrialClips(art);
 
             foreach (var guid in AssetDatabase.FindAssets("LiberationSans SDF t:TMP_FontAsset"))
             {
@@ -2505,6 +2540,73 @@ namespace ChemicalSafety.Editor
             AddGlove(right, true, GlovedHandPose.Pose.Point, glove, cuff, sleeve, gloveR, "RightHand.fbx");
             AddGlove(leftController, false, GlovedHandPose.Pose.Hold, glove, cuff, sleeve, gloveL, "LeftHand.fbx");
             return rig;
+        }
+
+        private const string Sc01TrialMenu = "Chemical Safety/Presentable/Scenario 1 Bangla voice/Use trial recording";
+        private const string Sc01OriginalMenu = "Chemical Safety/Presentable/Scenario 1 Bangla voice/Use original recording";
+
+        [MenuItem(Sc01TrialMenu)]
+        private static void UseSc01TrialVoice() => SetSc01TrialVoice(true);
+
+        [MenuItem(Sc01OriginalMenu)]
+        private static void UseSc01OriginalVoice() => SetSc01TrialVoice(false);
+
+        [MenuItem(Sc01TrialMenu, true)]
+        private static bool ValidateSc01TrialVoice() => MarkSc01VoiceMenu();
+
+        [MenuItem(Sc01OriginalMenu, true)]
+        private static bool ValidateSc01OriginalVoice() => MarkSc01VoiceMenu();
+
+        private static bool MarkSc01VoiceMenu()
+        {
+            var on = Sc01TrialVoiceOn();
+            Menu.SetChecked(Sc01TrialMenu, on);
+            Menu.SetChecked(Sc01OriginalMenu, !on);
+            return true;
+        }
+
+        private static bool Sc01TrialVoiceOn()
+        {
+            var art = AssetDatabase.LoadAssetAtPath<PresentableArt>(ArtRoot + "/PresentableArt.asset");
+            return art == null || !art.useSc01OriginalVoice;
+        }
+
+        private static void SetSc01TrialVoice(bool trial)
+        {
+            var art = AssetDatabase.LoadAssetAtPath<PresentableArt>(ArtRoot + "/PresentableArt.asset");
+            if (art == null)
+            {
+                Debug.LogWarning("[Presentable] PresentableArt asset is missing.");
+                return;
+            }
+
+            art.useSc01OriginalVoice = !trial;
+            EditorUtility.SetDirty(art);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Presentable] Scenario 1 Bangla voice = " + (trial ? "trial recording" : "original"));
+        }
+
+        // Does not change useSc01OriginalVoice. A later scene build keeps whichever voice the user chose.
+        private static void AssignSc01TrialClips(PresentableArt art)
+        {
+            void Keep(string file, System.Action<AudioClip> assign)
+            {
+                var path = "Assets/Art/Audio/VO/Sc01Trial/" + file;
+                ConfigureVoiceImport(path);
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                if (clip != null)
+                    assign(clip);
+            }
+
+            Keep("VO_AssalamuAlaikum_bn.wav", c => art.trialSalam = c);
+            Keep("VO_SC01_Instruction_bn.wav", c => art.trialInstruction = c);
+            Keep("VO_ContinueHint_bn.wav", c => art.trialContinueHint = c);
+            Keep("VO_Correct_bn.wav", c => art.trialCorrect = c);
+            Keep("VO_Wrong_bn.wav", c => art.trialWrong = c);
+            Keep("VO_PickLabel_bn.wav", c => art.trialPickLabel = c);
+            Keep("VO_WrongLabel_bn.wav", c => art.trialWrongLabel = c);
+            Keep("VO_Carrier_bn.wav", c => art.trialCarrier = c);
+            Keep("VO_Sc01Complete_bn.wav", c => art.trialSc01CompleteBn = c);
         }
 
         private const string GloveStyleKey = "PresentableGloveStyle";
