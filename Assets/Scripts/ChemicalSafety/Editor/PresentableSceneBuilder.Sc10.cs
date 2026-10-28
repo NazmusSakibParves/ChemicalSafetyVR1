@@ -109,6 +109,14 @@ namespace ChemicalSafety.Editor
             Shell("Wall_Right", new Vector3(x0 - 0.06f, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSideMat);
             Box("Ceiling", room, new Vector3(cx, h + 0.05f, cz), new Vector3(w, 0.1f, d), ceilMat, false);
 
+            // the L: a concrete corner block fills the back-left corner of the box. Its +Z face (z -0.3) carries the SDS table, the x1 wall carries the Spill Kit.
+            var blockX0 = ox + 1.5f;
+            const float blockZ1 = -0.3f;
+            var blockMat = Mat("Sc10ConcreteBlock", new Color(1.35f, 1.35f, 1.35f), 0.18f, 0f, Sc06Tex("Label_Sc10Concrete"));
+            blockMat.SetTextureScale("_BaseMap", new Vector2(1.4f, h / 1.6f));
+            Shell("CornerBlock", new Vector3((blockX0 + x1) * 0.5f, h * 0.5f, (zBack + blockZ1) * 0.5f), new Vector3(x1 - blockX0, h, blockZ1 - zBack), blockMat);
+            Box("CornerBlockSkirtFace", room, new Vector3((blockX0 + x1) * 0.5f, 0.06f, blockZ1 + 0.015f), new Vector3(x1 - blockX0, 0.12f, 0.03f), Mat("Sc08Skirting", new Color(0.40f, 0.42f, 0.42f), 0.3f, 0f), false);
+
             var trim = Mat("Sc08Skirting", new Color(0.40f, 0.42f, 0.42f), 0.3f, 0f);
             Box("SkirtBack", room, new Vector3(cx, 0.06f, zBack + 0.015f), new Vector3(w, 0.12f, 0.03f), trim, false);
             Box("SkirtRight", room, new Vector3(x0 + 0.015f, 0.06f, cz), new Vector3(0.03f, 0.12f, d), trim, false);
@@ -118,7 +126,7 @@ namespace ChemicalSafety.Editor
             var housing = Mat("Sc06PanelFrame", new Color(0.82f, 0.83f, 0.82f), 0.3f, 0f);
             var panelSpots = new[]
             {
-                new Vector3(ox + 1.9f, 0f, -0.1f), new Vector3(ox + 1.9f, 0f, -1.9f), new Vector3(ox - 0.6f, 0f, -0.1f),
+                new Vector3(ox + 1.9f, 0f, 0.5f), new Vector3(ox + 0.4f, 0f, 0.9f), new Vector3(ox - 0.6f, 0f, -0.1f),
                 new Vector3(ox - 0.6f, 0f, -1.9f), new Vector3(ox - 3.0f, 0f, -0.1f), new Vector3(ox - 3.0f, 0f, -1.9f),
                 new Vector3(ox + 1.9f, 0f, 1.7f), new Vector3(ox - 0.6f, 0f, 1.7f)
             };
@@ -361,7 +369,8 @@ namespace ChemicalSafety.Editor
             var audioDir = ArtRoot.Replace("Art/Presentable", "Art/Audio") + "/Sc06/";
             var aso = new SerializedObject(refs.ambience);
             aso.FindProperty("roomLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir + "Room_Loop.wav");
-            aso.FindProperty("hoodLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir + "Hood_Loop.wav");
+            aso.FindProperty("hoodLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir.Replace("/Sc06/", "/Sc10/") + "Hood_Loop.wav");
+            aso.FindProperty("hoodLevel").floatValue = 0.26f;
             aso.FindProperty("clickClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir + "Switch_Click.wav");
             aso.FindProperty("slideClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir + "Sash_Slide.wav");
             aso.FindProperty("pourLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(audioDir + "Pour_Loop.wav");
@@ -422,6 +431,8 @@ namespace ChemicalSafety.Editor
                 var eb = BoundsOfTree(ext.transform);
                 ext.transform.position += new Vector3((x0 + 0.3f) - eb.center.x, 0.0f - eb.min.y, 2.7f - eb.center.z);
             }
+
+            Sc10LabDress(room, ox, x0, x1, zBack, zFront, h);
 
             refs.spawn = Marker("Spawn_SC10", room, new Vector3(ox + 0.4f, 0f, 2.3f), 180f);
             refs.panelStand = Marker("Stand_SC10_Panel", room, new Vector3(ox - 2.62f, 0f, hoodFrontZ + 0.8f), 180f);

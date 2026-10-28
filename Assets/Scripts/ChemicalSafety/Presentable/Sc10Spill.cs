@@ -21,6 +21,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Material sockMaterial;
         [SerializeField] private Material powderMaterial;
         [SerializeField] private Material fizzMaterial;
+        [SerializeField] private Material vaporMaterial;
         [SerializeField] private AudioClip thudClip;
         [SerializeField] private AudioClip powderClip;
         [SerializeField] private AudioClip fizzClip;
@@ -76,6 +77,7 @@ namespace ChemicalSafety.Presentable
         private Mesh _sockMesh;
         private ParticleSystem _powderFx;
         private ParticleSystem _fizzFx;
+        private ParticleSystem _vaporFx;
         private AudioSource _audio;
         private Transform _icon;
         private PokeTarget _iconPoke;
@@ -306,6 +308,8 @@ namespace ChemicalSafety.Presentable
                 _bagOpen.gameObject.SetActive(false);
             if (_binLid != null)
                 _binLid.localRotation = _binLidHome;
+            if (_bin != null)
+                _bin.gameObject.SetActive(false);
             if (_sock != null)
                 _sock.gameObject.SetActive(false);
             if (_icon != null)
@@ -317,6 +321,11 @@ namespace ChemicalSafety.Presentable
             if (_fizzFx != null)
                 _fizzFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             RefreshPanel();
+            if (_vaporFx != null)
+            {
+                _vaporFx.transform.position = SpillPos() + Vector3.up * 0.05f;
+                _vaporFx.Play();
+            }
         }
 
         // ------------------------------------------------------------------ spill kit
@@ -585,8 +594,8 @@ namespace ChemicalSafety.Presentable
             EnsureSock();
             _sock.gameObject.SetActive(true);
             const int n = 84;
-            var a = 0.72f;
-            var b = 0.98f;
+            var a = 0.95f;
+            var b = 0.62f;
             var radius = 0.042f;
             var pts = new List<Vector3>(n + 8);
             // the ring starts on the user's side and runs once round, overlapping its own start by a little
@@ -733,7 +742,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Sfx(rustleClip, 0.5f);
-            var mouth = bag.Find("Mouth");
+            var mouth = bag.Find("PourMouth");
             var tiltDur = 0.9f;
             for (var t = 0f; t < tiltDur; t += Time.deltaTime)
             {
@@ -762,6 +771,8 @@ namespace ChemicalSafety.Presentable
 
             if (_powderFx != null)
                 _powderFx.Play();
+            if (_vaporFx != null)
+                _vaporFx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             Sfx(powderClip, 0.7f);
             Sfx(fizzClip, 0.5f);
             var pour = 3.4f;
@@ -841,8 +852,8 @@ namespace ChemicalSafety.Presentable
             // each pad is laid on the spill in turn (slightly overlapping, rotated), then darkens as it soaks the liquid
             var offsets = new[]
             {
-                new Vector3(-0.2f, 0f, -0.42f), new Vector3(0.22f, 0f, -0.3f),
-                new Vector3(-0.18f, 0f, 0.32f), new Vector3(0.24f, 0f, 0.4f)
+                new Vector3(-0.38f, 0f, -0.2f), new Vector3(0.28f, 0f, -0.26f),
+                new Vector3(-0.2f, 0f, 0.26f), new Vector3(0.36f, 0f, 0.2f)
             };
             var yaws = new[] { 8f, -14f, 21f, -6f };
             for (var i = 0; i < PadCount; i++)
@@ -1021,6 +1032,21 @@ namespace ChemicalSafety.Presentable
         public IEnumerator Dispose()
         {
             _busy = true;
+            // the waste bin only appears now, popping up away from the spill
+            if (_bin != null)
+            {
+                _bin.gameObject.SetActive(true);
+                Sfx(thudClip, 0.6f);
+                for (var t = 0f; t < 0.5f; t += Time.deltaTime)
+                {
+                    var k = Mathf.SmoothStep(0f, 1f, t / 0.5f);
+                    _bin.localScale = new Vector3(Mathf.Lerp(0.2f, 1f, k), Mathf.Lerp(0.05f, 1f, k), Mathf.Lerp(0.2f, 1f, k));
+                    yield return null;
+                }
+
+                _bin.localScale = Vector3.one;
+            }
+
             var bagPos = _binPoint != null ? new Vector3(_binPoint.position.x - 0.75f, 0f, _binPoint.position.z) : SpillPos();
             if (_bagOpen != null)
             {
@@ -1234,6 +1260,39 @@ namespace ChemicalSafety.Presentable
                 rend.sharedMaterial = powderMaterial;
                 rend.shadowCastingMode = ShadowCastingMode.Off;
                 _powderFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+
+            if (vaporMaterial != null)
+            {
+                // a very faint haze rising from the acid on the floor (only while the acid is still there)
+                var go = new GameObject("Sc10VaporFx");
+                go.transform.SetParent(transform, false);
+                _vaporFx = go.AddComponent<ParticleSystem>();
+                var main = _vaporFx.main;
+                main.loop = true;
+                main.playOnAwake = false;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
+                main.startLifetime = new ParticleSystem.MinMaxCurve(2.8f, 4.2f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.02f, 0.06f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.10f, 0.20f);
+                main.startColor = new Color(0.92f, 0.95f, 0.97f, 0.07f);
+                main.gravityModifier = -0.012f;
+                main.maxParticles = 40;
+                var em = _vaporFx.emission;
+                em.rateOverTime = 2.5f;
+                var shape = _vaporFx.shape;
+                shape.shapeType = ParticleSystemShapeType.Box;
+                shape.scale = new Vector3(PuddleW * 0.5f, 0.01f, PuddleD * 0.45f);
+                var col = _vaporFx.colorOverLifetime;
+                col.enabled = true;
+                var g = new Gradient();
+                g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                    new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) });
+                col.color = g;
+                var rend = go.GetComponent<ParticleSystemRenderer>();
+                rend.sharedMaterial = vaporMaterial;
+                rend.shadowCastingMode = ShadowCastingMode.Off;
+                _vaporFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
 
             if (fizzMaterial != null)

@@ -15,11 +15,11 @@ namespace ChemicalSafety.Presentable
         public const string VentHint = "Ventilate the area. Touch the Fume Hood switch.";
         public const string KitHint = "Go to the spill kit and touch it to open it.";
         public const string CollectHint = "Take every item from the spill kit.";
-        public const string ContainHint = "Touch CONTAIN. Surround the spill with the absorbent sock.";
-        public const string NeutralizeHint = "Touch NEUTRALIZE. Sprinkle soda ash over the acid.";
-        public const string AbsorbHint = "Touch ABSORB. Place absorbent pads on the spill.";
-        public const string CleanHint = "Touch CLEAN-UP GLASS. Sweep up the broken glass.";
-        public const string DisposeHint = "Touch DISPOSE. Put all spill waste in the hazardous waste bag and bin.";
+        public const string ContainHint = "Touch CONTAIN. Lay the absorbent sock around the spill to stop the acid spreading.";
+        public const string NeutralizeHint = "Touch NEUTRALIZE. Sprinkle soda ash over the acid to neutralize it.";
+        public const string AbsorbHint = "Touch ABSORB. Lay absorbent pads on the spill to soak up the liquid.";
+        public const string CleanHint = "Touch CLEAN-UP GLASS. Sweep the broken glass into the dustpan with the brush.";
+        public const string DisposeHint = "Touch DISPOSE. Put the sock, pads and glass in the hazardous waste bag, then in the bin.";
 
         // PPE hologram (workflow step04): order of the PPE station items
         public static readonly string[] PpeItems = { "Splash Goggles", "Respirator", "Neoprene Gloves", "Acid-resistant Apron" };

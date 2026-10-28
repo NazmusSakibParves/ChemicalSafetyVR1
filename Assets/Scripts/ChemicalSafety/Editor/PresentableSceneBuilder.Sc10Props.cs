@@ -33,7 +33,7 @@ namespace ChemicalSafety.Editor
                     // the sides pinch a little toward the crimps
                     var x = (u - 0.5f) * w * (0.93f + 0.07f * body);
                     verts.Add(new Vector3(x, v * h, z));
-                    uvs.Add(new Vector2(u, v));
+                    uvs.Add(new Vector2(1f - u, v));
                 }
             }
 
@@ -133,7 +133,8 @@ namespace ChemicalSafety.Editor
             var sockMat = Mat("Sc10SockMat", Color.white, 0.12f, 0f, Sc06Tex("Label_Sc10Sock"));
             sockMat.SetTextureScale("_BaseMap", new Vector2(1f, 1f));
 
-            // ------------------------------------------------------------------ the red cabinet
+            // ------------------------------------------------------------------ the red cabinet (built at z 0.35, then moved along the wall)
+            var kitStart = bay.childCount;
             const float kz = 0.35f, kitY = 1.45f, kitW = 1.25f, kitH = 0.95f, kitD = 0.2f;
             var fx = x1 - kitD;
             Box("KitBack", bay, new Vector3(x1 - 0.015f, kitY, kz), new Vector3(0.03f, kitH, kitW), redIn, false);
@@ -188,7 +189,7 @@ namespace ChemicalSafety.Editor
             var sodaFront = Mat("Sc10SodaAshMat", Color.white, 0.35f, 0f, Sc06Tex("Label_Sc10SodaAsh"));
             var sodaBack = Mat("Sc10SodaAshBack", new Color(0.92f, 0.92f, 0.90f), 0.35f, 0f);
             var soda = Sc10Bag(bay, "Sc10Item1", new Vector3(ix, topY, 0.80f), 270f, 0.27f, 0.40f, 0.07f, sodaFront, sodaBack, "Soda");
-            var mouth = new GameObject("Mouth").transform;
+            var mouth = new GameObject("PourMouth").transform;
             mouth.SetParent(soda, false);
             mouth.localPosition = new Vector3(0f, 0.40f, 0f);
             Sc10AddPoke(soda, new Vector3(-0.12f, 0f, 0f), 0.07f);
@@ -240,41 +241,42 @@ namespace ChemicalSafety.Editor
             var green = Mat("Sc10GreenBag", new Color(0.10f, 0.52f, 0.30f), 0.55f, 0f);
             Sc08LocalBox("GreenRoll", ppeHolder, new Vector3(-0.2f, 0.025f, 0.0f), new Vector3(0.24f, 0.05f, 0.2f), green);
 
-            // ------------------------------------------------------------------ the spill on the floor
-            var c = new Vector3(x1 - 1.3f, 0f, 1.3f);
+            for (var ki = kitStart; ki < bay.childCount; ki++)
+                bay.GetChild(ki).position += new Vector3(0f, 0f, 1.0f);
+
+            // ------------------------------------------------------------------ the spill on the floor, in front of the kit
+            var c = new Vector3(x1 - 3.0f, 0f, 1.35f);
             var spill = new GameObject("Sc10Spill").transform;
             spill.SetParent(bay, false);
             spill.position = c;
-            var puddleMat = MatAlpha("Sc10PuddleMat", Sc06Tex("Label_Sc10Puddle"), new Color(0.68f, 0.74f, 0.79f, 1f), false);
-            var puddle = QuadObj("Sc10Puddle", bay, c + new Vector3(0f, 0.004f, 0f), new Vector3(90f, 90f, 0f), new Vector2(1.65f, 1.95f), puddleMat);
+            var puddleMat = MatAlpha("Sc10PuddleMat", Sc06Tex("Label_Sc10Puddle"), Color.white, false);
+            var puddle = QuadObj("Sc10Puddle", bay, c + new Vector3(0.45f, 0.004f, 0f), new Vector3(90f, 0f, 0f), new Vector2(2.6f, 1.4f), puddleMat);
             puddle.GetComponent<MeshRenderer>().sharedMaterial = puddleMat;
             var powderMat = MatAlpha("Sc10PowderDecalMat", Sc06Tex("Label_Sc10Powder"), new Color(1f, 1f, 1f, 0.85f), false);
-            var powderDecal = QuadObj("Sc10PowderDecal", bay, c + new Vector3(0f, 0.007f, 0f), new Vector3(90f, 90f, 0f), new Vector2(1.1f, 0.8f), powderMat);
+            var powderDecal = QuadObj("Sc10PowderDecal", bay, c + new Vector3(0f, 0.007f, 0f), new Vector3(90f, 0f, 0f), new Vector2(1.1f, 0.8f), powderMat);
             powderDecal.SetActive(false);
             var stainMat = MatAlpha("Sc10StainMat", Sc06Tex("Label_Sc10Stain"), new Color(1f, 1f, 1f, 0.55f), false);
-            QuadObj("Sc10StainA", bay, new Vector3(x1 - 2.5f, 0.003f, 2.3f), new Vector3(90f, 20f, 0f), new Vector2(0.9f, 0.9f), stainMat);
-            QuadObj("Sc10StainB", bay, new Vector3(x1 - 2.9f, 0.003f, 0.3f), new Vector3(90f, -35f, 0f), new Vector2(0.7f, 0.7f), stainMat);
+            QuadObj("Sc10StainA", bay, new Vector3(x1 - 3.3f, 0.003f, 2.5f), new Vector3(90f, 20f, 0f), new Vector2(0.9f, 0.9f), stainMat);
+            QuadObj("Sc10StainB", bay, new Vector3(x1 - 3.6f, 0.003f, 0.5f), new Vector3(90f, -35f, 0f), new Vector2(0.7f, 0.7f), stainMat);
             QuadObj("Sc10StainC", bay, new Vector3(x1 - 1.1f, 0.003f, 2.9f), new Vector3(90f, 80f, 0f), new Vector2(0.6f, 0.6f), stainMat);
 
             // broken bottle: jagged body and neck lying on the floor, plus loose shards
-            var bottleGlass = Sc06GlassMat("Sc10BottleGlass", new Color(0.88f, 0.94f, 0.96f), 0.03f, 0.7f);
-            var body = Sc09JaggedShell("Sc10BottleBody", new[]
+            var bottleGlass = Sc06GlassMat("Sc10BottleGlass3", new Color(0.72f, 0.88f, 0.86f), 0.2f, 1.0f);
+            var body = Sc06Lathe("Sc10BottleWhole", new[]
             {
-                new Vector2(0f, 0f), new Vector2(0.03f, 0f), new Vector2(0.046f, 0.012f), new Vector2(0.049f, 0.06f), new Vector2(0.047f, 0.12f), new Vector2(0.041f, 0.15f)
-            }, 28, 0.016f, true);
-            Sc08Part("Sc10Bottle0", bay, body, bottleGlass, c + new Vector3(-0.30f, 0.05f, 0.10f), Quaternion.Euler(0f, 28f, 90f));
-            var neck = Sc06Lathe("Sc10BottleNeck", new[]
-            {
-                new Vector2(0.023f, 0f), new Vector2(0.021f, 0.03f), new Vector2(0.0175f, 0.06f), new Vector2(0.0175f, 0.085f), new Vector2(0.021f, 0.09f), new Vector2(0.0225f, 0.1f)
-            }, 0.0025f, 20);
-            Sc08Part("Sc10Bottle1", bay, neck, bottleGlass, c + new Vector3(0.04f, 0.023f, -0.2f), Quaternion.Euler(0f, -70f, 90f));
+                new Vector2(0f, 0f), new Vector2(0.038f, 0f), new Vector2(0.05f, 0.012f), new Vector2(0.052f, 0.1f), new Vector2(0.05f, 0.15f),
+                new Vector2(0.036f, 0.19f), new Vector2(0.022f, 0.225f), new Vector2(0.0185f, 0.26f), new Vector2(0.0185f, 0.285f), new Vector2(0.022f, 0.29f), new Vector2(0.023f, 0.3f)
+            }, 0.003f, 32);
+            Sc08Part("Sc10Bottle0", bay, body, bottleGlass, c + new Vector3(-0.3f, 0.07f, -0.2f), Quaternion.Euler(0f, 24f, -90f));
+            bay.Find("Sc10Bottle0").localScale = Vector3.one * 1.35f;
+            Sc08Part("Sc10Bottle1", bay, Sc09ShardMesh("Sc10ShardBig", 77, 0.05f), bottleGlass, c + new Vector3(-0.38f, 0.017f, 0.14f), Quaternion.Euler(0f, 40f, 0f));
             var rnd = new System.Random(310);
             for (var i = 0; i < 16; i++)
             {
                 var ang = (float)rnd.NextDouble() * Mathf.PI * 2f;
                 var rr = 0.12f + (float)rnd.NextDouble() * 0.45f;
-                var pos = c + new Vector3(Mathf.Cos(ang) * rr * 1.15f - 0.1f, 0.017f, Mathf.Sin(ang) * rr * 0.8f);
-                var sz = 0.018f + (float)rnd.NextDouble() * 0.028f;
+                var pos = c + new Vector3(-0.35f + Mathf.Cos(ang) * rr * 0.75f, 0.017f, -0.05f + Mathf.Sin(ang) * rr * 0.6f);
+                var sz = 0.016f + (float)rnd.NextDouble() * 0.028f;
                 Sc08Part("Sc10Shard" + i, bay, Sc09ShardMesh("Sc10Shard" + (i % 6), 40 + i % 6, sz), bottleGlass, pos,
                     Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f));
             }
@@ -296,65 +298,52 @@ namespace ChemicalSafety.Editor
             brush.gameObject.SetActive(false);
             Marker("Sc10PanPoint", bay, c + new Vector3(-1.2f, 0.02f, 0.1f), 90f);
 
-            // ------------------------------------------------------------------ floor drain along the wall
-            var drainX = x1 - 0.55f;
-            Box("DrainFrame", bay, new Vector3(drainX, 0.004f, 0.5f), new Vector3(0.24f, 0.008f, 1.34f), darkSteel, false);
-            Box("DrainSump", bay, new Vector3(drainX, 0.0045f, 0.5f), new Vector3(0.19f, 0.008f, 1.28f), Mat("Sc10DrainDark", new Color(0.03f, 0.03f, 0.035f), 0.2f, 0f), false);
-            for (var i = 0; i < 24; i++)
-                Box("DrainSlat" + i, bay, new Vector3(drainX, 0.011f, 0.5f - 0.62f + i * 0.054f), new Vector3(0.18f, 0.012f, 0.016f), steel, false);
+            // ------------------------------------------------------------------ floor drain: a wide steel channel running out from under the kit wall (as in the picture)
+            {
+                const float dLen = 1.85f, dW = 0.34f;
+                var dz = 1.35f;
+                var dcx = x1 - dLen * 0.5f;
+                var rail = Mat("Sc10DrainRail", new Color(0.55f, 0.57f, 0.60f), 0.7f, 0.6f);
+                var bar = Mat("Sc10DrainBar", new Color(0.62f, 0.64f, 0.66f), 0.75f, 0.7f);
+                var sump = Mat("Sc10DrainDark", new Color(0.02f, 0.022f, 0.025f), 0.2f, 0f);
+                Box("DrainRimA", bay, new Vector3(dcx, 0.006f, dz - dW * 0.5f - 0.015f), new Vector3(dLen + 0.04f, 0.012f, 0.05f), rail, false);
+                Box("DrainRimB", bay, new Vector3(dcx, 0.006f, dz + dW * 0.5f + 0.015f), new Vector3(dLen + 0.04f, 0.012f, 0.05f), rail, false);
+                Box("DrainRimEnd", bay, new Vector3(x1 - dLen - 0.015f, 0.006f, dz), new Vector3(0.05f, 0.012f, dW + 0.08f), rail, false);
+                Box("DrainSump", bay, new Vector3(dcx, 0.004f, dz), new Vector3(dLen, 0.008f, dW - 0.02f), sump, false);
+                Box("DrainSideA", bay, new Vector3(dcx, 0.012f, dz - dW * 0.5f + 0.02f), new Vector3(dLen - 0.04f, 0.016f, 0.02f), bar, false);
+                Box("DrainSideB", bay, new Vector3(dcx, 0.012f, dz + dW * 0.5f - 0.02f), new Vector3(dLen - 0.04f, 0.016f, 0.02f), bar, false);
+                var nBars = Mathf.RoundToInt((dLen - 0.06f) / 0.038f);
+                for (var i = 0; i < nBars; i++)
+                    Box("DrainBar" + i, bay, new Vector3(x1 - 0.05f - i * 0.038f, 0.013f, dz), new Vector3(0.016f, 0.018f, dW - 0.04f), bar, false);
+            }
 
-            // ------------------------------------------------------------------ CAUTION - SPILL A-frame sign (two leaning panels)
-            var sx = x1 - 0.95f;
-            var sz2 = 0.45f;
+            // ------------------------------------------------------------------ CAUTION - SPILL A-frame sign: tall panels with the top handle slot
+            var sx = x1 - 2.3f;
+            var sz2 = 0.35f;
             var cautionMat = Sc06Label("Sc10CautionMat", "Label_Sc10Caution", false, 0.4f);
-            var gA = new GameObject("SignFront").transform;
-            gA.SetParent(bay, false);
-            gA.position = new Vector3(sx - 0.055f, 0.31f, sz2);
-            gA.rotation = Quaternion.Euler(0f, 0f, -10f);
-            Sc08LocalBox("Panel", gA, Vector3.zero, new Vector3(0.012f, 0.62f, 0.31f), yellow);
-            var qa = QuadObj("Face", gA, new Vector3(-0.0066f, 0f, 0f), new Vector3(0f, 90f, 0f), new Vector2(0.30f, 0.60f), cautionMat);
-            qa.GetComponent<MeshRenderer>().sharedMaterial = cautionMat;
-            var gB = new GameObject("SignBack").transform;
-            gB.SetParent(bay, false);
-            gB.position = new Vector3(sx + 0.055f, 0.31f, sz2);
-            gB.rotation = Quaternion.Euler(0f, 0f, 10f);
-            Sc08LocalBox("Panel", gB, Vector3.zero, new Vector3(0.012f, 0.62f, 0.31f), yellow);
-            QuadObj("Face", gB, new Vector3(0.0066f, 0f, 0f), new Vector3(0f, -90f, 0f), new Vector2(0.30f, 0.60f), cautionMat);
+            for (var side = -1; side <= 1; side += 2)
+            {
+                var g = new GameObject(side < 0 ? "SignFront" : "SignBack").transform;
+                g.SetParent(bay, false);
+                g.position = new Vector3(sx + side * 0.085f, 0.46f, sz2);
+                g.rotation = Quaternion.Euler(0f, 0f, side * 9f);
+                Sc08LocalBox("Panel", g, Vector3.zero, new Vector3(0.014f, 0.9f, 0.40f), yellow);
+                Sc08LocalBox("HandleSlot", g, new Vector3(0f, 0.395f, 0f), new Vector3(0.016f, 0.05f, 0.16f), darkSteel);
+                var face = QuadObj("Face", g, new Vector3(side * 0.0075f, -0.05f, 0f), new Vector3(0f, side < 0 ? 90f : -90f, 0f), new Vector2(0.37f, 0.74f), cautionMat);
+                face.GetComponent<MeshRenderer>().sharedMaterial = cautionMat;
+            }
 
-            // ------------------------------------------------------------------ steel desk with the SDS paper (back left, as in the picture)
-            var dx = x1 - 0.5f;
-            var dz = 2.95f;
-            Box("DeskTop", bay, new Vector3(dx, 0.9f, dz), new Vector3(0.7f, 0.04f, 0.72f), steel, false);
-            Box("DeskSide", bay, new Vector3(dx - 0.33f, 0.45f, dz), new Vector3(0.025f, 0.86f, 0.7f), steel, false);
-            Box("DeskLegA", bay, new Vector3(dx + 0.31f, 0.45f, dz + 0.32f), new Vector3(0.04f, 0.86f, 0.04f), darkSteel, false);
-            Box("DeskLegB", bay, new Vector3(dx + 0.31f, 0.45f, dz - 0.32f), new Vector3(0.04f, 0.86f, 0.04f), darkSteel, false);
-            Box("DeskBrace", bay, new Vector3(dx - 0.1f, 0.15f, dz), new Vector3(0.5f, 0.02f, 0.7f), darkSteel, false);
-            QuadObj("SdsPaper", bay, new Vector3(dx - 0.06f, 0.923f, dz), new Vector3(90f, 105f, 0f), new Vector2(0.30f, 0.42f),
-                Sc06Label("Sc10PaperMat", "Label_Sc10Paper", false, 0.2f));
-
-            // ------------------------------------------------------------------ hazardous waste bin with a hinged lid
-            var bx = x1 - 0.55f;
-            var bz = 2.2f;
-            var binMat = Mat("Sc10BinYellow", new Color(0.95f, 0.76f, 0.05f), 0.5f, 0f);
-            var binIn = Mat("Sc10BinInside", new Color(0.12f, 0.10f, 0.03f), 0.2f, 0f);
-            var bin = new GameObject("Sc10Bin").transform;
-            bin.SetParent(bay, false);
-            Box("BinBottom", bin, new Vector3(bx, 0.02f, bz), new Vector3(0.5f, 0.04f, 0.5f), binMat, false);
-            Box("BinInner", bin, new Vector3(bx, 0.045f, bz), new Vector3(0.45f, 0.01f, 0.45f), binIn, false);
-            Box("BinWallFront", bin, new Vector3(bx - 0.2375f, 0.39f, bz), new Vector3(0.025f, 0.78f, 0.5f), binMat, false);
-            Box("BinWallBack", bin, new Vector3(bx + 0.2375f, 0.39f, bz), new Vector3(0.025f, 0.78f, 0.5f), binMat, false);
-            Box("BinWallL", bin, new Vector3(bx, 0.39f, bz + 0.2375f), new Vector3(0.5f, 0.78f, 0.025f), binMat, false);
-            Box("BinWallR", bin, new Vector3(bx, 0.39f, bz - 0.2375f), new Vector3(0.5f, 0.78f, 0.025f), binMat, false);
-            Box("BinRim", bin, new Vector3(bx - 0.2375f, 0.78f, bz), new Vector3(0.04f, 0.02f, 0.52f), binMat, false);
-            QuadObj("BinLabel", bay, new Vector3(bx - 0.2515f, 0.40f, bz), new Vector3(0f, 90f, 0f), new Vector2(0.34f, 0.425f),
-                Sc06Label("Sc10BinLabelMat", "Label_Sc10BinLabel", false, 0.4f));
-            var lid = new GameObject("Sc10BinLid").transform;
-            lid.SetParent(bay, false);
-            lid.position = new Vector3(bx + 0.26f, 0.8f, bz);
-            lid.rotation = Quaternion.Euler(0f, 270f, 0f);
-            Sc08LocalBox("LidSlab", lid, new Vector3(0f, 0.012f, 0.265f), new Vector3(0.54f, 0.03f, 0.53f), binMat);
-            Sc08LocalBox("LidHandle", lid, new Vector3(0f, 0.04f, 0.45f), new Vector3(0.22f, 0.025f, 0.04f), darkSteel);
-            Marker("Sc10BinPoint", bay, new Vector3(bx, 0.05f, bz), 0f);
+            // ------------------------------------------------------------------ SDS table (back, behind the kit) and the waste bin (appears at DISPOSE)
+            // the table stands against the concrete corner block (its +Z face at z -0.3): built facing the x1 wall, then turned 90 degrees
+            var tableX = x1 - 0.9f;
+            var tableZ = 0.05f;
+            var tableRig = new GameObject("Sc10TableRig").transform;
+            tableRig.SetParent(bay, false);
+            Sc10Table(tableRig, tableX, tableZ, tableX + 0.35f, steel, darkSteel);
+            tableRig.RotateAround(new Vector3(tableX, 0f, tableZ), Vector3.up, 90f);
+            var bx = x1 - 2.5f;
+            var bz = 2.6f;
+            var bin = Sc10Bin(bay, bx, bz);
 
             // open bag (hidden until DISPOSE): body, flared neck, a filling mound
             var bagBody = Sc06Lathe("Sc10BagBody", new[]
@@ -399,13 +388,14 @@ namespace ChemicalSafety.Editor
             so.FindProperty("fizzClip").objectReferenceValue = Clip(sfx10 + "Fizz.wav");
             so.FindProperty("powderClip").objectReferenceValue = Clip(sfx10 + "Powder.wav");
             so.FindProperty("sweepClip").objectReferenceValue = Clip(sfx10 + "Sweep.wav");
+            so.FindProperty("vaporMaterial").objectReferenceValue = ParticleMat("Sc10VaporFxMat", Sc06Tex("Fx_Wisp"), false);
             so.FindProperty("rustleClip").objectReferenceValue = Clip(sfx10 + "Rustle.wav");
             so.ApplyModifiedPropertiesWithoutUndo();
             refs.spill = spillLogic;
 
-            refs.spillStand = Marker("Stand_SC10_Spill", room, new Vector3(x1 - 3.3f, 0f, 1.3f), 90f);
-            refs.kitStand = Marker("Stand_SC10_Kit", room, new Vector3(x1 - 0.95f, 0f, 0.45f), 90f);
-            refs.disposeStand = Marker("Stand_SC10_Dispose", room, new Vector3(x1 - 2.2f, 0f, 2.2f), 90f);
+            refs.spillStand = Marker("Stand_SC10_Spill", room, new Vector3(x1 - 4.9f, 0f, 1.35f), 90f);
+            refs.kitStand = Marker("Stand_SC10_Kit", room, new Vector3(x1 - 0.95f, 0f, 1.55f), 90f);
+            refs.disposeStand = Marker("Stand_SC10_Dispose", room, new Vector3(x1 - 3.7f, 0f, 2.6f), 90f);
         }
     }
 }

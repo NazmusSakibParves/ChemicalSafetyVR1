@@ -605,3 +605,10 @@ The user said (2026-10-24): "I will tell you these later; remember them and remi
 5. **Not pushed**: the branch `feature/Implement-Scenario-wise-Marking-and-UI-adjustment-feedback-and-Scenario7` is ahead with the two SC08 commits; push only when the user says so. ElevenLabs is paused (HTTP 402); edge-tts is used.
 6. **Scenario 9 on the Quest** (2026-10-27): the hologram text "HOLD Eyelids OPEN... 15 MINUTES" (now a world canvas, previously invisible in the headset), the head-locked visor drops (comfort, stereo, strength), poke reach of the flask (0.65 m) and the push plate (0.88 m), frame rate with the undecimated lab glb, listening check of all `VO_Sc09*` clips, a Presentable APK with SC07 round 5 + SC08 + SC09. The user said they will check in VR and report.
 7. **Roadmap** in §15 (22 scenarios, login with Bangla/English, marks, server API): the user will give the details later; do not start before being asked.
+
+#### 14.18b Scenario 10 rounds 2-4 (uncommitted at time of writing)
+- Room is L-shaped: concrete corner block (`CornerBlock`, +Z face at z -0.3) carries the SDS steel table (`Sc10TableRig`, built then rotated 90 degrees); Spill Kit is on the x1 wall (kit built at z 0.35, then moved +1.0 m). Sink counter moved left of the block; base cabinets on the block's -X face.
+- Wide steel floor drain runs out from the kit wall (1.85 m); the clear puddle (`Label_Sc10Puddle`) is a pool by the bottle with a tongue flowing onto the drain. Tall CAUTION A-frame sign with handle slot. Waste bin (hidden until DISPOSE) sits beside the spill at (x1-2.5, 2.6).
+- Real-lab dressing: tiled dado + blue trim on right/front walls, yellow flammable cabinet, notice board, clock, ceiling pipes, glassware on the front bench; darker tile grout.
+- Voice: PRON gained নিরাপদে->নিরাপোদে, বাতাস->বাতাশ, সরাতে->শরাতে (listening check pending). SC10 SFX regenerated softer (`Tools/generate_sc10_audio.py`).
+- SC10-only smoke: `runtime errors/exceptions = 0`.

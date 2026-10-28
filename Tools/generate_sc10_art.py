@@ -161,8 +161,8 @@ def tile():
     # slight bevel: brighter just inside the grout, grout dark
     bevel = np.clip(1 - (dg - 4) / 10, 0, 1) * (dg >= 4)
     base += bevel * 6
-    grout = np.clip((4.0 - dg) / 2.0, 0, 1)
-    gcol = 160 + (pnoise(N, N, 1.0, 3) - 0.5) * 22
+    grout = np.clip((5.5 - dg) / 2.0, 0, 1)
+    gcol = 112 + (pnoise(N, N, 1.0, 3) - 0.5) * 20
     base = base * (1 - grout) + gcol * grout
     rgb = np.stack([base, base + 1.0, base + 3.0], -1)
     im = to_img(rgb)
@@ -198,16 +198,16 @@ def concrete():
     N = 1024
     rng = random.Random(11)
     n = pnoise(N, N, 1.9, 5) * 0.55 + pnoise(N, N, 1.1, 6) * 0.3 + pnoise(N, N, 0.5, 7) * 0.15
-    g = 112 + (n - 0.5) * 70
+    g = 150 + (n - 0.5) * 38
     stain = pnoise(N, N, 2.6, 8)
     g -= np.clip((stain - 0.66) * 60, 0, 9)
     rgb = np.stack([g, g * 1.0, g * 0.985], -1)
     im = to_img(rgb).convert("RGBA")
     layer = Image.new("RGBA", (N, N), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for _ in range(900):
-        x, y, r = rng.uniform(0, N), rng.uniform(0, N), rng.uniform(0.8, 2.8)
-        a = rng.randint(40, 120)
+    for _ in range(260):
+        x, y, r = rng.uniform(0, N), rng.uniform(0, N), rng.uniform(0.8, 2.2)
+        a = rng.randint(30, 80)
         for ox in (-N, 0, N):
             for oy in (-N, 0, N):
                 d.ellipse((x + ox - r, y + oy - r, x + ox + r, y + oy + r), fill=(50, 50, 50, a))
@@ -461,16 +461,19 @@ def blob_mask(N, seed, lobes, thresh=0.42, warp=0.25):
 def puddle():
     N = 1024
     lobes = [
-        (0.36, 0.46, 0.28, 0.17, 0.35),
-        (0.64, 0.58, 0.24, 0.15, -0.30),
-        (0.50, 0.52, 0.22, 0.13, 0.10),
-        (0.27, 0.40, 0.10, 0.08, 0.0),
-        (0.80, 0.64, 0.09, 0.07, 0.0),
+        (0.20, 0.52, 0.13, 0.17, 0.0),
+        (0.33, 0.55, 0.12, 0.12, 0.2),
+        (0.46, 0.50, 0.12, 0.075, -0.2),
+        (0.58, 0.46, 0.11, 0.06, -0.1),
+        (0.70, 0.50, 0.11, 0.055, 0.15),
+        (0.82, 0.46, 0.10, 0.05, -0.1),
+        (0.93, 0.48, 0.08, 0.045, 0.05),
+        (0.12, 0.36, 0.05, 0.04, 0.0),
     ]
-    m = blob_mask(N, 90, lobes, 0.45, 0.34)
+    m = blob_mask(N, 91, lobes, 0.42, 0.5)
     mask = Image.fromarray((m * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(2.2))
     mask = mask.point(lambda p: 255 if p > 128 else 0).filter(ImageFilter.GaussianBlur(1.3))
-    eroded = mask.filter(ImageFilter.MinFilter(15)).filter(ImageFilter.GaussianBlur(2))
+    eroded = mask.filter(ImageFilter.MinFilter(11)).filter(ImageFilter.GaussianBlur(2))
     rim = ImageChops.subtract(mask, eroded)
     ma = np.asarray(mask, np.float32) / 255
     ra = np.asarray(rim, np.float32) / 255
@@ -488,9 +491,19 @@ def puddle():
     sa = np.asarray(st, np.float32) / 255 * ma * 0.34
     alpha = np.clip(alpha + sa, 0, 0.9) * (ma > 0.01)
     alpha = np.where(ma > 0.01, np.clip(alpha, 0, 0.9), 0)
+    # clear liquid like the picture: a faint grey body, a darker wet outline, bright specular streaks
+    body = np.array([150, 188, 196], np.float32)
+    edge = np.array([52, 86, 98], np.float32)
+    shine = np.array([255, 255, 255], np.float32)
+    a_body = ma * 0.55
+    a_edge = ra * 0.95
+    a_shine = np.clip(sa / 0.34, 0, 1) * 0.8
+    A = np.clip(a_body + a_edge + a_shine, 0, 0.97) * (ma > 0.01)
+    wsum = np.maximum(a_body + a_edge + a_shine, 1e-5)
+    rgb = (body * a_body[..., None] + edge * a_edge[..., None] + shine * a_shine[..., None]) / wsum[..., None]
     im = np.zeros((N, N, 4), np.uint8)
-    im[..., 0], im[..., 1], im[..., 2] = 226, 238, 250
-    im[..., 3] = (alpha * 255).astype(np.uint8)
+    im[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    im[..., 3] = (A * 255).astype(np.uint8)
     save(Image.fromarray(im, "RGBA"), "Label_Sc10Puddle.png")
 
 
@@ -539,6 +552,33 @@ def stain():
     save(Image.fromarray(im, "RGBA"), "Label_Sc10Stain.png")
 
 
+def sds_poster():
+    w, h = 640, 900
+    im = Image.new("RGBA", (w, h), (250, 250, 247, 255))
+    d = ImageDraw.Draw(im)
+    red = (200, 28, 32, 255)
+    k = (22, 24, 30, 255)
+    d.rectangle((4, 4, w - 5, h - 5), outline=k, width=8)
+    d.rectangle((16, 16, w - 17, 190), fill=red)
+    f = fit_font(d, "SAFETY DATA", w - 80, 96, black=True, spacing=2)
+    center_text(d, w // 2, 78, "SAFETY DATA", f, (255, 255, 255, 255), spacing=2)
+    f = fit_font(d, "SHEET", w - 80, 96, black=True, spacing=10)
+    center_text(d, w // 2, 148, "SHEET", f, (255, 255, 255, 255), spacing=10)
+    f = font(230, black=True)
+    center_text(d, w // 2, 330, "SDS", f, k, spacing=10)
+    d.line((60, 470, w - 60, 470), fill=k, width=5)
+    f = font(46)
+    for i, t in enumerate(("Read before you respond", "Hazards - First aid", "Spill and disposal steps")):
+        center_text(d, w // 2, 530 + i * 70, t, f, (60, 64, 72, 255))
+    im.alpha_composite(corrosive_diamond(150), (w // 2 - 215, 735))
+    im.alpha_composite(biohazard(130), (w // 2 - 65, 745))
+    d = ImageDraw.Draw(im)
+    d.rectangle((w // 2 + 100, 745, w // 2 + 230, 875), outline=k, width=6)
+    f = font(80, black=True)
+    center_text(d, w // 2 + 165, 810, "!", f, k)
+    save(im.convert("RGB"), "Label_Sc10SdsPoster.png")
+
+
 def paper():
     w, h = 256, 360
     im = paper_base(w, h, 120, (250, 250, 248))
@@ -547,8 +587,8 @@ def paper():
     k = (22, 24, 30, 255)
     d.rectangle((0, 0, w - 1, h - 1), outline=(205, 205, 205, 255), width=2)
     d.rectangle((18, 18, w - 18, 34), fill=(200, 28, 32, 255))
-    f = font(76, black=True)
-    center_text(d, w // 2, 88, "SDS", f, k, spacing=4)
+    f = font(96, black=True)
+    center_text(d, w // 2, 92, "SDS", f, k, spacing=6)
     d.line((26, 130, w - 26, 130), fill=k, width=3)
     y = 148
     rnd = random.Random(7)
@@ -576,6 +616,10 @@ def wall_plate():
 
 
 if __name__ == "__main__":
-    for fn in (tile, concrete, title, soda_ash, vermiculite, waste_bag, bin_label, haz_tag, caution,
-               pad, sock, puddle, powder, stain, paper, wall_plate):
-        fn()
+    import sys
+    every = (tile, concrete, title, soda_ash, vermiculite, waste_bag, bin_label, haz_tag, caution,
+             pad, sock, puddle, powder, stain, paper, wall_plate, sds_poster)
+    only = sys.argv[sys.argv.index("--only") + 1].split(",") if "--only" in sys.argv else None
+    for fn in every:
+        if only is None or fn.__name__ in only:
+            fn()

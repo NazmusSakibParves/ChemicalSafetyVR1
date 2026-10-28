@@ -88,6 +88,7 @@ namespace ChemicalSafety.Editor
             env9.gameObject.SetActive(false);
             var env10 = new GameObject("Environment_SC10").transform;
             var sc10 = BuildSc10Room(env10, art);
+            Sc10BakeProbe(env, env10);
             env10.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
