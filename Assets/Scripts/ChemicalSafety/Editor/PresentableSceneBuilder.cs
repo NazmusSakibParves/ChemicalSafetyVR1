@@ -86,6 +86,9 @@ namespace ChemicalSafety.Editor
             var env9 = new GameObject("Environment_SC09").transform;
             var sc9 = BuildSc09Room(env9, art);
             env9.gameObject.SetActive(false);
+            var env10 = new GameObject("Environment_SC10").transform;
+            var sc10 = BuildSc10Room(env10, art);
+            env10.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -159,6 +162,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq8, "art", art);
             var mcq9 = Child("McqPanel_SC09", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq9, "art", art);
+            var mcq10 = Child("McqPanel_SC10", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq10, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -283,6 +288,20 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc09Ambience").objectReferenceValue = sc9.ambience;
             so.FindProperty("mcqSc09").objectReferenceValue = mcq9;
             SetRef(sc9.ambience, "voice", voice);
+            so.FindProperty("envSc10").objectReferenceValue = env10.gameObject;
+            so.FindProperty("spawnSc10").objectReferenceValue = sc10.spawn;
+            so.FindProperty("sc10SpillStand").objectReferenceValue = sc10.spillStand;
+            so.FindProperty("sc10KitStand").objectReferenceValue = sc10.kitStand;
+            so.FindProperty("sc10PpeStand").objectReferenceValue = sc10.ppeStand;
+            so.FindProperty("sc10PanelStand").objectReferenceValue = sc10.panelStand;
+            so.FindProperty("sc10Lab").objectReferenceValue = sc10.lab;
+            so.FindProperty("sc10Ppe").objectReferenceValue = sc10.ppe;
+            so.FindProperty("sc10Spill").objectReferenceValue = sc10.spill;
+            so.FindProperty("sc10Guide").objectReferenceValue = sc10.guide;
+            so.FindProperty("sc10Gate").objectReferenceValue = sc10.gate;
+            so.FindProperty("sc10Ambience").objectReferenceValue = sc10.ambience;
+            so.FindProperty("mcqSc10").objectReferenceValue = mcq10;
+            SetRef(sc10.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
             so.FindProperty("inspect").objectReferenceValue = inspect;
@@ -349,7 +368,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -555,6 +574,23 @@ namespace ChemicalSafety.Editor
             art.bnSc09WalkHint = B("BN_Sc09WalkHint");
             art.bnSc09PushHint = B("BN_Sc09PushHint");
             art.bnSc09FlushHint = B("BN_Sc09FlushHint");
+            art.sdsSc10 = LoadSprite("2D/Sc10/SDS_SC10");
+            art.iconSc10Contain = LoadSprite("2D/Sc10/Icon_Contain");
+            art.iconSc10Neutralize = LoadSprite("2D/Sc10/Icon_Neutralize");
+            art.iconSc10Absorb = LoadSprite("2D/Sc10/Icon_Absorb");
+            art.iconSc10Clean = LoadSprite("2D/Sc10/Icon_Clean");
+            art.iconSc10Dispose = LoadSprite("2D/Sc10/Icon_Dispose");
+            art.bnSc10InstructionPanel = B("BN_Sc10InstructionPanel");
+            art.bnSc10SdsHint = B("BN_Sc10SdsHint");
+            art.bnSc10PpeHint = B("BN_Sc10PpeHint");
+            art.bnSc10VentHint = B("BN_Sc10VentHint");
+            art.bnSc10KitHint = B("BN_Sc10KitHint");
+            art.bnSc10CollectHint = B("BN_Sc10CollectHint");
+            art.bnSc10ContainHint = B("BN_Sc10ContainHint");
+            art.bnSc10NeutralizeHint = B("BN_Sc10NeutralizeHint");
+            art.bnSc10AbsorbHint = B("BN_Sc10AbsorbHint");
+            art.bnSc10CleanHint = B("BN_Sc10CleanHint");
+            art.bnSc10DisposeHint = B("BN_Sc10DisposeHint");
             art.bnSc06CapHint = B("BN_Sc06CapHint");
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
@@ -688,6 +724,20 @@ namespace ChemicalSafety.Editor
             art.voSc09Gate = Keep("VO_Sc09Gate_bn.mp3", art.voSc09Gate);
             art.voSc09CompleteBn = Keep("VO_Sc09Complete_bn.mp3", art.voSc09CompleteBn);
             art.voSc09CompleteEn = Keep("VO_Sc09Complete_en.mp3", art.voSc09CompleteEn);
+            art.voSc10Instruction = Keep("VO_SC10_Instruction_bn.mp3", art.voSc10Instruction);
+            art.voSc10Sds = Keep("VO_Sc10Sds_bn.mp3", art.voSc10Sds);
+            art.voSc10Ppe = Keep("VO_Sc10Ppe_bn.mp3", art.voSc10Ppe);
+            art.voSc10Vent = Keep("VO_Sc10Vent_bn.mp3", art.voSc10Vent);
+            art.voSc10Kit = Keep("VO_Sc10Kit_bn.mp3", art.voSc10Kit);
+            art.voSc10Collect = Keep("VO_Sc10Collect_bn.mp3", art.voSc10Collect);
+            art.voSc10Contain = Keep("VO_Sc10Contain_bn.mp3", art.voSc10Contain);
+            art.voSc10Neutralize = Keep("VO_Sc10Neutralize_bn.mp3", art.voSc10Neutralize);
+            art.voSc10Absorb = Keep("VO_Sc10Absorb_bn.mp3", art.voSc10Absorb);
+            art.voSc10Clean = Keep("VO_Sc10Clean_bn.mp3", art.voSc10Clean);
+            art.voSc10Dispose = Keep("VO_Sc10Dispose_bn.mp3", art.voSc10Dispose);
+            art.voSc10Gate = Keep("VO_Sc10Gate_bn.mp3", art.voSc10Gate);
+            art.voSc10CompleteBn = Keep("VO_Sc10Complete_bn.mp3", art.voSc10CompleteBn);
+            art.voSc10CompleteEn = Keep("VO_Sc10Complete_en.mp3", art.voSc10CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

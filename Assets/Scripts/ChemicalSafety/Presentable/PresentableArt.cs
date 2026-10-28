@@ -209,6 +209,37 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc09Gate;
         public AudioClip voSc09CompleteBn;
         public AudioClip voSc09CompleteEn;
+        public Sprite sdsSc10;
+        public Sprite iconSc10Contain;
+        public Sprite iconSc10Neutralize;
+        public Sprite iconSc10Absorb;
+        public Sprite iconSc10Clean;
+        public Sprite iconSc10Dispose;
+        public Sprite bnSc10InstructionPanel;
+        public Sprite bnSc10SdsHint;
+        public Sprite bnSc10PpeHint;
+        public Sprite bnSc10VentHint;
+        public Sprite bnSc10KitHint;
+        public Sprite bnSc10CollectHint;
+        public Sprite bnSc10ContainHint;
+        public Sprite bnSc10NeutralizeHint;
+        public Sprite bnSc10AbsorbHint;
+        public Sprite bnSc10CleanHint;
+        public Sprite bnSc10DisposeHint;
+        public AudioClip voSc10Instruction;
+        public AudioClip voSc10Sds;
+        public AudioClip voSc10Ppe;
+        public AudioClip voSc10Vent;
+        public AudioClip voSc10Kit;
+        public AudioClip voSc10Collect;
+        public AudioClip voSc10Contain;
+        public AudioClip voSc10Neutralize;
+        public AudioClip voSc10Absorb;
+        public AudioClip voSc10Clean;
+        public AudioClip voSc10Dispose;
+        public AudioClip voSc10Gate;
+        public AudioClip voSc10CompleteBn;
+        public AudioClip voSc10CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

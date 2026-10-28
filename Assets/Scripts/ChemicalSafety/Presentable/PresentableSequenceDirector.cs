@@ -155,6 +155,21 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc06Ambience sc09Ambience;
         [SerializeField] private PresentableMcqPanel mcqSc09;
 
+        [Header("SC10")]
+        [SerializeField] private GameObject envSc10;
+        [SerializeField] private Transform spawnSc10;
+        [SerializeField] private Transform sc10SpillStand;
+        [SerializeField] private Transform sc10KitStand;
+        [SerializeField] private Transform sc10PpeStand;
+        [SerializeField] private Transform sc10PanelStand;
+        [SerializeField] private Sc06Lab sc10Lab;
+        [SerializeField] private Sc08Ppe sc10Ppe;
+        [SerializeField] private Sc10Spill sc10Spill;
+        [SerializeField] private Sc09Guide sc10Guide;
+        [SerializeField] private Sc06Gate sc10Gate;
+        [SerializeField] private Sc06Ambience sc10Ambience;
+        [SerializeField] private PresentableMcqPanel mcqSc10;
+
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
         [SerializeField] private float glideBackDistance = 1.3f;
@@ -208,6 +223,12 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc10Only", false) && envSc10 != null)
+            {
+                yield return RunScenario10();
                 yield break;
             }
 
@@ -379,7 +400,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc09 != null ? Sc09Content.ModuleComplete
+            var doneLine = envSc10 != null ? Sc10Content.ModuleComplete
+                : envSc09 != null ? Sc09Content.ModuleComplete
                 : envSc08 != null ? Sc08Content.ModuleComplete
                 : envSc07 != null ? Sc07Content.ModuleComplete
                 : envSc04 != null ? Sc04Content.ModuleComplete
@@ -1308,6 +1330,8 @@ namespace ChemicalSafety.Presentable
             if (sc09Ambience != null)
                 sc09Ambience.End();
             Stage("sc09Done");
+            if (envSc10 != null)
+                yield return RunScenario10();
         }
 
         private IEnumerator Sc09Round()
@@ -1934,6 +1958,13 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 10)
+            {
+                yield return PlayVoice(art.voSc10CompleteBn);
+                yield return PlayVoice(art.voSc10CompleteEn);
+                yield break;
+            }
+
             if (scenario == 9)
             {
                 yield return PlayVoice(art.voSc09CompleteBn);
@@ -2185,6 +2216,234 @@ namespace ChemicalSafety.Presentable
                                    "Sheet (SDS) requirements precisely, ensuring safe transfer."
                     }
                 }
+            };
+        }
+
+        private IEnumerator RunScenario10()
+        {
+            Stage("sc10");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc09Ambience != null)
+                sc09Ambience.End();
+            envSc10.SetActive(true);
+            clipboard.SetSheet(art.sdsSc10);
+            clipboard.SetVisible(false);
+            sc10Spill.ResetAll();
+            sc10Lab.ResetLab();
+            sc10Ppe.ResetAll();
+            PlaceRig(sc10SpillStand.position, sc10SpillStand.forward);
+            sc10Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc10Intro");
+            yield return Sc09Card(Sc10Content.InstructionEnglish, art.bnSc10InstructionPanel,
+                art.voSc10Instruction != null ? art.voSc10Instruction : art.voInstruction);
+
+            var again = true;
+            while (again)
+            {
+                yield return Sc10Round();
+
+                Stage("sc10Gate");
+                yield return PresentableFx.Wait(0.8f);
+                yield return fader.FadeTo(1f, 0.35f);
+                PlaceRig(sc10SpillStand.position, sc10SpillStand.forward);
+                subtitle.Hide();
+                yield return fader.FadeTo(0f, 0.5f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc10Gate.Back += OnBack;
+                sc10Gate.Next += OnNext;
+                sc10Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc10Gate));
+                while (choice == 0)
+                    yield return null;
+                sc10Gate.Back -= OnBack;
+                sc10Gate.Next -= OnNext;
+                sc10Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    yield return fader.FadeTo(1f, 0.3f);
+                    sc10Spill.ResetAll();
+                    sc10Lab.ResetLab();
+                    sc10Ppe.ResetAll();
+                    yield return PresentableFx.Wait(0.3f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc10Question");
+            PlaceAtEyeLevel(mcqSc10.transform, 0.7f, false);
+            yield return RunQuestion(mcqSc10, BuildSc10Question(), false, 10);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            Stage("sc10Done");
+        }
+
+        private IEnumerator Sc10Round()
+        {
+            // 1. the safety data sheet (spill response steps)
+            yield return fader.FadeTo(1f, 0.25f);
+            PlaceRig(sc10SpillStand.position, sc10SpillStand.forward);
+            yield return fader.FadeTo(0f, 0.35f);
+            Stage("sc10Sds");
+            StartCoroutine(SubtitledVoice(art.bnSc10SdsHint, Sc10Content.SdsHint, art.voSc10Sds));
+            clipboard.SetVisible(true);
+            var sdsWait = 0f;
+            while (clipboard.IsVisible && sdsWait < 12f)
+            {
+                sdsWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            clipboard.SetVisible(false);
+            StopVoice();
+
+            // 2. PPE donning station
+            yield return fader.FadeTo(1f, 0.3f);
+            PlaceRig(sc10PpeStand.position, sc10PpeStand.forward);
+            yield return fader.FadeTo(0f, 0.4f);
+            Stage("sc10Ppe");
+            StartCoroutine(SubtitledVoice(art.bnSc10PpeHint, Sc10Content.PpeHint, art.voSc10Ppe));
+            sc10Ppe.Begin();
+            while (!sc10Ppe.AllDone)
+                yield return null;
+            sc10Ppe.End();
+            StopVoice();
+            yield return PresentableFx.Wait(0.5f);
+
+            // 3. ventilate: the fume hood switch
+            yield return fader.FadeTo(1f, 0.3f);
+            PlaceRig(sc10PanelStand.position, sc10PanelStand.forward);
+            yield return fader.FadeTo(0f, 0.4f);
+            Stage("sc10Vent");
+            StartCoroutine(SubtitledVoice(art.bnSc10VentHint, Sc10Content.VentHint, art.voSc10Vent));
+            sc10Lab.SetSwitchesInteractable(true);
+            sc10Lab.PointAt(sc10Lab.Rocker(0), new Vector3(0f, 0.2f, 0.06f));
+            while (!sc10Lab.HoodOn)
+                yield return null;
+            sc10Lab.HideArrow();
+            sc10Lab.SetSwitchesInteractable(false);
+            StopVoice();
+            yield return PresentableFx.Wait(1.0f);
+
+            // 4. the spill kit: open it, take the five items
+            yield return fader.FadeTo(1f, 0.3f);
+            PlaceRig(sc10KitStand.position, sc10KitStand.forward);
+            yield return fader.FadeTo(0f, 0.4f);
+            Stage("sc10Kit");
+            StartCoroutine(SubtitledVoice(art.bnSc10KitHint, Sc10Content.KitHint, art.voSc10Kit));
+            sc10Spill.SetKitInteractable(true);
+            sc10Guide.PointAt(sc10Spill.KitPoke.transform, new Vector3(0f, 0.72f, 0f));
+            while (!sc10Spill.KitOpen)
+                yield return null;
+            sc10Guide.Hide();
+            StopVoice();
+            yield return PresentableFx.Wait(0.4f);
+
+            Stage("sc10Collect");
+            StartCoroutine(SubtitledVoice(art.bnSc10CollectHint, Sc10Content.CollectHint, art.voSc10Collect));
+            sc10Spill.ShowCollection(true);
+            sc10Spill.SetItemsInteractable(true);
+            while (!sc10Spill.AllCollected)
+            {
+                var next = -1;
+                for (var i = 0; i < 5; i++)
+                {
+                    var t = sc10Spill.Item(i);
+                    if (t != null && t.gameObject.activeSelf)
+                    {
+                        next = i;
+                        break;
+                    }
+                }
+
+                if (next >= 0)
+                    sc10Guide.PointAt(sc10Spill.Item(next), new Vector3(0f, 0.32f, 0f));
+                else
+                    sc10Guide.Hide();
+                yield return null;
+            }
+
+            sc10Guide.Hide();
+            StopVoice();
+            yield return PresentableFx.Wait(0.9f);
+            sc10Spill.ShowCollection(false);
+
+            // 5. contain, neutralize, absorb
+            yield return fader.FadeTo(1f, 0.3f);
+            PlaceRig(sc10SpillStand.position, sc10SpillStand.forward);
+            yield return fader.FadeTo(0f, 0.4f);
+            Stage("sc10Contain");
+            StartCoroutine(SubtitledVoice(art.bnSc10ContainHint, Sc10Content.ContainHint, art.voSc10Contain));
+            yield return sc10Spill.WaitIcon(art.iconSc10Contain, Sc10Content.ContainLabel);
+            StopVoice();
+            yield return sc10Spill.Contain();
+            yield return PresentableFx.Wait(0.5f);
+
+            Stage("sc10Neutralize");
+            StartCoroutine(SubtitledVoice(art.bnSc10NeutralizeHint, Sc10Content.NeutralizeHint, art.voSc10Neutralize));
+            yield return sc10Spill.WaitIcon(art.iconSc10Neutralize, Sc10Content.NeutralizeLabel);
+            StopVoice();
+            yield return sc10Spill.Neutralize();
+            yield return PresentableFx.Wait(0.5f);
+
+            Stage("sc10Absorb");
+            StartCoroutine(SubtitledVoice(art.bnSc10AbsorbHint, Sc10Content.AbsorbHint, art.voSc10Absorb));
+            yield return sc10Spill.WaitIcon(art.iconSc10Absorb, Sc10Content.AbsorbLabel);
+            StopVoice();
+            yield return sc10Spill.Absorb();
+            yield return PresentableFx.Wait(0.5f);
+
+            // 6. clean the glass, dispose
+            Stage("sc10Clean");
+            StartCoroutine(SubtitledVoice(art.bnSc10CleanHint, Sc10Content.CleanHint, art.voSc10Clean));
+            yield return sc10Spill.WaitIcon(art.iconSc10Clean, Sc10Content.CleanLabel);
+            StopVoice();
+            yield return sc10Spill.CleanGlass();
+            yield return PresentableFx.Wait(0.5f);
+
+            Stage("sc10Dispose");
+            StartCoroutine(SubtitledVoice(art.bnSc10DisposeHint, Sc10Content.DisposeHint, art.voSc10Dispose));
+            yield return sc10Spill.WaitIcon(art.iconSc10Dispose, Sc10Content.DisposeLabel, Sc10Content.DisposeSub);
+            StopVoice();
+            yield return sc10Spill.Dispose();
+            Stage("sc10Disposed");
+            yield return PresentableFx.Wait(1.0f);
+        }
+
+        private static PresentableMcqPanel.Question BuildSc10Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc10Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc10Content.OptionLabels[i],
+                    feedback = Sc10Content.OptionFeedback[i],
+                    wrongTitle = Sc10Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc10Content.QuestionHeader,
+                prompt = Sc10Content.QuestionPrompt,
+                correctIndex = Sc10Content.CorrectIndex,
+                correctTitle = Sc10Content.CorrectTitle,
+                nextLabel = Sc10Content.FinishLabel,
+                options = options,
+                fancy = true
             };
         }
 

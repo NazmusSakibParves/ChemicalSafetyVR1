@@ -934,6 +934,158 @@ namespace ChemicalSafety.Presentable
             Click(mcq9.transform, "NextButton");
         }
 
+        private IEnumerator Sc10Wait(System.Func<bool> done, float timeout)
+        {
+            var t = 0f;
+            while (!done() && t < timeout)
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        private IEnumerator Sc10Icon(Sc10Spill spill, string stage, string tag, System.Func<bool> finished, string shotName)
+        {
+            yield return WaitStage(stage, 30f);
+            yield return Sc10Wait(() => spill.IconVisible, 10f);
+            yield return new WaitForSeconds(0.8f);
+            Say("SC10 " + tag + ": " + stage + " icon visible = " + spill.IconVisible + " (expected True)");
+            if (shotName != null)
+                yield return Shot(shotName + "_icon");
+            yield return FingerPoke(spill.IconPoke, stage + " icon");
+            yield return new WaitForSeconds(1.8f);
+            if (shotName != null)
+                yield return Shot(shotName + "_anim");
+            yield return Sc10Wait(finished, 25f);
+            yield return new WaitForSeconds(0.4f);
+            if (shotName != null)
+                yield return Shot(shotName + "_done");
+        }
+
+        private IEnumerator Sc10Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc10Intro", 40f);
+            var lab = Get<Sc06Lab>(_director, "sc10Lab");
+            var ppe = Get<Sc08Ppe>(_director, "sc10Ppe");
+            var spill = Get<Sc10Spill>(_director, "sc10Spill");
+            var gate = Get<Sc06Gate>(_director, "sc10Gate");
+            var mcq10 = Get<PresentableMcqPanel>(_director, "mcqSc10");
+            var clipboard = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("103_sc10_instruction");
+            yield return ClickContinue(panel, 40f);
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc10Sds", 40f);
+                yield return new WaitForSeconds(1.8f);
+                Say("SC10 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
+                if (shots)
+                    yield return Shot("104_sc10_sds");
+                clipboard.SetVisible(false);
+
+                yield return WaitStage("sc10Ppe", 40f);
+                yield return new WaitForSeconds(1.2f);
+                Say("SC10 " + tag + ": PPE panel open = " + ppe.PanelOpen + " (expected True), taken = " + ppe.Taken + " (expected 0)");
+                if (shots)
+                    yield return Shot("105_sc10_ppe");
+                for (var i = 0; i < ppe.Count; i++)
+                {
+                    var cur = ppe.Current;
+                    yield return FingerPoke(ppe.PokeOf(cur), "PPE item " + cur);
+                    yield return Sc10Wait(() => ppe.Taken > cur || ppe.AllDone, 6f);
+                    yield return new WaitForSeconds(0.3f);
+                }
+
+                Say("SC10 " + tag + ": all PPE taken = " + ppe.AllDone + " (expected True)");
+
+                yield return WaitStage("sc10Vent", 20f);
+                yield return new WaitForSeconds(1.4f);
+                Say("SC10 " + tag + ": hood arrow = " + lab.ArrowVisible + " (expected True), hood on = " + lab.HoodOn + " (expected False)");
+                if (shots)
+                    yield return Shot("106_sc10_vent");
+                yield return FingerPoke(lab.SwitchPoke(0), "fume hood switch");
+                yield return new WaitForSeconds(1.5f);
+                Say("SC10 " + tag + ": hood on = " + lab.HoodOn + " (expected True)");
+
+                yield return WaitStage("sc10Kit", 20f);
+                yield return new WaitForSeconds(1.2f);
+                if (shots)
+                    yield return Shot("107_sc10_kit");
+                yield return FingerPoke(spill.KitPoke, "spill kit door");
+                yield return Sc10Wait(() => spill.KitOpen, 4f);
+                yield return new WaitForSeconds(1.4f);
+                Say("SC10 " + tag + ": kit open = " + spill.KitOpen + " (expected True)");
+                if (shots)
+                    yield return Shot("108_sc10_kit_open");
+
+                yield return WaitStage("sc10Collect", 20f);
+                yield return new WaitForSeconds(1.0f);
+                Say("SC10 " + tag + ": checklist visible = " + spill.PanelVisible + " (expected True)");
+                for (var i = 0; i < 5; i++)
+                {
+                    var idx = i;
+                    yield return FingerPoke(spill.ItemPoke(idx), "kit item " + idx);
+                    yield return Sc10Wait(() => spill.Collected > idx, 6f);
+                    if (shots && i == 1)
+                        yield return Shot("109_sc10_collect");
+                    yield return new WaitForSeconds(0.4f);
+                }
+
+                Say("SC10 " + tag + ": all collected = " + spill.AllCollected + " (expected True)");
+
+                yield return Sc10Icon(spill, "sc10Contain", tag, () => spill.SockLaid, shots ? "110_sc10_contain" : null);
+                Say("SC10 " + tag + ": sock laid = " + spill.SockLaid + " (expected True)");
+                yield return Sc10Icon(spill, "sc10Neutralize", tag, () => spill.Neutralized, shots ? "111_sc10_neutralize" : null);
+                Say("SC10 " + tag + ": neutralized = " + spill.Neutralized + " (expected True), puddle alpha = " + spill.PuddleAlpha.ToString("0.00"));
+                yield return Sc10Icon(spill, "sc10Absorb", tag, () => spill.Absorbed, shots ? "112_sc10_absorb" : null);
+                Say("SC10 " + tag + ": absorbed = " + spill.Absorbed + " (expected True), puddle alpha = " + spill.PuddleAlpha.ToString("0.00") + " | " + spill.PadInfo);
+                yield return Sc10Icon(spill, "sc10Clean", tag, () => spill.GlassCleaned, shots ? "113_sc10_clean" : null);
+                Say("SC10 " + tag + ": glass cleaned = " + spill.GlassCleaned + " (expected True), pieces in pan = " + spill.ShardsInPan);
+                yield return Sc10Icon(spill, "sc10Dispose", tag, () => spill.Disposed, shots ? "114_sc10_dispose" : null);
+                Say("SC10 " + tag + ": disposed = " + spill.Disposed + " (expected True)");
+
+                yield return WaitStage("sc10Gate", 40f);
+                yield return Sc10Wait(() => gate.Visible, 15f);
+                yield return new WaitForSeconds(1.3f);
+                Say("SC10 " + tag + ": gate card visible = " + gate.Visible);
+                LayoutCheck("SC10 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("115_sc10_gate");
+                Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+            }
+
+            yield return WaitStage("sc10Question", 20f);
+            yield return Sc10Wait(() => mcq10.IsOpen, 8f);
+            yield return new WaitForSeconds(2.4f);
+            Say("SC10 MCQ wow look = " + mcq10.Fancy + " (expected True)");
+            LayoutCheck("SC10 MCQ", mcq10.transform);
+            yield return Shot("116_sc10_question");
+            Click(mcq10.transform, "Row1");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("117_sc10_wrong");
+            Click(mcq10.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq10.transform, "Row2");
+            var heard = "";
+            var h = 0f;
+            while (h < 16f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc10Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC10 MCQ correct card", mcq10.transform);
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 10 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("118_sc10_correct");
+            Click(mcq10.transform, "NextButton");
+        }
+
         private IEnumerator ClickContinue(InstructionPanelView panel, float timeout)
         {
             var cont = FindDeep(panel.transform, "ContinueButton");
@@ -1033,6 +1185,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc10Only", false))
+            {
+                Say("SC10-only run (dev start)");
+                yield return Sc10Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc09Only", false))
             {
                 Say("SC09-only run (dev start)");
@@ -1903,6 +2065,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc07Smoke(panel, voiceSrc);
             yield return Sc08Smoke(panel, voiceSrc);
             yield return Sc09Smoke(panel, voiceSrc);
+            yield return Sc10Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

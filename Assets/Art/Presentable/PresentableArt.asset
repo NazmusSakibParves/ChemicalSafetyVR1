@@ -193,6 +193,37 @@ MonoBehaviour:
   voSc09Gate: {fileID: 8300000, guid: 452799ec60b2e814994ea0198c0c9e59, type: 3}
   voSc09CompleteBn: {fileID: 8300000, guid: eaeecf4635890d148962fe6af6649e14, type: 3}
   voSc09CompleteEn: {fileID: 8300000, guid: 44037f9aee9db034e997e3afe05ef26e, type: 3}
+  sdsSc10: {fileID: 21300000, guid: 9fb2a5bea4556934b8db863e0dfc060f, type: 3}
+  iconSc10Contain: {fileID: 21300000, guid: 3436e90d189b2d548a68b131c1699385, type: 3}
+  iconSc10Neutralize: {fileID: 21300000, guid: 94d004e2a2c5a104e9a43eb600c617af, type: 3}
+  iconSc10Absorb: {fileID: 21300000, guid: 7725ffa11e629824c90e907cd180606e, type: 3}
+  iconSc10Clean: {fileID: 21300000, guid: 917edbb9aefe70847956a28fe0e3d8db, type: 3}
+  iconSc10Dispose: {fileID: 21300000, guid: 7fdc35708e4fffc4b82d40afa82f2d0e, type: 3}
+  bnSc10InstructionPanel: {fileID: 21300000, guid: 353936cdab625914b943b2beda96be46, type: 3}
+  bnSc10SdsHint: {fileID: 21300000, guid: 196897593571dbb4b9d52e5061a64144, type: 3}
+  bnSc10PpeHint: {fileID: 21300000, guid: 7c999e9a765256e42aa5fdb249c132b9, type: 3}
+  bnSc10VentHint: {fileID: 21300000, guid: d6bd245023fe4f946818e523c9ce1b91, type: 3}
+  bnSc10KitHint: {fileID: 21300000, guid: 245f9338e6d540f49821732c59292198, type: 3}
+  bnSc10CollectHint: {fileID: 21300000, guid: 68b76dafa2c7dd94bb521bbe36113513, type: 3}
+  bnSc10ContainHint: {fileID: 21300000, guid: 677ec79493a08964394fa5138fe9397a, type: 3}
+  bnSc10NeutralizeHint: {fileID: 21300000, guid: 0df15e627dc142341838214fb6dc9469, type: 3}
+  bnSc10AbsorbHint: {fileID: 21300000, guid: f8c8b409ede68084fa4623c149f043bc, type: 3}
+  bnSc10CleanHint: {fileID: 21300000, guid: 080532967e792d84692ea71264fcf982, type: 3}
+  bnSc10DisposeHint: {fileID: 21300000, guid: be6e2ee0247b56841bcd3ce10280d2a5, type: 3}
+  voSc10Instruction: {fileID: 8300000, guid: 6cc8a4124f7b1104492b147ea50c0fe4, type: 3}
+  voSc10Sds: {fileID: 8300000, guid: 28a13985cebf46f4f89502c67529d596, type: 3}
+  voSc10Ppe: {fileID: 8300000, guid: 1f592623d4b3c744e9ad1af3f893b430, type: 3}
+  voSc10Vent: {fileID: 8300000, guid: b2d5aabcea4804e4fbab2755baa51b26, type: 3}
+  voSc10Kit: {fileID: 8300000, guid: 821bbc92df056a34d8a382ab61ccc5b6, type: 3}
+  voSc10Collect: {fileID: 8300000, guid: 7b317882d2bf07b4f8bd95bddec35a2d, type: 3}
+  voSc10Contain: {fileID: 8300000, guid: 657d67bfb8a8d7c42883bbcc34744fb0, type: 3}
+  voSc10Neutralize: {fileID: 8300000, guid: 69efc78cebf82fc408fc3cf1b286295c, type: 3}
+  voSc10Absorb: {fileID: 8300000, guid: d3e5004413e759d4490956d695ec1a71, type: 3}
+  voSc10Clean: {fileID: 8300000, guid: 41cad42e403cdf342bf618540bf83585, type: 3}
+  voSc10Dispose: {fileID: 8300000, guid: f1d9fb9464652cb45910a0d188c9c565, type: 3}
+  voSc10Gate: {fileID: 8300000, guid: 4e6b22227033ac94e88ab190ed88ab36, type: 3}
+  voSc10CompleteBn: {fileID: 8300000, guid: d8b71c1e8b6336b48bbed94a93a6c562, type: 3}
+  voSc10CompleteEn: {fileID: 8300000, guid: 596b28667e99b5b4c9f7c0ae91d6410e, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   useSc01OriginalVoice: 0
   trialSalam: {fileID: 8300000, guid: 9075ddaec63ac2342a2f9788a9e56c67, type: 3}
