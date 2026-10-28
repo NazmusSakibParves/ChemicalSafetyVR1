@@ -183,7 +183,7 @@ namespace ChemicalSafety.Editor
             }
 
             Sc08Part("SockCoil", sock, Sc08SweepTube("Sc10SockCoil", spiral, 0.027f, 10, 0.9f), sockMat, Vector3.zero);
-            Sc10AddPoke(sock, new Vector3(-0.12f, 0f, 0f), 0.07f);
+            Sc10AddPoke(sock, new Vector3(-0.22f, 0f, 0f), 0.09f);
 
             // 1 soda ash bag
             var sodaFront = Mat("Sc10SodaAshMat", Color.white, 0.35f, 0f, Sc06Tex("Label_Sc10SodaAsh"));
@@ -192,7 +192,7 @@ namespace ChemicalSafety.Editor
             var mouth = new GameObject("PourMouth").transform;
             mouth.SetParent(soda, false);
             mouth.localPosition = new Vector3(0f, 0.40f, 0f);
-            Sc10AddPoke(soda, new Vector3(-0.12f, 0f, 0f), 0.07f);
+            Sc10AddPoke(soda, new Vector3(-0.22f, 0f, 0f), 0.09f);
 
             // 2 absorbent pads (stack)
             var pads = new GameObject("Sc10Item2").transform;
@@ -205,7 +205,7 @@ namespace ChemicalSafety.Editor
                 sheet.transform.localRotation = Quaternion.Euler(0f, 0f, (i - 2.5f) * 0.6f);
             }
 
-            Sc10AddPoke(pads, new Vector3(-0.12f, 0f, 0f), 0.07f);
+            Sc10AddPoke(pads, new Vector3(-0.22f, 0f, 0f), 0.09f);
 
             // 3 dustpan and brush
             var tools = new GameObject("Sc10Item3").transform;
@@ -217,13 +217,13 @@ namespace ChemicalSafety.Editor
             panShelf.localPosition = new Vector3(0f, 0.12f, 0f);
             var brushShelf = Sc10BrushObject(tools, "BrushShelf", new Vector3(-0.015f, 0.1f, -0.1f), 270f, 1f);
             brushShelf.localRotation = Quaternion.Euler(-72f, 270f, 0f);
-            Sc10AddPoke(tools, new Vector3(-0.12f, 0f, 0f), 0.07f);
+            Sc10AddPoke(tools, new Vector3(-0.22f, 0f, 0f), 0.09f);
 
             // 4 hazardous waste bag, folded
             var bagYellow = Mat("Sc10BagYellow", new Color(0.94f, 0.76f, 0.06f), 0.55f, 0f);
             var bagFront = Mat("Sc10WasteBagMat", Color.white, 0.5f, 0f, Sc06Tex("Label_Sc10WasteBag"));
             var wasteBag = Sc10Bag(bay, "Sc10Item4", new Vector3(ix, botY, 0.52f), 270f, 0.25f, 0.30f, 0.05f, bagFront, bagYellow, "Waste");
-            Sc10AddPoke(wasteBag, new Vector3(-0.12f, 0f, 0f), 0.07f);
+            Sc10AddPoke(wasteBag, new Vector3(-0.22f, 0f, 0f), 0.09f);
 
             // decor in the kit: vermiculite bag, hazard tag, goggles, gloves, face shield, green apron roll
             var verFront = Mat("Sc10VermiculiteMat", Color.white, 0.25f, 0f, Sc06Tex("Label_Sc10Vermiculite"));
@@ -394,7 +394,7 @@ namespace ChemicalSafety.Editor
             refs.spill = spillLogic;
 
             refs.spillStand = Marker("Stand_SC10_Spill", room, new Vector3(x1 - 4.9f, 0f, 1.35f), 90f);
-            refs.kitStand = Marker("Stand_SC10_Kit", room, new Vector3(x1 - 0.95f, 0f, 1.55f), 90f);
+            refs.kitStand = Marker("Stand_SC10_Kit", room, new Vector3(x1 - 0.85f, 0f, 1.35f), 90f);
             refs.disposeStand = Marker("Stand_SC10_Dispose", room, new Vector3(x1 - 3.7f, 0f, 2.6f), 90f);
         }
     }

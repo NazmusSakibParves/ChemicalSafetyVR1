@@ -247,29 +247,33 @@ namespace ChemicalSafety.Editor
                 Box("DadoFront", room, new Vector3((x0 + x1) * 0.5f, 0.6f, zFront - 0.011f), new Vector3(x1 - x0, 1.2f, 0.022f), dadoF, false);
                 Box("DadoFrontTrim", room, new Vector3((x0 + x1) * 0.5f, 1.215f, zFront - 0.016f), new Vector3(x1 - x0, 0.03f, 0.032f), trimBlue, false);
 
-                // yellow flammable storage cabinet on the right wall
+                // yellow flammable storage cabinet on the back wall left of the fume hood (built facing +X, then turned to face +Z)
                 var cabY = Mat("Sc10CabinetYellow", new Color(0.93f, 0.74f, 0.08f), 0.5f, 0.1f);
                 var cabRed = Mat("Sc10CabinetRed", new Color(0.72f, 0.07f, 0.06f), 0.5f, 0f);
-                var cabX = x0 + 0.31f;
-                Box("FlamCabinet", room, new Vector3(cabX, 0.95f, 0.6f), new Vector3(0.56f, 1.9f, 0.92f), cabY, false);
-                Box("FlamBand", room, new Vector3(cabX + 0.285f, 1.45f, 0.6f), new Vector3(0.01f, 0.1f, 0.92f), cabRed, false);
-                Box("FlamDoorSplit", room, new Vector3(cabX + 0.286f, 0.95f, 0.6f), new Vector3(0.008f, 1.8f, 0.012f), darkSteel, false);
-                Box("FlamHandleA", room, new Vector3(cabX + 0.30f, 0.95f, 0.54f), new Vector3(0.025f, 0.12f, 0.02f), steel, false);
-                Box("FlamHandleB", room, new Vector3(cabX + 0.30f, 0.95f, 0.66f), new Vector3(0.025f, 0.12f, 0.02f), steel, false);
-                Box("FlamLabel", room, new Vector3(cabX + 0.289f, 1.7f, 0.6f), new Vector3(0.006f, 0.2f, 0.34f), white, false);
-                Box("FlamLabelRed", room, new Vector3(cabX + 0.2925f, 1.7f, 0.6f), new Vector3(0.006f, 0.12f, 0.26f), cabRed, false);
+                var cabX = ox - 3.3f;
+                var cabZ = zBack + 0.30f;
+                var cabRig = new GameObject("Sc10FlamCabinetRig").transform;
+                cabRig.SetParent(room, false);
+                Box("FlamCabinet", cabRig, new Vector3(cabX, 0.95f, cabZ), new Vector3(0.56f, 1.9f, 0.92f), cabY, false);
+                Box("FlamBand", cabRig, new Vector3(cabX + 0.285f, 1.45f, cabZ), new Vector3(0.01f, 0.1f, 0.92f), cabRed, false);
+                Box("FlamDoorSplit", cabRig, new Vector3(cabX + 0.286f, 0.95f, cabZ), new Vector3(0.008f, 1.8f, 0.012f), darkSteel, false);
+                Box("FlamHandleA", cabRig, new Vector3(cabX + 0.30f, 0.95f, cabZ - 0.06f), new Vector3(0.025f, 0.12f, 0.02f), steel, false);
+                Box("FlamHandleB", cabRig, new Vector3(cabX + 0.30f, 0.95f, cabZ + 0.06f), new Vector3(0.025f, 0.12f, 0.02f), steel, false);
+                Box("FlamLabel", cabRig, new Vector3(cabX + 0.289f, 1.7f, cabZ), new Vector3(0.006f, 0.2f, 0.34f), white, false);
+                Box("FlamLabelRed", cabRig, new Vector3(cabX + 0.2925f, 1.7f, cabZ), new Vector3(0.006f, 0.12f, 0.26f), cabRed, false);
+                cabRig.RotateAround(new Vector3(cabX, 0f, cabZ), Vector3.up, -90f);
 
                 // notice board with pinned papers, and a wall clock
-                Box("BoardFrame", room, new Vector3(x0 + 0.02f, 1.55f, 1.5f), new Vector3(0.03f, 0.74f, 0.74f), darkSteel, false);
-                Box("BoardCork", room, new Vector3(x0 + 0.037f, 1.55f, 1.5f), new Vector3(0.012f, 0.68f, 0.68f), Mat("Sc10Cork", new Color(0.62f, 0.45f, 0.28f), 0.2f, 0f), false);
+                Box("BoardFrame", room, new Vector3(x0 + 0.02f, 1.55f, -0.83f), new Vector3(0.03f, 0.46f, 0.46f), darkSteel, false);
+                Box("BoardCork", room, new Vector3(x0 + 0.037f, 1.55f, -0.83f), new Vector3(0.012f, 0.40f, 0.40f), Mat("Sc10Cork", new Color(0.62f, 0.45f, 0.28f), 0.2f, 0f), false);
                 var paperCols = new[] { new Color(0.95f, 0.95f, 0.92f), new Color(0.95f, 0.85f, 0.4f), new Color(0.75f, 0.88f, 0.95f), new Color(0.95f, 0.95f, 0.92f) };
                 for (var i = 0; i < 4; i++)
-                    Box("BoardPaper" + i, room, new Vector3(x0 + 0.047f, 1.55f + (i % 2 - 0.5f) * 0.28f, 1.5f + (i / 2 - 0.5f) * 0.3f),
-                        new Vector3(0.006f, 0.22f, 0.17f), Mat("Sc10Paper" + i, paperCols[i], 0.2f, 0f), false);
-                var clock = Prim("WallClock", PrimitiveType.Cylinder, room, new Vector3(x0 + 0.04f, 2.45f, -0.5f), new Vector3(0.36f, 0.02f, 0.36f), Mat("Sc10ClockFace", new Color(0.95f, 0.95f, 0.93f), 0.3f, 0f));
+                    Box("BoardPaper" + i, room, new Vector3(x0 + 0.047f, 1.55f + (i % 2 - 0.5f) * 0.17f, -0.83f + (i / 2 - 0.5f) * 0.17f),
+                        new Vector3(0.006f, 0.14f, 0.12f), Mat("Sc10Paper" + i, paperCols[i], 0.2f, 0f), false);
+                var clock = Prim("WallClock", PrimitiveType.Cylinder, room, new Vector3(x0 + 0.04f, 2.45f, -0.83f), new Vector3(0.36f, 0.02f, 0.36f), Mat("Sc10ClockFace", new Color(0.95f, 0.95f, 0.93f), 0.3f, 0f));
                 clock.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-                Box("ClockHandH", room, new Vector3(x0 + 0.062f, 2.47f, -0.5f), new Vector3(0.008f, 0.1f, 0.012f), darkSteel, false);
-                Box("ClockHandM", room, new Vector3(x0 + 0.064f, 2.45f, -0.46f), new Vector3(0.008f, 0.012f, 0.14f), darkSteel, false);
+                Box("ClockHandH", room, new Vector3(x0 + 0.062f, 2.47f, -0.83f), new Vector3(0.008f, 0.1f, 0.012f), darkSteel, false);
+                Box("ClockHandM", room, new Vector3(x0 + 0.064f, 2.45f, -0.79f), new Vector3(0.008f, 0.012f, 0.14f), darkSteel, false);
 
                 // pipes near the ceiling along the back wall
                 var pipeRed = Mat("Sc10PipeRed", new Color(0.7f, 0.1f, 0.08f), 0.55f, 0.3f);

@@ -216,6 +216,51 @@ namespace ChemicalSafety.Presentable
             _audio.spatialBlend = 0f;
         }
 
+        // Backup for the touch volumes: a fingertip that comes close to a kit item's visible shape picks it up, even if the volume
+        // is a little off or the arm is short. A finger must have been away from the item first, so it never fires by itself.
+        private const float TipRadius = 0.16f;
+        private readonly bool[] _tipArmed = new bool[ItemCount];
+
+        private void Update()
+        {
+            var hand = GlovedHandPose.Right;
+            if (!_kitOpen || _busy || hand == null || !hand.HasTip)
+            {
+                for (var i = 0; i < ItemCount; i++)
+                    _tipArmed[i] = false;
+                return;
+            }
+
+            var tip = hand.TipPosition;
+            var best = -1;
+            var bestD = float.MaxValue;
+            for (var i = 0; i < ItemCount; i++)
+            {
+                if (_items[i] == null || _collected[i] || !_items[i].gameObject.activeSelf || _itemPokes[i] == null || !_itemPokes[i].Interactable)
+                {
+                    _tipArmed[i] = false;
+                    continue;
+                }
+
+                var d = Mathf.Sqrt(BoundsOf(_items[i]).SqrDistance(tip));
+                if (d > TipRadius + 0.06f)
+                    _tipArmed[i] = true;
+                else if (_tipArmed[i] && d <= TipRadius && d < bestD)
+                {
+                    best = i;
+                    bestD = d;
+                }
+            }
+
+            if (best < 0)
+                return;
+            _tipArmed[best] = false;
+            hand.PlayPokeCurl();
+            PresentableFx.Haptic(true, 0.55f, 0.07f);
+            PresentableFx.Play(PresentableFx.Tick, 0.7f);
+            OnItemPoked(best);
+        }
+
         private void Start()
         {
             if (_kitPoke != null)
@@ -378,8 +423,14 @@ namespace ChemicalSafety.Presentable
                 var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
                 var right = Vector3.Cross(Vector3.up, fwd);
                 var head = cam != null ? cam.position : Vector3.zero;
-                _panel.position = head + fwd * 0.66f + right * 0.42f;
-                _panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+                // to the right of the pickable items: right of the head, a little lower, never inside the kit (it faces -X)
+                var pos = head + fwd * 0.5f + right * 0.44f;
+                pos.y = head.y - 0.08f;
+                var kitCol = _kitPoke != null ? _kitPoke.GetComponent<Collider>() : null;
+                if (kitCol != null)
+                    pos.x = Mathf.Min(pos.x, kitCol.bounds.min.x - 0.08f);
+                _panel.position = pos;
+                _panel.rotation = Quaternion.LookRotation(Flat(pos - head), Vector3.up);
                 RefreshPanel();
             }
 
@@ -453,6 +504,7 @@ namespace ChemicalSafety.Presentable
             var plate = art.holoPanel != null ? art.holoPanel : art.frameWide;
             var canvas = PresentableUi.WorldCanvas("Sc10CollectPanel", transform, new Vector2(760f, 760f), 0.00060f, false, 30);
             _panel = canvas.transform;
+            _panel.localScale *= 1.13f; // a bit larger so the checklist reads in the headset
             var bg = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, plate, Color.white);
             if (art.holoPanel != null)
                 bg.type = Image.Type.Sliced;
