@@ -1020,10 +1020,36 @@ namespace ChemicalSafety.Presentable
                 Say("SC10 " + tag + ": kit open = " + spill.KitOpen + " (expected True)");
                 if (shots)
                     yield return Shot("108_sc10_kit_open");
+                var doorGo = GameObject.Find("Sc10KitDoor");
+                var cabGo = GameObject.Find("Sc10FlamCabinetRig");
+                if (doorGo != null && cabGo != null)
+                {
+                    var clear = true;
+                    foreach (var dr in doorGo.GetComponentsInChildren<Renderer>())
+                        foreach (var cr in cabGo.GetComponentsInChildren<Renderer>())
+                            if (dr.bounds.Intersects(cr.bounds))
+                                clear = false;
+                    Say("SC10 " + tag + ": open kit door clear of the cabinet = " + clear + " (expected True)");
+                    if (!clear)
+                        Debug.LogError("[SMOKE] SC10 the open kit door goes into the cabinet");
+                }
 
                 yield return WaitStage("sc10Collect", 20f);
                 yield return new WaitForSeconds(1.0f);
                 Say("SC10 " + tag + ": checklist visible = " + spill.PanelVisible + " (expected True)");
+                // a hand resting at the kit must not pick anything up; take it away, then every item has to be touchable
+                var restHand = GlovedHandPose.Right;
+                if (restHand != null && restHand.HasTip)
+                    restHand.transform.position += Vector3.left * 0.9f;
+                yield return new WaitForSeconds(0.5f);
+                for (var ti = 0; ti < 5; ti++)
+                {
+                    var ip = spill.ItemPoke(ti);
+                    var touchable = ip != null && ip.Interactable;
+                    Say("SC10 " + tag + ": kit item " + ti + " touchable = " + touchable + " (expected True)");
+                    if (!touchable)
+                        Debug.LogError("[SMOKE] SC10 kit item " + ti + " cannot be touched in the collect step (" + spill.DebugState + ")");
+                }
                 for (var i = 0; i < 5; i++)
                 {
                     var idx = i;
@@ -1031,7 +1057,7 @@ namespace ChemicalSafety.Presentable
                     yield return Sc10Wait(() => spill.Collected > idx, 6f);
                     if (shots && i == 1)
                         yield return Shot("109_sc10_collect");
-                    yield return new WaitForSeconds(0.4f);
+                    yield return new WaitForSeconds(1.0f);
                 }
 
                 Say("SC10 " + tag + ": all collected = " + spill.AllCollected + " (expected True)");

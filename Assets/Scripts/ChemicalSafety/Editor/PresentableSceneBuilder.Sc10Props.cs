@@ -342,7 +342,7 @@ namespace ChemicalSafety.Editor
             Sc10Table(tableRig, tableX, tableZ, tableX + 0.35f, steel, darkSteel);
             tableRig.RotateAround(new Vector3(tableX, 0f, tableZ), Vector3.up, 90f);
             var bx = x1 - 2.5f;
-            var bz = 2.6f;
+            var bz = 2.3f;
             var bin = Sc10Bin(bay, bx, bz);
 
             // open bag (hidden until DISPOSE): body, flared neck, a filling mound
@@ -395,7 +395,7 @@ namespace ChemicalSafety.Editor
 
             refs.spillStand = Marker("Stand_SC10_Spill", room, new Vector3(x1 - 4.9f, 0f, 1.35f), 90f);
             refs.kitStand = Marker("Stand_SC10_Kit", room, new Vector3(x1 - 0.85f, 0f, 1.35f), 90f);
-            refs.disposeStand = Marker("Stand_SC10_Dispose", room, new Vector3(x1 - 3.7f, 0f, 2.6f), 90f);
+            refs.disposeStand = Marker("Stand_SC10_Dispose", room, new Vector3(x1 - 3.7f, 0f, 2.3f), 90f);
         }
     }
 }

@@ -95,6 +95,19 @@ namespace ChemicalSafety.Presentable
         public Transform KitDoor => _kitDoor;
         public Transform SpillCentre => _spill;
         public Transform Item(int i) => i >= 0 && i < ItemCount ? _items[i] : null;
+        public string DebugState
+        {
+            get
+            {
+                var h = GlovedHandPose.Right;
+                var tip = h != null && h.HasTip ? h.TipPosition : Vector3.zero;
+                var sb = new System.Text.StringBuilder("wanted " + _itemsWanted + " kitOpen " + _kitOpen + " busy " + _busy + " collected " + Collected + " tip " + tip.ToString("F2"));
+                for (var i = 0; i < ItemCount; i++)
+                    sb.Append(" | i" + i + (_collected[i] ? " COLLECTED" : "") + " armed " + (_itemPokes[i] != null && _itemPokes[i].Interactable) + " d " + (_items[i] != null ? Mathf.Sqrt(BoundsOf(_items[i]).SqrDistance(tip)).ToString("F2") : "-"));
+                return sb.ToString();
+            }
+        }
+
         public PokeTarget ItemPoke(int i) => i >= 0 && i < ItemCount ? _itemPokes[i] : null;
         public PokeTarget KitPoke => _kitPoke;
         public PokeTarget IconPoke => _iconPoke;
@@ -221,9 +234,35 @@ namespace ChemicalSafety.Presentable
         private const float TipRadius = 0.16f;
         private readonly bool[] _tipArmed = new bool[ItemCount];
 
+        private bool _itemsWanted;
+        private float _pickAllowedAt;
+
         private void Update()
         {
             var hand = GlovedHandPose.Right;
+
+            // The collect step asked for touchable items. Each one is armed as soon as nothing is moving AND the fingertip is outside
+            // its touch volume, so a hand resting at the kit (after the door) or at the last item never picks one up by itself.
+            if (_itemsWanted && _kitOpen && !_busy)
+            {
+                for (var i = 0; i < ItemCount; i++)
+                {
+                    var pk = _itemPokes[i];
+                    if (pk == null || _collected[i] || pk.Interactable)
+                        continue;
+                    if (hand == null || !hand.HasTip)
+                    {
+                        pk.SetInteractable(true); // desk mode: the mouse needs no arming
+                        continue;
+                    }
+
+                    var vol = pk.GetComponent<Collider>();
+                    var away = vol == null || (vol.ClosestPoint(hand.TipPosition) - hand.TipPosition).magnitude > 0.17f;
+                    if (away)
+                        pk.SetInteractable(true);
+                }
+            }
+
             if (!_kitOpen || _busy || hand == null || !hand.HasTip)
             {
                 for (var i = 0; i < ItemCount; i++)
@@ -255,6 +294,7 @@ namespace ChemicalSafety.Presentable
             if (best < 0)
                 return;
             _tipArmed[best] = false;
+            Debug.Log("[SC10] fingertip backup picked item " + best + " at " + bestD.ToString("F2") + " m");
             hand.PlayPokeCurl();
             PresentableFx.Haptic(true, 0.55f, 0.07f);
             PresentableFx.Play(PresentableFx.Tick, 0.7f);
@@ -290,6 +330,7 @@ namespace ChemicalSafety.Presentable
             StopAllCoroutines();
             _busy = false;
             _kitOpen = false;
+            _itemsWanted = false;
             Collected = 0;
             SockLaid = Neutralized = Absorbed = GlassCleaned = Disposed = false;
             ShardsInPan = 0;
@@ -391,7 +432,6 @@ namespace ChemicalSafety.Presentable
         private IEnumerator OpenKit()
         {
             _busy = true;
-            _kitOpen = true;
             if (_kitPoke != null)
                 _kitPoke.SetInteractable(false);
             Sfx(thudClip, 0.5f);
@@ -409,6 +449,8 @@ namespace ChemicalSafety.Presentable
                 _kitDoor.localRotation = Quaternion.Euler(0f, 112f, 0f);
             }
 
+            // open and ready only now: the director waits on KitOpen, and the items must not be switched on while the door still moves
+            _kitOpen = true;
             _busy = false;
             KitOpened?.Invoke();
         }
@@ -439,13 +481,20 @@ namespace ChemicalSafety.Presentable
 
         public void SetItemsInteractable(bool on)
         {
+            if (on)
+                _pickAllowedAt = Time.time + 0.7f; // a hand that is still at the kit door cannot take anything right away
+            _itemsWanted = on;
+            // switching on is done by Update (armed per item); switching off is immediate
             for (var i = 0; i < ItemCount; i++)
-                if (_itemPokes[i] != null)
-                    _itemPokes[i].SetInteractable(on && !_collected[i] && !_busy);
+                if (_itemPokes[i] != null && !on)
+                    _itemPokes[i].SetInteractable(false);
         }
 
         private void OnItemPoked(int i)
         {
+            if (Time.time < _pickAllowedAt)
+                return;
+            Debug.Log("[SC10] item " + i + " poked, busy " + _busy + " collected " + _collected[i] + " kitOpen " + _kitOpen + " tip " + (GlovedHandPose.Right != null ? GlovedHandPose.Right.TipPosition.ToString("F2") : "none"));
             if (_busy || _collected[i] || !_kitOpen)
                 return;
             StartCoroutine(Collect(i));

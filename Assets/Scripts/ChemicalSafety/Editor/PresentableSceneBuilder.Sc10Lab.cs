@@ -211,7 +211,7 @@ namespace ChemicalSafety.Editor
             var glass = Sc06GlassMat("Sc08WindowGlass", new Color(0.78f, 0.86f, 0.9f), 0.2f, 0.5f);
             var corridor = Mat("Sc08Corridor", new Color(0.85f, 0.87f, 0.86f), 0.1f, 0f, null, new Color(0.55f, 0.58f, 0.58f), false);
             var frameGrey = Mat("Sc08WindowFrame", new Color(0.38f, 0.40f, 0.40f), 0.35f, 0f);
-            var wx = ox + 2.9f;
+            var wx = ox + 2.3f;
             Box("WindowBehind", room, new Vector3(wx, 1.75f, zFront + 0.03f), new Vector3(1.6f, 1.0f, 0.02f), corridor, false);
             Box("WindowGlass", room, new Vector3(wx, 1.75f, zFront - 0.02f), new Vector3(1.55f, 0.96f, 0.012f), glass, false);
             Box("WinFrameT", room, new Vector3(wx, 2.27f, zFront - 0.03f), new Vector3(1.7f, 0.07f, 0.07f), frameGrey, false);
@@ -247,11 +247,11 @@ namespace ChemicalSafety.Editor
                 Box("DadoFront", room, new Vector3((x0 + x1) * 0.5f, 0.6f, zFront - 0.011f), new Vector3(x1 - x0, 1.2f, 0.022f), dadoF, false);
                 Box("DadoFrontTrim", room, new Vector3((x0 + x1) * 0.5f, 1.215f, zFront - 0.016f), new Vector3(x1 - x0, 0.03f, 0.032f), trimBlue, false);
 
-                // yellow flammable storage cabinet on the back wall left of the fume hood (built facing +X, then turned to face +Z)
+                // yellow flammable storage cabinet on the Spill Kit wall, left of the kit box (built facing +X, then turned to face -X); the open kit door stays clear of it
                 var cabY = Mat("Sc10CabinetYellow", new Color(0.93f, 0.74f, 0.08f), 0.5f, 0.1f);
                 var cabRed = Mat("Sc10CabinetRed", new Color(0.72f, 0.07f, 0.06f), 0.5f, 0f);
-                var cabX = ox - 3.3f;
-                var cabZ = zBack + 0.30f;
+                var cabX = x1 - 0.30f;
+                var cabZ = 2.92f;
                 var cabRig = new GameObject("Sc10FlamCabinetRig").transform;
                 cabRig.SetParent(room, false);
                 Box("FlamCabinet", cabRig, new Vector3(cabX, 0.95f, cabZ), new Vector3(0.56f, 1.9f, 0.92f), cabY, false);
@@ -261,7 +261,7 @@ namespace ChemicalSafety.Editor
                 Box("FlamHandleB", cabRig, new Vector3(cabX + 0.30f, 0.95f, cabZ + 0.06f), new Vector3(0.025f, 0.12f, 0.02f), steel, false);
                 Box("FlamLabel", cabRig, new Vector3(cabX + 0.289f, 1.7f, cabZ), new Vector3(0.006f, 0.2f, 0.34f), white, false);
                 Box("FlamLabelRed", cabRig, new Vector3(cabX + 0.2925f, 1.7f, cabZ), new Vector3(0.006f, 0.12f, 0.26f), cabRed, false);
-                cabRig.RotateAround(new Vector3(cabX, 0f, cabZ), Vector3.up, -90f);
+                cabRig.RotateAround(new Vector3(cabX, 0f, cabZ), Vector3.up, 180f);
 
                 // notice board with pinned papers, and a wall clock
                 Box("BoardFrame", room, new Vector3(x0 + 0.02f, 1.55f, -0.83f), new Vector3(0.03f, 0.46f, 0.46f), darkSteel, false);
