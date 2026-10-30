@@ -250,7 +250,9 @@ def crops():
     badge = load("bmqas").convert("RGBA")
     for corner in ((0, 0), (badge.width - 1, 0), (0, badge.height - 1), (badge.width - 1, badge.height - 1)):
         ImageDraw.floodfill(badge, corner, (255, 255, 255, 0), thresh=40)
-    badge = badge.resize((badge.width * 2, badge.height * 2), Image.LANCZOS)
+    # 4x so the small on-screen badge stays sharp; light sharpen after upscale
+    badge = badge.resize((badge.width * 4, badge.height * 4), Image.LANCZOS)
+    badge = badge.filter(ImageFilter.UnsharpMask(radius=1.2, percent=120, threshold=2))
     save(badge, "Login_Bmqas.png")
 
 

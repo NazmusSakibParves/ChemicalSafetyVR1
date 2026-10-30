@@ -231,14 +231,14 @@ namespace ChemicalSafety.Presentable
             Label(host, "ContactLabel", 240, 436, 735, 472, cw, ch, "contact_label", 28f, LabelCol, true, TextAlignmentOptions.Left);
             BuildField(host, cw, ch, 472, Field.Contact, "contact_hint", out _contactTmp, out _contactHint, out _contactFocusImg,
                 out _contactErrImg);
-            _contactErr = Label(host, "ContactError", 240, 546, 820, 584, cw, ch, "err_contact_empty", 28f, ErrCol, false,
+            // ~12 px below the field bottom (544); keep compact so footer stays inside the panel
+            _contactErr = Label(host, "ContactError", 240, 556, 820, 588, cw, ch, "err_contact_empty", 26f, ErrCol, false,
                 TextAlignmentOptions.Left);
             _contactErr.gameObject.SetActive(false);
 
-            // START
+            // START — same band as before polish (halo centre ~620) so the footer fits above the frame
             _startRt = Place(host, "Start", 78, 550, 782, 700, cw, ch);
-            // sprite has 40 px halo margins: centre it on the 624x70 button rect (118..742, 585..655)
-            _startRt.anchoredPosition = new Vector2(430f - 430f, 430f - 620f);
+            _startRt.anchoredPosition = new Vector2(0f, 430f - 620f);
             _startRt.sizeDelta = new Vector2(704f, 150f);
             Pic(_startRt, "Login_Start");
             var hotRt = PresentableUi.Rect("Hot", _startRt, Vector2.zero, Vector2.one);
@@ -250,8 +250,8 @@ namespace ChemicalSafety.Presentable
             var hit = PresentableUi.Rect("Hit", _startRt, new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.78f));
             MakeButton(hit, OnStart);
 
-            // language toggle
-            var bg = Place(host, "ToggleBg", 118, 700, 512, 754, cw, ch);
+            // language toggle + credits — inside the neon frame (bottom inset ~y 760), not flush to the edge
+            var bg = Place(host, "ToggleBg", 118, 692, 512, 746, cw, ch);
             Pic(bg, "Login_ToggleBg");
             var onRt = PresentableUi.Centered("ToggleOn", bg, new Vector2(-98f, 0f), new Vector2(230f, 84f));
             Pic(onRt, "Login_ToggleOn");
@@ -259,15 +259,19 @@ namespace ChemicalSafety.Presentable
             _toggleX = 98f; // English is the default (right segment)
             onRt.anchoredPosition = new Vector2(_toggleX, 0f);
             _langBn = Label(bg, "LangBn", 6, 6, 196, 48, 394f, 54f, "lang_bn", 28f, Color.white, true);
+            _langBn.BindBanglaFixed(Scn, "lang_bn");
             _langEn = Label(bg, "LangEn", 198, 6, 388, 48, 394f, 54f, "lang_en", 28f, Color.white, true);
+            _langEn.BindEnglishFixed("ENGLISH");
             var hitBn = PresentableUi.Rect("HitBn", bg, new Vector2(0f, 0f), new Vector2(0.5f, 1f));
             MakeButton(hitBn, () => SetLanguage(Lang.Bn));
             var hitEn = PresentableUi.Rect("HitEn", bg, new Vector2(0.5f, 0f), new Vector2(1f, 1f));
             MakeButton(hitEn, () => SetLanguage(Lang.En));
 
-            Label(host, "DevBy", 520, 716, 700, 744, cw, ch, "developed_by", 22f, new Color(0.8f, 0.85f, 0.92f), true,
+            // leave a clear gap after the toggle (ends x=512) before the credit label
+            Label(host, "DevBy", 540, 702, 690, 742, cw, ch, "developed_by", 28f, new Color(0.8f, 0.85f, 0.92f), true,
                 TextAlignmentOptions.Right);
-            var badge = Place(host, "Bmqas", 704, 688, 800, 770, cw, ch);
+            // badge stays inside the frame (bottom ≤ ~768); slightly larger than the original 96×82
+            var badge = Place(host, "Bmqas", 698, 688, 808, 768, cw, ch);
             var bi = Pic(badge, "Login_Bmqas");
             bi.preserveAspect = true;
         }

@@ -14,7 +14,7 @@ namespace ChemicalSafety.Editor
         private const string AutoFolder = "Assets/Resources/BnAuto/";
 
         // bump when the settings below change so Unity reimports every content texture
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         private void OnPreprocessTexture()
         {
@@ -49,7 +49,26 @@ namespace ChemicalSafety.Editor
                 return;
             }
 
-            ti.textureCompression = isBn ? TextureImporterCompression.Uncompressed : TextureImporterCompression.CompressedHQ;
+            // Partner / BMQAS badges are small on screen: block compression makes them muddy.
+            var crispLogo = assetPath.EndsWith("/Login_Bmqas.png") || assetPath.EndsWith("/Login_Logos.png");
+            if (isBn || crispLogo)
+            {
+                ti.mipmapEnabled = false;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                foreach (var platform in new[] { "DefaultTexturePlatform", "Android", "Standalone" })
+                {
+                    var settings = ti.GetPlatformTextureSettings(platform);
+                    settings.overridden = true;
+                    settings.format = TextureImporterFormat.RGBA32;
+                    settings.maxTextureSize = 2048;
+                    settings.textureCompression = TextureImporterCompression.Uncompressed;
+                    ti.SetPlatformTextureSettings(settings);
+                }
+
+                return;
+            }
+
+            ti.textureCompression = TextureImporterCompression.CompressedHQ;
         }
     }
 }

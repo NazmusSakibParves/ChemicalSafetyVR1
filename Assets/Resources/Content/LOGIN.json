@@ -17,7 +17,7 @@
     { "key": "err_name_digit",   "en": "Numbers are not allowed in the name.", "bn": "নামে সংখ্যা ব্যবহার করা যাবে না।" },
     { "key": "err_name_char",    "en": "The name has a character that is not allowed.", "bn": "নামে অনুমোদিত নয় এমন চিহ্ন আছে।" },
     { "key": "err_contact_empty","en": "Please enter your email or phone number.", "bn": "অনুগ্রহ করে ইমেইল বা ফোন নম্বর লিখুন।" },
-    { "key": "err_email",        "en": "Enter a valid email, like name@example.com.", "bn": "সঠিক ইমেইল দিন, যেমন name@example.com।" },
+    { "key": "err_email",        "en": "Enter a valid email.",                        "bn": "সঠিক ইমেইল দিন" },
     { "key": "err_phone_short",  "en": "The number has fewer than 11 digits (without +88).", "bn": "নম্বরে ১১ ডিজিটের কম আছে (+৮৮ ছাড়া)।" },
     { "key": "err_phone_long",   "en": "The number has more than 11 digits (without +88).", "bn": "নম্বরে ১১ ডিজিটের বেশি আছে (+৮৮ ছাড়া)।" },
     { "key": "err_phone",        "en": "Enter a valid Bangladeshi mobile number, like 01712345678.", "bn": "সঠিক বাংলাদেশি মোবাইল নম্বর দিন, যেমন ০১৭১২৩৪৫৬৭৮।" },

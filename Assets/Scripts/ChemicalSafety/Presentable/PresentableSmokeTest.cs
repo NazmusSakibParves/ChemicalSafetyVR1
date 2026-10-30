@@ -1298,6 +1298,7 @@ namespace ChemicalSafety.Presentable
                 Say("login: 10-digit phone rejected = " + !login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.En));
                 Say("login: 12-digit phone rejected = " + !login.SubmitForTest("Rahim", "017123456789", ChemicalSafety.Localization.Lang.En));
                 Say("login: bad e-mail rejected = " + !login.SubmitForTest("Rahim", "rahim@mail", ChemicalSafety.Localization.Lang.En));
+                Say("login: letter-only contact uses email path = " + !login.SubmitForTest("Rahim", "cfgds", ChemicalSafety.Localization.Lang.En));
                 yield return new WaitForSeconds(0.5f);
                 yield return Shot("00_login_errors");
                 login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.Bn);

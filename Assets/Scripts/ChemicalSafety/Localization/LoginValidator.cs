@@ -63,9 +63,26 @@ namespace ChemicalSafety.Localization
             return sb.ToString();
         }
 
+        /// <summary>True when the contact looks like an e-mail attempt (letters / mixed), not a digit-only phone.</summary>
+        public static bool LooksLikeEmailAttempt(string raw)
+        {
+            if (string.IsNullOrEmpty(raw))
+                return false;
+            if (raw.IndexOf('@') >= 0)
+                return true;
+            foreach (var c in raw)
+            {
+                if (char.IsLetter(c) || (c >= 'ঀ' && c <= '৿'))
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
-        /// Contact is an e-mail (contains '@') or a Bangladeshi mobile number: optional +88 / 88, then exactly 11 digits
-        /// (01 + operator digit 3-9 + 8 digits). digitCount reports how many digits were found without the prefix.
+        /// Contact is an e-mail (contains '@', or letters / mixed chars) or a Bangladeshi mobile number: optional +88 / 88,
+        /// then exactly 11 digits (01 + operator digit 3-9 + 8 digits). digitCount reports how many digits were found
+        /// without the prefix.
         /// </summary>
         public static LoginError ValidateContact(string raw, out string normalized, out bool isEmail, out int digitCount)
         {
@@ -75,7 +92,7 @@ namespace ChemicalSafety.Localization
             if (normalized.Length == 0)
                 return LoginError.ContactEmpty;
 
-            if (normalized.IndexOf('@') >= 0)
+            if (LooksLikeEmailAttempt(normalized))
             {
                 isEmail = true;
                 return EmailRx.IsMatch(normalized) ? LoginError.None : LoginError.EmailInvalid;

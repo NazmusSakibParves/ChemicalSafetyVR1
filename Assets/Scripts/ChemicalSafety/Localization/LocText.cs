@@ -23,6 +23,8 @@ namespace ChemicalSafety.Localization
         private TextAlignmentOptions _align;
         private Color _color;
         private bool _bound;
+        private bool _fixedBangla;
+        private bool _fixedEnglish;
 
         public static LocText Create(RectTransform host, TMP_FontAsset enFont, float fontPx, Color color,
             TextAlignmentOptions align, bool bold)
@@ -62,6 +64,32 @@ namespace ChemicalSafety.Localization
             _scenario = scenario;
             _bnKey = key;
             _en = Loc.T(scenario, key, Lang.En);
+            _fixedBangla = false;
+            _fixedEnglish = false;
+            _bound = true;
+            Refresh();
+        }
+
+        /// <summary>Always show the Bangla sprite (e.g. language toggle left label stays "বাংলা").</summary>
+        public void BindBanglaFixed(string scenario, string key)
+        {
+            _scenario = scenario;
+            _bnKey = key;
+            _en = null;
+            _fixedBangla = true;
+            _fixedEnglish = false;
+            _bound = true;
+            Refresh();
+        }
+
+        /// <summary>Always show this English TMP string (e.g. language toggle right label stays "ENGLISH").</summary>
+        public void BindEnglishFixed(string text)
+        {
+            _scenario = null;
+            _bnKey = null;
+            _en = text ?? string.Empty;
+            _fixedBangla = false;
+            _fixedEnglish = true;
             _bound = true;
             Refresh();
         }
@@ -80,7 +108,15 @@ namespace ChemicalSafety.Localization
         {
             if (!_bound || _tmp == null)
                 return;
-            if (Loc.IsBangla)
+            if (_fixedEnglish)
+            {
+                _img.gameObject.SetActive(false);
+                _tmp.enabled = true;
+                _tmp.text = _en;
+                return;
+            }
+
+            if (_fixedBangla || Loc.IsBangla)
             {
                 var sprite = Resources.Load<Sprite>("BnText/" + _scenario + "/" + _bnKey);
                 if (sprite == null)
@@ -92,13 +128,13 @@ namespace ChemicalSafety.Localization
                     _img.sprite = sprite;
                     FitImage(sprite);
                 }
+
+                return;
             }
-            else
-            {
-                _img.gameObject.SetActive(false);
-                _tmp.enabled = true;
-                _tmp.text = _en;
-            }
+
+            _img.gameObject.SetActive(false);
+            _tmp.enabled = true;
+            _tmp.text = _en;
         }
 
         private void FitImage(Sprite sprite)
