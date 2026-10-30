@@ -1,0 +1,133 @@
+{
+ "scenario": "SC05",
+ "strings": [
+  {
+   "key": "InstructionEnglish",
+   "en": "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in.",
+   "bn": "আপনি একজন ডাইং মেশিন অপারেটর। একটি কাপড়ের ব্যাচ টলুইন-ভিত্তিক দ্রাবক দিয়ে প্রক্রিয়া করতে হবে। আজ ভেতরে বাষ্পের মাত্রা বেশি। ভেতরে ঢোকার আগে সঠিক মাস্কটি পরুন।"
+  },
+  {
+   "key": "CardTitle",
+   "en": "MASK INFORMATION",
+   "bn": "মাস্কের তথ্য"
+  },
+  {
+   "key": "NameLabel",
+   "en": "MASK NAME:",
+   "bn": "মাস্কের নাম:"
+  },
+  {
+   "key": "CompatLabel",
+   "en": "COMPATIBILITY:",
+   "bn": "সামঞ্জস্য:"
+  },
+  {
+   "key": "GateTitle",
+   "en": "RESPIRATOR INSPECTION COMPLETE.",
+   "bn": "রেসপিরেটর পরিদর্শন সম্পন্ন।"
+  },
+  {
+   "key": "GateQuestion",
+   "en": "Are you ready for the Multiple Choice Questions (MCQ)?",
+   "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+  },
+  {
+   "key": "GateBody",
+   "en": "Press NEXT to proceed or BACK to review again.",
+   "bn": "এগিয়ে যেতে নেক্সট চাপুন, আবার দেখতে ব্যাক চাপুন।"
+  },
+  {
+   "key": "QuestionHeader",
+   "en": "MCQ 5.1: Respirator Type Selection",
+   "bn": "MCQ ৫.১: রেসপিরেটরের ধরন নির্বাচন"
+  },
+  {
+   "key": "QuestionPrompt",
+   "en": "Which respirator is required for toluene?",
+   "bn": "টলুইনের জন্য কোন রেসপিরেটর প্রয়োজন?"
+  },
+  {
+   "key": "CorrectTitle",
+   "en": "CORRECT CHOICE",
+   "bn": "সঠিক পছন্দ"
+  },
+  {
+   "key": "FinishLabel",
+   "en": "NEXT",
+   "bn": "নেক্সট"
+  },
+  {
+   "key": "Incompatible",
+   "en": "Incompatible with toluene solvent",
+   "bn": "টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়"
+  },
+  {
+   "key": "CompatibleText",
+   "en": "Compatible with toluene solvent",
+   "bn": "টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ"
+  }
+ ],
+ "arrays": [
+  {
+   "key": "MaskNames",
+   "en": [
+    "Simple dust mask (N95)",
+    "Half-face respirator with organic vapour cartridge",
+    "Surgical mask",
+    "Full-face respirator with particulate only filter"
+   ],
+   "bn": [
+    "সাধারণ ডাস্ট মাস্ক (N95)",
+    "অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর",
+    "সার্জিক্যাল মাস্ক",
+    "শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর"
+   ]
+  },
+  {
+   "key": "OptionLabels",
+   "en": [
+    "Simple dust mask (N95)",
+    "Half-face respirator with organic vapor cartridge",
+    "Surgical mask",
+    "Full-face respirator with particulate-only filter"
+   ],
+   "bn": [
+    "সাধারণ ডাস্ট মাস্ক (N95)",
+    "অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর",
+    "সার্জিক্যাল মাস্ক",
+    "শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর"
+   ]
+  },
+  {
+   "key": "OptionFeedback",
+   "en": [
+    "Organic vapor passes straight through.",
+    "SDS specifies organic vapour cartridge for toluene.",
+    "A surgical mask only stops droplets. Organic vapor passes straight through.",
+    "A particulate-only filter does not capture organic vapor. Toluene passes straight through."
+   ],
+   "bn": [
+    "জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
+    "টলুইনের জন্য SDS-এ অর্গানিক ভেপার কার্ট্রিজ নির্দিষ্ট করা আছে।",
+    "সার্জিক্যাল মাস্ক শুধু ফোঁটা আটকায়। জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
+    "শুধু পার্টিকুলেট ফিল্টার জৈব বাষ্প আটকাতে পারে না। টলুইন সরাসরি ভেতর দিয়ে চলে যায়।"
+   ]
+  },
+  {
+   "key": "OptionWrongTitle",
+   "en": [
+    "WRONG CHOICE.",
+    "",
+    "WRONG CHOICE.",
+    "WRONG CHOICE."
+   ],
+   "bn": [
+    "ভুল পছন্দ।",
+    "",
+    "ভুল পছন্দ।",
+    "ভুল পছন্দ।"
+   ]
+  }
+ ],
+ "questions": []
+}

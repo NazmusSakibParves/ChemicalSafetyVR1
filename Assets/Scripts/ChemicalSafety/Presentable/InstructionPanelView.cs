@@ -145,13 +145,17 @@ namespace ChemicalSafety.Presentable
             _english.enableAutoSizing = false;
             _english.fontSize = 32f;
             _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
+            // English mode: the English words only; Bangla mode: the Bangla image only (when the scenario has one)
+            var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
+            _english.gameObject.SetActive(!useBn);
+            _bangla.gameObject.SetActive(useBn);
             _english.ForceMeshUpdate();
-            var englishH = Mathf.Clamp(_english.preferredHeight + 8f, 64f, 340f);
+            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, 340f);
 
             var aspect = 6f;
             if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
                 aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
-            var bnH = Mathf.Min(160f, 860f / Mathf.Max(0.1f, aspect));
+            var bnH = useBn ? Mathf.Min(190f, 920f / Mathf.Max(0.1f, aspect)) : 0f;
             var bnW = bnH * aspect;
 
             const float padTop = 72f;
@@ -165,8 +169,8 @@ namespace ChemicalSafety.Presentable
             {
                 var extra = h - 900f;
                 var share = extra / Mathf.Max(1f, englishH + bnH);
-                englishH = Mathf.Max(72f, englishH * (1f - share));
-                bnH = Mathf.Max(56f, bnH * (1f - share));
+                englishH = useBn ? 0f : Mathf.Max(72f, englishH * (1f - share));
+                bnH = useBn ? Mathf.Max(56f, bnH * (1f - share)) : 0f;
                 bnW = bnH * aspect;
                 h = 900f;
             }
@@ -209,6 +213,7 @@ namespace ChemicalSafety.Presentable
         public IEnumerator Show()
         {
             Build();
+            Reflow(); // the card has its final size and layout from the first frame (no small text that jumps later)
             gameObject.SetActive(true);
             _continue.gameObject.SetActive(false);
             transform.localScale = Vector3.one * 0.85f;

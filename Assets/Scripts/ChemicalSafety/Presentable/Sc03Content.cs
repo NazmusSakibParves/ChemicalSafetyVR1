@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -11,66 +13,36 @@ namespace ChemicalSafety.Presentable
     public static class Sc03Content
     {
         // ---- instruction card (step02)
-        public const string InstructionEnglish =
-            "<color=#5FD8FF><b>VOICE-OVER:</b></color> You find an old drum of organic peroxide that has been " +
-            "sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible " +
-            "around the cap. You must decide what to do.";
+        public static string InstructionEnglish => Loc.T("SC03", "InstructionEnglish");
 
         // ---- subtitles
-        public const string SdsHint = "Press X on the left controller to open or hide the SDS.";
-        public const string TouchHint = "Touch and hold the drum label with your finger to scan it.";
+        public static string SdsHint => Loc.T("SC03", "SdsHint");
+        public static string TouchHint => Loc.T("SC03", "TouchHint");
 
         // ---- DRUM INSPECTION REPORT card (step04): label / value pairs, the dot colour is set in Sc03Inspect
-        public const string ReportTitle = "DRUM INSPECTION REPORT";
-        public const string ScanCaption = "Selected Label";
-        public const string ContinueLabel = "Continue";
+        public static string ReportTitle => Loc.T("SC03", "ReportTitle");
+        public static string ScanCaption => Loc.T("SC03", "ScanCaption");
+        public static string ContinueLabel => Loc.T("SC03", "ContinueLabel");
 
-        public static readonly string[] ReportLabels =
-        {
-            "CHEMICAL TYPE:", "CONDITION:", "LABEL STATUS:", "DATE CODE:"
-        };
+        public static string[] ReportLabels => Loc.A("SC03", "ReportLabels");
 
-        public static readonly string[] ReportValues =
-        {
-            "[IDENTIFIED: ORGANIC PEROXIDE]",
-            "[OBSERVATION: CRYSTALLIZED RESIDUE DETECTED]",
-            "[EXPIRED]",
-            "[12/08/2024]"
-        };
+        public static string[] ReportValues => Loc.A("SC03", "ReportValues");
 
         // ---- question (step05 - step08)
-        public const string QuestionHeader = "IMMEDIATE ACTION PROTOCOL";
-        public const string QuestionPrompt = "Question 3: What is the correct immediate action?";
-        public const string CorrectTitle = "CORRECT ACTION!";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC03", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC03", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC03", "CorrectTitle");
+        public static string FinishLabel => Loc.T("SC03", "FinishLabel");
         public const int CorrectIndex = 1;
 
-        public static readonly string[] OptionLabels =
-        {
-            "Open the drum and use the chemical as normal",
-            "Do not open. Isolate area, notify supervisor, contact emergency response",
-            "Move the drum to another shelf and continue work",
-            "Dispose of it in regular chemical waste"
-        };
+        public static string[] OptionLabels => Loc.A("SC03", "OptionLabels");
 
         /// <summary>Text of the green card (index = CorrectIndex) or of the red card (every other index).</summary>
-        public static readonly string[] OptionFeedback =
-        {
-            "Wrong. Crystallised organic peroxides can detonate on opening or friction.",
-            "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal.",
-            "Wrong. Moving the drum causes shock and friction. Crystallised peroxides are shock-sensitive.",
-            "Wrong. Degraded peroxides need trained, specialist disposal. Regular waste can trigger a violent reaction."
-        };
+        public static string[] OptionFeedback => Loc.A("SC03", "OptionFeedback");
 
         /// <summary>Red card title per option (the correct index is ignored).</summary>
-        public static readonly string[] OptionWrongTitle =
-        {
-            "DANGER: DETONATION CONFIRMED",
-            "",
-            "DANGER: SHOCK DETONATION",
-            "DANGER: VIOLENT REACTION"
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC03", "OptionWrongTitle");
 
-        public const string ModuleComplete = "Scenario 3 completed successfully.";
+        public static string ModuleComplete => Loc.T("SC03", "ModuleComplete");
     }
 }

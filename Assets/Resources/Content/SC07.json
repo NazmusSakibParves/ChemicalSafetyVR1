@@ -1,0 +1,39 @@
+{
+  "scenario": "SC07",
+  "strings": [
+    { "key": "InstructionEnglish", "en": "You are a machine operator. A flammable solvent container near the electrical panel has overheated and ignited. The fire is small and contained. Grab the right extinguisher.", "bn": "আপনি একজন মেশিন অপারেটর। বৈদ্যুতিক প্যানেলের পাশে রাখা একটি দাহ্য দ্রাবকের পাত্র অতিরিক্ত গরম হয়ে আগুন ধরে গেছে। আগুন ছোট এবং নিয়ন্ত্রণে আছে। সঠিক ফায়ার এক্সটিংগুইশারটি নিন।" },
+    { "key": "CardSuffix", "en": "EXTINGUISHER SUMMARY", "bn": "এক্সটিংগুইশার সারসংক্ষেপ" },
+    { "key": "NameLabel", "en": "EXTINGUISHER NAME:", "bn": "এক্সটিংগুইশারের নাম:" },
+    { "key": "UseLabel", "en": "EFFECTIVE ON:", "bn": "যেখানে কার্যকর:" },
+    { "key": "GateTitle", "en": "EXTINGUISHER INSPECTION COMPLETE", "bn": "এক্সটিংগুইশার পরিদর্শন সম্পন্ন" },
+    { "key": "GateQuestion", "en": "Are you ready for the Multiple Choice Questions (MCQ)?", "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?" },
+    { "key": "GateBody", "en": "Press NEXT to proceed or BACK to review again.", "bn": "এগিয়ে যেতে নেক্সট চাপুন, আবার দেখতে ব্যাক চাপুন।" },
+    { "key": "QuestionHeader", "en": "MCQ: Extinguisher Selection", "bn": "MCQ: এক্সটিংগুইশার নির্বাচন" },
+    { "key": "QuestionPrompt", "en": "Which extinguisher is effective on flammable liquid and electric fire?", "bn": "দাহ্য তরল ও বৈদ্যুতিক আগুনে কোন এক্সটিংগুইশার কার্যকর?" },
+    { "key": "CorrectTitle", "en": "RIGHT CHOICE", "bn": "সঠিক পছন্দ" },
+    { "key": "WrongTitle", "en": "WRONG CHOICE", "bn": "ভুল পছন্দ" },
+    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" },
+    { "key": "ModuleComplete", "en": "Scenario 7 completed successfully.", "bn": "সিনারিও ৭ সফলভাবে সম্পন্ন হয়েছে।" }
+  ],
+  "arrays": [
+    { "key": "CardTitles",
+      "en": ["WATER EXTINGUISHER SUMMARY", "CO<sub>2</sub> EXTINGUISHER SUMMARY", "ABC DRY POWDER EXTINGUISHER SUMMARY"],
+      "bn": ["ওয়াটার এক্সটিংগুইশার সারসংক্ষেপ", "CO<sub>2</sub> এক্সটিংগুইশার সারসংক্ষেপ", "ABC ড্রাই পাউডার এক্সটিংগুইশার সারসংক্ষেপ"] },
+    { "key": "Names",
+      "en": ["Water (H<sub>2</sub>O)", "Carbon Dioxide (CO<sub>2</sub>)", "Dry Powder (ABC)"],
+      "bn": ["পানি (H<sub>2</sub>O)", "কার্বন ডাই-অক্সাইড (CO<sub>2</sub>)", "ড্রাই পাউডার (ABC)"] },
+    { "key": "EffectiveOn",
+      "en": ["Ordinary Combustibles (Class A)", "Flammable Liquids & Electrical Fires", "Ordinary Combustibles, Flammable Liquids & Electrical Fires"],
+      "bn": ["সাধারণ দাহ্য পদার্থ (ক্লাস A)", "দাহ্য তরল ও বৈদ্যুতিক আগুন", "সাধারণ দাহ্য পদার্থ, দাহ্য তরল ও বৈদ্যুতিক আগুন"] },
+    { "key": "OptionLabels",
+      "en": ["Water extinguisher", "CO<sub>2</sub> extinguisher", "Wet chemical extinguisher", "Foam extinguisher"],
+      "bn": ["ওয়াটার এক্সটিংগুইশার", "CO<sub>2</sub> এক্সটিংগুইশার", "ওয়েট কেমিক্যাল এক্সটিংগুইশার", "ফোম এক্সটিংগুইশার"] },
+    { "key": "OptionFeedback",
+      "en": ["Water conducts electricity and spreads burning flammable liquid — never use it on electrical or Class B fires.", "CO<sub>2</sub> is rated for Class B (flammable liquid) and electrical fires — displaces oxygen, leaves no residue.", "Wet chemical is made for cooking-oil (Class K) fires, not for flammable liquid or electrical fires.", "Foam is not rated for electrical fires — its water content could cause electric shock."],
+      "bn": ["পানি বিদ্যুৎ পরিবহন করে এবং জ্বলন্ত দাহ্য তরলকে ছড়িয়ে দেয় — বৈদ্যুতিক বা ক্লাস B আগুনে কখনো ব্যবহার করবেন না।", "CO<sub>2</sub> ক্লাস B (দাহ্য তরল) ও বৈদ্যুতিক আগুনের জন্য উপযোগী — অক্সিজেন সরিয়ে দেয়, কোনো অবশিষ্ট রাখে না।", "ওয়েট কেমিক্যাল রান্নার তেলের (ক্লাস K) আগুনের জন্য তৈরি, দাহ্য তরল বা বৈদ্যুতিক আগুনের জন্য নয়।", "ফোম বৈদ্যুতিক আগুনের জন্য অনুমোদিত নয় — এতে থাকা পানি বৈদ্যুতিক শক ঘটাতে পারে।"] },
+    { "key": "OptionWrongTitle",
+      "en": ["WRONG CHOICE", "", "WRONG CHOICE", "WRONG CHOICE"],
+      "bn": ["ভুল পছন্দ", "", "ভুল পছন্দ", "ভুল পছন্দ"] }
+  ],
+  "questions": []
+}

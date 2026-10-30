@@ -59,6 +59,13 @@ namespace ChemicalSafety.Presentable
 
         public void Show(Sprite bangla, string english, float seconds = 0f)
         {
+            // English mode: English line only. Bangla mode: the Bangla image only; a line that has no image falls back to the
+            // text (BnTmp shows the Bangla translation of an English line).
+            if (!ChemicalSafety.Localization.Loc.IsBangla)
+                bangla = null;
+            else if (bangla != null)
+                english = string.Empty;
+
             if (_bangla != null)
             {
                 _bangla.sprite = bangla;

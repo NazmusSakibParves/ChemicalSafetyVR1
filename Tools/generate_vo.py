@@ -3,6 +3,7 @@
     python Tools/generate_vo.py                 # writes every clip into Assets/Art/Audio/VO (slow, overwrites)
     python Tools/generate_vo.py --only <clip>   # one or more clips, comma separated, e.g. VO_Sc03Inspect_bn
     python Tools/generate_vo.py --show          # prints the text the voice reads for every clip, writes nothing
+    python Tools/generate_vo.py --en            # English twins into Assets/Resources/VoEn (--show only prints the text)
     python Tools/generate_vo.py --variants DIR  # pronunciation variants of the SC02 instruction line into DIR
     python Tools/generate_vo.py --words DIR     # listening variants of the welcome / success words into DIR
 
@@ -243,6 +244,84 @@ CLIPS = {
     "VO_Sc10Complete_en": (EN_VOICE, complete_en(10)),
 }
 
+# English twins of every Bangla clip (the "Complete" lines already have their own _en clips above and are not repeated).
+# Key = the Bangla clip name without "_bn" = the file name in Assets/Resources/VoEn. Text = the English on-screen text where
+# the code has one (SubtitledVoice string, ScNNContent constants); otherwise a translation of the Bangla line. See Docs/VO_EN_MANIFEST.md.
+OUT_EN = os.path.join(ROOT, "Assets", "Resources", "VoEn")
+
+
+def gate_en(what):
+    return what + " If you are ready for the questions, click the Next button. To review again, click the Back button."
+
+
+CLIPS_EN = {
+    "VO_AssalamuAlaikum": "Assalamu Alaikum. Welcome to the chemical safety training.",
+    "VO_SC01_Instruction": "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).",
+    "VO_Carrier": "Load the correct drum onto the trolley for transfer.",
+    "VO_ContinueHint": "Click the speaker to hear the instructions again, or Continue to go on.",
+    "VO_PickLabel": "Select the correct label for each drum.",
+    "VO_TouchDrum": "Touch the glowing button in front of a drum with your finger.",
+    "VO_WrongLabel": "Wrong label for this drum. Select the correct label again.",
+    "VO_Wrong": "Wrong selection. Try again.",
+    "VO_Correct": "Correct. Excellent! You have selected the correct answer.",
+    "VO_SC02_Instruction": "A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
+    "VO_Sc02PlaceHint": "Place the chemical in the correct compartment for its type.",
+    "VO_SC03_Instruction": "You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do.",
+    "VO_Sc03Touch": "Touch and hold the drum label with your finger to scan it.",
+    "VO_Sc03Inspect": "The drum is organic peroxide. Crystals have formed on the drum and the label has expired.",
+    "VO_Sc03Wrong": "Wrong decision. Crystallized organic peroxide can explode when it is opened or rubbed.",
+    "VO_SC04_Instruction": "You are a lab technician preparing to test a dye sample with concentrated HCl. Check the SDS first. Select the right gloves.",
+    "VO_SC05_Instruction": "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in.",
+    "VO_Sc05Mask0": "This is a simple dust mask, N95. It is incompatible with toluene solvent.",
+    "VO_Sc05Mask1": "This is a half-face respirator with organic vapor cartridge. It is compatible with toluene solvent.",
+    "VO_Sc05Mask2": "This is a surgical mask. It is incompatible with toluene solvent.",
+    "VO_Sc05Mask3": "This is a full-face respirator with particulate-only filter. It is incompatible with toluene solvent.",
+    "VO_SC06_Instruction": "You are a Mixing Operator. You need to pour a volatile solvent, but because the container is open, vapors are spreading into the air. Take the right Engineering Control before pouring.",
+    "VO_Sc06Hood": "Switch on the Fume Hood at the control panel.",
+    "VO_Sc06HoodOn": "The fume hood is running. Go to the table and close the solvent container.",
+    "VO_Sc06Cap": "Touch the cap to close the container.",
+    "VO_Sc06HoodWarn": "Switch on the fume hood first.",
+    "VO_Sc06Jug": "Touch the Volatile Solvent container to pick it up.",
+    "VO_Sc06Sash": "Touch the glass door of the fume hood to open it.",
+    "VO_Sc06Pour": "Touch the glass jar to pour the solvent slowly.",
+    "VO_Sc06Gate": gate_en("Inspection completed."),
+    "VO_SC07_Instruction": "You are a machine operator. A flammable solvent container near the electrical panel has overheated and ignited. The fire is small and contained. Grab the right extinguisher.",
+    "VO_Sc07Ext0": "This is a water extinguisher. It is effective on fires of ordinary combustibles such as wood, paper and cloth. Never use it on electrical fires or flammable liquid fires.",
+    "VO_Sc07Ext1": "This is a carbon dioxide extinguisher. It is effective on flammable liquid and electrical fires.",
+    "VO_Sc07Ext2": "This is an ABC dry powder extinguisher. It is effective on ordinary combustibles, flammable liquid and electrical fires.",
+    "VO_Sc07Gate": gate_en("Extinguisher inspection complete."),
+    "VO_Sc07Hero": "The fire is out. Using the carbon dioxide extinguisher prevented a major accident.",
+    "VO_SC08_Instruction": "You are a lab technician. A batch of dye requires dilute sulfuric acid. Dilute the acid carefully with water.",
+    "VO_Sc08Ppe": "Touch each piece of protective equipment to put it on.",
+    "VO_Sc08PpeDone": "All protective equipment is on. Now switch on the fume hood.",
+    "VO_Sc08Hood": "Switch on the Fume Hood at the control panel.",
+    "VO_Sc08HoodOn": "The fume hood is running. Now touch the tray on the table to pick it up.",
+    "VO_Sc08Sash": "Take the tray to the hood and touch the glass door to open it.",
+    "VO_Sc08HoodWarn": "Switch on the fume hood first.",
+    "VO_Sc08Mix": "Touch the water beaker: add the acid slowly and stir.",
+    "VO_Sc08Gate": gate_en("Dilution practice complete."),
+    "VO_SC09_Instruction": "You are a lab technician. Pour the chemical from the sample flask into the next flask. If something goes wrong, follow the safety procedure at once.",
+    "VO_Sc09Flask": "Touch the purple sample flask to lift it and pour.",
+    "VO_Sc09Spill": "The flask slipped from your hand and broke. A harmful chemical has splashed onto your face and eyes. You must respond immediately.",
+    "VO_Sc09Sds": "Read the Safety Data Sheet. Do not rub your eyes. Go to the eyewash now. Keep your eyelids open and flush for more than fifteen minutes.",
+    "VO_Sc09Walk": "Walk to the safety shower and eyewash.",
+    "VO_Sc09Push": "Touch the push plate to start the water.",
+    "VO_Sc09Flush": "Hold your eyelids open. Roll your eyes and run water from the inner corner to the outer corner. Keep flushing for fifteen minutes.",
+    "VO_Sc09Gate": gate_en("Eyewash and shower practice complete."),
+    "VO_SC10_Instruction": "You are a lab technician. A glass bottle of acid has slipped and shattered on the floor. You are the first person on the scene. The lab supervisor is not in the room. You must respond correctly and safely.",
+    "VO_Sc10Sds": "Read the Safety Data Sheet. It lists the spill response steps.",
+    "VO_Sc10Ppe": "Put on your protective equipment. Touch each item.",
+    "VO_Sc10Vent": "Ventilate the area. Touch the Fume Hood switch.",
+    "VO_Sc10Kit": "Go to the spill kit and touch it to open it.",
+    "VO_Sc10Collect": "Take every item from the spill kit.",
+    "VO_Sc10Contain": "Touch CONTAIN. Lay the absorbent sock around the spill to stop the acid spreading.",
+    "VO_Sc10Neutralize": "Touch NEUTRALIZE. Sprinkle soda ash over the acid to neutralize it.",
+    "VO_Sc10Absorb": "Touch ABSORB. Lay absorbent pads on the spill to soak up the liquid.",
+    "VO_Sc10Clean": "Touch CLEAN-UP GLASS. Sweep the broken glass into the dustpan with the brush.",
+    "VO_Sc10Dispose": "Touch DISPOSE. Put the sock, pads and glass in the hazardous waste bag, then in the bin.",
+    "VO_Sc10Gate": gate_en("Spill response practice complete."),
+}
+
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
 WORD_VARIANTS = {
     "welcome_1_sbagotom": "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে স্বাগোতোম।",
@@ -290,8 +369,20 @@ async def main():
     ap.add_argument("--correct", help="folder for listening variants of the right-answer line")
     ap.add_argument("--words", help="folder for listening variants of the welcome / success words (text used as written)")
     ap.add_argument("--only", help="comma separated clip names to generate (for example VO_Sc03Inspect_bn)")
+    ap.add_argument("--en", action="store_true", help="generate the English twins (CLIPS_EN) into Assets/Resources/VoEn; add --only VO_Sc10Sds for one, --show to only print")
     ap.add_argument("--show", action="store_true", help="print the text the voice reads for every clip, write nothing")
     args = ap.parse_args()
+    if args.en:
+        os.makedirs(OUT_EN, exist_ok=True)
+        wanted = set(args.only.split(",")) if args.only else None
+        for name, text in CLIPS_EN.items():
+            if wanted and name not in wanted:
+                continue
+            if args.show:
+                print(name, "->", text)
+                continue
+            await synth(text, EN_VOICE, os.path.join(OUT_EN, name + ".mp3"), raw=True)
+        return
     if args.show:
         for name, entry in CLIPS.items():
             print(name, "->", spoken(entry[1]), entry[2] if len(entry) > 2 else "")

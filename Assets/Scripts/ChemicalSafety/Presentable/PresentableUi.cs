@@ -101,16 +101,16 @@ namespace ChemicalSafety.Presentable
         public static TextMeshProUGUI Text(RectTransform rt, string text, float size, Color color,
             TextAlignmentOptions align = TextAlignmentOptions.Center, bool bold = false, TMP_FontAsset font = null)
         {
-            var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
+            var tmp = rt.gameObject.AddComponent<ChemicalSafety.Localization.BnTmp>();
             if (font != null)
                 tmp.font = font;
-            tmp.text = text;
             tmp.fontSize = size;
             tmp.color = color;
             tmp.alignment = align;
             tmp.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
             tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.raycastTarget = false;
+            tmp.text = text; // last: BnTmp needs size, alignment and style to place a Bangla image
             return tmp;
         }
 

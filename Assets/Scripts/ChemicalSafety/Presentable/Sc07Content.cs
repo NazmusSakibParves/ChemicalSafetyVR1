@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -6,73 +8,38 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public static class Sc07Content
     {
-        public const string InstructionEnglish =
-            "You are a machine operator. A flammable solvent container near the electrical panel has overheated and ignited. " +
-            "The fire is small and contained. Grab the right extinguisher.";
+        public static string InstructionEnglish => Loc.T("SC07", "InstructionEnglish");
 
-        public const string CardSuffix = "EXTINGUISHER SUMMARY";
-        public const string NameLabel = "EXTINGUISHER NAME:";
-        public const string UseLabel = "EFFECTIVE ON:";
+        public static string CardSuffix => Loc.T("SC07", "CardSuffix");
+        public static string NameLabel => Loc.T("SC07", "NameLabel");
+        public static string UseLabel => Loc.T("SC07", "UseLabel");
 
         // Order = the order on the pillar from the player's left: Water, CO2, ABC dry powder.
-        public static readonly string[] CardTitles =
-        {
-            "WATER EXTINGUISHER SUMMARY",
-            "CO<sub>2</sub> EXTINGUISHER SUMMARY",
-            "ABC DRY POWDER EXTINGUISHER SUMMARY"
-        };
+        public static string[] CardTitles => Loc.A("SC07", "CardTitles");
 
-        public static readonly string[] Names =
-        {
-            "Water (H<sub>2</sub>O)",
-            "Carbon Dioxide (CO<sub>2</sub>)",
-            "Dry Powder (ABC)"
-        };
+        public static string[] Names => Loc.A("SC07", "Names");
 
-        public static readonly string[] EffectiveOn =
-        {
-            "Ordinary Combustibles (Class A)",
-            "Flammable Liquids & Electrical Fires",
-            "Ordinary Combustibles, Flammable Liquids & Electrical Fires"
-        };
+        public static string[] EffectiveOn => Loc.A("SC07", "EffectiveOn");
 
         // Which class badge shows on the card (Water has none: it must never be used on B or C fires).
         public static readonly bool[] ShowBcBadge = { false, true, true };
 
-        public const string GateTitle = "EXTINGUISHER INSPECTION COMPLETE";
-        public const string GateQuestion = "Are you ready for the Multiple Choice Questions (MCQ)?";
-        public const string GateBody = "Press NEXT to proceed or BACK to review again.";
+        public static string GateTitle => Loc.T("SC07", "GateTitle");
+        public static string GateQuestion => Loc.T("SC07", "GateQuestion");
+        public static string GateBody => Loc.T("SC07", "GateBody");
 
-        public const string QuestionHeader = "MCQ: Extinguisher Selection";
-        public const string QuestionPrompt = "Which extinguisher is effective on flammable liquid and electric fire?";
-        public const string CorrectTitle = "RIGHT CHOICE";
-        public const string WrongTitle = "WRONG CHOICE";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC07", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC07", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC07", "CorrectTitle");
+        public static string WrongTitle => Loc.T("SC07", "WrongTitle");
+        public static string FinishLabel => Loc.T("SC07", "FinishLabel");
         public const int CorrectIndex = 1;
-        public const string ModuleComplete = "Scenario 7 completed successfully.";
+        public static string ModuleComplete => Loc.T("SC07", "ModuleComplete");
 
-        public static readonly string[] OptionLabels =
-        {
-            "Water extinguisher",
-            "CO<sub>2</sub> extinguisher",
-            "Wet chemical extinguisher",
-            "Foam extinguisher"
-        };
+        public static string[] OptionLabels => Loc.A("SC07", "OptionLabels");
 
-        public static readonly string[] OptionFeedback =
-        {
-            "Water conducts electricity and spreads burning flammable liquid — never use it on electrical or Class B fires.",
-            "CO<sub>2</sub> is rated for Class B (flammable liquid) and electrical fires — displaces oxygen, leaves no residue.",
-            "Wet chemical is made for cooking-oil (Class K) fires, not for flammable liquid or electrical fires.",
-            "Foam is not rated for electrical fires — its water content could cause electric shock."
-        };
+        public static string[] OptionFeedback => Loc.A("SC07", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            WrongTitle,
-            "",
-            WrongTitle,
-            WrongTitle
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC07", "OptionWrongTitle");
     }
 }

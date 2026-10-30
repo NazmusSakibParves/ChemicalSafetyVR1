@@ -1,0 +1,30 @@
+{
+  "scenario": "SC01",
+  "strings": [
+    { "key": "InstructionEnglish", "en": "<color=#5FD8FF><b>VOICE-OVER:</b></color> Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", "bn": "<color=#5FD8FF><b>ভয়েস-ওভার:</b></color> সরবরাহ করা সেফটি ডাটা শিট (SDS)-এর উপর ভিত্তি করে সঠিক লেবেলযুক্ত ড্রামটি নির্বাচন করুন।" },
+    { "key": "WelcomeSub", "en": "Assalamu Alaikum. Welcome to the chemical safety training.", "bn": "আসসালামু আলাইকুম। রাসায়নিক নিরাপত্তা প্রশিক্ষণে স্বাগতম।" },
+    { "key": "InstructionSub", "en": "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", "bn": "সরবরাহ করা সেফটি ডাটা শিট-এর উপর ভিত্তি করে সঠিক লেবেলযুক্ত ড্রামটি নির্বাচন করুন।" },
+    { "key": "ContinueHint", "en": "Click the speaker to hear the instructions again, or Continue to go on.", "bn": "নির্দেশনা আবার শুনতে স্পিকার আইকনে ক্লিক করুন অথবা এগিয়ে যেতে কন্টিনিউ বাটনে ক্লিক করুন।" },
+    { "key": "PickLabelHint", "en": "Select the correct label for each drum.", "bn": "প্রতিটি ড্রামের জন্য সঠিক লেবেল নির্বাচন করুন।" },
+    { "key": "TouchDrumHint", "en": "Touch the glowing button in front of a drum with your finger.", "bn": "যেকোনো একটি ড্রামের সামনের জ্বলজ্বলে বাটনে আঙুল দিয়ে স্পর্শ করুন।" },
+    { "key": "WrongLabelHint", "en": "Wrong label for this drum. Select the correct label again.", "bn": "আপনি ড্রামটির জন্য ভুল লেবেল বাছাই করেছেন। পুনরায় সঠিক লেবেলটি নির্বাচন করুন।" },
+    { "key": "CarrierHint", "en": "Load the correct drum onto the trolley for transfer.", "bn": "সঠিক ড্রামটি ট্রান্সফারের জন্য ট্রলিতে তুলুন।" },
+    { "key": "QuestionHeader", "en": "PROFESSIONAL CHEMICAL SAFETY TRAINING - MCS Module", "bn": "পেশাদার রাসায়নিক নিরাপত্তা প্রশিক্ষণ - MCS মডিউল" },
+    { "key": "QuestionPrompt", "en": "Question 1: Based on GHS labeling standards, which drum should you select for transfer?", "bn": "প্রশ্ন ১: GHS লেবেলিং মানদণ্ড অনুযায়ী ট্রান্সফারের জন্য কোন ড্রামটি নির্বাচন করা উচিত?" },
+    { "key": "CorrectTitle", "en": "CORRECT SELECTION!", "bn": "সঠিক নির্বাচন!" },
+    { "key": "WrongTitle", "en": "WRONG SELECTION!", "bn": "ভুল নির্বাচন!" },
+    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" }
+  ],
+  "arrays": [
+    { "key": "OptionLabels",
+      "en": ["1. Faded label", "2. No label", "3. Mismatched\nGHS vs SDS", "4. Correctly Labelled"],
+      "bn": ["১. ঝাপসা লেবেল", "২. লেবেল নেই", "৩. অমিল\nGHS বনাম SDS", "৪. সঠিকভাবে লেবেল করা"] },
+    { "key": "OptionWrongLabels",
+      "en": ["1. Faded label (Acetone)", "2. No label (Unknown)", "3. Mismatched (Methanol)"],
+      "bn": ["১. ঝাপসা লেবেল (অ্যাসিটোন)", "২. লেবেল নেই (অজানা)", "৩. অমিল (মিথানল)"] },
+    { "key": "OptionFeedback",
+      "en": ["You cannot verify the contents or specific hazards of a drum with a faded or unreadable label. Never move unidentified chemicals.", "An unlabeled container must be treated as an unknown hazard. Report and quarantine it. Never transfer it.", "The drum label (Methanol) does not match the SDS (Isopropanol). If the label does not match the SDS: DO NOT USE. Isolate and report.", "Well done! You have correctly identified the standard GHS label configuration. The selected drum's GHS pictograms, UN number, and name match the Safety Data Sheet (SDS) requirements precisely, ensuring safe transfer."],
+      "bn": ["ঝাপসা বা অপাঠ্য লেবেলযুক্ত ড্রামের ভেতরের রাসায়নিক বা নির্দিষ্ট ঝুঁকি যাচাই করা যায় না। অশনাক্ত রাসায়নিক কখনো সরাবেন না।", "লেবেলবিহীন পাত্রকে অজানা ঝুঁকি হিসেবে গণ্য করতে হবে। রিপোর্ট করুন ও আলাদা করে রাখুন। কখনো ট্রান্সফার করবেন না।", "ড্রামের লেবেল (মিথানল) SDS-এর (আইসোপ্রোপানল) সাথে মিলছে না। লেবেল SDS-এর সাথে না মিললে ব্যবহার করবেন না। আলাদা করুন ও রিপোর্ট করুন।", "চমৎকার! আপনি সঠিক GHS লেবেল কনফিগারেশন শনাক্ত করেছেন। নির্বাচিত ড্রামের GHS পিক্টোগ্রাম, UN নম্বর ও নাম সেফটি ডাটা শিট (SDS)-এর প্রয়োজনীয়তার সাথে হুবহু মিলেছে, ফলে নিরাপদ ট্রান্সফার নিশ্চিত হয়।"] }
+  ],
+  "questions": []
+}

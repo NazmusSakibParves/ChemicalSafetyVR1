@@ -1,0 +1,37 @@
+{
+  "scenario": "SC08",
+  "strings": [
+    { "key": "InstructionEnglish", "en": "You are a lab technician. A batch of dye requires dilute sulfuric acid. Dilute the acid carefully with water.", "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। একটি ডাই ব্যাচের জন্য পাতলা সালফিউরিক অ্যাসিড দরকার। সঠিক পদ্ধতিতে অ্যাসিডটি সাবধানে পানির সাথে মিশিয়ে পাতলা করুন।" },
+    { "key": "PpeHint", "en": "Touch each piece of protective equipment to put it on.", "bn": "সুরক্ষা সরঞ্জামগুলো একটি একটি করে ছুঁয়ে নিন।" },
+    { "key": "HoodHint", "en": "Switch on the Fume Hood at the control panel.", "bn": "কন্ট্রোল প্যানেলে ফিউম হুডের সুইচটি চালু করুন।" },
+    { "key": "TrayHint", "en": "Touch the tray to pick it up.", "bn": "ট্রে-টি ছুঁয়ে তুলে নিন।" },
+    { "key": "SashHint", "en": "Touch the glass door of the fume hood to open it.", "bn": "ফিউম হুডের কাচের দরজা ছুঁয়ে খুলুন।" },
+    { "key": "HoodWarn", "en": "Switch on the fume hood first.", "bn": "আগে ফিউম হুড চালু করুন।" },
+    { "key": "MixHint", "en": "Touch the water beaker: add the acid slowly and stir.", "bn": "পানির বিকারটি ছুঁয়ে অ্যাসিড ধীরে ধীরে মেশান এবং নাড়ুন।" },
+    { "key": "PanelTitle", "en": "PPE SELECTION PANEL", "bn": "PPE নির্বাচন প্যানেল" },
+    { "key": "GateTitle", "en": "DILUTION PRACTICE COMPLETE.", "bn": "অ্যাসিড পাতলা করার অনুশীলন সম্পন্ন।" },
+    { "key": "GateQuestion", "en": "Are you ready for the Multiple Choice Questions (MCQ)?", "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?" },
+    { "key": "GateBody", "en": "Press NEXT to proceed or BACK to review rules again.", "bn": "এগিয়ে যেতে নেক্সট চাপুন, নিয়মগুলো আবার দেখতে ব্যাক চাপুন।" },
+    { "key": "QuestionHeader", "en": "MCQ: Acid Dilution", "bn": "MCQ: অ্যাসিড পাতলা করা" },
+    { "key": "QuestionPrompt", "en": "What is the right procedure for diluting acid with water?", "bn": "পানি দিয়ে অ্যাসিড পাতলা করার সঠিক পদ্ধতি কোনটি?" },
+    { "key": "CorrectTitle", "en": "RIGHT ACTION", "bn": "সঠিক পদক্ষেপ" },
+    { "key": "CorrectBody", "en": "Slowly adding acid to the water with continuous stirring (the large water volume safely absorbs the heat, preventing dangerous spattering).", "bn": "ক্রমাগত নাড়তে নাড়তে অ্যাসিড ধীরে ধীরে পানিতে মেশানো (বেশি পরিমাণ পানি তাপ নিরাপদে শুষে নেয়, ফলে বিপজ্জনক ছিটকে পড়া রোধ হয়)।" },
+    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" },
+    { "key": "ModuleComplete", "en": "Module complete. Well done!", "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!" }
+  ],
+  "arrays": [
+    { "key": "PpeNames",
+      "en": ["Goggles / Face Shield", "Respirator", "Neoprene Gloves", "Acid-resistant Apron"],
+      "bn": ["গগলস / ফেস শিল্ড", "রেসপিরেটর", "নিওপ্রিন গ্লাভস", "অ্যাসিড-প্রতিরোধী অ্যাপ্রন"] },
+    { "key": "OptionLabels",
+      "en": ["Pour water into the acid", "Slowly add acid to the water with continuous stirring", "Pour both simultaneously into a third beaker", "Mix quickly to reduce exposure time"],
+      "bn": ["অ্যাসিডে পানি ঢালুন", "ক্রমাগত নাড়তে নাড়তে অ্যাসিড ধীরে ধীরে পানিতে মেশান", "দুটোই একসাথে তৃতীয় একটি বিকারে ঢালুন", "এক্সপোজারের সময় কমাতে দ্রুত মেশান"] },
+    { "key": "OptionFeedback",
+      "en": ["Water added to concentrated acid causes explosive boiling and spattering.", "Slowly adding acid to the water with continuous stirring (the large water volume safely absorbs the heat, preventing dangerous spattering).", "Mixing both at once gives no control over the heat; the solution can boil and splash.", "Rushing the mix releases heat too fast and spatters acid. Add the acid slowly."],
+      "bn": ["ঘন অ্যাসিডে পানি ঢাললে বিস্ফোরকভাবে ফুটে ওঠে ও ছিটকে পড়ে।", "ক্রমাগত নাড়তে নাড়তে অ্যাসিড ধীরে ধীরে পানিতে মেশানো (বেশি পরিমাণ পানি তাপ নিরাপদে শুষে নেয়, ফলে বিপজ্জনক ছিটকে পড়া রোধ হয়)।", "দুটো একসাথে মেশালে তাপের উপর নিয়ন্ত্রণ থাকে না; দ্রবণ ফুটে উঠে ছিটকে পড়তে পারে।", "তাড়াহুড়ো করে মেশালে তাপ খুব দ্রুত বের হয় এবং অ্যাসিড ছিটকে পড়ে। অ্যাসিড ধীরে ধীরে মেশান।"] },
+    { "key": "OptionWrongTitle",
+      "en": ["WRONG ACTION", "", "WRONG ACTION", "WRONG ACTION"],
+      "bn": ["ভুল পদক্ষেপ", "", "ভুল পদক্ষেপ", "ভুল পদক্ষেপ"] }
+  ],
+  "questions": []
+}

@@ -1,4 +1,9 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using ChemicalSafety.Localization;
+using ChemicalSafety.Results;
 using UnityEngine;
 using UnityEngine.XR;
 
@@ -52,6 +57,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private ContainerPlacement placement;
         [SerializeField] private PresentableMcqPanel mcqSc02;
         [SerializeField] private GameObject envSc01;
+        [SerializeField] private LoginScreen loginScreen;
         [SerializeField] private GameObject envSc02;
         [SerializeField] private CompartmentDoor[] doors = new CompartmentDoor[4];
         [SerializeField] private ChartViewer chart;
@@ -250,6 +256,16 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 #endif
+            if (loginScreen != null)
+            {
+                Stage("login");
+                if (clipboard != null)
+                    clipboard.SetSuspended(true); // the SDS sheet is not part of the login view
+                yield return loginScreen.Run(_cam, rig != null ? rig.position.y : 0f, fader);
+                if (clipboard != null)
+                    clipboard.SetSuspended(false);
+            }
+
             foreach (var d in drums)
                 d?.SetCalloutVisible(false, 0.01f);
 
@@ -265,7 +281,7 @@ namespace ChemicalSafety.Presentable
             BeginEyeInstruction();
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
-            yield return SubtitledVoice(art.bnWelcomeSub, "Assalamu Alaikum. Welcome to the chemical safety training.",
+            yield return SubtitledVoice(art.bnWelcomeSub, Sc01Content.WelcomeSub,
                 Sc01(art.voSalam, art.trialSalam));
             instructionPanel.SetSpeaking(false);
 
@@ -277,7 +293,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContinueCentered(true);
             instructionPanel.SetSpeaking(true);
             yield return SubtitledVoice(art.bnInstructionSub,
-                "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).", _instructionClip);
+                Sc01Content.InstructionSub, _instructionClip);
             instructionPanel.SetSpeaking(false);
 
             // 2b. Voice-over finished: Continue appears (+ hint VO). Speaker replays the instruction any time.
@@ -287,7 +303,7 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.ShowContinue();
             instructionPanel.SetSpeaking(true);
             StartCoroutine(SubtitledVoice(art.bnContinueHint,
-                "Click the speaker to hear the instructions again, or Continue to go on.",
+                Sc01Content.ContinueHint,
                 Sc01(art.voContinueHint, art.trialContinueHint)));
             while (!_continuePressed)
                 yield return null;
@@ -357,10 +373,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc02Intro");
             _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
-            instructionPanel.SetContent(
-                "<color=#5FD8FF><b>VOICE-OVER:</b></color> A delivery of six chemicals has arrived. " +
-                "The supervisor asks you to place each container into the correct compartment.",
-                art.bnSc02InstructionPanel);
+            instructionPanel.SetContent(Sc02Content.InstructionEnglish, art.bnSc02InstructionPanel);
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -1589,10 +1602,10 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PickLabelVoices()
         {
-            yield return SubtitledVoice(art.bnPickLabel, "Select the correct label for each drum.",
+            yield return SubtitledVoice(art.bnPickLabel, Sc01Content.PickLabelHint,
                 Sc01(art.voPickLabel, art.trialPickLabel));
             yield return PresentableFx.Wait(0.3f);
-            yield return SubtitledVoice(art.bnTouchDrum, "Touch the glowing button in front of a drum with your finger.",
+            yield return SubtitledVoice(art.bnTouchDrum, Sc01Content.TouchDrumHint,
                 art.voTouchDrum);
             _introVoice = null;
         }
@@ -1683,7 +1696,7 @@ namespace ChemicalSafety.Presentable
                     StopVoice();
                     yield return PresentableFx.Wait(0.35f);
                     StartCoroutine(SubtitledVoice(art.bnWrongLabel,
-                        "Wrong label for this drum. Select the correct label again.",
+                        Sc01Content.WrongLabelHint,
                         Sc01(art.voWrongLabel, art.trialWrongLabel)));
                 }
 
@@ -1717,7 +1730,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.5f, t => trolley.transform.localScale =
                 baseScale * Mathf.LerpUnclamped(0.5f, 1f, t), PresentableFx.EaseOutBack);
 
-            StartCoroutine(SubtitledVoice(art.bnCarrier, "Load the correct drum onto the trolley for transfer.",
+            StartCoroutine(SubtitledVoice(art.bnCarrier, Sc01Content.CarrierHint,
                 Sc01(art.voCarrier, art.trialCarrier)));
             yield return Glide(trolleyStand.position, 1.2f);
             // the carrier is to the right of the rack; turn to face it behind a short fade (no smooth turn)
@@ -1788,7 +1801,7 @@ namespace ChemicalSafety.Presentable
         // The Stand Here markers are walked onto; if the user does not get there the rig glides (comfort fallback).
         private IEnumerator RunPlacement()
         {
-            subtitle.Show(null, "Touch a chemical container, then place it in the matching compartment.", 7f);
+            subtitle.Show(null, Sc02Content.PlaceHint, 7f);
             SetRoomInteractable(true);
             inspect.SetCardAllowed(true);
             chart.SetDistance(0.58f);
@@ -1801,7 +1814,7 @@ namespace ChemicalSafety.Presentable
                     yield return null;
                 hotspotSc02Pick.Hide();
                 // voice-over: put the chemical in the compartment that suits its type
-                StartCoroutine(SubtitledVoice(null, "Place the chemical in the correct compartment for its type.",
+                StartCoroutine(SubtitledVoice(null, Sc02Content.PlaceHint2,
                     art.voSc02PlaceHint));
                 yield return WalkToShelf();
                 if (placement != null)
@@ -1875,19 +1888,53 @@ namespace ChemicalSafety.Presentable
             hotspot.Activated -= OnHit;
         }
 
+        private static readonly Regex LetterPrefix = new Regex(@"^[A-D](\s+)", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Anti-cheating: the options of every question appear in a different order for every session (same texts, the correct
+        /// one is not always in the same slot). Everything that belongs to an option (feedback, wrong-card label, icons) moves with
+        /// it. Returns, for each displayed slot, the index the option had in the unshuffled question. The user never sees A / B / C / D
+        /// (the letters exist only in the results file); numbered drum labels ("1. ...") keep their number because it names the drum.
+        /// </summary>
+        private static int[] ShuffleOptions(PresentableMcqPanel.Question q, string questionId)
+        {
+            var n = q.options.Length;
+            var order = OptionShuffle.Order(n, SessionResults.ShuffleSeed, questionId, true);
+            var shuffled = new PresentableMcqPanel.Option[n];
+            for (var i = 0; i < n; i++)
+                shuffled[i] = q.options[order[i]];
+            q.correctIndex = Array.IndexOf(order, q.correctIndex);
+            q.options = shuffled;
+            return order;
+        }
+
+        private static string OptionText(string label) => LetterPrefix.Replace(label ?? string.Empty, string.Empty).Trim();
+
         private IEnumerator RunQuestion(PresentableMcqPanel panel, PresentableMcqPanel.Question q, bool useDrums,
             int scenario = 1)
         {
             _nextPressed = false;
 
+            var lessonId = "SC" + scenario.ToString("00");
+            var questionId = lessonId + ".Q1";
+            var order = ShuffleOptions(q, questionId);
+            q.sourceOrder = order;
+            SessionResults.BeginScenario(lessonId, Loc.Suffix());
+            var shown = new List<OptionPair>();
+            for (var i = 0; i < q.options.Length; i++)
+                shown.Add(new OptionPair { key = ((char)('A' + i)).ToString(), text = OptionText(q.options[i].label), optionId = order[i].ToString() });
+            SessionResults.OpenQuestion(questionId, q.prompt, shown, ((char)('A' + q.correctIndex)).ToString());
+
             void OnAnswered(int index, bool correct)
             {
+                SessionResults.RecordTry(((char)('A' + index)).ToString(), correct);
                 if (useDrums)
                 {
+                    var drum = order[index]; // the drum the option stands for, not the slot it is shown in
                     foreach (var d in drums)
                         d?.ClearHighlight();
-                    if (index < drums.Length && drums[index] != null)
-                        drums[index].Highlight(correct ? PresentableUi.Green : PresentableUi.Red, true);
+                    if (drum < drums.Length && drums[drum] != null)
+                        drums[drum].Highlight(correct ? PresentableUi.Green : PresentableUi.Red, true);
                 }
 
                 StopVoice();
@@ -1936,6 +1983,7 @@ namespace ChemicalSafety.Presentable
                     d?.ClearHighlight();
             }
 
+            SessionResults.EndScenario();
             panel.Hide();
             yield return PresentableFx.Wait(0.35f);
         }
@@ -1960,30 +2008,26 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(1f);
             if (scenario == 10)
             {
-                yield return PlayVoice(art.voSc10CompleteBn);
-                yield return PlayVoice(art.voSc10CompleteEn);
+                yield return PlayVoice(Loc.IsBangla ? art.voSc10CompleteBn : art.voSc10CompleteEn);
                 yield break;
             }
 
             if (scenario == 9)
             {
-                yield return PlayVoice(art.voSc09CompleteBn);
-                yield return PlayVoice(art.voSc09CompleteEn);
+                yield return PlayVoice(Loc.IsBangla ? art.voSc09CompleteBn : art.voSc09CompleteEn);
                 yield break;
             }
 
             if (scenario == 8)
             {
-                yield return PlayVoice(art.voSc08CompleteBn);
-                yield return PlayVoice(art.voSc08CompleteEn);
+                yield return PlayVoice(Loc.IsBangla ? art.voSc08CompleteBn : art.voSc08CompleteEn);
                 yield break;
             }
 
             if (scenario == 7)
             {
                 // the fire is already out (the card opened after it); the completion lines follow
-                yield return PlayVoice(art.voSc07CompleteBn);
-                yield return PlayVoice(art.voSc07CompleteEn);
+                yield return PlayVoice(Loc.IsBangla ? art.voSc07CompleteBn : art.voSc07CompleteEn);
                 yield break;
             }
 
@@ -2020,8 +2064,7 @@ namespace ChemicalSafety.Presentable
                 doneEn = art.voSc01CompleteEn;
             }
 
-            yield return PlayVoice(doneBn);
-            yield return PlayVoice(doneEn);
+            yield return PlayVoice(Loc.IsBangla ? doneBn : doneEn);
         }
 
         private void SetRoomInteractable(bool value)
@@ -2075,8 +2118,35 @@ namespace ChemicalSafety.Presentable
             return original;
         }
 
+        private static readonly Dictionary<string, AudioClip> EnglishClips = new Dictionary<string, AudioClip>();
+
+        /// <summary>English mode plays the English twin (Resources/VoEn/&lt;name&gt;) of every Bangla clip; Bangla mode plays the clip as is.</summary>
+        private static AudioClip LocalizedClip(AudioClip clip)
+        {
+            if (clip == null || Loc.IsBangla)
+                return clip;
+            var n = clip.name;
+            if (n.EndsWith("_en"))
+                return clip;
+            var baseName = n.EndsWith("_bn") ? n.Substring(0, n.Length - 3) : n;
+            if (!EnglishClips.TryGetValue(baseName, out var en) || en == null)
+            {
+                en = Resources.Load<AudioClip>("VoEn/" + baseName);
+                EnglishClips[baseName] = en;
+            }
+
+            if (en == null)
+            {
+                Debug.LogError("[Voice] No English clip for " + n + " (Resources/VoEn/" + baseName + ")");
+                return clip;
+            }
+
+            return en;
+        }
+
         private IEnumerator PlayVoice(AudioClip clip)
         {
+            clip = LocalizedClip(clip);
             if (clip == null || voice == null)
             {
                 yield return PresentableFx.Wait(2.5f);
@@ -2173,47 +2243,48 @@ namespace ChemicalSafety.Presentable
 
         private PresentableMcqPanel.Question BuildSc01Question()
         {
+            var label = Sc01Content.OptionLabels;
+            var wrong = Sc01Content.OptionWrongLabels;
+            var feedback = Sc01Content.OptionFeedback;
             return new PresentableMcqPanel.Question
             {
-                header = "PROFESSIONAL CHEMICAL SAFETY TRAINING - MCS Module",
-                prompt = "Question 1: Based on GHS labeling standards, which drum should you select for transfer?",
-                correctIndex = 3,
+                header = Sc01Content.QuestionHeader,
+                prompt = Sc01Content.QuestionPrompt,
+                correctTitle = Sc01Content.CorrectTitle,
+                wrongTitle = Sc01Content.WrongTitle,
+                nextLabel = Sc01Content.FinishLabel,
+                correctIndex = Sc01Content.CorrectIndex,
                 options = new[]
                 {
                     new PresentableMcqPanel.Option
                     {
-                        label = "1. Faded label",
-                        wrongLabel = "1. Faded label (Acetone)",
+                        label = label[0],
+                        wrongLabel = wrong[0],
                         icons = new[] { art.thumbNoLabel },
                         overlays = new[] { art.labelFaded },
-                        feedback = "You cannot verify the contents or specific hazards of a drum with a faded or " +
-                                   "unreadable label. Never move unidentified chemicals."
+                        feedback = feedback[0]
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "2. No label",
-                        wrongLabel = "2. No label (Unknown)",
+                        label = label[1],
+                        wrongLabel = wrong[1],
                         icons = new[] { art.thumbNoLabel },
-                        feedback = "An unlabeled container must be treated as an unknown hazard. Report and " +
-                                   "quarantine it. Never transfer it."
+                        feedback = feedback[1]
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "3. Mismatched\nGHS vs SDS",
-                        wrongLabel = "3. Mismatched (Methanol)",
+                        label = label[2],
+                        wrongLabel = wrong[2],
                         icons = new[] { art.iconGhs, art.iconSds, art.thumbNoLabel },
                         overlays = new Sprite[] { null, null, art.labelMethanol },
-                        feedback = "The drum label (Methanol) does not match the SDS (Isopropanol). If the label " +
-                                   "does not match the SDS: DO NOT USE. Isolate and report."
+                        feedback = feedback[2]
                     },
                     new PresentableMcqPanel.Option
                     {
-                        label = "4. Correctly Labelled",
+                        label = label[3],
                         icons = new[] { art.thumbNoLabel },
                         overlays = new[] { art.labelIsopropanol },
-                        feedback = "Well done! You have correctly identified the standard GHS label configuration. " +
-                                   "The selected drum's GHS pictograms, UN number, and name match the Safety Data " +
-                                   "Sheet (SDS) requirements precisely, ensuring safe transfer."
+                        feedback = feedback[3]
                     }
                 }
             };
@@ -2624,36 +2695,21 @@ namespace ChemicalSafety.Presentable
 
         private static PresentableMcqPanel.Question BuildSc02Question()
         {
+            var label = Sc02Content.OptionLabels;
+            var feedback = Sc02Content.OptionFeedback;
             return new PresentableMcqPanel.Question
             {
-                header = "STORAGE DECISION CHALLENGE",
-                prompt = "Question 2.1: Flammable Solvent Placement. Where does it go?",
-                correctIndex = 1,
-                nextLabel = "NEXT",
-                correctTitle = "CORRECT PLACEMENT!",
+                header = Sc02Content.QuestionHeader,
+                prompt = Sc02Content.QuestionPrompt,
+                correctIndex = Sc02Content.CorrectIndex,
+                nextLabel = Sc02Content.FinishLabel,
+                correctTitle = Sc02Content.CorrectTitle,
                 options = new[]
                 {
-                    new PresentableMcqPanel.Option
-                    {
-                        label = "A  With the oxidizers",
-                        feedback = "Flammable + oxidizer = fire / explosion risk. Never store them together."
-                    },
-                    new PresentableMcqPanel.Option
-                    {
-                        label = "B  Flammable compartment, away from oxidizers and acids",
-                        feedback = "Best practice. Flammables stay in the fire-rated cabinet, segregated from " +
-                                   "oxidizers and acids. This matches the compatibility chart."
-                    },
-                    new PresentableMcqPanel.Option
-                    {
-                        label = "C  General chemical cabinet",
-                        feedback = "General storage is not rated for a hazardous flammable solvent."
-                    },
-                    new PresentableMcqPanel.Option
-                    {
-                        label = "D  Near the water station",
-                        feedback = "Easy to reach, but a water station is the wrong place for a flammable solvent."
-                    }
+                    new PresentableMcqPanel.Option { label = label[0], feedback = feedback[0] },
+                    new PresentableMcqPanel.Option { label = label[1], feedback = feedback[1] },
+                    new PresentableMcqPanel.Option { label = label[2], feedback = feedback[2] },
+                    new PresentableMcqPanel.Option { label = label[3], feedback = feedback[3] }
                 }
             };
         }

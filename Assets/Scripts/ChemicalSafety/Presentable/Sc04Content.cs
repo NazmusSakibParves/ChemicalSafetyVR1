@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -6,52 +8,29 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public static class Sc04Content
     {
-        public const string InstructionEnglish =
-            "You are a lab technician preparing to test a dye sample with concentrated HCl. " +
-            "Check the SDS first. Select the right gloves.";
+        public static string InstructionEnglish => Loc.T("SC04", "InstructionEnglish");
 
-        public const string QuestionHeader = "SAFETY GLOVE QUIZ";
-        public const string QuestionPrompt =
-            "You are about to handle concentrated Hydrochloric Acid (HCl). Select the correct glove type based on safety guidelines.";
-        public const string CorrectTitle = "RIGHT SELECTION!";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC04", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC04", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC04", "CorrectTitle");
+        public static string FinishLabel => Loc.T("SC04", "FinishLabel");
         public const int CorrectIndex = 2;
-        public const string ModuleComplete = "Scenario 4 completed successfully.";
-        public const string GateTitle = "GLOVE INSPECTION COMPLETE";
-        public const string GateQuestion = "Are you ready for the Multiple Choice Questions (MCQ)?";
-        public const string GateBody = "Press NEXT to proceed or BACK to review again.";
+        public static string ModuleComplete => Loc.T("SC04", "ModuleComplete");
+        public static string GateTitle => Loc.T("SC04", "GateTitle");
+        public static string GateQuestion => Loc.T("SC04", "GateQuestion");
+        public static string GateBody => Loc.T("SC04", "GateBody");
 
-        public static readonly string[] Materials =
-        {
-            "White cotton",
-            "Blue thin nitrile",
-            "Black thick Neoprene"
-        };
+        public static string[] Materials => Loc.A("SC04", "Materials");
 
-        public static readonly string[] Ratings = { "None", "Poor", "Excellent" };
-        public static readonly string[] Times = { "Immediate", "<30 minute", ">480 minute" };
+        public static string[] Ratings => Loc.A("SC04", "Ratings");
+        public static string[] Times => Loc.A("SC04", "Times");
 
-        public static readonly string[] RowLabels = { "MATERIAL", "RATING", "PERMEATION TIME" };
+        public static string[] RowLabels => Loc.A("SC04", "RowLabels");
 
-        public static readonly string[] OptionLabels =
-        {
-            "A   Standard cotton work gloves\n<size=70%>Poor chemical barrier and permeates instantly</size>",
-            "B   Thin nitrile disposable gloves\n<size=70%>Thin nitrile disposable rubber gloves</size>",
-            "C   Thick Neoprene/Butyl rubber gloves"
-        };
+        public static string[] OptionLabels => Loc.A("SC04", "OptionLabels");
 
-        public static readonly string[] OptionFeedback =
-        {
-            "You selected cotton work gloves. Cotton has no chemical barrier. Acid soaks through immediately.",
-            "Thin nitrile is a poor barrier to concentrated HCl. It is not the glove this SDS specifies.",
-            "Thick Neoprene/Butyl gloves are impermeable to concentrated HCl. Prevents rapid permeation and degradation. Matches highest mineral acid resistance ratings."
-        };
+        public static string[] OptionFeedback => Loc.A("SC04", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            "WRONG SELECTION!",
-            "WRONG SELECTION!",
-            ""
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC04", "OptionWrongTitle");
     }
 }

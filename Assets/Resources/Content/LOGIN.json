@@ -1,0 +1,28 @@
+{
+  "scenario": "LOGIN",
+  "strings": [
+    { "key": "title",            "en": "CHEMICAL SAFETY",                     "bn": "রাসায়নিক নিরাপত্তা" },
+    { "key": "subtitle",         "en": "TRAINING SIMULATION",                 "bn": "প্রশিক্ষণ সিমুলেশন" },
+    { "key": "welcome",          "en": "WELCOME",                             "bn": "স্বাগতম" },
+    { "key": "name_label",       "en": "NAME",                                "bn": "নাম" },
+    { "key": "name_hint",        "en": "Enter your full name",                "bn": "আপনার পূর্ণ নাম লিখুন" },
+    { "key": "contact_label",    "en": "EMAIL OR PHONE NUMBER",               "bn": "ইমেইল অথবা ফোন নম্বর" },
+    { "key": "contact_hint",     "en": "Enter email or phone",                "bn": "ইমেইল বা ফোন নম্বর লিখুন" },
+    { "key": "start",            "en": "START",                               "bn": "শুরু করুন" },
+    { "key": "developed_by",     "en": "DEVELOPED BY",                        "bn": "তৈরি করেছে" },
+    { "key": "lang_bn",          "en": "BENGALI",                             "bn": "বাংলা" },
+    { "key": "lang_en",          "en": "ENGLISH",                             "bn": "ইংরেজি" },
+    { "key": "err_name_empty",   "en": "Please enter your name.",             "bn": "অনুগ্রহ করে আপনার নাম লিখুন।" },
+    { "key": "err_name_short",   "en": "The name is too short.",              "bn": "নামটি খুব ছোট।" },
+    { "key": "err_name_digit",   "en": "Numbers are not allowed in the name.", "bn": "নামে সংখ্যা ব্যবহার করা যাবে না।" },
+    { "key": "err_name_char",    "en": "The name has a character that is not allowed.", "bn": "নামে অনুমোদিত নয় এমন চিহ্ন আছে।" },
+    { "key": "err_contact_empty","en": "Please enter your email or phone number.", "bn": "অনুগ্রহ করে ইমেইল বা ফোন নম্বর লিখুন।" },
+    { "key": "err_email",        "en": "Enter a valid email, like name@example.com.", "bn": "সঠিক ইমেইল দিন, যেমন name@example.com।" },
+    { "key": "err_phone_short",  "en": "The number has fewer than 11 digits (without +88).", "bn": "নম্বরে ১১ ডিজিটের কম আছে (+৮৮ ছাড়া)।" },
+    { "key": "err_phone_long",   "en": "The number has more than 11 digits (without +88).", "bn": "নম্বরে ১১ ডিজিটের বেশি আছে (+৮৮ ছাড়া)।" },
+    { "key": "err_phone",        "en": "Enter a valid Bangladeshi mobile number, like 01712345678.", "bn": "সঠিক বাংলাদেশি মোবাইল নম্বর দিন, যেমন ০১৭১২৩৪৫৬৭৮।" },
+    { "key": "kb_done",          "en": "DONE",                                "bn": "সম্পন্ন" },
+    { "key": "kb_digits_off",    "en": "Numbers are not used in names",       "bn": "নামে সংখ্যা ব্যবহার হয় না" }
+  ],
+  "questions": []
+}

@@ -1,0 +1,144 @@
+{
+ "scenario": "SC04",
+ "strings": [
+  {
+   "key": "InstructionEnglish",
+   "en": "You are a lab technician preparing to test a dye sample with concentrated HCl. Check the SDS first. Select the right gloves.",
+   "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড দিয়ে একটি ডাই নমুনা পরীক্ষার প্রস্তুতি নিচ্ছেন। আগে সেফটি ডাটা শিট দেখুন। সঠিক গ্লাভস বেছে নিন।"
+  },
+  {
+   "key": "QuestionHeader",
+   "en": "SAFETY GLOVE QUIZ",
+   "bn": "সেফটি গ্লাভস কুইজ"
+  },
+  {
+   "key": "QuestionPrompt",
+   "en": "You are about to handle concentrated Hydrochloric Acid (HCl). Select the correct glove type based on safety guidelines.",
+   "bn": "আপনি ঘন হাইড্রোক্লোরিক অ্যাসিড (HCl) নিয়ে কাজ করতে যাচ্ছেন। নিরাপত্তা নির্দেশিকা অনুযায়ী সঠিক ধরনের গ্লাভস বেছে নিন।"
+  },
+  {
+   "key": "CorrectTitle",
+   "en": "RIGHT SELECTION!",
+   "bn": "সঠিক নির্বাচন!"
+  },
+  {
+   "key": "FinishLabel",
+   "en": "NEXT",
+   "bn": "নেক্সট"
+  },
+  {
+   "key": "ModuleComplete",
+   "en": "Scenario 4 completed successfully.",
+   "bn": "সিনারিও ৪ সফলভাবে সম্পন্ন হয়েছে।"
+  },
+  {
+   "key": "GateTitle",
+   "en": "GLOVE INSPECTION COMPLETE",
+   "bn": "গ্লাভস পরিদর্শন সম্পন্ন"
+  },
+  {
+   "key": "GateQuestion",
+   "en": "Are you ready for the Multiple Choice Questions (MCQ)?",
+   "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+  },
+  {
+   "key": "GateBody",
+   "en": "Press NEXT to proceed or BACK to review again.",
+   "bn": "এগিয়ে যেতে নেক্সট চাপুন, আবার দেখতে ব্যাক চাপুন।"
+  }
+ ],
+ "arrays": [
+  {
+   "key": "Materials",
+   "en": [
+    "White cotton",
+    "Blue thin nitrile",
+    "Black thick Neoprene"
+   ],
+   "bn": [
+    "সাদা সুতি",
+    "নীল পাতলা নাইট্রাইল",
+    "কালো মোটা নিওপ্রিন"
+   ]
+  },
+  {
+   "key": "Ratings",
+   "en": [
+    "None",
+    "Poor",
+    "Excellent"
+   ],
+   "bn": [
+    "নেই",
+    "দুর্বল",
+    "চমৎকার"
+   ]
+  },
+  {
+   "key": "Times",
+   "en": [
+    "Immediate",
+    "<30 minute",
+    ">480 minute"
+   ],
+   "bn": [
+    "তাৎক্ষণিক",
+    "<৩০ মিনিট",
+    ">৪৮০ মিনিট"
+   ]
+  },
+  {
+   "key": "RowLabels",
+   "en": [
+    "MATERIAL",
+    "RATING",
+    "PERMEATION TIME"
+   ],
+   "bn": [
+    "উপাদান",
+    "রেটিং",
+    "ভেদনের সময়"
+   ]
+  },
+  {
+   "key": "OptionLabels",
+   "en": [
+    "Standard cotton work gloves\n<size=70%>Poor chemical barrier and permeates instantly</size>",
+    "Thin nitrile disposable gloves\n<size=70%>Thin nitrile disposable rubber gloves</size>",
+    "Thick Neoprene/Butyl rubber gloves"
+   ],
+   "bn": [
+    "সাধারণ সুতির কাজের গ্লাভস\n<size=70%>রাসায়নিক প্রতিরোধ দুর্বল, মুহূর্তেই ভেদ করে</size>",
+    "পাতলা নাইট্রাইল ডিসপোজেবল গ্লাভস\n<size=70%>পাতলা নাইট্রাইল ডিসপোজেবল রাবারের গ্লাভস</size>",
+    "মোটা নিওপ্রিন/বিউটাইল রাবারের গ্লাভস"
+   ]
+  },
+  {
+   "key": "OptionFeedback",
+   "en": [
+    "You selected cotton work gloves. Cotton has no chemical barrier. Acid soaks through immediately.",
+    "Thin nitrile is a poor barrier to concentrated HCl. It is not the glove this SDS specifies.",
+    "Thick Neoprene/Butyl gloves are impermeable to concentrated HCl. Prevents rapid permeation and degradation. Matches highest mineral acid resistance ratings."
+   ],
+   "bn": [
+    "আপনি সুতির কাজের গ্লাভস বেছেছেন। সুতিতে কোনো রাসায়নিক প্রতিরোধ নেই। অ্যাসিড সাথে সাথে ভিজিয়ে ভেতরে চলে যায়।",
+    "ঘন HCl-এর বিরুদ্ধে পাতলা নাইট্রাইল দুর্বল প্রতিরোধক। এই SDS-এ এই গ্লাভস নির্দিষ্ট করা নেই।",
+    "মোটা নিওপ্রিন/বিউটাইল গ্লাভস ঘন HCl-এর জন্য অভেদ্য। দ্রুত ভেদন ও ক্ষয় রোধ করে। খনিজ অ্যাসিড প্রতিরোধের সর্বোচ্চ রেটিংয়ের সাথে মেলে।"
+   ]
+  },
+  {
+   "key": "OptionWrongTitle",
+   "en": [
+    "WRONG SELECTION!",
+    "WRONG SELECTION!",
+    ""
+   ],
+   "bn": [
+    "ভুল নির্বাচন!",
+    "ভুল নির্বাচন!",
+    ""
+   ]
+  }
+ ],
+ "questions": []
+}

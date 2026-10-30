@@ -26,18 +26,17 @@ You are the **Unity VR assistant** for this project. Act as a hands-on Unity/XR 
 ## Progress snapshot
 
 - MCP + XR (XRI 3.6.1, Management 4.7.0, OpenXR 1.18.0); ProBuilder installed
-- `ChemicalSafety_Demo`: XR Origin, teleport, warehouse shell, user murals, SC01/SC02
-- Flow: **10s intro** (greeting **আসসালামু আলাইকুম**) → MCQ → **Next** → next intro → MCQ
-- Desk: Play → **E** (SC01, answer D) → **Next** or **2** (SC02, answer B)
-- Quest: authoring PC Link may be incompatible → prefer **Android APK**; package `com.chemicalsafety.vrtraining`
-- Content: SC01 + SC02 from GIZ; SC03–22 not built; AI 3D/TTS pending API keys
+- Work only on the Presentable scene. Learning scene `ChemicalSafety_Demo` stays as it is.
+- Presentable flow is SC01 → SC02 → SC03 → SC04 (gloves for concentrated HCl). Scenario 5 is not built.
+- Branch `Implement-Scenario3-Scenario4-Scenario5-and-fix-UI-feedback`. Last commit `3372c17` is not pushed. The 2026-10-23 SC04 lab work after that commit is uncommitted. Read `Docs/PROJECT_HANDOFF.md` §14.11 before changing the lab.
+- Quest: prefer **Android APK**; package `com.chemicalsafety.vrtraining`. Current Presentable APK is `Builds/Android/ChemicalSafetyVR_Presentable.apk` (171.5 MB, 2026-10-23 22:37).
 
 ### Two scenes (keep both; never merge)
 
 - **Learning:** `ChemicalSafety_Demo` → menu `Chemical Safety/Build Quest APK (Learning)` → `Builds/Android/ChemicalSafetyVR.apk`
-- **Presentable (client demo):** `ChemicalSafety_Presentable` → menu `Chemical Safety/Build Quest APK (Presentable)` → `Builds/Android/ChemicalSafetyVR_Presentable.apk`. File on disk is the 2026-10-19 build (136 MB) and includes the SC02 room and container inspect
-- Presentable scene is **generated** by `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs`) — change the builder, then re-run; don't hand-edit the scene
-- Presentable flow and the latest state (SC02 room, container inspect done): read `Docs/PROJECT_HANDOFF.md` §14 (updated 2026-10-18). Do not follow the older “hotspot → MCQ 1 → SC02 hotspot → MCQ 2” line
+- **Presentable (client demo):** `ChemicalSafety_Presentable` → menu `Chemical Safety/Build Quest APK (Presentable)` → `Builds/Android/ChemicalSafetyVR_Presentable.apk`
+- Presentable scene is **generated** by `Chemical Safety/Presentable/Build Presentable Scene` (`Editor/PresentableSceneBuilder.cs` plus `PresentableSceneBuilder.Sc04.cs`) — change the builder, then re-run; don't hand-edit the scene
+- Latest state is `Docs/PROJECT_HANDOFF.md` §14.11 (2026-10-23). Older §14 subsections are history. Do not follow the older “hotspot → MCQ 1 → SC02 hotspot → MCQ 2” line.
 - Presentable controls: Quest A/B zoom, left X SDS clipboard, finger poke (no ray); desk W/S zoom, C clipboard, E/Space hotspot
 - Git tag `learning-demo-baseline` = state before Presentable work
 
@@ -47,6 +46,7 @@ You are the **Unity VR assistant** for this project. Act as a hands-on Unity/XR 
 - Play-mode logs: read `Logs/Editor.log` (MCP `read_console` misses them)
 - MCP `execute_code` needs `action:"execute"`, `compiler:"codedom"` (C# 6)
 - APK build blocks Unity ~20–30 min first time (shader variants); MCP disconnects meanwhile — poll for the APK file
+- A magenta Game view means the Mobile quality level lost its Universal RP asset. It must stay `Assets/Settings/Mobile_RPAsset.asset`. Do not commit `ProjectSettings/` or `Assets/Settings/`.
 - Open issue: learning scene shows static white speckle noise in Game View under the Android/Mobile URP asset — not yet investigated
 
 ## Handoff memory (travels with the repo)

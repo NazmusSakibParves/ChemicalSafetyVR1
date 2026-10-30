@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -6,65 +8,39 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public static class Sc08Content
     {
-        public const string InstructionEnglish =
-            "You are a lab technician. A batch of dye requires dilute sulfuric acid. Dilute the acid carefully with water.";
+        public static string InstructionEnglish => Loc.T("SC08", "InstructionEnglish");
 
-        public const string PpeHint = "Touch each piece of protective equipment to put it on.";
-        public const string HoodHint = "Switch on the Fume Hood at the control panel.";
-        public const string TrayHint = "Touch the tray to pick it up.";
-        public const string SashHint = "Touch the glass door of the fume hood to open it.";
-        public const string HoodWarn = "Switch on the fume hood first.";
-        public const string MixHint = "Touch the water beaker: add the acid slowly and stir.";
+        public static string PpeHint => Loc.T("SC08", "PpeHint");
+        public static string HoodHint => Loc.T("SC08", "HoodHint");
+        public static string TrayHint => Loc.T("SC08", "TrayHint");
+        public static string SashHint => Loc.T("SC08", "SashHint");
+        public static string HoodWarn => Loc.T("SC08", "HoodWarn");
+        public static string MixHint => Loc.T("SC08", "MixHint");
 
         // PPE SELECTION PANEL (workflow step03), in the order the items are taken
-        public const string PanelTitle = "PPE SELECTION PANEL";
+        public static string PanelTitle => Loc.T("SC08", "PanelTitle");
 
-        public static readonly string[] PpeNames =
-        {
-            "Goggles / Face Shield",
-            "Respirator",
-            "Neoprene Gloves",
-            "Acid-resistant Apron"
-        };
+        public static string[] PpeNames => Loc.A("SC08", "PpeNames");
 
         // "Dilution practice complete" card (workflow step09)
-        public const string GateTitle = "DILUTION PRACTICE COMPLETE.";
-        public const string GateQuestion = "Are you ready for the Multiple Choice Questions (MCQ)?";
-        public const string GateBody = "Press NEXT to proceed or BACK to review rules again.";
+        public static string GateTitle => Loc.T("SC08", "GateTitle");
+        public static string GateQuestion => Loc.T("SC08", "GateQuestion");
+        public static string GateBody => Loc.T("SC08", "GateBody");
 
         // MCQ (workflow step10..13)
-        public const string QuestionHeader = "MCQ: Acid Dilution";
-        public const string QuestionPrompt = "What is the right procedure for diluting acid with water?";
-        public const string CorrectTitle = "RIGHT ACTION";
-        public const string CorrectBody =
-            "Slowly adding acid to the water with continuous stirring (the large water volume safely absorbs the heat, preventing dangerous spattering).";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC08", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC08", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC08", "CorrectTitle");
+        public static string CorrectBody => Loc.T("SC08", "CorrectBody");
+        public static string FinishLabel => Loc.T("SC08", "FinishLabel");
         public const int CorrectIndex = 1;
 
-        public static readonly string[] OptionLabels =
-        {
-            "Pour water into the acid",
-            "Slowly add acid to the water with continuous stirring",
-            "Pour both simultaneously into a third beaker",
-            "Mix quickly to reduce exposure time"
-        };
+        public static string[] OptionLabels => Loc.A("SC08", "OptionLabels");
 
-        public static readonly string[] OptionFeedback =
-        {
-            "Water added to concentrated acid causes explosive boiling and spattering.",
-            CorrectBody,
-            "Mixing both at once gives no control over the heat; the solution can boil and splash.",
-            "Rushing the mix releases heat too fast and spatters acid. Add the acid slowly."
-        };
+        public static string[] OptionFeedback => Loc.A("SC08", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            "WRONG ACTION",
-            "",
-            "WRONG ACTION",
-            "WRONG ACTION"
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC08", "OptionWrongTitle");
 
-        public const string ModuleComplete = "Module complete. Well done!";
+        public static string ModuleComplete => Loc.T("SC08", "ModuleComplete");
     }
 }

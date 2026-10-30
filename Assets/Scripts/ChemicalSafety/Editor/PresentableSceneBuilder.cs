@@ -196,6 +196,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("clipboard").objectReferenceValue = clipboard;
             so.FindProperty("zoom").objectReferenceValue = zoom;
             so.FindProperty("spawnStart").objectReferenceValue = spawnStart;
+            so.FindProperty("loginScreen").objectReferenceValue = BuildLogin(flow, art);
             so.FindProperty("spawnDrumView").objectReferenceValue = spawnDrumView;
             so.FindProperty("rackFocus").objectReferenceValue = rackFocus;
             so.FindProperty("hotspotSc01").objectReferenceValue = hotspot1;

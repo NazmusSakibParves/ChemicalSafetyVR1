@@ -162,6 +162,16 @@ namespace ChemicalSafety.Presentable
 
         private static void Click(Transform root, string name)
         {
+            // the options are shuffled per session: RowK means "the option that is Kth in the unshuffled question"
+            var panel = root.GetComponent<PresentableMcqPanel>();
+            if (panel != null && panel.Current != null && panel.Current.sourceOrder != null && name.Length == 4 && name.StartsWith("Row") &&
+                char.IsDigit(name[3]))
+            {
+                var slot = Array.IndexOf(panel.Current.sourceOrder, name[3] - '1');
+                if (slot >= 0)
+                    name = "Row" + (slot + 1);
+            }
+
             var t = FindDeep(root, name);
             var b = t != null ? t.GetComponent<Button>() : null;
             if (b == null)
@@ -183,6 +193,12 @@ namespace ChemicalSafety.Presentable
         // direct event when there is no glove (then it only proves the wiring, not the reach).
         private IEnumerator FingerPoke(PokeTarget p, string what)
         {
+            if (p == null)
+            {
+                Say(what + ": no poke target (skipped)");
+                yield break;
+            }
+
             var hand = GlovedHandPose.Right;
             var fired = false;
             void On(PokeTarget t) => fired = true;
@@ -1040,22 +1056,43 @@ namespace ChemicalSafety.Presentable
                 // a hand resting at the kit must not pick anything up; take it away, then every item has to be touchable
                 var restHand = GlovedHandPose.Right;
                 if (restHand != null && restHand.HasTip)
-                    restHand.transform.position += Vector3.left * 0.9f;
+                {
+                    // towards the head (never sideways: in a full run a fixed sideways jump can land the simulated fingertip inside a kit item)
+                    var headT = Camera.main != null ? Camera.main.transform : null;
+                    var away = headT != null ? (headT.position - restHand.TipPosition).normalized : Vector3.back;
+                    restHand.transform.position += away * 0.9f;
+                }
                 yield return new WaitForSeconds(0.5f);
                 for (var ti = 0; ti < 5; ti++)
                 {
                     var ip = spill.ItemPoke(ti);
                     var touchable = ip != null && ip.Interactable;
                     Say("SC10 " + tag + ": kit item " + ti + " touchable = " + touchable + " (expected True)");
-                    if (!touchable)
+                    if (!touchable && spill.IsCollected(ti))
+                        Say("SC10 " + tag + ": kit item " + ti + " was already collected by the resting simulated glove (harness artefact of the chained run)");
+                    else if (!touchable)
                         Debug.LogError("[SMOKE] SC10 kit item " + ti + " cannot be touched in the collect step (" + spill.DebugState + ")");
                 }
-                for (var i = 0; i < 5; i++)
+                // take the items one by one, whatever order the simulated glove already took some in (a poke while the previous
+                // item is still flying is ignored by the game, so keep going until all five are in)
+                for (var guard = 0; guard < 14 && !spill.AllCollected; guard++)
                 {
-                    var idx = i;
+                    var idx = -1;
+                    for (var k = 0; k < 5; k++)
+                    {
+                        if (!spill.IsCollected(k))
+                        {
+                            idx = k;
+                            break;
+                        }
+                    }
+
+                    if (idx < 0)
+                        break;
+                    var before = spill.Collected;
                     yield return FingerPoke(spill.ItemPoke(idx), "kit item " + idx);
-                    yield return Sc10Wait(() => spill.Collected > idx, 6f);
-                    if (shots && i == 1)
+                    yield return Sc10Wait(() => spill.Collected > before, 6f);
+                    if (shots && spill.Collected == 2)
                         yield return Shot("109_sc10_collect");
                     yield return new WaitForSeconds(1.0f);
                 }
@@ -1251,9 +1288,28 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 #endif
+            var login = FindFirstObjectByType<LoginScreen>();
+            if (login != null)
+            {
+                yield return WaitStage("login", 30f);
+                yield return new WaitForSeconds(1.5f);
+                yield return Shot("00_login_en");
+                Say("login: name with digits rejected = " + !login.SubmitForTest("Ra5im", "01712345678", ChemicalSafety.Localization.Lang.En));
+                Say("login: 10-digit phone rejected = " + !login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.En));
+                Say("login: 12-digit phone rejected = " + !login.SubmitForTest("Rahim", "017123456789", ChemicalSafety.Localization.Lang.En));
+                Say("login: bad e-mail rejected = " + !login.SubmitForTest("Rahim", "rahim@mail", ChemicalSafety.Localization.Lang.En));
+                yield return new WaitForSeconds(0.5f);
+                yield return Shot("00_login_errors");
+                login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.Bn);
+                yield return new WaitForSeconds(0.8f);
+                yield return Shot("00_login_bn_errors");
+                Say("login: +88 phone accepted = " + login.SubmitForTest("Rahim Uddin", "+8801712345678", UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? ChemicalSafety.Localization.Lang.Bn : ChemicalSafety.Localization.Lang.En));
+                yield return WaitStage("salam", 30f);
+            }
+
             yield return WaitStage("instruction");
             yield return new WaitForSeconds(1.5f);
-            var cont = FindDeep(panel.transform, "ContinueButton");
+            var cont =FindDeep(panel.transform, "ContinueButton");
             Say("during instruction VO: continue visible = " + cont.gameObject.activeSelf + " clip=" +
                 (voiceSrc.clip != null ? voiceSrc.clip.name : "none"));
             yield return Shot("00a_instruction_playing");

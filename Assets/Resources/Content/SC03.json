@@ -1,0 +1,34 @@
+{
+  "scenario": "SC03",
+  "strings": [
+    { "key": "InstructionEnglish", "en": "<color=#5FD8FF><b>VOICE-OVER:</b></color> You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do.", "bn": "<color=#5FD8FF><b>ভয়েস-ওভার:</b></color> আপনি পুরনো স্টোররুমের পেছনের তাকে একটি পুরনো অর্গানিক পারক্সাইডের ড্রাম খুঁজে পেয়েছেন। ড্রামটি বছরের পর বছর ধরে সেখানে পড়ে আছে। মেয়াদ দুই বছরের বেশি আগে শেষ হয়ে গেছে এবং ঢাকনার চারপাশে ক্রিস্টাল জমেছে। আপনাকে সিদ্ধান্ত নিতে হবে কী করবেন।" },
+    { "key": "SdsHint", "en": "Press X on the left controller to open or hide the SDS.", "bn": "SDS দেখতে বা লুকাতে বাম কন্ট্রোলারের X বাটন চাপুন।" },
+    { "key": "TouchHint", "en": "Touch and hold the drum label with your finger to scan it.", "bn": "ড্রামের লেবেল স্ক্যান করতে আঙুল দিয়ে ছুঁয়ে ধরে রাখুন।" },
+    { "key": "ReportTitle", "en": "DRUM INSPECTION REPORT", "bn": "ড্রাম পরিদর্শন রিপোর্ট" },
+    { "key": "ScanCaption", "en": "Selected Label", "bn": "নির্বাচিত লেবেল" },
+    { "key": "ContinueLabel", "en": "Continue", "bn": "কন্টিনিউ" },
+    { "key": "QuestionHeader", "en": "IMMEDIATE ACTION PROTOCOL", "bn": "তাৎক্ষণিক পদক্ষেপ প্রোটোকল" },
+    { "key": "QuestionPrompt", "en": "Question 3: What is the correct immediate action?", "bn": "প্রশ্ন ৩: সঠিক তাৎক্ষণিক পদক্ষেপ কোনটি?" },
+    { "key": "CorrectTitle", "en": "CORRECT ACTION!", "bn": "সঠিক পদক্ষেপ!" },
+    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" },
+    { "key": "ModuleComplete", "en": "Scenario 3 completed successfully.", "bn": "সিনারিও ৩ সফলভাবে সম্পন্ন হয়েছে।" }
+  ],
+  "arrays": [
+    { "key": "ReportLabels",
+      "en": ["CHEMICAL TYPE:", "CONDITION:", "LABEL STATUS:", "DATE CODE:"],
+      "bn": ["রাসায়নিকের ধরন:", "অবস্থা:", "লেবেলের অবস্থা:", "তারিখ কোড:"] },
+    { "key": "ReportValues",
+      "en": ["[IDENTIFIED: ORGANIC PEROXIDE]", "[OBSERVATION: CRYSTALLIZED RESIDUE DETECTED]", "[EXPIRED]", "[12/08/2024]"],
+      "bn": ["[শনাক্ত: অর্গানিক পারক্সাইড]", "[পর্যবেক্ষণ: ক্রিস্টালযুক্ত অবশিষ্টাংশ শনাক্ত]", "[মেয়াদোত্তীর্ণ]", "[১২/০৮/২০২৪]"] },
+    { "key": "OptionLabels",
+      "en": ["Open the drum and use the chemical as normal", "Do not open. Isolate area, notify supervisor, contact emergency response", "Move the drum to another shelf and continue work", "Dispose of it in regular chemical waste"],
+      "bn": ["ড্রামটি খুলে রাসায়নিকটি স্বাভাবিকভাবে ব্যবহার করুন", "খুলবেন না। এলাকা আলাদা করুন, সুপারভাইজারকে জানান, জরুরি সাড়াদান দলের সাথে যোগাযোগ করুন", "ড্রামটি অন্য তাকে সরিয়ে কাজ চালিয়ে যান", "সাধারণ রাসায়নিক বর্জ্যে ফেলে দিন"] },
+    { "key": "OptionFeedback",
+      "en": ["Wrong. Crystallised organic peroxides can detonate on opening or friction.", "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal.", "Wrong. Moving the drum causes shock and friction. Crystallised peroxides are shock-sensitive.", "Wrong. Degraded peroxides need trained, specialist disposal. Regular waste can trigger a violent reaction."],
+      "bn": ["ভুল। ক্রিস্টাল জমা অর্গানিক পারক্সাইড খোলার সময় বা ঘষা লাগলে বিস্ফোরিত হতে পারে।", "নষ্ট বা অস্থিতিশীল পারক্সাইডের জন্য এটাই মানসম্মত পদক্ষেপ। এতে জীবন রক্ষা পায় এবং প্রশিক্ষিতদের দিয়ে নিরাপদ নিষ্পত্তি সম্ভব হয়।", "ভুল। ড্রাম সরালে ঝাঁকুনি ও ঘর্ষণ হয়। ক্রিস্টাল জমা পারক্সাইড ঝাঁকুনিতে বিস্ফোরণপ্রবণ।", "ভুল। নষ্ট পারক্সাইড প্রশিক্ষিত বিশেষজ্ঞকে দিয়ে নিষ্পত্তি করাতে হয়। সাধারণ বর্জ্যে ফেললে ভয়াবহ বিক্রিয়া হতে পারে।"] },
+    { "key": "OptionWrongTitle",
+      "en": ["DANGER: DETONATION CONFIRMED", "", "DANGER: SHOCK DETONATION", "DANGER: VIOLENT REACTION"],
+      "bn": ["বিপদ: বিস্ফোরণ নিশ্চিত", "", "বিপদ: ঝাঁকুনিজনিত বিস্ফোরণ", "বিপদ: ভয়াবহ বিক্রিয়া"] }
+  ],
+  "questions": []
+}

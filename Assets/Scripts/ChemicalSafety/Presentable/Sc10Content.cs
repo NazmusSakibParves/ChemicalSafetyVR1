@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -7,76 +9,54 @@ namespace ChemicalSafety.Presentable
     public static class Sc10Content
     {
         // workflow step02
-        public const string InstructionEnglish =
-            "You are a lab technician. A glass bottle of acid has slipped and shattered on the floor. You are the first person on the scene. The lab supervisor is not in the room. You must respond correctly and safely.";
+        public static string InstructionEnglish => Loc.T("SC10", "InstructionEnglish");
 
-        public const string SdsHint = "Read the Safety Data Sheet. It lists the spill response steps.";
-        public const string PpeHint = "Put on your protective equipment. Touch each item.";
-        public const string VentHint = "Ventilate the area. Touch the Fume Hood switch.";
-        public const string KitHint = "Go to the spill kit and touch it to open it.";
-        public const string CollectHint = "Take every item from the spill kit.";
-        public const string ContainHint = "Touch CONTAIN. Lay the absorbent sock around the spill to stop the acid spreading.";
-        public const string NeutralizeHint = "Touch NEUTRALIZE. Sprinkle soda ash over the acid to neutralize it.";
-        public const string AbsorbHint = "Touch ABSORB. Lay absorbent pads on the spill to soak up the liquid.";
-        public const string CleanHint = "Touch CLEAN-UP GLASS. Sweep the broken glass into the dustpan with the brush.";
-        public const string DisposeHint = "Touch DISPOSE. Put the sock, pads and glass in the hazardous waste bag, then in the bin.";
+        public static string SdsHint => Loc.T("SC10", "SdsHint");
+        public static string PpeHint => Loc.T("SC10", "PpeHint");
+        public static string VentHint => Loc.T("SC10", "VentHint");
+        public static string KitHint => Loc.T("SC10", "KitHint");
+        public static string CollectHint => Loc.T("SC10", "CollectHint");
+        public static string ContainHint => Loc.T("SC10", "ContainHint");
+        public static string NeutralizeHint => Loc.T("SC10", "NeutralizeHint");
+        public static string AbsorbHint => Loc.T("SC10", "AbsorbHint");
+        public static string CleanHint => Loc.T("SC10", "CleanHint");
+        public static string DisposeHint => Loc.T("SC10", "DisposeHint");
 
         // PPE hologram (workflow step04): order of the PPE station items
-        public static readonly string[] PpeItems = { "Splash Goggles", "Respirator", "Neoprene Gloves", "Acid-resistant Apron" };
+        public static string[] PpeItems => Loc.A("SC10", "PpeItems");
 
         // spill kit collection (workflow step07)
-        public const string CollectionTitle = "SPILL KIT COLLECTION";
+        public static string CollectionTitle => Loc.T("SC10", "CollectionTitle");
 
-        public static readonly string[] CollectionItems =
-        {
-            "Absorbent Sock", "Soda Ash", "Absorbent Pad", "Dust Pan & Brush", "Waste Bin Bag"
-        };
+        public static string[] CollectionItems => Loc.A("SC10", "CollectionItems");
 
         // neon step labels (workflow step08-12)
-        public const string ContainLabel = "CONTAIN";
-        public const string NeutralizeLabel = "NEUTRALIZE";
-        public const string AbsorbLabel = "ABSORB";
-        public const string CleanLabel = "CLEAN-UP\nGLASS";
-        public const string DisposeLabel = "DISPOSE\nHAZARDOUS\nWASTE";
-        public const string DisposeSub = "ALL SPILL MATERIALS";
+        public static string ContainLabel => Loc.T("SC10", "ContainLabel");
+        public static string NeutralizeLabel => Loc.T("SC10", "NeutralizeLabel");
+        public static string AbsorbLabel => Loc.T("SC10", "AbsorbLabel");
+        public static string CleanLabel => Loc.T("SC10", "CleanLabel");
+        public static string DisposeLabel => Loc.T("SC10", "DisposeLabel");
+        public static string DisposeSub => Loc.T("SC10", "DisposeSub");
 
         // gate card (workflow step13)
-        public const string GateTitle = "Spill response complete.";
-        public const string GateQuestion = "Are you ready for the multiple choice questions (MCQ)?";
-        public const string GateBody = "If yes, click NEXT to proceed, or if you want to review again, click BACK.";
+        public static string GateTitle => Loc.T("SC10", "GateTitle");
+        public static string GateQuestion => Loc.T("SC10", "GateQuestion");
+        public static string GateBody => Loc.T("SC10", "GateBody");
 
         // MCQ (workflow step14 / step15)
-        public const string QuestionHeader = "MCQ: Spill Response";
-        public const string QuestionPrompt = "Which of the following is the correct and safe way to handle an acid spill?";
-        public const string CorrectTitle = "RIGHT ACTION";
-        public const string CorrectBody = "Safe sequence";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC10", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC10", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC10", "CorrectTitle");
+        public static string CorrectBody => Loc.T("SC10", "CorrectBody");
+        public static string FinishLabel => Loc.T("SC10", "FinishLabel");
         public const int CorrectIndex = 1;
 
-        public static readonly string[] OptionLabels =
-        {
-            "Mop it up with water immediately",
-            "Neutralize the acid, absorb it, clean up the glass fragments, and dispose of everything properly",
-            "Use a vacuum cleaner to clean up the spill",
-            "Leave it alone and let it evaporate on its own"
-        };
+        public static string[] OptionLabels => Loc.A("SC10", "OptionLabels");
 
-        public static readonly string[] OptionFeedback =
-        {
-            "Spreads acid over a larger area and dilutes it into hidden crevices.",
-            CorrectBody,
-            "A vacuum can spark, spread acid fumes and is ruined by the acid.",
-            "The acid and its fumes stay dangerous and someone may slip or get burned."
-        };
+        public static string[] OptionFeedback => Loc.A("SC10", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            "WRONG ACTION",
-            "",
-            "WRONG ACTION",
-            "WRONG ACTION"
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC10", "OptionWrongTitle");
 
-        public const string ModuleComplete = "Module complete. Well done!";
+        public static string ModuleComplete => Loc.T("SC10", "ModuleComplete");
     }
 }

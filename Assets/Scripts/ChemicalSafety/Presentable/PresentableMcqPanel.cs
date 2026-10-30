@@ -40,6 +40,7 @@ namespace ChemicalSafety.Presentable
             public string nextLabel = "NEXT";
             [Tooltip("Scenario 6 look: options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
             public bool fancy;
+            [NonSerialized] public int[] sourceOrder; // for each shown slot, the index the option had before the per-session shuffle
             [NonSerialized] public Func<bool> holdCorrect; // true while a cutscene must finish before the right-answer card opens
         }
 
@@ -104,6 +105,8 @@ namespace ChemicalSafety.Presentable
         public event Action<bool> PopupShown;
 
         public bool IsOpen { get; private set; }
+
+        public Question Current => _question;
 
         private void Awake()
         {
@@ -190,6 +193,11 @@ namespace ChemicalSafety.Presentable
         {
             if (_locked || _question == null)
                 return;
+            if (index < 0 || index >= _question.options.Length)
+            {
+                Debug.LogWarning("[Mcq] row " + index + " clicked but the question has " + _question.options.Length + " options (" + name + ")");
+                return;
+            }
 
             _locked = true;
             var correct = index == _question.correctIndex;

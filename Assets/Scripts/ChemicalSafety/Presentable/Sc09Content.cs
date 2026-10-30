@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -6,56 +8,36 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public static class Sc09Content
     {
-        public const string InstructionEnglish =
-            "You are a lab technician. Pour the chemical from the sample flask into the next flask. If something goes wrong, follow the safety procedure at once.";
+        public static string InstructionEnglish => Loc.T("SC09", "InstructionEnglish");
 
         // workflow step06
-        public const string SpillInstruction =
-            "You are a lab technician. A flask tipped corrosive liquid splashed onto your face and eyes. You must respond immediately.";
+        public static string SpillInstruction => Loc.T("SC09", "SpillInstruction");
 
-        public const string FlaskHint = "Touch the purple sample flask to lift it and pour.";
-        public const string SdsHint = "Read the Safety Data Sheet. Do not rub your eyes. Go to the eyewash now.";
-        public const string WalkHint = "Walk to the safety shower and eyewash.";
-        public const string PushHint = "Touch the push plate to start the water.";
-        public const string FlushHint = "Hold eyelids open and keep flushing.";
+        public static string FlaskHint => Loc.T("SC09", "FlaskHint");
+        public static string SdsHint => Loc.T("SC09", "SdsHint");
+        public static string WalkHint => Loc.T("SC09", "WalkHint");
+        public static string PushHint => Loc.T("SC09", "PushHint");
+        public static string FlushHint => Loc.T("SC09", "FlushHint");
 
         // gate card (workflow step11)
-        public const string GateTitle = "EYEWASH AND SHOWER INSPECTION COMPLETE.";
-        public const string GateQuestion = "Are you ready for the safety assessment questions?";
-        public const string GateBody = "Press NEXT to proceed or BACK to review again.";
+        public static string GateTitle => Loc.T("SC09", "GateTitle");
+        public static string GateQuestion => Loc.T("SC09", "GateQuestion");
+        public static string GateBody => Loc.T("SC09", "GateBody");
 
         // MCQ (workflow step12 / step13)
-        public const string QuestionHeader = "EMERGENCY PROTOCOL ASSESSMENT";
-        public const string QuestionPrompt = "What is the immediate action when a chemical gets into your eyes?";
-        public const string CorrectTitle = "RIGHT ANSWER";
-        public const string CorrectBody = "Standard first-aid for chemical eye exposure";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC09", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC09", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC09", "CorrectTitle");
+        public static string CorrectBody => Loc.T("SC09", "CorrectBody");
+        public static string FinishLabel => Loc.T("SC09", "FinishLabel");
         public const int CorrectIndex = 1;
 
-        public static readonly string[] OptionLabels =
-        {
-            "Wipe face with a cloth and continue work.",
-            "Move to eyewash station and flush for 15+ minutes, then alert supervisor.",
-            "Rinse briefly for 5 seconds.",
-            "Apply chemical neutralizer directly to the eye."
-        };
+        public static string[] OptionLabels => Loc.A("SC09", "OptionLabels");
 
-        public static readonly string[] OptionFeedback =
-        {
-            "Wiping spreads contamination and delays flushing — permanent eye damage risk.",
-            CorrectBody,
-            "A short rinse leaves chemical in the eye. Flush for at least 15 minutes.",
-            "Neutralizers react in the eye and add heat and injury. Only clean water, for 15+ minutes."
-        };
+        public static string[] OptionFeedback => Loc.A("SC09", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            "Wrong answer",
-            "",
-            "Wrong answer",
-            "Wrong answer"
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC09", "OptionWrongTitle");
 
-        public const string ModuleComplete = "Module complete. Well done!";
+        public static string ModuleComplete => Loc.T("SC09", "ModuleComplete");
     }
 }

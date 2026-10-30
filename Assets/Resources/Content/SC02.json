@@ -1,0 +1,78 @@
+{
+ "scenario": "SC02",
+ "strings": [
+  {
+   "key": "InstructionEnglish",
+   "en": "<color=#5FD8FF><b>VOICE-OVER:</b></color> A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
+   "bn": "<color=#5FD8FF><b>ভয়েস-ওভার:</b></color> ছয়টি রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
+  },
+  {
+   "key": "PlaceHint",
+   "en": "Touch a chemical container, then place it in the matching compartment.",
+   "bn": "একটি রাসায়নিকের কন্টেইনার ছুঁয়ে তুলুন, তারপর মিলে যাওয়া কম্পার্টমেন্টে রাখুন।"
+  },
+  {
+   "key": "PlaceHint2",
+   "en": "Place the chemical in the correct compartment for its type.",
+   "bn": "রাসায়নিকটি তার ধরন অনুযায়ী সঠিক কম্পার্টমেন্টে রাখুন।"
+  },
+  {
+   "key": "QuestionHeader",
+   "en": "STORAGE DECISION CHALLENGE",
+   "bn": "সংরক্ষণ সিদ্ধান্ত চ্যালেঞ্জ"
+  },
+  {
+   "key": "QuestionPrompt",
+   "en": "Question 2.1: Flammable Solvent Placement. Where does it go?",
+   "bn": "প্রশ্ন ২.১: দাহ্য দ্রাবক রাখার স্থান। এটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "CorrectTitle",
+   "en": "CORRECT PLACEMENT!",
+   "bn": "সঠিক স্থান!"
+  },
+  {
+   "key": "WrongTitle",
+   "en": "WRONG SELECTION!",
+   "bn": "ভুল নির্বাচন!"
+  },
+  {
+   "key": "FinishLabel",
+   "en": "NEXT",
+   "bn": "নেক্সট"
+  }
+ ],
+ "arrays": [
+  {
+   "key": "OptionLabels",
+   "en": [
+    "With the oxidizers",
+    "Flammable compartment, away from oxidizers and acids",
+    "General chemical cabinet",
+    "Near the water station"
+   ],
+   "bn": [
+    "অক্সিডাইজারের সাথে",
+    "দাহ্য কম্পার্টমেন্টে, অক্সিডাইজার ও অ্যাসিড থেকে দূরে",
+    "সাধারণ রাসায়নিক ক্যাবিনেটে",
+    "ওয়াটার স্টেশনের কাছে"
+   ]
+  },
+  {
+   "key": "OptionFeedback",
+   "en": [
+    "Flammable + oxidizer = fire / explosion risk. Never store them together.",
+    "Best practice. Flammables stay in the fire-rated cabinet, segregated from oxidizers and acids. This matches the compatibility chart.",
+    "General storage is not rated for a hazardous flammable solvent.",
+    "Easy to reach, but a water station is the wrong place for a flammable solvent."
+   ],
+   "bn": [
+    "দাহ্য + অক্সিডাইজার = আগুন / বিস্ফোরণের ঝুঁকি। কখনো একসাথে রাখবেন না।",
+    "সর্বোত্তম পদ্ধতি। দাহ্য পদার্থ ফায়ার-রেটেড ক্যাবিনেটে থাকে, অক্সিডাইজার ও অ্যাসিড থেকে আলাদা। এটি সামঞ্জস্য চার্টের সাথে মেলে।",
+    "বিপজ্জনক দাহ্য দ্রাবকের জন্য সাধারণ সংরক্ষণ অনুমোদিত নয়।",
+    "নাগালের মধ্যে হলেও দাহ্য দ্রাবকের জন্য ওয়াটার স্টেশন ভুল জায়গা।"
+   ]
+  }
+ ],
+ "questions": []
+}

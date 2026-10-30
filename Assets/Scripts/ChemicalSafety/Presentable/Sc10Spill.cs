@@ -108,6 +108,7 @@ namespace ChemicalSafety.Presentable
             }
         }
 
+        public bool IsCollected(int i) => i >= 0 && i < ItemCount && _collected[i];
         public PokeTarget ItemPoke(int i) => i >= 0 && i < ItemCount ? _itemPokes[i] : null;
         public PokeTarget KitPoke => _kitPoke;
         public PokeTarget IconPoke => _iconPoke;
@@ -250,14 +251,27 @@ namespace ChemicalSafety.Presentable
                     var pk = _itemPokes[i];
                     if (pk == null || _collected[i] || pk.Interactable)
                         continue;
-                    if (hand == null || !hand.HasTip)
+                    if (hand == null)
                     {
-                        pk.SetInteractable(true); // desk mode: the mouse needs no arming
+                        pk.SetInteractable(true); // desk mode without a glove: the mouse needs no arming
                         continue;
                     }
 
-                    var vol = pk.GetComponent<Collider>();
-                    var away = vol == null || (vol.ClosestPoint(hand.TipPosition) - hand.TipPosition).magnitude > 0.17f;
+                    if (!hand.HasTip)
+                        continue; // the glove exists but its fingertip is not tracked yet: wait, never arm blind
+
+                    // the touch volume can be on a child of the PokeTarget (PokeTarget itself checks all child colliders): the finger has to
+                    // be away from every one of them, otherwise a finger resting at the kit door would take the item the moment it arms
+                    var away = true;
+                    foreach (var vol in pk.GetComponentsInChildren<Collider>())
+                    {
+                        if (vol != null && vol.enabled && (vol.ClosestPoint(hand.TipPosition) - hand.TipPosition).magnitude <= 0.17f)
+                        {
+                            away = false;
+                            break;
+                        }
+                    }
+
                     if (away)
                         pk.SetInteractable(true);
                 }

@@ -1,3 +1,5 @@
+using ChemicalSafety.Localization;
+
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
@@ -6,55 +8,35 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public static class Sc06Content
     {
-        public const string InstructionEnglish =
-            "You are a Mixing Operator. You need to pour a volatile solvent, but because the container is open, " +
-            "vapors are spreading into the air. Take the right Engineering Control before pouring.";
+        public static string InstructionEnglish => Loc.T("SC06", "InstructionEnglish");
 
-        public const string HoodHint = "Switch on the Fume Hood at the control panel.";
-        public const string HoodOnHint = "The fume hood is running. Go to the table and close the solvent container.";
-        public const string CapHint = "Touch the cap to close the container.";
-        public const string JugHint = "Touch the Volatile Solvent container to pick it up.";
-        public const string SashHint = "Touch the glass door of the fume hood to open it.";
-        public const string HoodWarn = "Switch on the fume hood first.";
-        public const string PourHint = "Touch the glass jar to pour the solvent slowly.";
+        public static string HoodHint => Loc.T("SC06", "HoodHint");
+        public static string HoodOnHint => Loc.T("SC06", "HoodOnHint");
+        public static string CapHint => Loc.T("SC06", "CapHint");
+        public static string JugHint => Loc.T("SC06", "JugHint");
+        public static string SashHint => Loc.T("SC06", "SashHint");
+        public static string HoodWarn => Loc.T("SC06", "HoodWarn");
+        public static string PourHint => Loc.T("SC06", "PourHint");
 
         // "Inspection completed" card (workflow step08)
-        public const string GateTitle = "Inspection Completed";
-        public const string GateQuestion = "Are you ready for the multiple choice questions?";
-        public const string GateBody = "To proceed click next button or to review again press back button.";
+        public static string GateTitle => Loc.T("SC06", "GateTitle");
+        public static string GateQuestion => Loc.T("SC06", "GateQuestion");
+        public static string GateBody => Loc.T("SC06", "GateBody");
 
         // MCQ 6.1 (workflow step09..12)
-        public const string QuestionHeader = "Engineering Control Hierarchy";
-        public const string QuestionPrompt = "What is the correct engineering control to capture vapors when pouring a volatile solvent?";
-        public const string CorrectTitle = "RIGHT ACTION";
-        public const string CorrectBody = "Switching on the hood first, then working inside is correct.";
-        public const string FinishLabel = "NEXT";
+        public static string QuestionHeader => Loc.T("SC06", "QuestionHeader");
+        public static string QuestionPrompt => Loc.T("SC06", "QuestionPrompt");
+        public static string CorrectTitle => Loc.T("SC06", "CorrectTitle");
+        public static string CorrectBody => Loc.T("SC06", "CorrectBody");
+        public static string FinishLabel => Loc.T("SC06", "FinishLabel");
         public const int CorrectIndex = 2;
 
-        public static readonly string[] OptionLabels =
-        {
-            "Pour the solvent outside the fume hood on the open workbench.",
-            "Put the bottle inside the fume hood but leave the hood switched off.",
-            "Switch on the fume hood first, then bring the bottle inside to pour.",
-            "Do not use the fume hood; just open a nearby window."
-        };
+        public static string[] OptionLabels => Loc.A("SC06", "OptionLabels");
 
         // The designer's picture shows the passive-ventilation sentence with option A selected; it fits D (the open window),
         // so A gets its own sentence. Change here if the user wants the picture's wording on A.
-        public static readonly string[] OptionFeedback =
-        {
-            "Pouring on the open bench releases the vapors straight into your breathing zone.",
-            "A hood that is switched off pulls no air, so the vapors escape into the room.",
-            CorrectBody,
-            "Passive ventilation is unreliable and offers no capture at the source."
-        };
+        public static string[] OptionFeedback => Loc.A("SC06", "OptionFeedback");
 
-        public static readonly string[] OptionWrongTitle =
-        {
-            "WRONG ACTION",
-            "WRONG ACTION",
-            "",
-            "WRONG ACTION"
-        };
+        public static string[] OptionWrongTitle => Loc.A("SC06", "OptionWrongTitle");
     }
 }

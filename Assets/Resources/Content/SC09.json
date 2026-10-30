@@ -1,0 +1,33 @@
+{
+  "scenario": "SC09",
+  "strings": [
+    { "key": "InstructionEnglish", "en": "You are a lab technician. Pour the chemical from the sample flask into the next flask. If something goes wrong, follow the safety procedure at once.", "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। নমুনা ফ্লাস্ক থেকে অন্য ফ্লাস্কে রাসায়নিক ঢালুন। কিছু ভুল হলে সাথে সাথে নিরাপত্তা পদ্ধতি মেনে কাজ করুন।" },
+    { "key": "SpillInstruction", "en": "You are a lab technician. A flask tipped corrosive liquid splashed onto your face and eyes. You must respond immediately.", "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। একটি ফ্লাস্ক উল্টে ক্ষয়কারী তরল আপনার মুখে ও চোখে ছিটকে লেগেছে। এখনই ব্যবস্থা নিন।" },
+    { "key": "FlaskHint", "en": "Touch the purple sample flask to lift it and pour.", "bn": "বেগুনি নমুনার ফ্লাস্কটি ছুঁয়ে তুলে ঢালুন।" },
+    { "key": "SdsHint", "en": "Read the Safety Data Sheet. Do not rub your eyes. Go to the eyewash now.", "bn": "সেফটি ডাটা শিট পড়ুন। চোখ ঘষবেন না। এখনই আইওয়াশে যান।" },
+    { "key": "WalkHint", "en": "Walk to the safety shower and eyewash.", "bn": "সেফটি শাওয়ার ও আইওয়াশের কাছে যান।" },
+    { "key": "PushHint", "en": "Touch the push plate to start the water.", "bn": "পুশ প্লেটটি ছুঁয়ে পানি চালু করুন।" },
+    { "key": "FlushHint", "en": "Hold eyelids open and keep flushing.", "bn": "চোখের পাতা খোলা রাখুন এবং ধুতে থাকুন।" },
+    { "key": "GateTitle", "en": "EYEWASH AND SHOWER INSPECTION COMPLETE.", "bn": "আইওয়াশ ও শাওয়ার পরিদর্শন সম্পন্ন।" },
+    { "key": "GateQuestion", "en": "Are you ready for the safety assessment questions?", "bn": "আপনি কি নিরাপত্তা মূল্যায়নের প্রশ্নের জন্য প্রস্তুত?" },
+    { "key": "GateBody", "en": "Press NEXT to proceed or BACK to review again.", "bn": "এগিয়ে যেতে নেক্সট চাপুন, আবার দেখতে ব্যাক চাপুন।" },
+    { "key": "QuestionHeader", "en": "EMERGENCY PROTOCOL ASSESSMENT", "bn": "জরুরি প্রোটোকল মূল্যায়ন" },
+    { "key": "QuestionPrompt", "en": "What is the immediate action when a chemical gets into your eyes?", "bn": "চোখে রাসায়নিক পড়লে তাৎক্ষণিক পদক্ষেপ কী?" },
+    { "key": "CorrectTitle", "en": "RIGHT ANSWER", "bn": "সঠিক উত্তর" },
+    { "key": "CorrectBody", "en": "Standard first-aid for chemical eye exposure", "bn": "চোখে রাসায়নিক লাগলে প্রচলিত প্রাথমিক চিকিৎসা" },
+    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" },
+    { "key": "ModuleComplete", "en": "Module complete. Well done!", "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!" }
+  ],
+  "arrays": [
+    { "key": "OptionLabels",
+      "en": ["Wipe face with a cloth and continue work.", "Move to eyewash station and flush for 15+ minutes, then alert supervisor.", "Rinse briefly for 5 seconds.", "Apply chemical neutralizer directly to the eye."],
+      "bn": ["কাপড় দিয়ে মুখ মুছে কাজ চালিয়ে যান।", "আইওয়াশ স্টেশনে গিয়ে ১৫+ মিনিট ধরে চোখ ধুয়ে ফেলুন, তারপর সুপারভাইজারকে জানান।", "মাত্র ৫ সেকেন্ড ধরে ধুয়ে নিন।", "চোখে সরাসরি রাসায়নিক নিষ্ক্রিয়কারী (নিউট্রালাইজার) লাগান।"] },
+    { "key": "OptionFeedback",
+      "en": ["Wiping spreads contamination and delays flushing — permanent eye damage risk.", "Standard first-aid for chemical eye exposure", "A short rinse leaves chemical in the eye. Flush for at least 15 minutes.", "Neutralizers react in the eye and add heat and injury. Only clean water, for 15+ minutes."],
+      "bn": ["মুছলে দূষণ ছড়ায় এবং ধোয়া দেরি হয় — চোখের স্থায়ী ক্ষতির ঝুঁকি।", "চোখে রাসায়নিক লাগলে প্রচলিত প্রাথমিক চিকিৎসা", "অল্প সময় ধুলে চোখে রাসায়নিক থেকে যায়। অন্তত ১৫ মিনিট ধুতে হবে।", "নিউট্রালাইজার চোখে বিক্রিয়া করে তাপ ও আঘাত বাড়ায়। শুধু পরিষ্কার পানি, ১৫+ মিনিট।"] },
+    { "key": "OptionWrongTitle",
+      "en": ["Wrong answer", "", "Wrong answer", "Wrong answer"],
+      "bn": ["ভুল উত্তর", "", "ভুল উত্তর", "ভুল উত্তর"] }
+  ],
+  "questions": []
+}

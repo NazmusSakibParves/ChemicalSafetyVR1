@@ -170,6 +170,13 @@ namespace ChemicalSafety.Presentable
                 _sheet.sprite = sprite;
         }
 
+        /// <summary>Hides the whole sheet (also in desk / hand mode where the anchor is detached) without touching its state, e.g. during the login.</summary>
+        public void SetSuspended(bool suspended)
+        {
+            if (_anchor != null)
+                _anchor.gameObject.SetActive(!suspended);
+        }
+
         public void Toggle() => SetVisible(!_visible);
 
         public void SetVisible(bool visible)
