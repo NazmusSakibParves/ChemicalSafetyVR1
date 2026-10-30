@@ -1522,9 +1522,25 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect1);
+            Say("SC01 fancy MCQ = " + (mcq1.Current != null && mcq1.Current.fancy) +
+                ", fx active = " + (mcq1.Fx != null && mcq1.Fx.Active) +
+                ", chevrons = " + (mcq1.Fx != null ? mcq1.Fx.ChevronCount : 0) +
+                ", comet = " + (mcq1.Fx != null ? mcq1.Fx.CometCount : 0));
             yield return Shot("09_correct");
             LayoutCheck("SC01 MCQ correct card", mcq1.transform);
             Click(mcq1.transform, "NextButton");
+
+#if UNITY_EDITOR
+            // EditorPref ChemSafetySc01Only: login + Scenario 1 only, then stop (does NOT skip login)
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc01Only", false))
+            {
+                Say("SC01-only run (login + Scenario 1)");
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+#endif
 
             yield return WaitStage("sc02Intro");
             var cont2 = FindDeep(panel.transform, "ContinueButton");

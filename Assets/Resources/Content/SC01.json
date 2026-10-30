@@ -17,11 +17,11 @@
   ],
   "arrays": [
     { "key": "OptionLabels",
-      "en": ["1. Faded label", "2. No label", "3. Mismatched\nGHS vs SDS", "4. Correctly Labelled"],
-      "bn": ["১. ঝাপসা লেবেল", "২. লেবেল নেই", "৩. অমিল\nGHS বনাম SDS", "৪. সঠিকভাবে লেবেল করা"] },
+      "en": ["Faded label", "No label", "Mismatched\nGHS vs SDS", "Correctly Labelled"],
+      "bn": ["ঝাপসা লেবেল", "লেবেল নেই", "অমিল\nGHS বনাম SDS", "সঠিকভাবে লেবেল করা"] },
     { "key": "OptionWrongLabels",
-      "en": ["1. Faded label (Acetone)", "2. No label (Unknown)", "3. Mismatched (Methanol)"],
-      "bn": ["১. ঝাপসা লেবেল (অ্যাসিটোন)", "২. লেবেল নেই (অজানা)", "৩. অমিল (মিথানল)"] },
+      "en": ["Faded label (Acetone)", "No label (Unknown)", "Mismatched (Methanol)"],
+      "bn": ["ঝাপসা লেবেল (অ্যাসিটোন)", "লেবেল নেই (অজানা)", "অমিল (মিথানল)"] },
     { "key": "OptionFeedback",
       "en": ["You cannot verify the contents or specific hazards of a drum with a faded or unreadable label. Never move unidentified chemicals.", "An unlabeled container must be treated as an unknown hazard. Report and quarantine it. Never transfer it.", "The drum label (Methanol) does not match the SDS (Isopropanol). If the label does not match the SDS: DO NOT USE. Isolate and report.", "Well done! You have correctly identified the standard GHS label configuration. The selected drum's GHS pictograms, UN number, and name match the Safety Data Sheet (SDS) requirements precisely, ensuring safe transfer."],
       "bn": ["ঝাপসা বা অপাঠ্য লেবেলযুক্ত ড্রামের ভেতরের রাসায়নিক বা নির্দিষ্ট ঝুঁকি যাচাই করা যায় না। অশনাক্ত রাসায়নিক কখনো সরাবেন না।", "লেবেলবিহীন পাত্রকে অজানা ঝুঁকি হিসেবে গণ্য করতে হবে। রিপোর্ট করুন ও আলাদা করে রাখুন। কখনো ট্রান্সফার করবেন না।", "ড্রামের লেবেল (মিথানল) SDS-এর (আইসোপ্রোপানল) সাথে মিলছে না। লেবেল SDS-এর সাথে না মিললে ব্যবহার করবেন না। আলাদা করুন ও রিপোর্ট করুন।", "চমৎকার! আপনি সঠিক GHS লেবেল কনফিগারেশন শনাক্ত করেছেন। নির্বাচিত ড্রামের GHS পিক্টোগ্রাম, UN নম্বর ও নাম সেফটি ডাটা শিট (SDS)-এর প্রয়োজনীয়তার সাথে হুবহু মিলেছে, ফলে নিরাপদ ট্রান্সফার নিশ্চিত হয়।"] }

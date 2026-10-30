@@ -38,7 +38,7 @@ namespace ChemicalSafety.Presentable
             public string correctTitle = "CORRECT SELECTION!";
             public string wrongTitle = "WRONG SELECTION!";
             public string nextLabel = "NEXT";
-            [Tooltip("Scenario 6 look: options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
+            [Tooltip("Shared fancy look (SC01–SC10): options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
             public bool fancy;
             [NonSerialized] public int[] sourceOrder; // for each shown slot, the index the option had before the per-session shuffle
             [NonSerialized] public Func<bool> holdCorrect; // true while a cutscene must finish before the right-answer card opens

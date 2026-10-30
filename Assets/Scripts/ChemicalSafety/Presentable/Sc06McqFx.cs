@@ -7,11 +7,11 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// Scenario 6 only ("fancy" question). Extra life for the shared MCQ panel without touching how it works:
+    /// Shared "fancy" MCQ look (SC01–SC10). Extra life for the shared MCQ panel without touching how it works:
     /// the options arrive one by one, every row breathes with a soft glow and shows a nudging chevron so it reads as touchable,
     /// a comet of light runs round the frame, a faint scan line sweeps the question and a sheen crosses the title.
     /// A right answer ends in a burst of green sparks, a wrong one in a red flicker. All pieces are plain UI images (cheap on Quest)
-    /// and none of them takes input. To use it in another scenario set Question.fancy = true; nothing else changes.
+    /// and none of them takes input. Enable with Question.fancy = true; nothing else changes.
     /// </summary>
     public sealed class Sc06McqFx : MonoBehaviour
     {

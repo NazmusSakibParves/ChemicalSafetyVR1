@@ -1894,7 +1894,7 @@ namespace ChemicalSafety.Presentable
         /// Anti-cheating: the options of every question appear in a different order for every session (same texts, the correct
         /// one is not always in the same slot). Everything that belongs to an option (feedback, wrong-card label, icons) moves with
         /// it. Returns, for each displayed slot, the index the option had in the unshuffled question. The user never sees A / B / C / D
-        /// (the letters exist only in the results file); numbered drum labels ("1. ...") keep their number because it names the drum.
+        /// on options (letters exist only in the results file).
         /// </summary>
         private static int[] ShuffleOptions(PresentableMcqPanel.Question q, string questionId)
         {
@@ -2286,7 +2286,8 @@ namespace ChemicalSafety.Presentable
                         overlays = new[] { art.labelIsopropanol },
                         feedback = feedback[3]
                     }
-                }
+                },
+                fancy = true
             };
         }
 
@@ -2615,7 +2616,7 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc06Content.CorrectTitle,
                 nextLabel = Sc06Content.FinishLabel,
                 options = options,
-                fancy = true // the wow look is shared by Scenarios 4, 5 and 6
+                fancy = true // shared wow look: SC01–SC10
             };
         }
 
@@ -2689,7 +2690,8 @@ namespace ChemicalSafety.Presentable
                 correctIndex = Sc03Content.CorrectIndex,
                 correctTitle = Sc03Content.CorrectTitle,
                 nextLabel = Sc03Content.FinishLabel,
-                options = options
+                options = options,
+                fancy = true
             };
         }
 
@@ -2710,7 +2712,8 @@ namespace ChemicalSafety.Presentable
                     new PresentableMcqPanel.Option { label = label[1], feedback = feedback[1] },
                     new PresentableMcqPanel.Option { label = label[2], feedback = feedback[2] },
                     new PresentableMcqPanel.Option { label = label[3], feedback = feedback[3] }
-                }
+                },
+                fancy = true
             };
         }
     }
