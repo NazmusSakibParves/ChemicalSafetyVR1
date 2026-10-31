@@ -224,6 +224,24 @@ MonoBehaviour:
   voSc10Gate: {fileID: 8300000, guid: 4e6b22227033ac94e88ab190ed88ab36, type: 3}
   voSc10CompleteBn: {fileID: 8300000, guid: d8b71c1e8b6336b48bbed94a93a6c562, type: 3}
   voSc10CompleteEn: {fileID: 8300000, guid: 596b28667e99b5b4c9f7c0ae91d6410e, type: 3}
+  sdsSc11: {fileID: 21300000, guid: 8045ac970a813e540b4984031715a34f, type: 3}
+  iconSc11Siren: {fileID: 21300000, guid: a4b09ea2be001e446b012e2f4f5ebc2a, type: 3}
+  iconSc11Call: {fileID: 21300000, guid: 23f27aa2bf11c75468820a0483a71c6f, type: 3}
+  voSc11Instruction: {fileID: 8300000, guid: 0eb4772da743f0c42894d7030d5bb2e2, type: 3}
+  voSc11Sds: {fileID: 8300000, guid: 270b9d434ae7e6c4c8db169ba1c2d2c9, type: 3}
+  voSc11Alarm: {fileID: 8300000, guid: aaf06c8d94301e74e9956aba0964d66c, type: 3}
+  voSc11Evacuate: {fileID: 8300000, guid: 9e48d7b07a219734483eadf71ed69638, type: 3}
+  voSc11Call: {fileID: 8300000, guid: 2f5f52099abce974ab348aa2cbbdef32, type: 3}
+  minimapSc11: {fileID: 21300000, guid: ffdfc824d2addb849979c576d12a2859, type: 3}
+  bnSc11InstructionPanel: {fileID: 21300000, guid: be60da970e246ec46b2b91c86c87a61f, type: 3}
+  voSc11RadioPlayer1: {fileID: 8300000, guid: 2c66841b3f52d4f4380abb7f0f1dd1be, type: 3}
+  voSc11RadioPlayer3: {fileID: 8300000, guid: e742a35f0997aed44ba48b4a671a7cc7, type: 3}
+  voSc11RadioReply1: {fileID: 8300000, guid: add6775b7a7d0d041ac9f6a185548489, type: 3}
+  voSc11RadioPlayer: {fileID: 8300000, guid: 4014d14e92bd38943b34fd6e52369cfe, type: 3}
+  voSc11RadioReply: {fileID: 8300000, guid: eec2ef5943200aa4b9bdf09c7a0f9fe7, type: 3}
+  voSc11Gate: {fileID: 8300000, guid: dbef77e3a1bd23d4b8859f706c4db301, type: 3}
+  voSc11CompleteBn: {fileID: 8300000, guid: 521dae3b375c11b4085e08222184bad5, type: 3}
+  voSc11CompleteEn: {fileID: 8300000, guid: 0a0539bf2dc98664abc714fd23f628e4, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   useSc01OriginalVoice: 0
   trialSalam: {fileID: 8300000, guid: 9075ddaec63ac2342a2f9788a9e56c67, type: 3}

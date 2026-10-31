@@ -1,0 +1,173 @@
+{
+  "scenario": "SC11",
+  "strings": [
+    {
+      "key": "InstructionEnglish",
+      "en": "You are a maintenance technician doing a routine walk-around of the gas cylinder yard. You hear a faint hissing sound. Looking closely, one cylinder shows frost near the valve — a clear sign of a leak. Take the correct action.",
+      "bn": "আপনি একজন রক্ষণাবেক্ষণ টেকনিশিয়ান এবং গ্যাস সিলিন্ডার ইয়ার্ডে নিয়মিত ঘুরে দেখছেন। হঠাৎ হালকা হিস হিস শব্দ শুনতে পেলেন। কাছে গিয়ে দেখলেন, একটি সিলিন্ডারের ভালভের কাছে বরফ জমেছে, যা গ্যাস লিকের স্পষ্ট লক্ষণ। সঠিক পদক্ষেপ নিন।"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read the Safety Data Sheet. It lists the leak response and cylinder storage rules.",
+      "bn": "নিরাপত্তা তথ্যপত্র পড়ুন। এখানে গ্যাস লিক সামলানো ও সিলিন্ডার সংরক্ষণের নিয়ম দেওয়া আছে।"
+    },
+    {
+      "key": "AlarmHint",
+      "en": "Raise the alarm. Touch the siren icon.",
+      "bn": "অ্যালার্ম বাজান। সাইরেন আইকনটি ছুঁয়ে দিন।"
+    },
+    {
+      "key": "EvacuateHint",
+      "en": "The alarm is ringing. Everyone is evacuating. Follow them out through the exit gate.",
+      "bn": "অ্যালার্ম বাজছে। সবাই এলাকা খালি করছে। আপনিও এক্সিট গেট দিয়ে বেরিয়ে যান।"
+    },
+    {
+      "key": "CallHint",
+      "en": "Call your supervisor from a safe place. Touch the call icon.",
+      "bn": "নিরাপদ জায়গা থেকে সুপারভাইজারকে কল করুন। কল আইকনটি ছুঁয়ে দিন।"
+    },
+    {
+      "key": "AlarmLabel",
+      "en": "RAISE ALARM",
+      "bn": "অ্যালার্ম বাজান"
+    },
+    {
+      "key": "CallLabel",
+      "en": "CALL SUPERVISOR",
+      "bn": "সুপারভাইজারকে কল করুন"
+    },
+    {
+      "key": "RadioPlayer",
+      "en": "PLAYER: [to supervisor] Gas leak at the cylinder yard, frost at the valve! Secure outside, calling in report. Section B evacuated. Over.",
+      "bn": "আপনি: [সুপারভাইজারকে] স্যার, সিলিন্ডার ইয়ার্ডে গ্যাস লিক! ভালভের কাছে বরফ জমেছে। আমি বাইরে নিরাপদে আছি, রিপোর্ট করছি। সেকশন বি খালি করা হয়েছে। ওভার।"
+    },
+    {
+      "key": "RadioReply",
+      "en": "SUPERVISOR: Copy that. Stay well clear, do not go near the cylinders. I am sending the response team now. Wait at the gate. Over.",
+      "bn": "সুপারভাইজার: ঠিক আছে। তুমি দূরে থাকো, সিলিন্ডারের কাছে যাবে না। আমি এখনই রেসপন্স টিম পাঠাচ্ছি। গেটের কাছে অপেক্ষা করো। ওভার।"
+    },
+    {
+      "key": "GateTitle",
+      "en": "Gas Leakage Response Completed",
+      "bn": "গ্যাস লিক সামলানো সম্পন্ন"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice questions (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to review again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "QuestionHeader",
+      "en": "MCQ: Gas Leakage Response",
+      "bn": "MCQ: গ্যাস লিক সামলানো"
+    },
+    {
+      "key": "QuestionPrompt",
+      "en": "What is the correct action if a gas leak is detected from a cylinder in a yard?",
+      "bn": "ইয়ার্ডে কোনো সিলিন্ডার থেকে গ্যাস লিক ধরা পড়লে সঠিক পদক্ষেপ কোনটি?"
+    },
+    {
+      "key": "CorrectTitle",
+      "en": "RIGHT ACTION",
+      "bn": "সঠিক পদক্ষেপ"
+    },
+    {
+      "key": "CorrectBody",
+      "en": "Standard procedure for unidentified gas leak — protects the worker and enables trained intervention.",
+      "bn": "অজানা গ্যাস লিকের জন্য এটাই স্ট্যান্ডার্ড পদ্ধতি। এটি কর্মীকে রক্ষা করে এবং প্রশিক্ষিত দলকে ব্যবস্থা নিতে সুযোগ দেয়।"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Module complete. Well done!",
+      "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    },
+    {
+      "key": "RadioScreen",
+      "en": "CALLING:\nSUPERVISOR",
+      "bn": "কল হচ্ছে:\nসুপারভাইজার"
+    },
+    {
+      "key": "RadioCall",
+      "en": "PLAYER: [to supervisor] Supervisor, Supervisor, this is the technician at the cylinder yard. Urgent! Do you copy? Over.",
+      "bn": "আপনি: [সুপারভাইজারকে] সুপারভাইজার স্যার, সুপারভাইজার স্যার, আমি সিলিন্ডার ইয়ার্ড থেকে টেকনিশিয়ান বলছি। জরুরি! শুনতে পাচ্ছেন? ওভার।"
+    },
+    {
+      "key": "RadioAck",
+      "en": "SUPERVISOR: Copy, go ahead. What is the situation? Over.",
+      "bn": "সুপারভাইজার: হ্যাঁ, শুনতে পাচ্ছি। বলো, কী অবস্থা? ওভার।"
+    },
+    {
+      "key": "MapShared",
+      "en": "LOCATION SHARED",
+      "bn": "লোকেশন শেয়ার করা হয়েছে"
+    },
+    {
+      "key": "MapYou",
+      "en": "YOU",
+      "bn": "আপনি"
+    },
+    {
+      "key": "RadioOut",
+      "en": "PLAYER: [to supervisor] Understood. I am waiting outside the gate. Over and out.",
+      "bn": "আপনি: [সুপারভাইজারকে] বুঝেছি স্যার। আমি গেটের বাইরেই আছি। ওভার অ্যান্ড আউট।"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "OptionLabels",
+      "en": [
+        "Evacuate and notify supervisor.",
+        "Spray water directly on the cylinder.",
+        "Tighten the valve by hand without PPE.",
+        "Ignore the faint hissing sound; it will resolve itself."
+      ],
+      "bn": [
+        "এলাকা খালি করুন এবং সুপারভাইজারকে জানান।",
+        "সিলিন্ডারের উপর সরাসরি পানি ছিটান।",
+        "পিপিই ছাড়াই হাত দিয়ে ভালভ শক্ত করে আটকান।",
+        "হালকা হিস হিস শব্দ উপেক্ষা করুন; এটি নিজে থেকেই ঠিক হয়ে যাবে।"
+      ]
+    },
+    {
+      "key": "OptionFeedback",
+      "en": [
+        "Standard procedure for unidentified gas leak — protects the worker and enables trained intervention.",
+        "Water on a pressurized cylinder can freeze the valve, worsen the leak and spread the gas.",
+        "Without correct PPE and training, tightening can worsen the leak or cause cold burns.",
+        "A leak never fixes itself; the gas can build up, ignite or poison people nearby."
+      ],
+      "bn": [
+        "অজানা গ্যাস লিকের জন্য এটাই স্ট্যান্ডার্ড পদ্ধতি। এটি কর্মীকে রক্ষা করে এবং প্রশিক্ষিত দলকে ব্যবস্থা নিতে সুযোগ দেয়।",
+        "চাপযুক্ত সিলিন্ডারে পানি দিলে ভালভ জমে যেতে পারে, লিক বেড়ে যেতে পারে এবং গ্যাস ছড়িয়ে পড়তে পারে।",
+        "সঠিক পিপিই ও প্রশিক্ষণ ছাড়া ভালভ আটকাতে গেলে লিক আরও বাড়তে পারে বা ঠান্ডায় ত্বক পুড়ে যেতে পারে।",
+        "গ্যাস লিক কখনো নিজে থেকে ঠিক হয় না; গ্যাস জমে আগুন ধরতে পারে বা আশপাশের মানুষ বিষাক্ত হতে পারে।"
+      ]
+    },
+    {
+      "key": "OptionWrongTitle",
+      "en": [
+        "",
+        "WRONG ACTION",
+        "WRONG ACTION",
+        "WRONG ACTION"
+      ],
+      "bn": [
+        "",
+        "ভুল পদক্ষেপ",
+        "ভুল পদক্ষেপ",
+        "ভুল পদক্ষেপ"
+      ]
+    }
+  ],
+  "questions": []
+}

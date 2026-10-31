@@ -55,9 +55,9 @@ SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF)
 
 # scenario number -> how it is spoken
 CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট", 9: "নয়", 10: "দশ"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে", 9: "নয়ে", 10: "দশে", 11: "এগারোতে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven"}
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট", 9: "নয়", 10: "দশ", 11: "এগারো"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে", 9: "নয়ে", 10: "দশে", 11: "এগারোতে", 12: "বারোতে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve"}
 
 
 def complete_bn(n):
@@ -242,6 +242,19 @@ CLIPS = {
     ),
     "VO_Sc10Complete_bn": (BN_VOICE, complete_bn(10)),
     "VO_Sc10Complete_en": (EN_VOICE, complete_en(10)),
+    "VO_SC11_Instruction_bn": (BN_VOICE, "আপনি একজন রক্ষণাবেক্ষণ টেকনিশিয়ান এবং গ্যাস সিলিন্ডার ইয়ার্ডে নিয়মিত ঘুরে দেখছেন। হঠাৎ হালকা হিস হিস শব্দ শুনতে পেলেন। কাছে গিয়ে দেখলেন, একটি সিলিন্ডারের ভালভের কাছে বরফ জমেছে, যা গ্যাস লিকের স্পষ্ট লক্ষণ। সঠিক পদক্ষেপ নিন।"),
+    "VO_Sc11Sds_bn": (BN_VOICE, "নিরাপত্তা তথ্যপত্র পড়ুন। এখানে গ্যাস লিক সামলানো ও সিলিন্ডার সংরক্ষণের নিয়ম দেওয়া আছে।"),
+    "VO_Sc11Alarm_bn": (BN_VOICE, "অ্যালার্ম বাজান। সাইরেন আইকনটি ছুঁয়ে দিন।"),
+    "VO_Sc11Evacuate_bn": (BN_VOICE, "অ্যালার্ম বাজছে। সবাই এলাকা খালি করছে। আপনিও এক্সিট গেট দিয়ে বেরিয়ে যান।"),
+    "VO_Sc11Call_bn": (BN_VOICE, "নিরাপদ জায়গা থেকে সুপারভাইজারকে কল করুন। কল আইকনটি ছুঁয়ে দিন।"),
+    "VO_Sc11RadioPlayer_bn": (BN_VOICE, "সুপারভাইজার, আমি বাইরে নিরাপদ জায়গায় আছি, রিপোর্ট করছি। সেকশন বি খালি করা হয়েছে।"),
+    "VO_Sc11RadioReply_bn": (BN_VOICE, "বুঝতে পেরেছি। এলাকা থেকে দূরে থাকুন। রেসপন্স টিম রওনা দিয়েছে।"),
+    "VO_Sc11Gate_bn": (
+        BN_VOICE,
+        "গ্যাস লিক সামলানোর অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন। আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
+    ),
+    "VO_Sc11Complete_bn": (BN_VOICE, complete_bn(11)),
+    "VO_Sc11Complete_en": (EN_VOICE, complete_en(11)),
 }
 
 # English twins of every Bangla clip (the "Complete" lines already have their own _en clips above and are not repeated).
@@ -320,6 +333,14 @@ CLIPS_EN = {
     "VO_Sc10Clean": "Touch CLEAN-UP GLASS. Sweep the broken glass into the dustpan with the brush.",
     "VO_Sc10Dispose": "Touch DISPOSE. Put the sock, pads and glass in the hazardous waste bag, then in the bin.",
     "VO_Sc10Gate": gate_en("Spill response practice complete."),
+    "VO_SC11_Instruction": "You are a maintenance technician doing a routine walk-around of the gas cylinder yard. You hear a faint hissing sound. Looking closely, one cylinder shows frost near the valve. This is a clear sign of a leak. Take the correct action.",
+    "VO_Sc11Sds": "Read the Safety Data Sheet. It lists the leak response and cylinder storage rules.",
+    "VO_Sc11Alarm": "Raise the alarm. Touch the siren icon.",
+    "VO_Sc11Evacuate": "The alarm is ringing. Everyone is evacuating. Follow them out through the exit gate.",
+    "VO_Sc11Call": "Call your supervisor from a safe place. Touch the call icon.",
+    "VO_Sc11RadioPlayer": "Supervisor, I am secure outside, calling in my report. Section B is evacuated.",
+    "VO_Sc11RadioReply": "Copy that. Stay clear of the area. The response team is on its way.",
+    "VO_Sc11Gate": gate_en("Gas leakage response complete."),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"

@@ -1149,6 +1149,100 @@ namespace ChemicalSafety.Presentable
             Click(mcq10.transform, "NextButton");
         }
 
+        private IEnumerator Sc11Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc11Intro", 40f);
+            var yard = Get<Sc11Yard>(_director, "sc11Yard");
+            var gate = Get<Sc06Gate>(_director, "sc11Gate");
+            var mcq11 = Get<PresentableMcqPanel>(_director, "mcqSc11");
+            var clipboard = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("119_sc11_instruction");
+            yield return ClickContinue(panel, 40f);
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc11Sds", 40f);
+                yield return new WaitForSeconds(1.8f);
+                Say("SC11 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
+                if (shots)
+                    yield return Shot("120_sc11_sds");
+
+                yield return WaitStage("sc11Alarm", 40f);
+                yield return Sc10Wait(() => yard.IconVisible, 10f);
+                yield return new WaitForSeconds(0.8f);
+                Say("SC11 " + tag + ": exit sign = " + yard.ExitShown + ", siren icon visible = " + yard.IconVisible + " (expected True)");
+                if (shots)
+                    yield return Shot("121_sc11_alarm_icon");
+                yield return FingerPoke(yard.IconPoke, "siren icon");
+                yield return new WaitForSeconds(2.0f);
+                Say("SC11 " + tag + ": alarm on = " + yard.AlarmOn + ", siren sound = " + yard.SirenPlaying + " (expected True)");
+                if (shots)
+                    yield return Shot("122_sc11_alarm_on");
+
+                yield return WaitStage("sc11Evacuate", 20f);
+                yield return new WaitForSeconds(3.0f);
+                if (shots)
+                    yield return Shot("123_sc11_evacuate");
+                yield return WaitStage("sc11Call", 60f);
+                Say("SC11 " + tag + ": workers out = " + yard.WorkersOut + "/" + yard.WorkerCount + " (expected all)");
+                yield return Sc10Wait(() => yard.IconVisible, 10f);
+                yield return new WaitForSeconds(0.8f);
+                if (shots)
+                    yield return Shot("124_sc11_call_icon");
+                yield return FingerPoke(yard.IconPoke, "call icon");
+
+                yield return WaitStage("sc11Radio", 20f);
+                yield return Sc10Wait(() => yard.RadioVisible, 6f);
+                yield return new WaitForSeconds(2.4f);
+                Say("SC11 " + tag + ": radio in hand = " + yard.RadioVisible + ", calling = " + yard.Calling + " (expected True)");
+                if (shots)
+                    yield return Shot("125_sc11_radio");
+                yield return new WaitForSeconds(5.5f);
+                if (shots)
+                    yield return Shot("126_sc11_radio_talk");
+
+                yield return WaitStage("sc11Gate", 60f);
+                yield return Sc10Wait(() => gate.Visible, 15f);
+                yield return new WaitForSeconds(1.3f);
+                Say("SC11 " + tag + ": gate card visible = " + gate.Visible);
+                LayoutCheck("SC11 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("127_sc11_gate");
+                Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+            }
+
+            yield return WaitStage("sc11Question", 20f);
+            yield return Sc10Wait(() => mcq11.IsOpen, 8f);
+            yield return new WaitForSeconds(2.4f);
+            Say("SC11 MCQ wow look = " + mcq11.Fancy + " (expected True)");
+            LayoutCheck("SC11 MCQ", mcq11.transform);
+            yield return Shot("128_sc11_question");
+            Click(mcq11.transform, "Row2");
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("129_sc11_wrong");
+            Click(mcq11.transform, "Close");
+            yield return new WaitForSeconds(1.2f);
+            Click(mcq11.transform, "Row1");
+            var heard = "";
+            var h = 0f;
+            while (h < 16f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc11Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC11 MCQ correct card", mcq11.transform);
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 11 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("130_sc11_correct");
+            Click(mcq11.transform, "NextButton");
+        }
+
         private IEnumerator ClickContinue(InstructionPanelView panel, float timeout)
         {
             var cont = FindDeep(panel.transform, "ContinueButton");
@@ -1248,6 +1342,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc11Only", false))
+            {
+                Say("SC11-only run (dev start)");
+                yield return Sc11Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc10Only", false))
             {
                 Say("SC10-only run (dev start)");
@@ -2165,6 +2269,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc08Smoke(panel, voiceSrc);
             yield return Sc09Smoke(panel, voiceSrc);
             yield return Sc10Smoke(panel, voiceSrc);
+            yield return Sc11Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

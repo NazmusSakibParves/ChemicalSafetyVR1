@@ -90,6 +90,9 @@ namespace ChemicalSafety.Editor
             var sc10 = BuildSc10Room(env10, art);
             Sc10BakeProbe(env, env10);
             env10.gameObject.SetActive(false);
+            var env11 = new GameObject("Environment_SC11").transform;
+            var sc11 = BuildSc11Room(env11, art);
+            env11.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -165,6 +168,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq9, "art", art);
             var mcq10 = Child("McqPanel_SC10", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq10, "art", art);
+            var mcq11 = Child("McqPanel_SC11", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq11, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -303,6 +308,16 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc10Gate").objectReferenceValue = sc10.gate;
             so.FindProperty("sc10Ambience").objectReferenceValue = sc10.ambience;
             so.FindProperty("mcqSc10").objectReferenceValue = mcq10;
+            so.FindProperty("envSc11").objectReferenceValue = env11.gameObject;
+            so.FindProperty("spawnSc11").objectReferenceValue = sc11.spawn;
+            so.FindProperty("sc11YardStand").objectReferenceValue = sc11.yardStand;
+            so.FindProperty("sc11GateStand").objectReferenceValue = sc11.gateStand;
+            so.FindProperty("sc11OutsideStand").objectReferenceValue = sc11.outsideStand;
+            so.FindProperty("sc11ExitTarget").objectReferenceValue = sc11.exitTarget;
+            so.FindProperty("sc11Yard").objectReferenceValue = sc11.yard;
+            so.FindProperty("sc11Guide").objectReferenceValue = sc11.guide;
+            so.FindProperty("sc11Gate").objectReferenceValue = sc11.gate;
+            so.FindProperty("mcqSc11").objectReferenceValue = mcq11;
             SetRef(sc10.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
@@ -370,7 +385,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10", "2D/Sc11" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -576,6 +591,11 @@ namespace ChemicalSafety.Editor
             art.bnSc09WalkHint = B("BN_Sc09WalkHint");
             art.bnSc09PushHint = B("BN_Sc09PushHint");
             art.bnSc09FlushHint = B("BN_Sc09FlushHint");
+            art.sdsSc11 = LoadSprite("2D/Sc11/SDS_SC11");
+            art.minimapSc11 = LoadSprite("2D/Sc11/Minimap");
+            art.bnSc11InstructionPanel = B("BN_Sc11InstructionPanel");
+            art.iconSc11Siren = LoadSprite("2D/Sc11/Icon_Siren");
+            art.iconSc11Call = LoadSprite("2D/Sc11/Icon_CallSupervisor");
             art.sdsSc10 = LoadSprite("2D/Sc10/SDS_SC10");
             art.iconSc10Contain = LoadSprite("2D/Sc10/Icon_Contain");
             art.iconSc10Neutralize = LoadSprite("2D/Sc10/Icon_Neutralize");
@@ -740,6 +760,19 @@ namespace ChemicalSafety.Editor
             art.voSc10Gate = Keep("VO_Sc10Gate_bn.mp3", art.voSc10Gate);
             art.voSc10CompleteBn = Keep("VO_Sc10Complete_bn.mp3", art.voSc10CompleteBn);
             art.voSc10CompleteEn = Keep("VO_Sc10Complete_en.mp3", art.voSc10CompleteEn);
+            art.voSc11Instruction = Keep("VO_SC11_Instruction_bn.mp3", art.voSc11Instruction);
+            art.voSc11Sds = Keep("VO_Sc11Sds_bn.mp3", art.voSc11Sds);
+            art.voSc11Alarm = Keep("VO_Sc11Alarm_bn.mp3", art.voSc11Alarm);
+            art.voSc11Evacuate = Keep("VO_Sc11Evacuate_bn.mp3", art.voSc11Evacuate);
+            art.voSc11Call = Keep("VO_Sc11Call_bn.mp3", art.voSc11Call);
+            art.voSc11RadioPlayer3 = Keep("VO_Sc11RadioPlayer3_bn.mp3", art.voSc11RadioPlayer3);
+            art.voSc11RadioPlayer1 = Keep("VO_Sc11RadioPlayer1_bn.mp3", art.voSc11RadioPlayer1);
+            art.voSc11RadioReply1 = Keep("VO_Sc11RadioReply1_bn.mp3", art.voSc11RadioReply1);
+            art.voSc11RadioPlayer = Keep("VO_Sc11RadioPlayer_bn.mp3", art.voSc11RadioPlayer);
+            art.voSc11RadioReply = Keep("VO_Sc11RadioReply_bn.mp3", art.voSc11RadioReply);
+            art.voSc11Gate = Keep("VO_Sc11Gate_bn.mp3", art.voSc11Gate);
+            art.voSc11CompleteBn = Keep("VO_Sc11Complete_bn.mp3", art.voSc11CompleteBn);
+            art.voSc11CompleteEn = Keep("VO_Sc11Complete_en.mp3", art.voSc11CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

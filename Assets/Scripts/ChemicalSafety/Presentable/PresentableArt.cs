@@ -240,6 +240,26 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc10Gate;
         public AudioClip voSc10CompleteBn;
         public AudioClip voSc10CompleteEn;
+
+        [Header("Scenario 11 (gas cylinder leak)")]
+        public Sprite sdsSc11;
+        public Sprite iconSc11Siren;
+        public Sprite iconSc11Call;
+        public AudioClip voSc11Instruction;
+        public AudioClip voSc11Sds;
+        public AudioClip voSc11Alarm;
+        public AudioClip voSc11Evacuate;
+        public AudioClip voSc11Call;
+        public Sprite minimapSc11;
+        public Sprite bnSc11InstructionPanel;
+        public AudioClip voSc11RadioPlayer1;
+        public AudioClip voSc11RadioPlayer3;
+        public AudioClip voSc11RadioReply1;
+        public AudioClip voSc11RadioPlayer;
+        public AudioClip voSc11RadioReply;
+        public AudioClip voSc11Gate;
+        public AudioClip voSc11CompleteBn;
+        public AudioClip voSc11CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 

@@ -132,8 +132,8 @@ namespace ChemicalSafety.Presentable
                 _english.font = art.englishFont;
             if (!string.IsNullOrEmpty(english))
                 _english.text = english;
-            if (bangla != null && _bangla != null)
-                _bangla.sprite = bangla;
+            if (_bangla != null)
+                _bangla.sprite = bangla; // null: the English text is swapped for its Bangla image by BnTmp
             Reflow();
         }
 

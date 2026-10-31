@@ -175,6 +175,16 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc06Gate sc10Gate;
         [SerializeField] private Sc06Ambience sc10Ambience;
         [SerializeField] private PresentableMcqPanel mcqSc10;
+        [SerializeField] private GameObject envSc11;
+        [SerializeField] private Transform spawnSc11;
+        [SerializeField] private Transform sc11YardStand;
+        [SerializeField] private Transform sc11GateStand;
+        [SerializeField] private Transform sc11OutsideStand;
+        [SerializeField] private Transform sc11ExitTarget;
+        [SerializeField] private Sc11Yard sc11Yard;
+        [SerializeField] private Sc09Guide sc11Guide;
+        [SerializeField] private Sc06Gate sc11Gate;
+        [SerializeField] private PresentableMcqPanel mcqSc11;
 
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
@@ -229,6 +239,13 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc11Only", false) && envSc11 != null)
+            {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                yield return RunScenario11();
                 yield break;
             }
 
@@ -413,7 +430,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc10 != null ? Sc10Content.ModuleComplete
+            var doneLine = envSc11 != null ? Sc11Content.ModuleComplete
+                : envSc10 != null ? Sc10Content.ModuleComplete
                 : envSc09 != null ? Sc09Content.ModuleComplete
                 : envSc08 != null ? Sc08Content.ModuleComplete
                 : envSc07 != null ? Sc07Content.ModuleComplete
@@ -2006,6 +2024,12 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 11)
+            {
+                yield return PlayVoice(Loc.IsBangla ? art.voSc11CompleteBn : art.voSc11CompleteEn);
+                yield break;
+            }
+
             if (scenario == 10)
             {
                 yield return PlayVoice(Loc.IsBangla ? art.voSc10CompleteBn : art.voSc10CompleteEn);
@@ -2360,6 +2384,8 @@ namespace ChemicalSafety.Presentable
             if (sc10Ambience != null)
                 sc10Ambience.End();
             Stage("sc10Done");
+            if (envSc11 != null)
+                yield return RunScenario11();
         }
 
         private IEnumerator Sc10Round()
@@ -2492,6 +2518,182 @@ namespace ChemicalSafety.Presentable
             yield return sc10Spill.Dispose();
             Stage("sc10Disposed");
             yield return PresentableFx.Wait(1.0f);
+        }
+
+        private IEnumerator RunScenario11()
+        {
+            Stage("sc11");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc11.SetActive(true);
+            clipboard.SetSheet(art.sdsSc11);
+            clipboard.SetVisible(false);
+            sc11Yard.Begin();
+            PlaceRig(sc11YardStand.position, sc11YardStand.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc11Intro");
+            yield return Sc09Card(Sc11Content.InstructionEnglish, art.bnSc11InstructionPanel,
+                art.voSc11Instruction != null ? art.voSc11Instruction : art.voInstruction);
+
+            var again = true;
+            while (again)
+            {
+                yield return Sc11Round();
+
+                Stage("sc11Gate");
+                yield return PresentableFx.Wait(0.8f);
+                yield return fader.FadeTo(1f, 0.35f);
+                sc11Yard.ShowOutside(false);
+                sc11Yard.RadioHide();
+                PlaceRig(sc11YardStand.position, sc11YardStand.forward);
+                subtitle.Hide();
+                yield return fader.FadeTo(0f, 0.5f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc11Gate.Back += OnBack;
+                sc11Gate.Next += OnNext;
+                sc11Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc11Gate));
+                while (choice == 0)
+                    yield return null;
+                sc11Gate.Back -= OnBack;
+                sc11Gate.Next -= OnNext;
+                sc11Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    yield return fader.FadeTo(1f, 0.3f);
+                    sc11Yard.ResetAll();
+                    PlaceRig(sc11YardStand.position, sc11YardStand.forward);
+                    yield return PresentableFx.Wait(0.3f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc11Question");
+            PlaceAtEyeLevel(mcqSc11.transform, 0.7f, false);
+            yield return RunQuestion(mcqSc11, BuildSc11Question(), false, 11);
+            sc11Yard.End();
+            Stage("sc11Done");
+        }
+
+        private IEnumerator Sc11Round()
+        {
+            // 1. the safety data sheet (leak response and cylinder storage)
+            Stage("sc11Sds");
+            StartCoroutine(SubtitledVoice(null, Sc11Content.SdsHint, art.voSc11Sds));
+            clipboard.SetVisible(true);
+            var sdsWait = 0f;
+            while (clipboard.IsVisible && sdsWait < 12f)
+            {
+                sdsWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            clipboard.SetVisible(false);
+            StopVoice();
+            yield return PresentableFx.Wait(0.4f);
+
+            // 2. raise the alarm: the exit sign lights up, the siren icon is touched
+            Stage("sc11Alarm");
+            sc11Yard.ShowExit(true);
+            StartCoroutine(SubtitledVoice(null, Sc11Content.AlarmHint, art.voSc11Alarm));
+            yield return sc11Yard.WaitIcon(art.iconSc11Siren, Sc11Content.AlarmLabel);
+            StopVoice();
+            sc11Yard.RaiseAlarm();
+            yield return PresentableFx.Wait(1.2f);
+
+            // 3. everybody evacuates; the hero follows through the exit gate
+            Stage("sc11Evacuate");
+            StartCoroutine(SubtitledVoice(null, Sc11Content.EvacuateHint, art.voSc11Evacuate));
+            StartCoroutine(sc11Yard.Evacuate());
+            sc11Guide.PointAt(sc11ExitTarget, new Vector3(0f, 2.3f, 0f));
+            yield return PresentableFx.Wait(1.2f);
+            yield return Glide(sc11GateStand.position, 6f);
+            sc11Guide.Hide();
+            var evacGuard = 0f;
+            while (sc11Yard.WorkersOut < sc11Yard.WorkerCount && evacGuard < 20f)
+            {
+                evacGuard += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            StopVoice();
+
+            // 4. at the exit: call the supervisor
+            Stage("sc11Call");
+            StartCoroutine(SubtitledVoice(null, Sc11Content.CallHint, art.voSc11Call));
+            yield return sc11Yard.WaitIcon(art.iconSc11Call, Sc11Content.CallLabel);
+            StopVoice();
+
+            // 5. outside the fence: the wireless call
+            yield return fader.FadeTo(1f, 0.4f);
+            sc11Yard.ShowOutside(true);
+            PlaceRig(sc11OutsideStand.position, sc11OutsideStand.forward);
+            yield return fader.FadeTo(0f, 0.7f);
+            Stage("sc11Radio");
+            yield return sc11Yard.RadioRaise();
+            sc11Yard.ShowMap(true);
+            yield return sc11Yard.RadioDial();
+            // the technician calls in, the supervisor answers, the technician reports, the supervisor replies (two men)
+            subtitle.Show(null, Sc11Content.RadioCall);
+            sc11Yard.RadioTalk(true);
+            yield return PlayVoice(art.voSc11RadioPlayer1);
+            sc11Yard.RadioTalk(false);
+            subtitle.Show(null, Sc11Content.RadioAck);
+            yield return sc11Yard.RadioReply(LocalizedClip(art.voSc11RadioReply1));
+            subtitle.Show(null, Sc11Content.RadioPlayer);
+            sc11Yard.RadioTalk(true);
+            yield return PlayVoice(art.voSc11RadioPlayer);
+            sc11Yard.RadioTalk(false);
+            subtitle.Show(null, Sc11Content.RadioReply);
+            yield return sc11Yard.RadioReply(LocalizedClip(art.voSc11RadioReply));
+            subtitle.Show(null, Sc11Content.RadioOut);
+            sc11Yard.RadioTalk(true);
+            yield return PlayVoice(art.voSc11RadioPlayer3);
+            sc11Yard.RadioTalk(false);
+            yield return PresentableFx.Wait(0.6f);
+            subtitle.Hide();
+            sc11Yard.ShowMap(false);
+            sc11Yard.RadioHide();
+            Stage("sc11Called");
+            yield return PresentableFx.Wait(0.8f);
+        }
+
+        private static PresentableMcqPanel.Question BuildSc11Question()
+        {
+            var options = new PresentableMcqPanel.Option[Sc11Content.OptionLabels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = Sc11Content.OptionLabels[i],
+                    feedback = Sc11Content.OptionFeedback[i],
+                    wrongTitle = Sc11Content.OptionWrongTitle[i]
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc11Content.QuestionHeader,
+                prompt = Sc11Content.QuestionPrompt,
+                correctIndex = Sc11Content.CorrectIndex,
+                correctTitle = Sc11Content.CorrectTitle,
+                nextLabel = Sc11Content.FinishLabel,
+                options = options,
+                fancy = true
+            };
         }
 
         private static PresentableMcqPanel.Question BuildSc10Question()
