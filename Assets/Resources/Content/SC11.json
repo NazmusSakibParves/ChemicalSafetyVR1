@@ -13,8 +13,8 @@
     },
     {
       "key": "AlarmHint",
-      "en": "Raise the alarm. Touch the siren icon.",
-      "bn": "অ্যালার্ম বাজান। সাইরেন আইকনটি ছুঁয়ে দিন।"
+      "en": "Raise the alarm. Click the siren icon.",
+      "bn": "অ্যালার্ম বাজান। সাইরেন আইকনটিতে ক্লিক করুন।"
     },
     {
       "key": "EvacuateHint",
@@ -23,8 +23,8 @@
     },
     {
       "key": "CallHint",
-      "en": "Call your supervisor from a safe place. Touch the call icon.",
-      "bn": "নিরাপদ জায়গা থেকে সুপারভাইজারকে কল করুন। কল আইকনটি ছুঁয়ে দিন।"
+      "en": "Call your supervisor from a safe place. Click the call icon.",
+      "bn": "নিরাপদ জায়গা থেকে সুপারভাইজারকে কল করুন। কল আইকনটিতে ক্লিক করুন।"
     },
     {
       "key": "AlarmLabel",
