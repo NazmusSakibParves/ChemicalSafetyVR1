@@ -55,9 +55,9 @@ SIX = "\u099b\u09df\u099f\u09bf"  # ছয়টি. Precomposed য় (U+09DF)
 
 # scenario number -> how it is spoken
 CHHOY = "ছয়"  # ছয় (precomposed য়, see SIX)
-NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট", 9: "নয়", 10: "দশ", 11: "এগারো"}
-TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে", 9: "নয়ে", 10: "দশে", 11: "এগারোতে", 12: "বারোতে"}  # "go to scenario N"
-EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve"}
+NUM = {1: "এক", 2: "দুই", 3: "তিন", 4: "চার", 5: "পাঁচ", 6: CHHOY, 7: "সাত", 8: "আট", 9: "নয়", 10: "দশ", 11: "এগারো", 12: "বারো"}
+TO_NUM = {2: "দুইয়ে", 3: "তিনে", 4: "চারে", 5: "পাঁচে", 6: CHHOY + "ে", 7: "সাতে", 8: "আটে", 9: "নয়ে", 10: "দশে", 11: "এগারোতে", 12: "বারোতে", 13: "তেরোতে"}  # "go to scenario N"
+EN_NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen"}
 
 
 def complete_bn(n):
@@ -255,6 +255,22 @@ CLIPS = {
     ),
     "VO_Sc11Complete_bn": (BN_VOICE, complete_bn(11)),
     "VO_Sc11Complete_en": (EN_VOICE, complete_en(11)),
+    "VO_SC12_Instruction_bn": (BN_VOICE, "আপনি একজন প্রসেস অপারেটর এবং ক্ষয়কারী রাসায়নিক সামলাতে প্রসেস এলাকায় ঢুকতে যাচ্ছেন। নিরাপত্তা তথ্যপত্র পড়ুন, তারপর পুরো পিপিই সেট পরুন।"),
+    "VO_Sc12Sds_bn": (BN_VOICE, "নিরাপত্তা তথ্যপত্র পড়ুন। এখানে প্রতিটি ঝুঁকির জন্য কোন পিপিই লাগবে তা দেওয়া আছে।"),
+    "VO_Sc12Stand_bn": (BN_VOICE, "লকারের সামনে সবুজ তীরের উপর দাঁড়ান।"),
+    "VO_Sc12Pick0_bn": (BN_VOICE, "ক্ষয়কারী অ্যাসিডের জন্য চোখ ও মুখের সুরক্ষা বেছে নিন।"),
+    "VO_Sc12Pick1_bn": (BN_VOICE, "ক্ষয়কারী অ্যাসিডের জন্য হাতের সুরক্ষা বেছে নিন।"),
+    "VO_Sc12Pick2_bn": (BN_VOICE, "অ্যাসিডের বাষ্পের জন্য রেসপিরেটর বেছে নিন।"),
+    "VO_Sc12Pick3_bn": (BN_VOICE, "ক্ষয়কারী অ্যাসিডের জন্য শরীরের সুরক্ষা বেছে নিন।"),
+    "VO_Sc12Right_bn": (BN_VOICE, "সঠিক পছন্দ। ক্ষয়কারী অ্যাসিডের জন্য উপযুক্ত।"),
+    "VO_Sc12Wrong_bn": (BN_VOICE, "ভুল পছন্দ। ক্ষয়কারী অ্যাসিডের জন্য অনুপযুক্ত।"),
+    "VO_Sc12Review_bn": (BN_VOICE, "আপনার পিপিই সেট সম্পূর্ণ। তালিকাটি দেখে নিন, তারপর নেক্সট-এ ক্লিক করুন।"),
+    "VO_Sc12Gate_bn": (
+        BN_VOICE,
+        "পিপিই পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন। আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
+    ),
+    "VO_Sc12Complete_bn": (BN_VOICE, complete_bn(12)),
+    "VO_Sc12Complete_en": (EN_VOICE, complete_en(12)),
 }
 
 # English twins of every Bangla clip (the "Complete" lines already have their own _en clips above and are not repeated).
@@ -341,6 +357,17 @@ CLIPS_EN = {
     "VO_Sc11RadioPlayer": "Supervisor, I am secure outside, calling in my report. Section B is evacuated.",
     "VO_Sc11RadioReply": "Copy that. Stay clear of the area. The response team is on its way.",
     "VO_Sc11Gate": gate_en("Gas leakage response complete."),
+    "VO_SC12_Instruction": "You are a process operator about to enter the process area to handle a corrosive chemical. Read the SDS, then put on the full ensemble.",
+    "VO_Sc12Sds": "Read the Safety Data Sheet. It lists the PPE for each hazard.",
+    "VO_Sc12Stand": "Stand on the green arrow in front of the lockers.",
+    "VO_Sc12Pick0": "Pick the eye and face protection for corrosive acid.",
+    "VO_Sc12Pick1": "Pick the hand protection for corrosive acid.",
+    "VO_Sc12Pick2": "Pick the respirator for acid vapour.",
+    "VO_Sc12Pick3": "Pick the body protection for corrosive acid.",
+    "VO_Sc12Right": "Right choice. Compatible with Corrosive Acid.",
+    "VO_Sc12Wrong": "Wrong choice. Incompatible with Corrosive Acid.",
+    "VO_Sc12Review": "Your PPE ensemble is complete. Check the list, then click NEXT.",
+    "VO_Sc12Gate": gate_en("PPE inspection complete."),
 }
 
 REST = " রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"

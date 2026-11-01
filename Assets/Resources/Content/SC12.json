@@ -1,0 +1,253 @@
+{
+  "scenario": "SC12",
+  "strings": [
+    {
+      "key": "InstructionEnglish",
+      "en": "You are a process operator about to enter the process area to handle a corrosive chemical. Read the SDS, then put on the full ensemble.",
+      "bn": "আপনি একজন প্রসেস অপারেটর এবং ক্ষয়কারী রাসায়নিক সামলাতে প্রসেস এলাকায় ঢুকতে যাচ্ছেন। নিরাপত্তা তথ্যপত্র পড়ুন, তারপর পুরো পিপিই সেট পরুন।"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read the Safety Data Sheet. It lists the PPE for each hazard.",
+      "bn": "নিরাপত্তা তথ্যপত্র পড়ুন। এখানে প্রতিটি ঝুঁকির জন্য কোন পিপিই লাগবে তা দেওয়া আছে।"
+    },
+    {
+      "key": "StandHint",
+      "en": "Stand on the green arrow in front of the lockers.",
+      "bn": "লকারের সামনে সবুজ তীরের উপর দাঁড়ান।"
+    },
+    {
+      "key": "PickHint",
+      "en": "Choose the right item from the PPE Selection Panel. Click your choice.",
+      "bn": "পিপিই সিলেকশন প্যানেল থেকে সঠিক জিনিসটি বেছে নিন। আপনার পছন্দে ক্লিক করুন।"
+    },
+    {
+      "key": "PanelTitle",
+      "en": "PPE Selection Panel",
+      "bn": "পিপিই সিলেকশন প্যানেল"
+    },
+    {
+      "key": "RightTitle",
+      "en": "RIGHT CHOICE",
+      "bn": "সঠিক পছন্দ"
+    },
+    {
+      "key": "RightBody",
+      "en": "Compatible with Corrosive Acid",
+      "bn": "ক্ষয়কারী অ্যাসিডের জন্য উপযুক্ত"
+    },
+    {
+      "key": "WrongTitle",
+      "en": "WRONG CHOICE",
+      "bn": "ভুল পছন্দ"
+    },
+    {
+      "key": "WrongBody",
+      "en": "Incompatible with Corrosive Acid",
+      "bn": "ক্ষয়কারী অ্যাসিডের জন্য অনুপযুক্ত"
+    },
+    {
+      "key": "ReviewTitle",
+      "en": "CORROSIVE ACID COMPATIBLE PPE",
+      "bn": "ক্ষয়কারী অ্যাসিডের উপযোগী পিপিই"
+    },
+    {
+      "key": "ReviewHint",
+      "en": "Your PPE ensemble is complete. Check the list, then click NEXT.",
+      "bn": "আপনার পিপিই সেট সম্পূর্ণ। তালিকাটি দেখে নিন, তারপর নেক্সট-এ ক্লিক করুন।"
+    },
+    {
+      "key": "NextLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "GateTitle",
+      "en": "PPE Inspection Completed",
+      "bn": "পিপিই পরিদর্শন সম্পন্ন"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice questions (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to review again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "QuestionHeader",
+      "en": "PPE SELECTION ASSESSMENT",
+      "bn": "পিপিই নির্বাচন মূল্যায়ন"
+    },
+    {
+      "key": "QuestionPrompt",
+      "en": "What PPE items are required when handling corrosive acids? (Select all that apply)",
+      "bn": "ক্ষয়কারী অ্যাসিড সামলানোর সময় কোন কোন পিপিই দরকার? (প্রযোজ্য সবগুলো বেছে নিন)"
+    },
+    {
+      "key": "SubmitLabel",
+      "en": "Submit",
+      "bn": "জমা দিন"
+    },
+    {
+      "key": "CorrectTitle",
+      "en": "Right Choice!",
+      "bn": "সঠিক পছন্দ!"
+    },
+    {
+      "key": "CorrectBody",
+      "en": "All selected items are appropriate PPE for handling corrosive acids according to SDS safety guidelines.",
+      "bn": "বেছে নেওয়া সবগুলো জিনিসই নিরাপত্তা তথ্যপত্রের নির্দেশনা অনুযায়ী ক্ষয়কারী অ্যাসিড সামলানোর উপযুক্ত পিপিই।"
+    },
+    {
+      "key": "WrongTitleMcq",
+      "en": "Wrong Choice!",
+      "bn": "ভুল পছন্দ!"
+    },
+    {
+      "key": "WrongBodyMcq",
+      "en": "Required in many scenarios but not mandated by SDS for this specific task.",
+      "bn": "অনেক ক্ষেত্রে দরকার হলেও এই নির্দিষ্ট কাজের জন্য নিরাপত্তা তথ্যপত্রে বাধ্যতামূলক নয়।"
+    },
+    {
+      "key": "MissedBodyMcq",
+      "en": "A required item is missing. Select every PPE item that the SDS requires for corrosive acids.",
+      "bn": "একটি প্রয়োজনীয় পিপিই বাদ পড়েছে। নিরাপত্তা তথ্যপত্র অনুযায়ী ক্ষয়কারী অ্যাসিডের জন্য সবগুলো প্রয়োজনীয় পিপিই বেছে নিন।"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Module complete. Well done!",
+      "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "CategoryNames",
+      "en": [
+        "Goggles / Face Shield",
+        "Gloves",
+        "Respirators",
+        "Aprons & Suits"
+      ],
+      "bn": [
+        "গগলস / ফেস শিল্ড",
+        "গ্লাভস",
+        "রেসপিরেটর",
+        "অ্যাপ্রন ও স্যুট"
+      ]
+    },
+    {
+      "key": "PickPrompt",
+      "en": [
+        "Pick the eye and face protection for corrosive acid.",
+        "Pick the hand protection for corrosive acid.",
+        "Pick the respirator for acid vapour.",
+        "Pick the body protection for corrosive acid."
+      ],
+      "bn": [
+        "ক্ষয়কারী অ্যাসিডের জন্য চোখ ও মুখের সুরক্ষা বেছে নিন।",
+        "ক্ষয়কারী অ্যাসিডের জন্য হাতের সুরক্ষা বেছে নিন।",
+        "অ্যাসিডের বাষ্পের জন্য রেসপিরেটর বেছে নিন।",
+        "ক্ষয়কারী অ্যাসিডের জন্য শরীরের সুরক্ষা বেছে নিন।"
+      ]
+    },
+    {
+      "key": "OptGoggles",
+      "en": [
+        "Splash Goggles",
+        "Safety Spectacles",
+        "Welding Shield",
+        "Dust Goggles"
+      ],
+      "bn": [
+        "স্প্ল্যাশ গগলস",
+        "সেফটি চশমা",
+        "ওয়েল্ডিং শিল্ড",
+        "ডাস্ট গগলস"
+      ]
+    },
+    {
+      "key": "OptGloves",
+      "en": [
+        "Neoprene Gloves",
+        "Latex Surgical Gloves",
+        "Cotton Work Gloves",
+        "Leather Welding Gloves"
+      ],
+      "bn": [
+        "নিওপ্রিন গ্লাভস",
+        "ল্যাটেক্স সার্জিক্যাল গ্লাভস",
+        "সুতির কাজের গ্লাভস",
+        "চামড়ার ওয়েল্ডিং গ্লাভস"
+      ]
+    },
+    {
+      "key": "OptRespirators",
+      "en": [
+        "Acid Gas Cartridge Respirator",
+        "Dust Mask (N95)",
+        "Organic Vapor Respirator",
+        "Cloth Face Mask"
+      ],
+      "bn": [
+        "অ্যাসিড গ্যাস কার্টিজ রেসপিরেটর",
+        "ডাস্ট মাস্ক (N95)",
+        "অর্গানিক ভেপার রেসপিরেটর",
+        "কাপড়ের ফেস মাস্ক"
+      ]
+    },
+    {
+      "key": "OptAprons",
+      "en": [
+        "Acid Resistant Apron",
+        "Antistatic Apron",
+        "Chemical Suit",
+        "Coveralls"
+      ],
+      "bn": [
+        "অ্যাসিড-প্রতিরোধী অ্যাপ্রন",
+        "অ্যান্টিস্ট্যাটিক অ্যাপ্রন",
+        "কেমিক্যাল স্যুট",
+        "কভারঅল"
+      ]
+    },
+    {
+      "key": "ReviewItems",
+      "en": [
+        "Splash Goggles",
+        "Neoprene Gloves",
+        "Acid Resistant Apron",
+        "Acid Gas Cartridge Respirator"
+      ],
+      "bn": [
+        "স্প্ল্যাশ গগলস",
+        "নিওপ্রিন গ্লাভস",
+        "অ্যাসিড-প্রতিরোধী অ্যাপ্রন",
+        "অ্যাসিড গ্যাস কার্টিজ রেসপিরেটর"
+      ]
+    },
+    {
+      "key": "OptionLabels",
+      "en": [
+        "Chemical splash goggles OR full-face shield",
+        "Neoprene/Butyl gloves",
+        "Chemical-resistant apron",
+        "Safety boots"
+      ],
+      "bn": [
+        "রাসায়নিক স্প্ল্যাশ গগলস অথবা ফুল-ফেস শিল্ড",
+        "নিওপ্রিন/বিউটাইল গ্লাভস",
+        "রাসায়নিক-প্রতিরোধী অ্যাপ্রন",
+        "সেফটি বুট"
+      ]
+    }
+  ],
+  "questions": []
+}

@@ -1243,6 +1243,159 @@ namespace ChemicalSafety.Presentable
             Click(mcq11.transform, "NextButton");
         }
 
+        // The text on a row ("Row0".."Row3" under root): the label child's text.
+        private static string RowText(Transform root, string rowName)
+        {
+            var row = FindDeep(root, rowName);
+            var label = row != null ? row.Find("Label") : null;
+            var tmp = label != null ? label.GetComponent<TMPro.TMP_Text>() : null;
+            return tmp != null ? tmp.text : "";
+        }
+
+        private IEnumerator Sc12Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc12Intro", 40f);
+            var station = Get<Sc12Station>(_director, "sc12Station");
+            var gate = Get<Sc06Gate>(_director, "sc12Gate");
+            var assess = Get<Sc12Assessment>(_director, "assessmentSc12");
+            var clipboard = Get<SdsClipboardController>(_director, "clipboard");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("131_sc12_instruction");
+            yield return ClickContinue(panel, 40f);
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc12Sds", 40f);
+                yield return new WaitForSeconds(1.8f);
+                Say("SC12 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
+                if (shots)
+                    yield return Shot("132_sc12_sds");
+
+                yield return WaitStage("sc12Stand", 40f);
+                yield return new WaitForSeconds(1.5f);
+                if (shots)
+                    yield return Shot("133_sc12_stand");
+
+                for (var pick = 0; pick < 4; pick++)
+                {
+                    yield return WaitStage("sc12Pick" + pick, 40f);
+                    yield return new WaitForSeconds(1.6f);
+                    var right = Sc12Content.Options(pick)[0];
+                    Say("SC12 " + tag + " pick " + pick + ": panel open = " + station.PanelOpen + " (expected True), right item = " + right);
+                    LayoutCheck("SC12 pick panel " + pick, FindDeep(station.transform, "Sc12Panel"));
+                    if (shots && pick == 0)
+                        yield return Shot("134_sc12_pick");
+                    var rightRow = -1;
+                    var wrongRow = -1;
+                    for (var r = 0; r < 4; r++)
+                    {
+                        if (RowText(station.transform, "Row" + r) == right)
+                            rightRow = r;
+                        else if (wrongRow < 0)
+                            wrongRow = r;
+                    }
+
+                    if (rightRow < 0)
+                    {
+                        Say("FAIL SC12 pick " + pick + ": the right option is not on the panel");
+                        continue;
+                    }
+
+                    if (shots)
+                    {
+                        Click(station.transform, "Row" + wrongRow);
+                        yield return Sc10Wait(() => station.Result == 2, 10f);
+                        Say("SC12 pick " + pick + ": wrong pick result = " + station.Result + " (expected 2)");
+                        LayoutCheck("SC12 wrong card " + pick, FindDeep(station.transform, "Sc12Card"));
+                        if (pick == 0)
+                            yield return Shot("135_sc12_wrong");
+                        yield return Sc10Wait(() => station.Result == 0, 6f);
+                        yield return new WaitForSeconds(0.4f);
+                    }
+
+                    Click(station.transform, "Row" + rightRow);
+                    if (shots && pick == 0)
+                    {
+                        yield return new WaitForSeconds(0.9f);
+                        yield return Shot("136_sc12_right_held");
+                    }
+
+                    var worn0 = station.WornCount;
+                    yield return Sc10Wait(() => station.WornCount > worn0, 10f);
+                    Say("SC12 " + tag + " pick " + pick + ": worn items = " + station.WornCount + " (expected " + (pick + 1) + ")");
+                }
+
+                yield return WaitStage("sc12Review", 30f);
+                yield return new WaitForSeconds(3.4f);
+                LayoutCheck("SC12 review", FindDeep(station.transform, "Sc12Review"));
+                if (shots)
+                    yield return Shot("137_sc12_review");
+                Click(station.transform, "NextButton");
+
+                yield return WaitStage("sc12Gate", 30f);
+                yield return Sc10Wait(() => gate.Visible, 10f);
+                yield return new WaitForSeconds(1.3f);
+                Say("SC12 " + tag + ": gate card visible = " + gate.Visible);
+                LayoutCheck("SC12 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("138_sc12_gate");
+                Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+            }
+
+            yield return WaitStage("sc12Question", 20f);
+            yield return Sc10Wait(() => assess.Visible, 8f);
+            yield return new WaitForSeconds(1.2f);
+            Say("SC12 assessment visible = " + assess.Visible + " (expected True)");
+            LayoutCheck("SC12 assessment", FindDeep(assess.transform, "Sc12AssessPanel"));
+            yield return Shot("139_sc12_question");
+
+            var labels = Sc12Content.OptionLabels;
+            var boots = -1;
+            var good = new System.Collections.Generic.List<int>();
+            for (var r = 0; r < assess.RowCount; r++)
+            {
+                var text = RowText(assess.transform, "Row" + r);
+                if (text == labels[3])
+                    boots = r;
+                else
+                    good.Add(r);
+            }
+
+            Say("SC12 shown rows: boots at row " + boots + ", right rows " + good.Count + " (expected 3)");
+            // wrong 1: only boots ticked, wrong 2: one right item missing, then the exact set
+            assess.ToggleRow(boots);
+            assess.PressSubmit();
+            yield return new WaitForSeconds(1.2f);
+            Say("SC12 boots only: won = " + assess.Won + " (expected False)");
+            yield return Shot("140_sc12_wrong");
+            assess.ToggleRow(boots);
+            assess.ToggleRow(good[0]);
+            assess.ToggleRow(good[1]);
+            assess.PressSubmit();
+            yield return new WaitForSeconds(1.2f);
+            Say("SC12 two of three right items: won = " + assess.Won + " (expected False)");
+            assess.ToggleRow(good[2]);
+            assess.PressSubmit();
+            var heard = "";
+            var h = 0f;
+            while (h < 16f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc12Complete"))
+                    heard = voiceSrc.clip.name;
+                if (h > 1.2f && h < 1.3f)
+                    LayoutCheck("SC12 correct card", FindDeep(assess.transform, "Sc12AssessCard"));
+                h += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC12 assessment won = " + assess.Won + " (expected True)");
+            Say("scenario 12 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
+            yield return Shot("141_sc12_correct");
+            Click(assess.transform, "NextButton");
+        }
+
         private IEnumerator ClickContinue(InstructionPanelView panel, float timeout)
         {
             var cont = FindDeep(panel.transform, "ContinueButton");
@@ -1342,6 +1495,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc12Only", false))
+            {
+                Say("SC12-only run (dev start)");
+                yield return Sc12Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc11Only", false))
             {
                 Say("SC11-only run (dev start)");
@@ -2270,6 +2433,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc09Smoke(panel, voiceSrc);
             yield return Sc10Smoke(panel, voiceSrc);
             yield return Sc11Smoke(panel, voiceSrc);
+            yield return Sc12Smoke(panel, voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

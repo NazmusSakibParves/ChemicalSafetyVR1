@@ -242,6 +242,28 @@ MonoBehaviour:
   voSc11Gate: {fileID: 8300000, guid: dbef77e3a1bd23d4b8859f706c4db301, type: 3}
   voSc11CompleteBn: {fileID: 8300000, guid: 521dae3b375c11b4085e08222184bad5, type: 3}
   voSc11CompleteEn: {fileID: 8300000, guid: 0a0539bf2dc98664abc714fd23f628e4, type: 3}
+  sdsSc12: {fileID: 21300000, guid: 1d48f4a7dae5cc340a059de919f502d3, type: 3}
+  bnSc12InstructionPanel: {fileID: 21300000, guid: 6d188e331300eea4c98f8a33f73c3ead, type: 3}
+  iconSc12Ppe:
+  - {fileID: 21300000, guid: a757374eb9240c846ac8ad266b0c3cbe, type: 3}
+  - {fileID: 21300000, guid: 1e7d27e2e524d1b488e9a984a05c4bd5, type: 3}
+  - {fileID: 21300000, guid: 3ec87e140e0daee47a2887793fb98eab, type: 3}
+  - {fileID: 21300000, guid: 2276a63727914cb49ade39bfa1425741, type: 3}
+  operatorSc12: {fileID: 21300000, guid: 6ec68e342371e1949a9a90d59fd13b94, type: 3}
+  voSc12Instruction: {fileID: 8300000, guid: 8e0bae08b3baeaa438dc3df0d3037d66, type: 3}
+  voSc12Sds: {fileID: 8300000, guid: d40dcbaaea020d5498e6b75c2954f02a, type: 3}
+  voSc12Stand: {fileID: 8300000, guid: 13ad6e35b7418cc41a3bedd9fe444eae, type: 3}
+  voSc12Pick:
+  - {fileID: 8300000, guid: c535361e2a43ce74ba5575fbb04e624b, type: 3}
+  - {fileID: 8300000, guid: 9941fe201740e054aa4eb426fb7d1dc3, type: 3}
+  - {fileID: 8300000, guid: 706b3b8fa1d986e4588ec593e6dcee0b, type: 3}
+  - {fileID: 8300000, guid: f5b90020823e9a0449541e3b906c6cab, type: 3}
+  voSc12Right: {fileID: 8300000, guid: 0d603c9fa93fb4a46be9f647d1e514aa, type: 3}
+  voSc12Wrong: {fileID: 8300000, guid: 1b39ce6d0e46c2e4086e276b9e1c2212, type: 3}
+  voSc12Review: {fileID: 8300000, guid: 59a0024e231794b48b2e228bd201b5f3, type: 3}
+  voSc12Gate: {fileID: 8300000, guid: bda6d422d89400e45a82729559b3d607, type: 3}
+  voSc12CompleteBn: {fileID: 8300000, guid: a263668d63887c64db7a1590e7a795a9, type: 3}
+  voSc12CompleteEn: {fileID: 8300000, guid: 8183585910355294da0984be2d878665, type: 3}
   voWrongLabel: {fileID: 8300000, guid: 4a21954a78ae01049983a5fc08d3f584, type: 3}
   useSc01OriginalVoice: 0
   trialSalam: {fileID: 8300000, guid: 9075ddaec63ac2342a2f9788a9e56c67, type: 3}

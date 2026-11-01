@@ -93,6 +93,9 @@ namespace ChemicalSafety.Editor
             var env11 = new GameObject("Environment_SC11").transform;
             var sc11 = BuildSc11Room(env11, art);
             env11.gameObject.SetActive(false);
+            var env12 = new GameObject("Environment_SC12").transform;
+            var sc12 = BuildSc12Room(env12, art);
+            env12.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -170,6 +173,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq10, "art", art);
             var mcq11 = Child("McqPanel_SC11", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq11, "art", art);
+            var mcq12 = Child("McqPanel_SC12", flow).AddComponent<Sc12Assessment>();
+            SetRef(mcq12, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -318,6 +323,13 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc11Guide").objectReferenceValue = sc11.guide;
             so.FindProperty("sc11Gate").objectReferenceValue = sc11.gate;
             so.FindProperty("mcqSc11").objectReferenceValue = mcq11;
+            so.FindProperty("envSc12").objectReferenceValue = env12.gameObject;
+            so.FindProperty("spawnSc12").objectReferenceValue = sc12.spawn;
+            so.FindProperty("sc12StartStand").objectReferenceValue = sc12.startStand;
+            so.FindProperty("sc12Hotspot").objectReferenceValue = sc12.hotspot;
+            so.FindProperty("sc12Station").objectReferenceValue = sc12.station;
+            so.FindProperty("sc12Gate").objectReferenceValue = sc12.gate;
+            so.FindProperty("assessmentSc12").objectReferenceValue = mcq12;
             SetRef(sc10.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
@@ -385,7 +397,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10", "2D/Sc11" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10", "2D/Sc11", "2D/Sc12" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -596,6 +608,14 @@ namespace ChemicalSafety.Editor
             art.bnSc11InstructionPanel = B("BN_Sc11InstructionPanel");
             art.iconSc11Siren = LoadSprite("2D/Sc11/Icon_Siren");
             art.iconSc11Call = LoadSprite("2D/Sc11/Icon_CallSupervisor");
+            art.sdsSc12 = LoadSprite("2D/Sc12/Sc12_SdsClipboard");
+            art.bnSc12InstructionPanel = B("BN_Sc12InstructionPanel");
+            art.iconSc12Ppe = new[]
+            {
+                LoadSprite("2D/Sc12/Sc12_IconGoggles"), LoadSprite("2D/Sc12/Sc12_IconGloves"),
+                LoadSprite("2D/Sc12/Sc12_IconMask"), LoadSprite("2D/Sc12/Sc12_IconApron")
+            };
+            art.operatorSc12 = LoadSprite("2D/Sc12/Sc12_Operator");
             art.sdsSc10 = LoadSprite("2D/Sc10/SDS_SC10");
             art.iconSc10Contain = LoadSprite("2D/Sc10/Icon_Contain");
             art.iconSc10Neutralize = LoadSprite("2D/Sc10/Icon_Neutralize");
@@ -773,6 +793,17 @@ namespace ChemicalSafety.Editor
             art.voSc11Gate = Keep("VO_Sc11Gate_bn.mp3", art.voSc11Gate);
             art.voSc11CompleteBn = Keep("VO_Sc11Complete_bn.mp3", art.voSc11CompleteBn);
             art.voSc11CompleteEn = Keep("VO_Sc11Complete_en.mp3", art.voSc11CompleteEn);
+            art.voSc12Instruction = Keep("VO_SC12_Instruction_bn.mp3", art.voSc12Instruction);
+            art.voSc12Sds = Keep("VO_Sc12Sds_bn.mp3", art.voSc12Sds);
+            art.voSc12Stand = Keep("VO_Sc12Stand_bn.mp3", art.voSc12Stand);
+            for (var pi = 0; pi < 4; pi++)
+                art.voSc12Pick[pi] = Keep("VO_Sc12Pick" + pi + "_bn.mp3", art.voSc12Pick[pi]);
+            art.voSc12Right = Keep("VO_Sc12Right_bn.mp3", art.voSc12Right);
+            art.voSc12Wrong = Keep("VO_Sc12Wrong_bn.mp3", art.voSc12Wrong);
+            art.voSc12Review = Keep("VO_Sc12Review_bn.mp3", art.voSc12Review);
+            art.voSc12Gate = Keep("VO_Sc12Gate_bn.mp3", art.voSc12Gate);
+            art.voSc12CompleteBn = Keep("VO_Sc12Complete_bn.mp3", art.voSc12CompleteBn);
+            art.voSc12CompleteEn = Keep("VO_Sc12Complete_en.mp3", art.voSc12CompleteEn);
             var cont = V("VO_ContinueHint_bn.mp3");
             if (cont != null)
                 art.voContinueHint = cont;

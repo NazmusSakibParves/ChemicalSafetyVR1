@@ -185,6 +185,13 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc09Guide sc11Guide;
         [SerializeField] private Sc06Gate sc11Gate;
         [SerializeField] private PresentableMcqPanel mcqSc11;
+        [SerializeField] private GameObject envSc12;
+        [SerializeField] private Transform spawnSc12;
+        [SerializeField] private Transform sc12StartStand;
+        [SerializeField] private FloorHotspot sc12Hotspot;
+        [SerializeField] private Sc12Station sc12Station;
+        [SerializeField] private Sc06Gate sc12Gate;
+        [SerializeField] private Sc12Assessment assessmentSc12;
 
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
@@ -239,6 +246,13 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc12Only", false) && envSc12 != null)
+            {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                yield return RunScenario12();
                 yield break;
             }
 
@@ -430,7 +444,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc11 != null ? Sc11Content.ModuleComplete
+            var doneLine = envSc12 != null ? Sc12Content.ModuleComplete
+                : envSc11 != null ? Sc11Content.ModuleComplete
                 : envSc10 != null ? Sc10Content.ModuleComplete
                 : envSc09 != null ? Sc09Content.ModuleComplete
                 : envSc08 != null ? Sc08Content.ModuleComplete
@@ -2024,6 +2039,12 @@ namespace ChemicalSafety.Presentable
             if (!correct)
                 yield break;
             yield return PresentableFx.Wait(1f);
+            if (scenario == 12)
+            {
+                yield return PlayVoice(Loc.IsBangla ? art.voSc12CompleteBn : art.voSc12CompleteEn);
+                yield break;
+            }
+
             if (scenario == 11)
             {
                 yield return PlayVoice(Loc.IsBangla ? art.voSc11CompleteBn : art.voSc11CompleteEn);
@@ -2586,7 +2607,215 @@ namespace ChemicalSafety.Presentable
             yield return RunQuestion(mcqSc11, BuildSc11Question(), false, 11);
             sc11Yard.End();
             Stage("sc11Done");
+            if (envSc12 != null)
+                yield return RunScenario12();
         }
+
+        // SC12: PPE Donning Station. Instruction card -> SDS -> stand on the arrow -> four pick rounds (goggles / gloves / respirator /
+        // apron, wrong picks go back to the locker) -> review hologram -> gate card -> multi-select MCQ.
+        private IEnumerator RunScenario12()
+        {
+            Stage("sc12");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc12.SetActive(true);
+            clipboard.SetSheet(art.sdsSc12);
+            clipboard.SetVisible(false);
+            sc12Station.ResetAll();
+            PlaceRig(sc12StartStand.position, sc12StartStand.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc12Intro");
+            yield return Sc09Card(Sc12Content.InstructionEnglish, art.bnSc12InstructionPanel,
+                art.voSc12Instruction != null ? art.voSc12Instruction : art.voInstruction);
+
+            var again = true;
+            while (again)
+            {
+                yield return Sc12Round();
+
+                Stage("sc12Gate");
+                yield return PresentableFx.Wait(0.6f);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc12Gate.Back += OnBack;
+                sc12Gate.Next += OnNext;
+                sc12Gate.Show();
+                StartCoroutine(PlayVoice(art.voSc12Gate));
+                while (choice == 0)
+                    yield return null;
+                sc12Gate.Back -= OnBack;
+                sc12Gate.Next -= OnNext;
+                sc12Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                if (choice == 1)
+                {
+                    yield return fader.FadeTo(1f, 0.3f);
+                    sc12Station.ResetAll();
+                    PlaceRig(sc12StartStand.position, sc12StartStand.forward);
+                    yield return fader.FadeTo(0f, 0.4f);
+                }
+                else
+                {
+                    again = false;
+                }
+            }
+
+            Stage("sc12Question");
+            yield return Sc12Question();
+            Stage("sc12Done");
+        }
+
+        private IEnumerator Sc12Round()
+        {
+            // 1. the safety data sheet
+            Stage("sc12Sds");
+            StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
+            clipboard.SetVisible(true);
+            var sdsWait = 0f;
+            while (clipboard.IsVisible && sdsWait < 12f)
+            {
+                sdsWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            clipboard.SetVisible(false);
+            StopVoice();
+            yield return PresentableFx.Wait(0.4f);
+
+            // 2. stand on the green arrow in front of the lockers
+            Stage("sc12Stand");
+            StartCoroutine(SubtitledVoice(null, Sc12Content.StandHint, art.voSc12Stand));
+            yield return WalkOrGlide(sc12Hotspot);
+            sc12Hotspot.Hide();
+            StopVoice();
+            subtitle.Hide();
+            yield return PresentableFx.Wait(0.3f);
+
+            // 3. four pick rounds
+            for (var round = 0; round < 4; round++)
+            {
+                Stage("sc12Pick" + round);
+                sc12Station.BeginRound(round);
+                StopAllVoiceCoroutines();
+                StartCoroutine(PlayVoice(art.voSc12Pick[round]));
+                while (true)
+                {
+                    while (sc12Station.Result == 0)
+                        yield return null;
+                    if (sc12Station.Result == 2)
+                    {
+                        StopAllVoiceCoroutines();
+                        StartCoroutine(PlayVoice(art.voSc12Wrong));
+                        yield return PresentableFx.Wait(1.4f);
+                        sc12Station.Retry();
+                        continue;
+                    }
+
+                    break;
+                }
+
+                StopAllVoiceCoroutines();
+                StartCoroutine(PlayVoice(art.voSc12Right));
+                yield return PresentableFx.Wait(1.3f);
+                sc12Station.EndRound();
+            }
+
+            // 4. review: the donned operator and the compatible-PPE list
+            Stage("sc12Review");
+            StopAllVoiceCoroutines();
+            subtitle.Hide();
+            sc12Station.ShowReview(true);
+            StartCoroutine(SubtitledVoice(null, Sc12Content.ReviewHint, art.voSc12Review));
+            var reviewDone = false;
+            void OnReviewNext() => reviewDone = true;
+            sc12Station.ReviewNext += OnReviewNext;
+            while (!reviewDone)
+                yield return null;
+            sc12Station.ReviewNext -= OnReviewNext;
+            sc12Station.ShowReview(false);
+            StopAllVoiceCoroutines();
+            StopVoice();
+            subtitle.Hide();
+        }
+
+        // The multiple-answer assessment. Marks: one question, full mark when the first submission is exactly the right set; every
+        // submission is recorded as the letters of the ticked rows ("A,C,D") in the shown order.
+        private IEnumerator Sc12Question()
+        {
+            _nextPressed = false;
+            var labels = Sc12Content.OptionLabels;
+            var n = labels.Length;
+            var order = OptionShuffle.Order(n, SessionResults.ShuffleSeed, "SC12.Q1", true);
+            var shownLabels = new string[n];
+            var shownCorrect = new bool[n];
+            var shown = new List<OptionPair>();
+            var correctLetters = new List<string>();
+            for (var i = 0; i < n; i++)
+            {
+                shownLabels[i] = labels[order[i]];
+                shownCorrect[i] = Sc12Content.CorrectSet[order[i]];
+                var letter = ((char)('A' + i)).ToString();
+                shown.Add(new OptionPair { key = letter, text = OptionText(shownLabels[i]), optionId = order[i].ToString() });
+                if (shownCorrect[i])
+                    correctLetters.Add(letter);
+            }
+
+            var q = new Sc12Assessment.Question
+            {
+                header = Sc12Content.QuestionHeader,
+                prompt = Sc12Content.QuestionPrompt,
+                labels = shownLabels,
+                correct = shownCorrect,
+                submitLabel = Sc12Content.SubmitLabel,
+                nextLabel = Sc12Content.FinishLabel,
+                rightTitle = Sc12Content.CorrectTitle,
+                rightBody = Sc12Content.CorrectBody,
+                wrongTitle = Sc12Content.WrongTitleMcq,
+                wrongItemBody = Sc12Content.WrongBodyMcq,
+                missedBody = Sc12Content.MissedBodyMcq
+            };
+            SessionResults.BeginScenario("SC12", Loc.Suffix());
+            SessionResults.OpenQuestion("SC12.Q1", q.prompt, shown, string.Join(",", correctLetters));
+
+            void OnSubmitted(bool[] ticked, bool correct)
+            {
+                var letters = new List<string>();
+                for (var i = 0; i < ticked.Length; i++)
+                    if (ticked[i])
+                        letters.Add(((char)('A' + i)).ToString());
+                SessionResults.RecordTry(string.Join(",", letters), correct);
+                StopVoice();
+                if (_answerVoice != null)
+                    StopCoroutine(_answerVoice);
+                _answerVoice = StartCoroutine(AnswerVoice(correct, 12));
+            }
+
+            void OnNext() => _nextPressed = true;
+
+            PlaceAtEyeLevel(assessmentSc12.transform, 0.7f, false);
+            assessmentSc12.Submitted += OnSubmitted;
+            assessmentSc12.NextPressed += OnNext;
+            assessmentSc12.Show(q);
+            while (!_nextPressed)
+                yield return null;
+            assessmentSc12.Submitted -= OnSubmitted;
+            assessmentSc12.NextPressed -= OnNext;
+            if (_answerVoice != null)
+                StopCoroutine(_answerVoice);
+            StopVoice();
+            SessionResults.EndScenario();
+            assessmentSc12.Hide();
+            yield return PresentableFx.Wait(0.35f);
+        }
+
 
         private IEnumerator Sc11Round()
         {

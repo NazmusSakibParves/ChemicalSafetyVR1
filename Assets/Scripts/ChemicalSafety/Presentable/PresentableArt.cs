@@ -260,6 +260,23 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc11Gate;
         public AudioClip voSc11CompleteBn;
         public AudioClip voSc11CompleteEn;
+        [Header("Scenario 12 (PPE donning station)")]
+        public Sprite sdsSc12;
+        public Sprite bnSc12InstructionPanel;
+        [Tooltip("Goggles, gloves, respirator, apron cut-outs (selection panel / review hologram)")]
+        public Sprite[] iconSc12Ppe = new Sprite[4];
+        public Sprite operatorSc12;
+        public AudioClip voSc12Instruction;
+        public AudioClip voSc12Sds;
+        public AudioClip voSc12Stand;
+        [Tooltip("One prompt per pick round: goggles, gloves, respirator, apron")]
+        public AudioClip[] voSc12Pick = new AudioClip[4];
+        public AudioClip voSc12Right;
+        public AudioClip voSc12Wrong;
+        public AudioClip voSc12Review;
+        public AudioClip voSc12Gate;
+        public AudioClip voSc12CompleteBn;
+        public AudioClip voSc12CompleteEn;
         [Tooltip("VO_WrongLabel_bn.mp3")]
         public AudioClip voWrongLabel;
 
