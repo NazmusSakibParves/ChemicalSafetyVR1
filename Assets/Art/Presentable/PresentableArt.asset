@@ -249,7 +249,12 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 1e7d27e2e524d1b488e9a984a05c4bd5, type: 3}
   - {fileID: 21300000, guid: 3ec87e140e0daee47a2887793fb98eab, type: 3}
   - {fileID: 21300000, guid: 2276a63727914cb49ade39bfa1425741, type: 3}
-  operatorSc12: {fileID: 21300000, guid: 6ec68e342371e1949a9a90d59fd13b94, type: 3}
+  operatorSc12: {fileID: 21300000, guid: 4e45322681beedf4b871418fb654aef1, type: 3}
+  uiSc12:
+  - {fileID: 21300000, guid: 8c77baad6172ca041b55407abc905222, type: 3}
+  - {fileID: 21300000, guid: 932aeb7fcc370ce439e14413d8efe70d, type: 3}
+  - {fileID: 21300000, guid: 9500ec3b39d10a44ba5525be0e74c0ba, type: 3}
+  - {fileID: 21300000, guid: 618df6232d114f744a9b34b98c167918, type: 3}
   voSc12Instruction: {fileID: 8300000, guid: 8e0bae08b3baeaa438dc3df0d3037d66, type: 3}
   voSc12Sds: {fileID: 8300000, guid: d40dcbaaea020d5498e6b75c2954f02a, type: 3}
   voSc12Stand: {fileID: 8300000, guid: 13ad6e35b7418cc41a3bedd9fe444eae, type: 3}

@@ -1370,12 +1370,18 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(1.2f);
             Say("SC12 boots only: won = " + assess.Won + " (expected False)");
             yield return Shot("140_sc12_wrong");
+            LayoutCheck("SC12 wrong popup", FindDeep(assess.transform, "Sc12AssessPopup"));
+            Say("SC12 wrong popup visible = " + assess.PopupVisible + " (expected True)");
+            Click(assess.transform, "Close");
+            yield return new WaitForSeconds(0.8f);
             assess.ToggleRow(boots);
             assess.ToggleRow(good[0]);
             assess.ToggleRow(good[1]);
             assess.PressSubmit();
             yield return new WaitForSeconds(1.2f);
             Say("SC12 two of three right items: won = " + assess.Won + " (expected False)");
+            Click(assess.transform, "Close");
+            yield return new WaitForSeconds(0.8f);
             assess.ToggleRow(good[2]);
             assess.PressSubmit();
             var heard = "";
@@ -1385,7 +1391,7 @@ namespace ChemicalSafety.Presentable
                 if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc12Complete"))
                     heard = voiceSrc.clip.name;
                 if (h > 1.2f && h < 1.3f)
-                    LayoutCheck("SC12 correct card", FindDeep(assess.transform, "Sc12AssessCard"));
+                    LayoutCheck("SC12 correct popup", FindDeep(assess.transform, "Sc12AssessPopup"));
                 h += Time.unscaledDeltaTime;
                 yield return null;
             }

@@ -457,6 +457,81 @@ namespace ChemicalSafety.Editor
         }
 
         // ---------------------------------------------------------------- outside the window: the process plant
+        /// <summary>Baked reflection probe inside the plant: the polished GLB vessels and pipes need something bright to reflect, or the metal renders black.</summary>
+        private static void Sc12BakeProbe(Transform env1, Transform env12)
+        {
+            try
+            {
+                var room = env12.Find("Room");
+                var go = new GameObject("Sc12ReflectionProbe");
+                go.transform.SetParent(room, false);
+                go.transform.position = new Vector3(Sc12Ox - 16f, 3.5f, -6f);
+                var probe = go.AddComponent<ReflectionProbe>();
+                probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Baked;
+                probe.resolution = 256;
+                probe.size = new Vector3(26f, 9f, 34f);
+                probe.boxProjection = true;
+                probe.intensity = 1.4f;
+                probe.importance = 2;
+                var path = GenDir + "/Sc12Probe.exr";
+                var envWasActive = env1.gameObject.activeSelf;
+                env1.gameObject.SetActive(false);
+                env12.gameObject.SetActive(true);
+                var ok = UnityEditor.Lightmapping.BakeReflectionProbe(probe, path);
+                env1.gameObject.SetActive(envWasActive);
+                if (ok)
+                {
+                    AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                    probe.bakedTexture = AssetDatabase.LoadAssetAtPath<Texture>(path);
+                }
+                else
+                {
+                    Debug.LogWarning("[SC12] reflection probe bake failed, the plant uses the default reflections");
+                    Object.DestroyImmediate(go);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SC12] reflection probe skipped: " + e.Message);
+            }
+        }
+
+        // The glTF "Stainless Steel" materials have no metallicFactor, so they import as full metal and render black in a room with
+        // little to reflect. Rebuilt as URP Lit with the same texture, moderate metal and a lifted colour so the vessels read silver.
+        // Coloured plastics (green / red / yellow) keep their own material.
+        private static void Sc12SteelFix(GameObject go)
+        {
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                for (var i = 0; i < mats.Length; i++)
+                {
+                    var src = mats[i];
+                    if (src == null)
+                        continue;
+                    var n = src.name;
+                    if (n == "green" || n == "material_10" || n == "yellow")
+                        continue;
+                    Texture tex = null;
+                    foreach (var prop in new[] { "baseColorTexture", "_BaseMap", "_MainTex" })
+                    {
+                        if (src.HasProperty(prop))
+                        {
+                            tex = src.GetTexture(prop);
+                            if (tex != null)
+                                break;
+                        }
+                    }
+
+                    var dark = n == "ControlPanelMat.001";
+                    mats[i] = Mat("Sc12PlantSteel_" + n.Replace(' ', '_').Replace('.', '_'), new Color(1.12f, 1.12f, 1.18f), dark ? 0.45f : 0.55f,
+                        dark ? 0.3f : 0.5f, tex);
+                }
+
+                r.sharedMaterials = mats;
+            }
+        }
+
         private static void Sc12Plant(Transform room, float ox, Material steelMat)
         {
             var plant = new GameObject("Plant").transform;
@@ -468,14 +543,14 @@ namespace ChemicalSafety.Editor
             Box("PlantSideWall", plant, new Vector3(ox - 18f, 4f, -28.5f), new Vector3(34f, 8f, 0.4f), wallMat, false);
             Box("PlantSideWallNear", plant, new Vector3(ox - 18f, 4f, 12.5f), new Vector3(34f, 8f, 0.4f), wallMat, false);
             Box("PlantCeiling", plant, new Vector3(ox - 18f, 8.1f, -8f), new Vector3(34f, 0.2f, 40f), wallMat, false);
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 5; i++)
             {
                 var pl = new GameObject("PlantLight" + i).AddComponent<Light>();
                 pl.transform.SetParent(plant, true);
-                pl.transform.position = new Vector3(ox - 7f - i * 7f, 6f, -7f);
+                pl.transform.position = new Vector3(ox - 6f - i * 5.5f, 6f, -7f);
                 pl.type = LightType.Point;
                 pl.color = new Color(0.95f, 0.97f, 1f);
-                pl.intensity = 5f;
+                pl.intensity = 7f;
                 pl.range = 16f;
                 pl.shadows = LightShadows.None;
             }
@@ -484,19 +559,23 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < 6; i++)
                 Box("PlantLamp" + i, plant, new Vector3(ox - 8f - i * 5f, 7.9f, -6f - (i % 2) * 8f), new Vector3(2.4f, 0.1f, 0.5f), panelMat, false);
 
-            // tanks: the designer module (a vessel with its pipe stand) several times, fading into the distance
-            var spots = new[]
-            {
-                new Vector3(ox - 6.5f, 0f, -3.5f), new Vector3(ox - 6.5f, 0f, -9.5f), new Vector3(ox - 12f, 0f, -2f),
-                new Vector3(ox - 13f, 0f, -9f), new Vector3(ox - 19f, 0f, -5f), new Vector3(ox - 20f, 0f, -12f), new Vector3(ox - 26f, 0f, -8f)
-            };
-            for (var i = 0; i < spots.Length; i++)
+            // the designer's vessel module (polished vessel, pipe stand, red-light valves) in two rows like in the GLB, each with the
+            // wall control box (hazard sign, red lamps)
+            var spots = new System.Collections.Generic.List<Vector3>();
+            for (var k = 0; k < 4; k++)
+                spots.Add(new Vector3(ox - 7.5f, 0f, 0.5f - k * 4.2f));
+            for (var k = 0; k < 4; k++)
+                spots.Add(new Vector3(ox - 16.5f, 0f, 2.5f - k * 4.4f));
+            for (var i = 0; i < spots.Count; i++)
             {
                 var tank = Sc12Part("Sc12Plant.glb", "TankBig", plant);
                 tank.name = "Tank" + i;
-                tank.transform.rotation = Quaternion.Euler(0f, (i % 2 == 0) ? 90f : -90f, 0f);
-                tank.transform.localScale = Vector3.one * (0.85f + 0.1f * (i % 3));
+                tank.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
                 tank.transform.position = spots[i];
+                var box = Sc12Part("Sc12Plant.glb", "Panel", plant);
+                box.name = "ControlBox" + i;
+                box.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+                box.transform.position = spots[i] + new Vector3(2.4f, 1.6f, 1.2f);
             }
 
             var pw = Sc12Part("Sc12Plant.glb", "PipeWall", plant);

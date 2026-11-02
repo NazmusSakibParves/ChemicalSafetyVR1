@@ -104,8 +104,8 @@ namespace ChemicalSafety.Editor
                 views.Add("gloves -0.39 1.2 -2.3 0 8 45");
                 views.Add("resp 0.39 1.2 -2.3 0 8 45");
                 views.Add("aprons 1.17 1.3 -2.3 0 8 45");
-                views.Add("left -0.5 1.6 0.8 -80 2 75");
-                views.Add("window 0.5 1.6 0.2 85 2 80");
+                views.Add("left -1.5 1.6 0.8 90 2 75");
+                views.Add("window 1.0 1.6 -0.6 -90 3 80");
             }
 
             foreach (var ps in env12.GetComponentsInChildren<ParticleSystem>(true))

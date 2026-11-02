@@ -266,6 +266,8 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Goggles, gloves, respirator, apron cut-outs (selection panel / review hologram)")]
         public Sprite[] iconSc12Ppe = new Sprite[4];
         public Sprite operatorSc12;
+        [Tooltip("Sc12_PaneGlass, Sc12_PaneDark, Sc12_Row, Sc12_Pill (9-slice hologram plates of the review card)")]
+        public Sprite[] uiSc12 = new Sprite[4];
         public AudioClip voSc12Instruction;
         public AudioClip voSc12Sds;
         public AudioClip voSc12Stand;

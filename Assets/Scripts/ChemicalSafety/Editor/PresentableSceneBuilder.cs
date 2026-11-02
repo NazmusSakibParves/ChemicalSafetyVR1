@@ -95,6 +95,7 @@ namespace ChemicalSafety.Editor
             env11.gameObject.SetActive(false);
             var env12 = new GameObject("Environment_SC12").transform;
             var sc12 = BuildSc12Room(env12, art);
+            Sc12BakeProbe(env, env12);
             env12.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
@@ -435,6 +436,17 @@ namespace ChemicalSafety.Editor
                         }
                     }
 
+                    // Scenario 12 review hologram plates are 9-slice sprites
+                    if (path.Contains("/Sc12/Sc12_Pane") || path.Contains("/Sc12/Sc12_Row") || path.Contains("/Sc12/Sc12_Pill"))
+                    {
+                        var border12 = path.Contains("Sc12_Pane") ? new Vector4(60f, 60f, 60f, 60f) : new Vector4(46f, 46f, 46f, 46f);
+                        if (ti.spriteBorder != border12)
+                        {
+                            ti.spriteBorder = border12;
+                            changed = true;
+                        }
+                    }
+
                     var maxSize = path.EndsWith("FLOOR_Baked.png") ? 4096
                         : path.EndsWith("Background.png") || path.EndsWith("Chart.png") || path.Contains("/BanglaText/") ||
                           path.Contains("/Designer/")
@@ -615,7 +627,12 @@ namespace ChemicalSafety.Editor
                 LoadSprite("2D/Sc12/Sc12_IconGoggles"), LoadSprite("2D/Sc12/Sc12_IconGloves"),
                 LoadSprite("2D/Sc12/Sc12_IconMask"), LoadSprite("2D/Sc12/Sc12_IconApron")
             };
-            art.operatorSc12 = LoadSprite("2D/Sc12/Sc12_Operator");
+            art.operatorSc12 = LoadSprite("2D/Sc12/Sc12_OperatorHolo");
+            art.uiSc12 = new[]
+            {
+                LoadSprite("2D/Sc12/Sc12_PaneGlass"), LoadSprite("2D/Sc12/Sc12_PaneDark"),
+                LoadSprite("2D/Sc12/Sc12_Row"), LoadSprite("2D/Sc12/Sc12_Pill")
+            };
             art.sdsSc10 = LoadSprite("2D/Sc10/SDS_SC10");
             art.iconSc10Contain = LoadSprite("2D/Sc10/Icon_Contain");
             art.iconSc10Neutralize = LoadSprite("2D/Sc10/Icon_Neutralize");

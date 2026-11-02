@@ -8,8 +8,9 @@ namespace ChemicalSafety.Presentable
 {
     /// <summary>
     /// Scenario 12 "PPE SELECTION ASSESSMENT" (workflow step08/09): a multiple-answer question. Every row has a check box that a finger
-    /// poke toggles, SUBMIT checks the whole selection. Right: green "Right Choice!" card and NEXT. Wrong: red "Wrong Choice!" card
-    /// (the boots text when a wrong item is ticked, the missing-item text otherwise); the selection stays and can be edited and submitted again.
+    /// poke toggles, SUBMIT checks the whole selection. The result comes as the same popup the other scenarios use after an MCQ answer:
+    /// the question hides, a centred green RIGHT CHOICE popup (tick, text, NEXT below it, pop-in, chime, glow) or a red WRONG CHOICE
+    /// popup with a close button (the selection stays and can be edited and submitted again).
     /// </summary>
     public sealed class Sc12Assessment : MonoBehaviour
     {
@@ -34,28 +35,34 @@ namespace ChemicalSafety.Presentable
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color RowIdle = new Color(0.8f, 0.95f, 1f, 0.9f);
         private static readonly Color RowOn = new Color(0.55f, 0.92f, 1f, 1f);
+        private const float PopupScale = 0.0006f;
 
-        private const float CardScale = 0.95f;
         private Transform _panel;
         private TextMeshProUGUI _header;
         private TextMeshProUGUI _prompt;
         private TextMeshProUGUI[] _labels;
         private Image[] _rows;
         private Image[] _checks;
-        private Transform _card;
-        private Image _cardFrame;
-        private TextMeshProUGUI _cardTitle;
-        private TextMeshProUGUI _cardBody;
         private Button _submit;
-        private Image _submitImg;
         private TextMeshProUGUI _submitText;
-        private Button _next;
-        private TextMeshProUGUI _nextText;
+
+        // the result popup (same layout as the MCQ right / wrong popups)
+        private Transform _popupRoot;
+        private RectTransform _correctPopup;
+        private RectTransform _wrongPopup;
+        private RectTransform _nextButton;
+        private RectTransform _tick;
+        private Image _glow;
+        private TextMeshProUGUI _correctTitle;
+        private TextMeshProUGUI _correctBody;
+        private TextMeshProUGUI _wrongTitle;
+        private TextMeshProUGUI _wrongBody;
+        private TextMeshProUGUI _nextLabel;
+
         private Question _q;
         private bool[] _on;
         private bool _locked;
         private bool _won;
-        private Coroutine _cardHide;
 
         /// <summary>Raised on SUBMIT: (selection by shown row, all right).</summary>
         public event Action<bool[], bool> Submitted;
@@ -64,6 +71,7 @@ namespace ChemicalSafety.Presentable
 
         public bool Visible => _panel != null && _panel.gameObject.activeSelf;
         public bool Won => _won;
+        public bool PopupVisible => _popupRoot != null && _popupRoot.gameObject.activeSelf;
         public int RowCount => _labels != null ? _labels.Length : 0;
 
         private void Start()
@@ -77,6 +85,7 @@ namespace ChemicalSafety.Presentable
         {
             if (_panel == null)
                 Build();
+            StopAllCoroutines();
             _q = q;
             _on = new bool[RowCount];
             _won = false;
@@ -91,21 +100,19 @@ namespace ChemicalSafety.Presentable
             }
 
             _submitText.text = q.submitLabel;
-            _nextText.text = q.nextLabel;
-            _next.gameObject.SetActive(false);
-            _submit.gameObject.SetActive(true);
-            _card.gameObject.SetActive(false);
+            _nextLabel.text = q.nextLabel;
+            _popupRoot.gameObject.SetActive(false);
             _panel.gameObject.SetActive(true);
             StartCoroutine(PopIn());
         }
 
         public void Hide()
         {
-            if (_cardHide != null)
-                StopCoroutine(_cardHide);
-            _cardHide = null;
+            StopAllCoroutines();
             if (_panel != null)
                 _panel.gameObject.SetActive(false);
+            if (_popupRoot != null)
+                _popupRoot.gameObject.SetActive(false);
         }
 
         public void ToggleRow(int row)
@@ -115,8 +122,6 @@ namespace ChemicalSafety.Presentable
             _on[row] = !_on[row];
             _checks[row].gameObject.SetActive(_on[row]);
             _rows[row].color = _on[row] ? RowOn : RowIdle;
-            if (_card.gameObject.activeSelf && !_won)
-                _card.gameObject.SetActive(false);
             PresentableFx.Play(PresentableFx.Tick, 0.7f);
         }
 
@@ -138,35 +143,19 @@ namespace ChemicalSafety.Presentable
 
             if (!any)
                 return;
-            _cardFrame.sprite = allRight ? art.frameCorrect : art.frameWrong;
-            _cardTitle.text = allRight ? _q.rightTitle : _q.wrongTitle;
-            _cardBody.text = allRight ? _q.rightBody : (wrongTicked ? _q.wrongItemBody : _q.missedBody);
-            _cardBody.color = allRight ? new Color(0.86f, 1f, 0.9f) : new Color(1f, 0.94f, 0.94f);
-            _card.gameObject.SetActive(true);
-            StartCoroutine(PopCard());
-            PresentableFx.Play(allRight ? PresentableFx.Success : PresentableFx.Error, 0.55f);
-            PresentableFx.Haptic(true, allRight ? 0.4f : 0.7f, 0.08f);
-            // the ticked rows show their verdict
-            for (var i = 0; i < RowCount; i++)
-            {
-                if (!_on[i])
-                    continue;
-                _checks[i].sprite = _q.correct[i] ? art.check : art.cross;
-                _checks[i].color = _q.correct[i] ? PresentableUi.Green : PresentableUi.Red;
-            }
-
+            _locked = true;
+            _won = allRight;
             if (allRight)
             {
-                _won = true;
-                _locked = true;
-                _submit.gameObject.SetActive(false);
-                _next.gameObject.SetActive(true);
+                _correctTitle.text = _q.rightTitle;
+                _correctBody.text = _q.rightBody;
+                StartCoroutine(ShowCorrect());
             }
             else
             {
-                if (_cardHide != null)
-                    StopCoroutine(_cardHide);
-                _cardHide = StartCoroutine(HideCardLater());
+                _wrongTitle.text = _q.wrongTitle;
+                _wrongBody.text = wrongTicked ? _q.wrongItemBody : _q.missedBody;
+                StartCoroutine(ShowWrong());
             }
 
             Submitted?.Invoke((bool[])_on.Clone(), allRight);
@@ -175,23 +164,95 @@ namespace ChemicalSafety.Presentable
         public void PressNext()
         {
             if (_won)
+            {
+                PresentableFx.Play(PresentableFx.Tick);
                 NextPressed?.Invoke();
+            }
         }
 
-        private IEnumerator HideCardLater()
+        private void OnWrongClosed()
         {
-            yield return PresentableFx.Wait(4f);
-            if (!_won)
-            {
-                _card.gameObject.SetActive(false);
-                for (var i = 0; i < RowCount; i++)
-                {
-                    _checks[i].sprite = art.check;
-                    _checks[i].color = Color.white;
-                }
-            }
+            PresentableFx.Play(PresentableFx.Tick);
+            StartCoroutine(RetryRoutine());
+        }
 
-            _cardHide = null;
+        // ------------------------------------------------------------------ result popups
+
+        private IEnumerator ShowCorrect()
+        {
+            _panel.gameObject.SetActive(false);
+            _popupRoot.gameObject.SetActive(true);
+            _wrongPopup.gameObject.SetActive(false);
+            _nextButton.gameObject.SetActive(false);
+            PresentableFx.Play(PresentableFx.Success);
+            PresentableFx.Haptic(true, 0.6f, 0.15f);
+            StartCoroutine(GlowBurst());
+            yield return PopupIn(_correctPopup);
+            StartCoroutine(TickPulse());
+            yield return PopupIn(_nextButton);
+        }
+
+        private IEnumerator ShowWrong()
+        {
+            PresentableFx.Play(PresentableFx.Error);
+            PresentableFx.Haptic(true, 0.9f, 0.25f);
+            _panel.gameObject.SetActive(false);
+            _popupRoot.gameObject.SetActive(true);
+            _correctPopup.gameObject.SetActive(false);
+            _nextButton.gameObject.SetActive(false);
+            yield return PopupIn(_wrongPopup);
+        }
+
+        private IEnumerator RetryRoutine()
+        {
+            yield return PopupOut(_wrongPopup);
+            _popupRoot.gameObject.SetActive(false);
+            _panel.gameObject.SetActive(true);
+            _panel.localScale = Vector3.one * 0.00064f;
+            _locked = false;
+        }
+
+        private IEnumerator TickPulse()
+        {
+            yield return PresentableFx.Tween(0.45f, t => _tick.localScale = Vector3.one * Mathf.LerpUnclamped(1.5f, 1f, t),
+                PresentableFx.EaseOutBack);
+            _tick.localScale = Vector3.one;
+        }
+
+        // a soft green ring of light that opens behind the popup
+        private IEnumerator GlowBurst()
+        {
+            _glow.gameObject.SetActive(true);
+            yield return PresentableFx.Tween(0.9f, t =>
+            {
+                _glow.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.7f, 1.5f, t);
+                PresentableUi.SetAlpha(_glow, 0.55f * (1f - t));
+            }, PresentableFx.EaseOutCubic);
+            _glow.gameObject.SetActive(false);
+        }
+
+        private static IEnumerator PopupIn(RectTransform popup)
+        {
+            popup.gameObject.SetActive(true);
+            var g = popup.GetComponent<CanvasGroup>();
+            yield return PresentableFx.Tween(0.35f, t =>
+            {
+                g.alpha = Mathf.Clamp01(t * 2f);
+                popup.localScale = Vector3.one * Mathf.LerpUnclamped(0.6f, 1f, t);
+            }, PresentableFx.EaseOutBack);
+            g.alpha = 1f;
+            popup.localScale = Vector3.one;
+        }
+
+        private static IEnumerator PopupOut(RectTransform popup)
+        {
+            var g = popup.GetComponent<CanvasGroup>();
+            yield return PresentableFx.Tween(0.2f, t =>
+            {
+                g.alpha = 1f - t;
+                popup.localScale = Vector3.one * Mathf.Lerp(1f, 0.85f, t);
+            });
+            popup.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------ build
@@ -217,23 +278,10 @@ namespace ChemicalSafety.Presentable
                 canvas.alpha = 1f;
         }
 
-        private IEnumerator PopCard()
-        {
-            var baseScale = Vector3.one * CardScale;
-            _card.localScale = baseScale * 0.85f;
-            for (var t = 0f; t < 0.25f; t += Time.deltaTime)
-            {
-                _card.localScale = baseScale * Mathf.Lerp(0.85f, 1f, PresentableFx.EaseOutBack(t / 0.25f));
-                yield return null;
-            }
-
-            _card.localScale = baseScale;
-        }
-
-        private Button HoloButton(string name, Transform parent, Vector2 min, Vector2 max, Sprite bg, out TextMeshProUGUI text, out Image img)
+        private Button HoloButton(string name, Transform parent, Vector2 min, Vector2 max, Sprite bg, out TextMeshProUGUI text)
         {
             var rt = PresentableUi.Rect(name, parent, min, max);
-            img = PresentableUi.Img(rt, bg, Color.white, true, true);
+            var img = PresentableUi.Img(rt, bg, Color.white, true, true);
             var btn = rt.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
             btn.transition = Selectable.Transition.None;
@@ -249,10 +297,38 @@ namespace ChemicalSafety.Presentable
             return btn;
         }
 
+        private static TextMeshProUGUI HeaderTitle(TextMeshProUGUI t)
+        {
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = 14f;
+            t.fontSizeMax = 30f;
+            t.alignment = TextAlignmentOptions.Center;
+            return t;
+        }
+
+        private static TextMeshProUGUI FitInside(TextMeshProUGUI t, float min, float max)
+        {
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Truncate;
+            t.enableAutoSizing = true;
+            t.fontSizeMin = min;
+            t.fontSizeMax = max;
+            t.margin = new Vector4(6f, 2f, 6f, 2f);
+            return t;
+        }
+
         private void Build()
         {
             if (_panel != null || art == null)
                 return;
+            BuildQuestion();
+            BuildPopups();
+        }
+
+        private void BuildQuestion()
+        {
             const int rows = 4;
             var plate = art.holoPanel != null ? art.holoPanel : art.frameWide;
             var canvas = PresentableUi.WorldCanvas("Sc12AssessPanel", transform, new Vector2(820f, 780f), 0.00064f, true, 30);
@@ -304,39 +380,78 @@ namespace ChemicalSafety.Presentable
             }
 
             var holo = art.holoButtonPrimary != null ? art.holoButtonPrimary : art.holoButton;
-            _submit = HoloButton("SubmitButton", canvas.transform, new Vector2(0.30f, 0.055f), new Vector2(0.70f, 0.18f), holo, out _submitText, out _submitImg);
+            _submit = HoloButton("SubmitButton", canvas.transform, new Vector2(0.30f, 0.055f), new Vector2(0.70f, 0.18f), holo, out _submitText);
             _submit.onClick.AddListener(PressSubmit);
-            _next = HoloButton("NextButton", canvas.transform, new Vector2(0.30f, 0.055f), new Vector2(0.70f, 0.18f), holo, out _nextText, out _);
-            _next.onClick.AddListener(PressNext);
-            _next.gameObject.SetActive(false);
             PresentableUi.AlwaysOnTop(canvas);
-
-            // verdict card (MCQ popup layout, 900 x 482 frame): overlaps the left edge of the panel like the workflow picture
-            var cardCanvas = PresentableUi.WorldCanvas("Sc12AssessCard", _panel, new Vector2(900f, 482f), 1f, false, 32);
-            _card = cardCanvas.transform;
-            _card.localScale = Vector3.one * CardScale;
-            var crt = (RectTransform)_card;
-            crt.anchorMin = crt.anchorMax = new Vector2(0f, 0.5f);
-            crt.pivot = new Vector2(0.62f, 0.5f);
-            crt.anchoredPosition = new Vector2(-150f, 130f);
-            cardCanvas.gameObject.AddComponent<CanvasGroup>();
-            _cardFrame = PresentableUi.Img("Frame", cardCanvas.transform, Vector2.zero, Vector2.one, art.frameCorrect, Color.white);
-            _cardTitle = PresentableUi.Text("Title", cardCanvas.transform, new Vector2(0.18f, 0.855f), new Vector2(0.82f, 0.93f), "", 30f,
-                Color.white, TextAlignmentOptions.Center, true, art.englishFont);
-            _cardTitle.enableAutoSizing = true;
-            _cardTitle.fontSizeMin = 14f;
-            _cardTitle.fontSizeMax = 42f;
-            _cardTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            _cardBody = PresentableUi.Text("Body", cardCanvas.transform, new Vector2(0.16f, 0.22f), new Vector2(0.84f, 0.74f), "", 34f,
-                HoloWhite, TextAlignmentOptions.Center, false, art.englishFont);
-            _cardBody.enableAutoSizing = true;
-            _cardBody.fontSizeMin = 16f;
-            _cardBody.fontSizeMax = 46f;
-            _cardBody.textWrappingMode = TextWrappingModes.Normal;
-            _cardBody.overflowMode = TextOverflowModes.Truncate;
-            PresentableUi.AlwaysOnTop(cardCanvas);
-            _card.gameObject.SetActive(false);
             _panel.gameObject.SetActive(false);
+        }
+
+        // Mirrors PresentableMcqPanel.BuildCorrectPopup / BuildWrongPopup / BuildNextButton (same frame, anchors, close and NEXT).
+        private void BuildPopups()
+        {
+            var canvas = PresentableUi.WorldCanvas("Sc12AssessPopup", transform, new Vector2(900f, 760f), PopupScale, true, 34);
+            _popupRoot = canvas.transform;
+
+            var glowRt = PresentableUi.Centered("Glow", canvas.transform, new Vector2(0f, 110f), new Vector2(980f, 560f));
+            _glow = PresentableUi.Img(glowRt, art.radialGlow, new Color(0.3f, 1f, 0.5f, 0.5f));
+            _glow.raycastTarget = false;
+            _glow.gameObject.SetActive(false);
+
+            // correct
+            _correctPopup = PresentableUi.Centered("CorrectPopup", canvas.transform, new Vector2(0f, 110f), new Vector2(900f, 482f));
+            _correctPopup.gameObject.AddComponent<CanvasGroup>();
+            PresentableUi.Img(_correctPopup, art.frameCorrect != null ? art.frameCorrect : art.frameWide, Color.white);
+            _correctTitle = HeaderTitle(PresentableUi.Text("Title", _correctPopup, new Vector2(0.18f, 0.855f), new Vector2(0.82f, 0.93f),
+                string.Empty, 26f, Color.white, bold: true, font: art.englishFont));
+            _tick = PresentableUi.Rect("Tick", _correctPopup, new Vector2(0.42f, 0.62f), new Vector2(0.58f, 0.76f));
+            PresentableUi.Img(_tick, art.check, new Color(0.55f, 1f, 0.62f), preserveAspect: true);
+            _correctBody = FitInside(PresentableUi.Text("Body", _correctPopup, new Vector2(0.16f, 0.22f), new Vector2(0.84f, 0.58f),
+                string.Empty, 26f, new Color(0.86f, 1f, 0.9f), font: art.englishFont), 16f, 28f);
+            _correctPopup.gameObject.SetActive(false);
+
+            // wrong, with the close (X) button
+            _wrongPopup = PresentableUi.Centered("WrongPopup", canvas.transform, new Vector2(0f, 110f), new Vector2(900f, 482f));
+            _wrongPopup.gameObject.AddComponent<CanvasGroup>();
+            PresentableUi.Img(_wrongPopup, art.frameWrong != null ? art.frameWrong : art.frameWide, Color.white);
+            _wrongTitle = HeaderTitle(PresentableUi.Text("Title", _wrongPopup, new Vector2(0.18f, 0.855f), new Vector2(0.82f, 0.93f),
+                string.Empty, 24f, Color.white, bold: true, font: art.englishFont));
+            _wrongBody = FitInside(PresentableUi.Text("Body", _wrongPopup, new Vector2(0.16f, 0.36f), new Vector2(0.84f, 0.74f),
+                string.Empty, 22f, new Color(1f, 0.94f, 0.94f), font: art.englishFont), 15f, 24f);
+            var close = PresentableUi.Rect("Close", _wrongPopup, new Vector2(0.74f, 0.20f), new Vector2(0.86f, 0.32f));
+            var closeBg = PresentableUi.Img(close, art.roundedSolid, new Color(0.75f, 0.14f, 0.12f, 1f), sliced: true, raycast: true);
+            PresentableUi.Img(PresentableUi.Rect("X", close, new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f)), art.cross, Color.white,
+                preserveAspect: true);
+            var closeBtn = close.gameObject.AddComponent<Button>();
+            closeBtn.targetGraphic = closeBg;
+            closeBtn.onClick.AddListener(OnWrongClosed);
+            close.gameObject.AddComponent<HoverLift>().Init(close);
+            _wrongPopup.gameObject.SetActive(false);
+
+            // NEXT pill under the correct popup
+            _nextButton = PresentableUi.Rect("NextButton", _correctPopup, new Vector2(0.18f, -0.34f), new Vector2(0.82f, -0.08f));
+            _nextButton.gameObject.AddComponent<CanvasGroup>();
+            PresentableUi.Img(PresentableUi.Rect("Hit", _nextButton, Vector2.zero, Vector2.one), null, new Color(1f, 1f, 1f, 0.02f), raycast: true);
+            PresentableUi.Img(PresentableUi.Rect("Pill", _nextButton, Vector2.zero, Vector2.one, new Vector2(-80f, -52f), new Vector2(80f, 52f)),
+                art.button, Color.white);
+            _nextLabel = PresentableUi.Text("Label", _nextButton, Vector2.zero, Vector2.one, "NEXT", 42f, Color.white, bold: true, font: art.englishFont);
+            var nextBtn = _nextButton.gameObject.AddComponent<Button>();
+            nextBtn.targetGraphic = _nextButton.GetComponentInChildren<Image>();
+            nextBtn.onClick.AddListener(PressNext);
+            _nextButton.gameObject.AddComponent<HoverLift>().Init(_nextButton);
+            _nextButton.gameObject.SetActive(false);
+
+            PresentableUi.AlwaysOnTop(canvas);
+            _popupRoot.gameObject.SetActive(false);
+        }
+
+        private void LateUpdate()
+        {
+            // the popup stands where the question panel stood (the director moves this host once, before Show)
+            if (_popupRoot != null && _panel != null && _popupRoot.gameObject.activeSelf)
+            {
+                _popupRoot.position = _panel.position;
+                _popupRoot.rotation = _panel.rotation;
+            }
         }
     }
 }

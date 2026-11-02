@@ -32,6 +32,9 @@ namespace ChemicalSafety.Presentable
         private Image[] _marks;
         private Transform _card;
         private Image _cardFrame;
+        private Image _cardFill;
+        private Image _cardGlow;
+        private Image _cardLine;
         private TextMeshProUGUI _cardTitle;
         private TextMeshProUGUI _cardBody;
         private TextMeshProUGUI _prompt;
@@ -217,10 +220,15 @@ namespace ChemicalSafety.Presentable
 
         private void ShowCard(bool right)
         {
-            _cardFrame.sprite = right ? art.frameCorrect : art.frameWrong;
+            var main = right ? new Color(0.30f, 1f, 0.52f, 1f) : new Color(1f, 0.28f, 0.26f, 1f);
+            _cardFrame.color = new Color(main.r, main.g, main.b, 0.95f);
+            _cardGlow.color = new Color(main.r, main.g, main.b, 0.30f);
+            _cardLine.color = new Color(main.r, main.g, main.b, 0.55f);
+            _cardFill.color = right ? new Color(0.02f, 0.16f, 0.07f, 0.86f) : new Color(0.20f, 0.03f, 0.03f, 0.88f);
             _cardTitle.text = right ? Sc12Content.RightTitle : Sc12Content.WrongTitle;
+            _cardTitle.color = main;
             _cardBody.text = right ? Sc12Content.RightBody : Sc12Content.WrongBody;
-            _cardBody.color = right ? new Color(0.86f, 1f, 0.9f) : new Color(1f, 0.94f, 0.94f);
+            _cardBody.color = right ? new Color(0.78f, 1f, 0.86f) : new Color(1f, 0.82f, 0.78f);
             _card.gameObject.SetActive(true);
             StartCoroutine(PopIn(_card));
         }
@@ -340,7 +348,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator PopIn(Transform t)
         {
             var group = t.GetComponent<CanvasGroup>();
-            var baseScale = Vector3.one * (t == _review ? 0.00066f : t == _card ? 0.0006f : 0.00064f);
+            var baseScale = Vector3.one * (t == _review ? 0.00062f : 0.00064f);
             t.localScale = baseScale * 0.85f;
             if (group != null)
                 group.alpha = 0f;
@@ -416,79 +424,108 @@ namespace ChemicalSafety.Presentable
             _panel.gameObject.SetActive(false);
         }
 
-        // Same layout as the MCQ right / wrong popups: the frame art is 900 x 482, the title sits in its header band.
+        // The verdict card of workflow step04 / step05: a flat holographic card, thin glowing border (green / red), bold coloured
+        // title, a divider and one line. Not the MCQ popup.
         private void BuildCard()
         {
-            var canvas = PresentableUi.WorldCanvas("Sc12Card", transform, new Vector2(900f, 482f), 0.0006f, false, 32);
+            var canvas = PresentableUi.WorldCanvas("Sc12Card", transform, new Vector2(560f, 250f), 0.00064f, false, 32);
             _card = canvas.transform;
             canvas.gameObject.AddComponent<CanvasGroup>();
-            _cardFrame = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, art.frameCorrect, Color.white);
-            _cardTitle = PresentableUi.Text("Title", canvas.transform, new Vector2(0.18f, 0.855f), new Vector2(0.82f, 0.93f),
-                "", 42f, Color.white, TextAlignmentOptions.Center, true, art.englishFont);
+            var glow = PresentableUi.Rect("Glow", canvas.transform, Vector2.zero, Vector2.one, new Vector2(-12f, -12f), new Vector2(12f, 12f));
+            _cardGlow = PresentableUi.Img(glow, art.roundedSolid, new Color(0.3f, 1f, 0.5f, 0.3f), true);
+            var border = PresentableUi.Rect("Border", canvas.transform, Vector2.zero, Vector2.one);
+            _cardFrame = PresentableUi.Img(border, art.roundedSolid, new Color(0.3f, 1f, 0.5f, 0.95f), true);
+            var fill = PresentableUi.Rect("Fill", canvas.transform, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+            _cardFill = PresentableUi.Img(fill, art.roundedSolid, new Color(0.02f, 0.16f, 0.07f, 0.86f), true);
+            _cardTitle = PresentableUi.Text("Title", canvas.transform, new Vector2(0.06f, 0.58f), new Vector2(0.94f, 0.92f),
+                "", 56f, PresentableUi.Green, TextAlignmentOptions.Center, true, art.englishFont);
             _cardTitle.enableAutoSizing = true;
-            _cardTitle.fontSizeMin = 14f;
-            _cardTitle.fontSizeMax = 42f;
+            _cardTitle.fontSizeMin = 24f;
+            _cardTitle.fontSizeMax = 56f;
             _cardTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            _cardBody = PresentableUi.Text("Body", canvas.transform, new Vector2(0.16f, 0.22f), new Vector2(0.84f, 0.74f),
-                "", 34f, HoloWhite, TextAlignmentOptions.Center, false, art.englishFont);
+            var line = PresentableUi.Rect("Divider", canvas.transform, new Vector2(0.08f, 0.555f), new Vector2(0.92f, 0.565f));
+            _cardLine = PresentableUi.Img(line, art.roundedSolid, new Color(0.3f, 1f, 0.5f, 0.55f));
+            _cardBody = PresentableUi.Text("Body", canvas.transform, new Vector2(0.08f, 0.10f), new Vector2(0.92f, 0.52f),
+                "", 40f, HoloWhite, TextAlignmentOptions.Center, false, art.englishFont);
             _cardBody.enableAutoSizing = true;
-            _cardBody.fontSizeMin = 16f;
-            _cardBody.fontSizeMax = 46f;
+            _cardBody.fontSizeMin = 18f;
+            _cardBody.fontSizeMax = 40f;
             _cardBody.textWrappingMode = TextWrappingModes.Normal;
             _cardBody.overflowMode = TextOverflowModes.Truncate;
             PresentableUi.AlwaysOnTop(canvas);
             _card.gameObject.SetActive(false);
         }
 
+        private Sprite Ui(int i) => art.uiSc12 != null && i < art.uiSc12.Length && art.uiSc12[i] != null ? art.uiSc12[i] : art.roundedSolid;
+
+        // Workflow step06: a faint glass pane with the donned operator (transparent cut-out, cyan outline glow) on the left, the dark
+        // glass pane CORROSIVE ACID COMPATIBLE PPE on the right, an arrow from the list to the operator, NEXT > under the operator.
         private void BuildReview()
         {
-            var canvas = PresentableUi.WorldCanvas("Sc12Review", transform, new Vector2(1100f, 760f), 0.00066f, true, 30);
+            var canvas = PresentableUi.WorldCanvas("Sc12Review", transform, new Vector2(1240f, 800f), 0.00062f, true, 30);
             _review = canvas.transform;
             canvas.gameObject.AddComponent<CanvasGroup>();
-            var plate = art.holoPanel != null ? art.holoPanel : art.frameWide;
-            var bg = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, plate, new Color(1f, 1f, 1f, 0.92f));
-            if (art.holoPanel != null)
-                bg.type = Image.Type.Sliced;
-            // left: the donned operator
-            var glow = PresentableUi.Rect("OperatorGlow", canvas.transform, new Vector2(0.03f, 0.06f), new Vector2(0.43f, 0.94f));
-            PresentableUi.Img(glow, art.radialGlow, new Color(0.3f, 0.9f, 1f, 0.28f));
+            var cyan = new Color(0.55f, 0.95f, 1f, 0.95f);
+
+            // left: operator on a faint glass pane
+            var left = PresentableUi.Rect("OperatorPanel", canvas.transform, new Vector2(0.0f, 0.12f), new Vector2(0.45f, 0.99f));
+            PresentableUi.Img(left, Ui(0), Color.white, true);
             if (art.operatorSc12 != null)
             {
-                var op = PresentableUi.Rect("Operator", canvas.transform, new Vector2(0.05f, 0.07f), new Vector2(0.41f, 0.93f));
+                var op = PresentableUi.Rect("Operator", left, new Vector2(0.06f, 0.025f), new Vector2(0.94f, 0.975f));
                 PresentableUi.Img(op, art.operatorSc12, Color.white, preserveAspect: true);
             }
 
-            // right: CORROSIVE ACID COMPATIBLE PPE
-            var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.46f, 0.82f), new Vector2(0.96f, 0.96f),
-                Sc12Content.ReviewTitle, 40f, new Color(0.62f, 0.95f, 1f), TextAlignmentOptions.Center, true, art.englishFont);
+            // arrow from the list to the operator (a line and an arrow head pointing left)
+            var wire = PresentableUi.Rect("Wire", canvas.transform, new Vector2(0.33f, 0.300f), new Vector2(0.505f, 0.306f));
+            PresentableUi.Img(wire, art.roundedSolid, cyan);
+            var head = PresentableUi.Rect("WireHead", canvas.transform, new Vector2(0.305f, 0.272f), new Vector2(0.345f, 0.335f));
+            head.localRotation = Quaternion.Euler(0f, 0f, -90f);
+            if (art.arrowDown != null)
+                PresentableUi.Img(head, art.arrowDown, cyan, false, false, true);
+
+            // right: the compatible PPE list on dark glass
+            var right = PresentableUi.Rect("ListPanel", canvas.transform, new Vector2(0.50f, 0.12f), new Vector2(1.0f, 0.99f));
+            PresentableUi.Img(right, Ui(1), Color.white, true);
+            var title = PresentableUi.Text("Title", right, new Vector2(0.07f, 0.80f), new Vector2(0.93f, 0.945f),
+                Sc12Content.ReviewTitle, 54f, new Color(0.88f, 0.98f, 1f), TextAlignmentOptions.Center, true, art.englishFont);
             title.enableAutoSizing = true;
-            title.fontSizeMin = 18f;
-            title.fontSizeMax = 40f;
+            title.fontSizeMin = 22f;
+            title.fontSizeMax = 54f;
+            title.textWrappingMode = TextWrappingModes.Normal;
             var n = Sc12Content.ReviewItems.Length;
             _reviewChecks = new Image[n];
             for (var i = 0; i < n; i++)
             {
-                var top = 0.80f - i * 0.16f;
-                var row = PresentableUi.Rect("Item" + i, canvas.transform, new Vector2(0.46f, top - 0.14f), new Vector2(0.96f, top));
-                PresentableUi.Img(row, art.holoButton != null ? art.holoButton : art.roundedSolid, RowIdle, true);
-                if (art.iconSc12Ppe != null && i < art.iconSc12Ppe.Length && art.iconSc12Ppe[i] != null)
+                var top = 0.785f - i * 0.195f;
+                var row = PresentableUi.Rect("Item" + i, right, new Vector2(0.06f, top - 0.172f), new Vector2(0.94f, top));
+                PresentableUi.Img(row, Ui(2), Color.white, true);
+                // list order: goggles, gloves, apron, respirator; icon order: goggles, gloves, respirator, apron
+                var iconIndex = i == 2 ? 3 : i == 3 ? 2 : i;
+                if (art.iconSc12Ppe != null && iconIndex < art.iconSc12Ppe.Length && art.iconSc12Ppe[iconIndex] != null)
                 {
-                    var ic = PresentableUi.Rect("Icon", row, new Vector2(0.03f, 0.1f), new Vector2(0.24f, 0.9f));
-                    PresentableUi.Img(ic, art.iconSc12Ppe[i], Color.white, preserveAspect: true);
+                    var ic = PresentableUi.Rect("Icon", row, new Vector2(0.035f, 0.08f), new Vector2(0.27f, 0.92f));
+                    PresentableUi.Img(ic, art.iconSc12Ppe[iconIndex], Color.white, preserveAspect: true);
                 }
 
-                var label = PresentableUi.Text("Label", row, new Vector2(0.27f, 0.05f), new Vector2(0.80f, 0.95f),
-                    Sc12Content.ReviewItems[i], 34f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, art.englishFont);
+                var label = PresentableUi.Text("Label", row, new Vector2(0.30f, 0.05f), new Vector2(0.79f, 0.95f),
+                    Sc12Content.ReviewItems[i], 44f, Color.white, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
                 label.enableAutoSizing = true;
-                label.fontSizeMin = 16f;
-                label.fontSizeMax = 34f;
-                var ck = PresentableUi.Rect("Check", row, new Vector2(0.82f, 0.1f), new Vector2(0.97f, 0.9f));
-                _reviewChecks[i] = PresentableUi.Img(ck, art.check, PresentableUi.Green, false, false, true);
+                label.fontSizeMin = 18f;
+                label.fontSizeMax = 44f;
+                label.textWrappingMode = TextWrappingModes.Normal;
+                var box = PresentableUi.Rect("Box", row, new Vector2(0.83f, 0.50f), new Vector2(0.95f, 0.90f));
+                PresentableUi.Img(box, art.roundedSolid, new Color(0.80f, 0.97f, 1f, 0.40f), true);
+                var ck = PresentableUi.Rect("Check", row, new Vector2(0.82f, 0.46f), new Vector2(0.96f, 0.96f));
+                _reviewChecks[i] = PresentableUi.Img(ck, art.check, new Color(0.35f, 1f, 0.5f), false, false, true);
                 _reviewChecks[i].gameObject.SetActive(false);
             }
 
-            var nextRt = PresentableUi.Rect("NextButton", canvas.transform, new Vector2(0.60f, 0.03f), new Vector2(0.96f, 0.155f));
-            var nextImg = PresentableUi.Img(nextRt, art.holoButtonPrimary != null ? art.holoButtonPrimary : art.holoButton, Color.white, true, true);
+            // NEXT > under the operator, joined to the pane by a thin line
+            var stem = PresentableUi.Rect("Stem", canvas.transform, new Vector2(0.222f, 0.085f), new Vector2(0.228f, 0.125f));
+            PresentableUi.Img(stem, art.roundedSolid, cyan);
+            var nextRt = PresentableUi.Rect("NextButton", canvas.transform, new Vector2(0.06f, 0.0f), new Vector2(0.39f, 0.095f));
+            var nextImg = PresentableUi.Img(nextRt, Ui(3), Color.white, true, true);
             var nextBtn = nextRt.gameObject.AddComponent<Button>();
             nextBtn.targetGraphic = nextImg;
             nextBtn.transition = Selectable.Transition.None;
@@ -496,14 +533,16 @@ namespace ChemicalSafety.Presentable
             var nextLift = nextRt.gameObject.AddComponent<HoverLift>();
             nextLift.Init(nextRt);
             nextBtn.onClick.AddListener(nextLift.Press);
-            var nextText = PresentableUi.Text("Label", nextRt, new Vector2(0.08f, 0.08f), new Vector2(0.70f, 0.92f),
-                Sc12Content.NextLabel, 34f, HoloWhite, TextAlignmentOptions.Center, true, art.englishFont);
+            var nextText = PresentableUi.Text("Label", nextRt, new Vector2(0.12f, 0.10f), new Vector2(0.72f, 0.90f),
+                Sc12Content.NextLabel, 46f, new Color(0.88f, 0.99f, 1f), TextAlignmentOptions.Center, true, art.englishFont);
             nextText.enableAutoSizing = true;
-            nextText.fontSizeMin = 18f;
-            nextText.fontSizeMax = 34f;
+            nextText.fontSizeMin = 20f;
+            nextText.fontSizeMax = 46f;
             nextText.textWrappingMode = TextWrappingModes.NoWrap;
-            if (art.iconNext != null)
-                PresentableUi.Img(PresentableUi.Rect("Icon", nextRt, new Vector2(0.72f, 0.18f), new Vector2(0.92f, 0.82f)), art.iconNext, Color.white, preserveAspect: true);
+            var chev = PresentableUi.Rect("Chevron", nextRt, new Vector2(0.72f, 0.24f), new Vector2(0.88f, 0.76f));
+            chev.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            if (art.arrowDown != null)
+                PresentableUi.Img(chev, art.arrowDown, new Color(0.88f, 0.99f, 1f), false, false, true);
             PresentableUi.AlwaysOnTop(canvas);
             _review.gameObject.SetActive(false);
         }
