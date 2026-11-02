@@ -250,25 +250,30 @@ namespace ChemicalSafety.Presentable
             var cam = Camera.main != null ? Camera.main.transform : null;
             var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
             var head = cam != null ? cam.position : from;
-            var dest = head + fwd * 0.40f + Vector3.down * 0.22f;
+            // shown in the clear, centred in the view: the panel (always on top) is hidden meanwhile, the verdict card stays on the right
+            var dest = head + fwd * 0.75f + Vector3.down * 0.05f;
             var destRot = Quaternion.LookRotation(-fwd, Vector3.up) * Quaternion.Euler(0f, 180f, 0f);
-            var bounds = BoundsOf(item);
-            var holdScale = Mathf.Clamp(0.34f / Mathf.Max(0.05f, bounds.size.y), 0.6f, 2.2f);
+            var size = BoundsOf(item).size;
+            var holdScale = Mathf.Clamp(0.28f / Mathf.Max(0.05f, size.x, size.y, size.z), 0.3f, 2.2f);
+            var startCenter = BoundsOf(item).center;
+            if (_panel != null)
+                _panel.gameObject.SetActive(false);
             for (var t = 0f; t < 0.55f; t += Time.deltaTime)
             {
                 var k = Mathf.SmoothStep(0f, 1f, t / 0.55f);
-                item.position = Vector3.Lerp(from, dest, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.06f);
                 item.rotation = Quaternion.Slerp(fromRot, destRot, k);
                 item.localScale = Vector3.Lerp(fromScale, _homeScale[index] * holdScale, k);
+                CenterAt(item, Vector3.Lerp(startCenter, dest, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.06f));
                 yield return null;
             }
 
-            // a slow turn so the user can look at it
+            // a slow sway so the user can see the whole shape
             var spin = 0f;
-            for (var t = 0f; t < 1.5f; t += Time.deltaTime)
+            for (var t = 0f; t < 2.2f; t += Time.deltaTime)
             {
                 spin += Time.deltaTime * 70f;
-                item.rotation = destRot * Quaternion.Euler(0f, Mathf.Sin(spin * Mathf.Deg2Rad) * 25f, 0f);
+                item.rotation = destRot * Quaternion.Euler(0f, Mathf.Sin(spin * Mathf.Deg2Rad) * 35f, 0f);
+                CenterAt(item, dest);
                 yield return null;
             }
 
@@ -304,6 +309,8 @@ namespace ChemicalSafety.Presentable
 
                 item.SetPositionAndRotation(_homePos[index], _homeRot[index]);
                 item.localScale = _homeScale[index];
+                if (_panel != null && _open)
+                    _panel.gameObject.SetActive(true);
                 Result = 2;
             }
         }
@@ -545,6 +552,12 @@ namespace ChemicalSafety.Presentable
                 PresentableUi.Img(chev, art.arrowDown, new Color(0.88f, 0.99f, 1f), false, false, true);
             PresentableUi.AlwaysOnTop(canvas);
             _review.gameObject.SetActive(false);
+        }
+
+        // moves the item so the middle of its bounds (not its bottom pivot) sits at the point
+        private static void CenterAt(Transform item, Vector3 point)
+        {
+            item.position += point - BoundsOf(item).center;
         }
 
         private static Bounds BoundsOf(Transform t)
