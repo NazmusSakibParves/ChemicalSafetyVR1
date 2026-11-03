@@ -192,6 +192,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc12Station sc12Station;
         [SerializeField] private Sc06Gate sc12Gate;
         [SerializeField] private Sc12Assessment assessmentSc12;
+        [SerializeField] private GameObject envScCheck;
+        [SerializeField] private Transform spawnScCheck;
+        [SerializeField] private ScCheckRunner scCheck;
 
         [Header("Timing")]
         [SerializeField] private float gapAfterSalam = 2f;
@@ -246,6 +249,14 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
                 yield return RunScenario6();
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetyScCheckOnly", false) && envScCheck != null && scCheck != null)
+            {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                yield return RunScenarioCheck(13);
+                Stage("complete");
                 yield break;
             }
 
@@ -444,7 +455,8 @@ namespace ChemicalSafety.Presentable
 
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc12 != null ? Sc12Content.ModuleComplete
+            var doneLine = envScCheck != null ? Loc.T("SC18", "ModuleComplete")
+                : envSc12 != null ? Sc12Content.ModuleComplete
                 : envSc11 != null ? Sc11Content.ModuleComplete
                 : envSc10 != null ? Sc10Content.ModuleComplete
                 : envSc09 != null ? Sc09Content.ModuleComplete
@@ -2671,6 +2683,30 @@ namespace ChemicalSafety.Presentable
             Stage("sc12Question");
             yield return Sc12Question();
             Stage("sc12Done");
+            if (envScCheck != null && scCheck != null)
+                yield return RunScenarioCheck(13);
+        }
+
+        // SC13-SC18: the Supervisor Pre-Task Safety Check. One hall and one runner, the scenario number only selects the content
+        // (Resources/Content/SCnn.json). The round results button moves on to the next number; after SC18 the module is complete.
+        private IEnumerator RunScenarioCheck(int n)
+        {
+            Stage("sc" + n);
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envScCheck.SetActive(true);
+            clipboard.SetVisible(false);
+            PlaceRig(spawnScCheck.position, spawnScCheck.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+            yield return scCheck.Run(n, _cam);
+            Stage("sc" + n + "Done");
+            if (n < 18)
+                yield return RunScenarioCheck(n + 1);
         }
 
         private IEnumerator Sc12Round()

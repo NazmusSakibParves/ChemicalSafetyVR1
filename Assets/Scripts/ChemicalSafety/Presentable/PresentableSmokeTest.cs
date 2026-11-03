@@ -1252,6 +1252,152 @@ namespace ChemicalSafety.Presentable
             return tmp != null ? tmp.text : "";
         }
 
+        // SC13-SC18 (Supervisor Pre-Task Safety Check): drives the runner stage by stage. Question 2 is answered wrong on purpose,
+        // the SDS panel is opened once per question, every panel gets a layout check; shots are taken in the first scenario only.
+        // Pose photos of the supervisor (Play mode: the skinning is up to date): front, both sides and a close-up of the hands.
+        private IEnumerator SupPhotos(string tag)
+        {
+            var sup = FindFirstObjectByType<LabSupervisor>();
+            if (sup == null)
+                yield break;
+            yield return new WaitForSeconds(3f);
+            yield return new WaitForEndOfFrame();
+            Say("SUP " + tag + " " + sup.DebugDump());
+            var camGo = new GameObject("SupPhotoCam");
+            var cam = camGo.AddComponent<Camera>();
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 60f;
+            cam.clearFlags = CameraClearFlags.Skybox;
+            var rt = new RenderTexture(900, 900, 24);
+            cam.targetTexture = rt;
+            var tex = new Texture2D(900, 900, TextureFormat.RGB24, false);
+            var main = Camera.main;
+            var toP = main != null ? main.transform.position - sup.transform.position : sup.transform.forward;
+            toP.y = 0f;
+            toP.Normalize();
+            var right = Vector3.Cross(Vector3.up, toP);
+            var look = sup.transform.position + Vector3.up * 1.2f;
+            var views = new[] { toP * 1.9f + Vector3.up * 1.5f, toP * 1.5f + right * 1.1f + Vector3.up * 1.4f, toP * 1.5f - right * 1.1f + Vector3.up * 1.4f, toP * 0.9f + Vector3.up * 1.5f };
+            for (var i = 0; i < views.Length; i++)
+            {
+                cam.fieldOfView = i == 3 ? 40f : 34f;
+                cam.transform.position = sup.transform.position + views[i];
+                cam.transform.LookAt(i == 3 ? sup.transform.position + Vector3.up * 1.15f : look);
+                cam.Render();
+                RenderTexture.active = rt;
+                tex.ReadPixels(new Rect(0, 0, 900, 900), 0, 0);
+                tex.Apply();
+                RenderTexture.active = null;
+                File.WriteAllBytes(Path.Combine(_dir, "sup_" + tag + "_" + i + ".png"), tex.EncodeToPNG());
+            }
+
+            Destroy(camGo);
+            Destroy(rt);
+            Destroy(tex);
+        }
+
+        private IEnumerator ScCheckSmoke()
+        {
+            var runner = Get<ScCheckRunner>(_director, "scCheck");
+            if (runner == null)
+            {
+                Say("ScCheck runner missing (expected present)");
+                yield break;
+            }
+
+            for (var n = 13; n <= 18; n++)
+            {
+                yield return WaitStage("sc" + n, 60f);
+                var shots = n == 13;
+                var settle = 0f;
+                while (n > 13 && runner.Stage == "done" && settle < 30f)
+                {
+                    settle += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                var last = "";
+                var guard = 0f;
+                var sdsTried = false;
+                var answered = false;
+                var score = 0;
+                while (runner.Stage != "done" && guard < 300f)
+                {
+                    guard += Time.unscaledDeltaTime;
+                    var st = runner.Stage;
+                    if (st != last)
+                    {
+                        last = st;
+                        sdsTried = false;
+                        answered = false;
+                        Say("SC" + n + " runner stage " + st);
+                        if (n == 13 && (st == "intro" || st == "q1") && SessionState.GetBool("SupPhotos", false))
+                            yield return SupPhotos(st);
+                    }
+
+                    if (st == "intro" || st == "startCard" || st == "bottle")
+                    {
+                        yield return new WaitForSeconds(1.5f);
+                        if (shots)
+                            yield return Shot("150_sccheck_" + st);
+                        for (var w = 0f; w < 40f && runner.Stage == st; w += Time.unscaledDeltaTime)
+                        {
+                            runner.PressCard();
+                            yield return null;
+                        }
+                    }
+                    else if (st.Length == 2 && st[0] == 'q' && runner.QuestionVisible)
+                    {
+                        if (!sdsTried)
+                        {
+                            sdsTried = true;
+                            yield return new WaitForSeconds(1.0f);
+                            LayoutCheck("SC" + n + " " + st, runner.MainPanel);
+                            runner.ToggleSds();
+                            yield return new WaitForSeconds(0.8f);
+                            Say("SC" + n + " " + st + " SDS open = " + runner.SdsOpen + " (expected True)");
+                            if (shots)
+                                yield return Shot("151_sccheck_" + st + "_sds");
+                            runner.ScrollSds(-0.5f);
+                            runner.ToggleSds();
+                            yield return new WaitForSeconds(0.6f);
+                            Say("SC" + n + " " + st + " SDS open = " + runner.SdsOpen + " (expected False)");
+                        }
+                        else if (!answered)
+                        {
+                            answered = true;
+                            var wrong = st == "q2";
+                            runner.SelectOption(wrong ? (runner.CorrectRow + 1) % 4 : runner.CorrectRow);
+                            if (!wrong)
+                                score++;
+                            yield return new WaitForSeconds(0.8f);
+                            if (shots)
+                                yield return Shot("152_sccheck_" + st + "_answered");
+                        }
+                        else if (runner.AnswerLocked)
+                        {
+                            runner.PressNext();
+                        }
+                    }
+                    else if (st == "results")
+                    {
+                        yield return new WaitForSeconds(1.5f);
+                        if (shots)
+                            yield return Shot("153_sccheck_results");
+                        for (var w = 0f; w < 40f && runner.Stage == st; w += Time.unscaledDeltaTime)
+                        {
+                            runner.PressNextRound();
+                            yield return null;
+                        }
+                    }
+
+                    yield return null;
+                }
+
+                Say("SC" + n + " finished, score expected 2 of 3, runner reports " + runner.LastScore);
+            }
+        }
+
         private IEnumerator Sc12Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
             yield return WaitStage("sc12Intro", 40f);
@@ -1501,6 +1647,16 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetyScCheckOnly", false))
+            {
+                Say("ScCheck-only run (dev start)");
+                yield return ScCheckSmoke();
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc12Only", false))
             {
                 Say("SC12-only run (dev start)");
@@ -2440,6 +2596,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc10Smoke(panel, voiceSrc);
             yield return Sc11Smoke(panel, voiceSrc);
             yield return Sc12Smoke(panel, voiceSrc);
+            yield return ScCheckSmoke();
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

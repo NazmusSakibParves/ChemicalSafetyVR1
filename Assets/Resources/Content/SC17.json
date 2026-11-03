@@ -1,0 +1,347 @@
+{
+  "scenario": "SC17",
+  "strings": [
+    {
+      "key": "Title",
+      "en": "CHEMICAL SAFETY ASSESSMENT TEST",
+      "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+    },
+    {
+      "key": "InstructionEnglish",
+      "en": "Before starting any chemical task, you must pass a 'pre-task safety check' with the supervisor. He asks three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
+      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে সুপারভাইজারের সঙ্গে একটি ‘কাজ-পূর্ব নিরাপত্তা পরীক্ষা’ পাস করতে হবে। তিনি এসডিএস থেকে তিনটি প্রশ্ন করবেন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+    },
+    {
+      "key": "Instructions",
+      "en": "INSTRUCTIONS",
+      "bn": "নির্দেশনা"
+    },
+    {
+      "key": "StartTitle",
+      "en": "Chemical safety assessment test",
+      "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+    },
+    {
+      "key": "StartSub",
+      "en": "Test your chemical knowledge",
+      "bn": "আপনার রাসায়নিক জ্ঞান পরীক্ষা করুন"
+    },
+    {
+      "key": "BottleMcq",
+      "en": "MCQ Three",
+      "bn": "এমসিকিউ তিন"
+    },
+    {
+      "key": "BottleHint",
+      "en": "Check SDS before answer",
+      "bn": "উত্তরের আগে এসডিএস দেখুন"
+    },
+    {
+      "key": "StartCard",
+      "en": "Chemical safety assessment test. Press START when you are ready.",
+      "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা। প্রস্তুত হলে শুরু করুন চাপুন।"
+    },
+    {
+      "key": "BottleCard",
+      "en": "Look at the chemical on the table. Three questions follow. Check the SDS before you answer.",
+      "bn": "টেবিলের রাসায়নিকটি দেখুন। এরপর তিনটি প্রশ্ন আসবে। উত্তর দেওয়ার আগে এসডিএস দেখে নিন।"
+    },
+    {
+      "key": "ChemName",
+      "en": "Hydrochloric Acid (HCL)",
+      "bn": "হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+    },
+    {
+      "key": "BottleTitle",
+      "en": "Chemical Name: Hydrochloric Acid (HCL)",
+      "bn": "রাসায়নিকের নাম: হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+    },
+    {
+      "key": "ChemLabel",
+      "en": "Chemical Name:",
+      "bn": "রাসায়নিকের নাম:"
+    },
+    {
+      "key": "Mcq1",
+      "en": "MCQ 1:",
+      "bn": "প্রশ্ন ১:"
+    },
+    {
+      "key": "Mcq2",
+      "en": "MCQ 2:",
+      "bn": "প্রশ্ন ২:"
+    },
+    {
+      "key": "Mcq3",
+      "en": "MCQ 3:",
+      "bn": "প্রশ্ন ৩:"
+    },
+    {
+      "key": "RefSds",
+      "en": "Reference SDS",
+      "bn": "রেফারেন্স এসডিএস"
+    },
+    {
+      "key": "CheckSds",
+      "en": "CHECK SDS",
+      "bn": "এসডিএস দেখুন"
+    },
+    {
+      "key": "HideSds",
+      "en": "HIDE SDS",
+      "bn": "এসডিএস লুকান"
+    },
+    {
+      "key": "Next",
+      "en": "NEXT",
+      "bn": "পরবর্তী"
+    },
+    {
+      "key": "Start",
+      "en": "START",
+      "bn": "শুরু করুন"
+    },
+    {
+      "key": "Right",
+      "en": "Correct!",
+      "bn": "সঠিক!"
+    },
+    {
+      "key": "Wrong",
+      "en": "Not quite. The right answer is shown in green.",
+      "bn": "ঠিক হয়নি। সঠিক উত্তরটি সবুজ রঙে দেখানো হয়েছে।"
+    },
+    {
+      "key": "RoundTitle",
+      "en": "ROUND 5 RESULTS",
+      "bn": "রাউন্ড ৫ ফলাফল"
+    },
+    {
+      "key": "Score0",
+      "en": "0 OUT OF 3 CORRECT",
+      "bn": "৩টির মধ্যে ০টি সঠিক"
+    },
+    {
+      "key": "Score1",
+      "en": "1 OUT OF 3 CORRECT",
+      "bn": "৩টির মধ্যে ১টি সঠিক"
+    },
+    {
+      "key": "Score2",
+      "en": "2 OUT OF 3 CORRECT",
+      "bn": "৩টির মধ্যে ২টি সঠিক"
+    },
+    {
+      "key": "Score3",
+      "en": "3 OUT OF 3 CORRECT",
+      "bn": "৩টির মধ্যে ৩টি সঠিক"
+    },
+    {
+      "key": "McqCorrect1",
+      "en": "MCQ 1 - Correct",
+      "bn": "প্রশ্ন ১ - সঠিক"
+    },
+    {
+      "key": "McqCorrect2",
+      "en": "MCQ 2 - Correct",
+      "bn": "প্রশ্ন ২ - সঠিক"
+    },
+    {
+      "key": "McqCorrect3",
+      "en": "MCQ 3 - Correct",
+      "bn": "প্রশ্ন ৩ - সঠিক"
+    },
+    {
+      "key": "McqWrong1",
+      "en": "MCQ 1 - Incorrect",
+      "bn": "প্রশ্ন ১ - ভুল"
+    },
+    {
+      "key": "McqWrong2",
+      "en": "MCQ 2 - Incorrect",
+      "bn": "প্রশ্ন ২ - ভুল"
+    },
+    {
+      "key": "McqWrong3",
+      "en": "MCQ 3 - Incorrect",
+      "bn": "প্রশ্ন ৩ - ভুল"
+    },
+    {
+      "key": "ResultGood",
+      "en": "Great effort! Proceed to the next step: Scenario 18.",
+      "bn": "চমৎকার চেষ্টা! পরবর্তী ধাপ: সিনারিও ১৮।"
+    },
+    {
+      "key": "ResultLow",
+      "en": "Review the safety data sheet. Proceed to the next step: Scenario 18.",
+      "bn": "নিরাপত্তা তথ্যপত্র ভালোভাবে পড়ুন। পরবর্তী ধাপ: সিনারিও ১৮।"
+    },
+    {
+      "key": "ResultGoodLast",
+      "en": "Great effort! You completed this check.",
+      "bn": "চমৎকার চেষ্টা! আপনি এই পরীক্ষাটি শেষ করেছেন।"
+    },
+    {
+      "key": "ResultLowLast",
+      "en": "Review the safety data sheet carefully. You completed this check.",
+      "bn": "নিরাপত্তা তথ্যপত্রটি ভালোভাবে পড়ে নিন। আপনি এই পরীক্ষাটি শেষ করেছেন।"
+    },
+    {
+      "key": "NextRound",
+      "en": "NEXT ROUND",
+      "bn": "পরবর্তী রাউন্ড"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Pre-task safety checks complete. Well done!",
+      "bn": "কাজ শুরুর আগের নিরাপত্তা পরীক্ষা সম্পন্ন হয়েছে। চমৎকার!"
+    },
+    {
+      "key": "Sds1",
+      "en": "sds1",
+      "bn": "sds1"
+    },
+    {
+      "key": "Sds2",
+      "en": "sds2",
+      "bn": "sds2"
+    },
+    {
+      "key": "Sds3",
+      "en": "sds3",
+      "bn": "sds3"
+    }
+  ],
+  "arrays": [],
+  "questions": [
+    {
+      "id": "SC17.Q1",
+      "header": {
+        "en": "CHEMICAL SAFETY ASSESSMENT TEST",
+        "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+      },
+      "prompt": {
+        "en": "Which protective equipment does the SDS recommend for a corrosive liquid like hydrochloric acid?",
+        "bn": "হাইড্রোক্লোরিক অ্যাসিডের মতো ক্ষয়কারী তরলের জন্য নিরাপত্তা তথ্যপত্র কোন সুরক্ষা সরঞ্জাম সুপারিশ করে?"
+      },
+      "options": [
+        {
+          "id": "A",
+          "text": {
+            "en": "Safety glasses + cotton gloves",
+            "bn": "সেফটি চশমা + সুতির গ্লাভস"
+          }
+        },
+        {
+          "id": "B",
+          "text": {
+            "en": "Goggles + face shield, neoprene gloves, apron",
+            "bn": "ফেস শিল্ডসহ গগলস, নিওপ্রিন গ্লাভস, অ্যাপ্রন"
+          }
+        },
+        {
+          "id": "C",
+          "text": {
+            "en": "Normal glasses + cloth mask",
+            "bn": "সাধারণ চশমা + কাপড়ের মাস্ক"
+          }
+        },
+        {
+          "id": "D",
+          "text": {
+            "en": "Nitrile gloves only",
+            "bn": "শুধু নাইট্রাইল গ্লাভস"
+          }
+        }
+      ],
+      "correct": "B",
+      "shuffle": true
+    },
+    {
+      "id": "SC17.Q2",
+      "header": {
+        "en": "CHEMICAL SAFETY ASSESSMENT TEST",
+        "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+      },
+      "prompt": {
+        "en": "What to do if hydrochloric acid touches your skin?",
+        "bn": "হাইড্রোক্লোরিক অ্যাসিড ত্বকে লাগলে কী করবেন?"
+      },
+      "options": [
+        {
+          "id": "A",
+          "text": {
+            "en": "Apply burn cream and continue",
+            "bn": "পোড়ার ক্রিম লাগিয়ে কাজ চালান"
+          }
+        },
+        {
+          "id": "B",
+          "text": {
+            "en": "Flush with water 15+ min, remove clothing, get help",
+            "bn": "১৫ মিনিটের বেশি পানিতে ধুয়ে কাপড় খুলুন, সাহায্য নিন"
+          }
+        },
+        {
+          "id": "C",
+          "text": {
+            "en": "Wipe with dry cloth",
+            "bn": "শুকনো কাপড়ে মুছুন"
+          }
+        },
+        {
+          "id": "D",
+          "text": {
+            "en": "Rinse briefly, return to work",
+            "bn": "অল্প ধুয়ে কাজে ফিরুন"
+          }
+        }
+      ],
+      "correct": "B",
+      "shuffle": true
+    },
+    {
+      "id": "SC17.Q3",
+      "header": {
+        "en": "CHEMICAL SAFETY ASSESSMENT TEST",
+        "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+      },
+      "prompt": {
+        "en": "At what temperature should hydrochloric acid be stored?",
+        "bn": "হাইড্রোক্লোরিক অ্যাসিড কোন তাপমাত্রায় সংরক্ষণ করতে হয়?"
+      },
+      "options": [
+        {
+          "id": "A",
+          "text": {
+            "en": "2 to 8 °C, cold room",
+            "bn": "২ থেকে ৮ °সে, ঠান্ডা ঘরে"
+          }
+        },
+        {
+          "id": "B",
+          "text": {
+            "en": "Below 15 °C, cool and dark",
+            "bn": "১৫ °সে-এর নিচে, ঠান্ডা ও অন্ধকারে"
+          }
+        },
+        {
+          "id": "C",
+          "text": {
+            "en": "15 to 25 °C, room temperature",
+            "bn": "১৫ থেকে ২৫ °সে, ঘরের তাপমাত্রায়"
+          }
+        },
+        {
+          "id": "D",
+          "text": {
+            "en": "In a freezer",
+            "bn": "ফ্রিজারে"
+          }
+        }
+      ],
+      "correct": "C",
+      "shuffle": true
+    }
+  ]
+}

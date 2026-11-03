@@ -97,6 +97,10 @@ namespace ChemicalSafety.Editor
             var sc12 = BuildSc12Room(env12, art);
             Sc12BakeProbe(env, env12);
             env12.gameObject.SetActive(false);
+            var envCheck = new GameObject("Environment_SCCHECK").transform;
+            var scCheckRefs = BuildScCheckRoom(envCheck, art);
+            ScCheckBakeProbe(env, envCheck);
+            envCheck.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -331,6 +335,9 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc12Station").objectReferenceValue = sc12.station;
             so.FindProperty("sc12Gate").objectReferenceValue = sc12.gate;
             so.FindProperty("assessmentSc12").objectReferenceValue = mcq12;
+            so.FindProperty("envScCheck").objectReferenceValue = envCheck.gameObject;
+            so.FindProperty("spawnScCheck").objectReferenceValue = scCheckRefs.spawn;
+            so.FindProperty("scCheck").objectReferenceValue = scCheckRefs.runner;
             SetRef(sc10.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
