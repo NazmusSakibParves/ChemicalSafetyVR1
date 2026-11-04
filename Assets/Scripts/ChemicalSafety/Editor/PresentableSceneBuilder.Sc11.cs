@@ -272,7 +272,8 @@ namespace ChemicalSafety.Editor
             // ---------------------------------------------------------------- the people, the path out
             var crowd = new GameObject("Crowd").transform;
             crowd.SetParent(room, false);
-            var prefabLo = Sc07MakeHuman("Lo");
+            // Reuse the Scenario 7 prefab: saving it again gives the Head renderer a new id and the Scenario 7 crowd loses its Head material (magenta faces).
+            var prefabLo = AssetDatabase.LoadAssetAtPath<GameObject>(Sc07GenDir + "/Worker_Lo.prefab") ?? Sc07MakeHuman("Lo");
             var walkClips = Sc07Clips("Step_Walk_", 6);
             var colors = new[] { new Color(0.1f, 0.45f, 0.85f), new Color(1f, 0.74f, 0.04f), new Color(0.1f, 0.45f, 0.85f), new Color(1f, 0.74f, 0.04f), new Color(0.1f, 0.45f, 0.85f) };
             var starts = new[] { new Vector3(ox - 0.2f, 0f, -1.4f), new Vector3(ox - 0.9f, 0f, -2.2f), new Vector3(ox - 1.6f, 0f, -1.6f), new Vector3(ox - 2.3f, 0f, -2.4f), new Vector3(ox - 2.9f, 0f, -1.7f) };

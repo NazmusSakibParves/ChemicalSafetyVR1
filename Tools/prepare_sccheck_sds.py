@@ -20,6 +20,7 @@ OUT = os.path.join(ROOT, "Assets", "Resources", "ScCheck")
 
 def convert(src, dst):
     raw = Image.open(src).convert("RGBA")
+    raw = raw.resize((raw.width * 2, raw.height * 2), Image.LANCZOS)  # smoother glyph edges when the sheet is drawn larger than the source
     im = Image.new("RGB", raw.size, (0, 0, 0))
     im.paste(raw, mask=raw.split()[3])  # transparent corners count as black, never as paper
     a = np.asarray(im, dtype=np.float32)
@@ -40,11 +41,11 @@ def convert(src, dst):
     navy = np.array([14.0, 46.0, 92.0])
     band = np.array([44.0, 110.0, 176.0])
     out = np.zeros(a.shape[:2] + (4,), dtype=np.float32)
-    t = np.clip((200.0 - lum) / 120.0, 0.0, 1.0)  # text strength
+    t = np.clip((215.0 - lum) / 85.0, 0.0, 1.0)  # text strength (crisper than before)
     is_band = (lum > 150) & (lum < 228) & (sat < 0.12)
     base = np.where(is_band[..., None], band, navy)
     rgb = base * (1 - t[..., None]) + 255.0 * t[..., None]
-    alpha = np.where(is_band, 0.78, 0.55) * (1 - t) + 1.0 * t
+    alpha = np.where(is_band, 0.94, 0.88) * (1 - t) + 1.0 * t  # nearly opaque so the table behind never muddies the text
     colour = sat > 0.32  # red / orange pictograms keep their colour
     rgb = np.where(colour[..., None], a, rgb)
     alpha = np.where(colour, 1.0, alpha)

@@ -282,7 +282,7 @@ namespace ChemicalSafety.Editor
             bench.SetParent(room, false);
             var topMat = Sc12Tiled("ScCheckTableTop", null, new Color(0.90f, 0.92f, 0.95f), 0.82f, 0.35f, new Vector2(3f, 1f), ScTex("ScCheck_Steel_Normal"));
             topMat.SetFloat("_BumpScale", 0.2f);
-            const float tr = 1.95f, tf = 4.05f;
+            const float tr = 1.5f, tf = 4.05f;
             var top = ScRoundedBox("TableTop", new Vector3(2.4f, 0.04f, 0.95f), 0.012f);
             ScMeshObj("TableTop", bench, top, topMat, ScP(tr, 0.89f, tf), Vector3.zero);
             var lip = ScRoundedBox("TableLip", new Vector3(2.4f, 0.06f, 0.95f), 0.02f);
@@ -313,7 +313,7 @@ namespace ChemicalSafety.Editor
             var jugR = tr + 0.45f;
             var jugRoot = Sc06BuildJug(bench, ScP(jugR, topY, tf + 0.05f), null, out _, out var jugCap);
             jugRoot.transform.rotation = Quaternion.identity;
-            jugRoot.transform.localScale = Vector3.one * 1.3f; // a little larger than life so the label reads from the player spot, like the picture
+            jugRoot.transform.localScale = Vector3.one * 1.45f; // a little larger than life so the label reads from the player spot, like the picture
             jugCap.transform.SetParent(jugRoot.transform, true);
             jugCap.transform.position = jugRoot.transform.position + new Vector3(JugMouthX, JugCapBottom, 0f);
             var jugLabel = jugRoot.transform.Find("JugLabel");
@@ -338,10 +338,19 @@ namespace ChemicalSafety.Editor
             ScMeshObj("PenOnTable", bench, penLathe, Mat("ScCheckPen", new Color(0.08f, 0.16f, 0.5f), 0.6f, 0.3f), ScP(tr + 0.2f, topY + 0.0075f, tf - 0.15f), new Vector3(0f, 0f, 90f) + new Vector3(0f, 25f, 0f), false);
 
             // ---- crystal-clear glassware: every piece is a thick lathe shell (outer + inner wall + rolled rim), liquid with a meniscus, stoppers, tubes
-            var flaskMat = Sc06GlassMat("ScCheckGlass", new Color(0.92f, 0.97f, 1f), 0.03f, 0.98f);
-            var flaskIn = Sc06GlassMat("ScCheckGlassInner", new Color(0.86f, 0.94f, 1f), 0.015f, 0.55f);
-            var liquid = Mat("ScCheckLiquid", new Color(0.12f, 0.36f, 0.78f), 0.92f, 0f);
-            var liquidClear = Mat("ScCheckLiquidClear", new Color(0.55f, 0.72f, 0.82f), 0.9f, 0f);
+            // visible glass: a real body tint and a wide bright rim, so it reads against the steel table from the player's place
+            var flaskMat = Sc06GlassMat("ScCheckGlass", new Color(0.62f, 0.86f, 0.95f), 0.17f, 1f);
+            var flaskIn = Sc06GlassMat("ScCheckGlassInner", new Color(0.55f, 0.8f, 0.92f), 0.09f, 0.7f);
+            foreach (var gm in new[] { flaskMat, flaskIn })
+            {
+                gm.SetFloat("_Power", 1.7f);
+                gm.SetFloat("_Reflect", 2.0f);
+                gm.SetFloat("_Spec", 2.6f);
+                EditorUtility.SetDirty(gm);
+            }
+
+            var liquid = Mat("ScCheckLiquid", new Color(0.1f, 0.42f, 0.95f), 0.95f, 0f);
+            var liquidClear = Mat("ScCheckLiquidClear", new Color(0.32f, 0.78f, 0.78f), 0.95f, 0f);
             var rubber = Mat("ScCheckStopper", new Color(0.55f, 0.18f, 0.12f), 0.35f, 0f);
             var silicone = Mat("ScCheckHose", new Color(0.35f, 0.62f, 0.95f), 0.6f, 0f);
             var mark = Mat("ScCheckGlassMark", new Color(0.92f, 0.95f, 1f), 0.3f, 0f);

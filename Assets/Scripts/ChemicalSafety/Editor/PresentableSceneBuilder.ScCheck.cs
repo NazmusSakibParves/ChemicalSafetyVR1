@@ -26,7 +26,7 @@ namespace ChemicalSafety.Editor
                     ti.mipmapEnabled = false;
                     ti.maxTextureSize = 2048;
                     ti.filterMode = FilterMode.Bilinear;
-                    ti.textureCompression = TextureImporterCompression.CompressedHQ;
+                    ti.textureCompression = n.StartsWith("sds") ? TextureImporterCompression.Uncompressed : TextureImporterCompression.CompressedHQ; // the SDS sheets are small text pictures: no block artefacts
                     ti.spriteBorder = n == "ui_screen" ? new Vector4(70f, 70f, 70f, 70f)
                         : n == "ui_popup" ? new Vector4(80f, 80f, 80f, 80f)
                         : n == "ui_sds_frame" ? new Vector4(50f, 50f, 50f, 50f)
@@ -268,7 +268,7 @@ namespace ChemicalSafety.Editor
             // ---------------------------------------------------------------- markers + runner
             var supStart = Marker("SupervisorStart", room, ScP(0.5f, 0f, 9.5f), 0f);
             var supStand = Marker("SupervisorStand", room, ScP(0.25f, 0f, 3.75f), 0f);
-            var supSide = Marker("SupervisorSide", room, ScP(-1.9f, 0f, 4.0f), 0f);
+            var supSide = Marker("SupervisorSide", room, ScP(-0.55f, 0f, 3.8f), 0f); // just left of the question panel (which sits a little right of the player), in view
             refs.spawn = Marker("Spawn_SCCHECK", room, ScP(0.6f, 0f, 2.3f), 180f);
             refs.stand = Marker("Stand_SCCHECK", room, ScP(0.6f, 0f, 2.3f), 180f);
             var host = new GameObject("ScCheckHost");
@@ -358,57 +358,44 @@ namespace ChemicalSafety.Editor
             go.transform.SetParent(room, false);
             foreach (var c in go.GetComponentsInChildren<Collider>(true))
                 Object.DestroyImmediate(c);
-            // long axis of the model along the wing (the world X axis), fitted to the wing, standing on the floor against the end walls
-            go.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
-            var b = WorldBounds(go);
-            var length = Mathf.Max(b.size.x, b.size.z);
-            var scale = 9.5f / length;
-            go.transform.localScale = Vector3.one * scale;
-            b = WorldBounds(go);
-            var target = ScP(-5.0f, 0f, 8.3f);
-            go.transform.position += new Vector3(target.x - b.center.x, -b.min.y, target.z - b.center.z);
-            // the decimated meshes have open surfaces: own two-sided URP Lit materials in the colour of every glb material
-            var made = new Dictionary<Material, Material>();
+            // the client's model keeps its own meshes, materials and texture mapping. Its machines were authored far apart in one long line:
+            // here each machine stands on its own on the floor of the wing, front towards the player (the pink control panel then faces the player)
+            go.transform.rotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one * 0.3f;
+            var groups = new Dictionary<string, List<Renderer>>();
             foreach (var r in go.GetComponentsInChildren<Renderer>(true))
             {
-                var src = r.sharedMaterials;
-                var dst = new Material[src.Length];
-                for (var i = 0; i < src.Length; i++)
-                {
-                    var sm = src[i];
-                    if (sm == null)
-                        continue;
-                    if (!made.TryGetValue(sm, out var nm))
-                    {
-                        // keep the client's paint: the texture of the glb material goes into an own two-sided URP Lit material
-                        Texture tex = null;
-                        foreach (var pn in new[] { "baseColorTexture", "_BaseMap", "_MainTex" })
-                            if (sm.HasProperty(pn) && sm.GetTexture(pn) != null)
-                            {
-                                tex = sm.GetTexture(pn);
-                                break;
-                            }
-
-                        var col = Color.white;
-                        if (tex == null)
-                            foreach (var pn in new[] { "baseColorFactor", "_BaseColor", "_Color" })
-                                if (sm.HasProperty(pn))
-                                {
-                                    col = sm.GetColor(pn); // the client's own colours
-                                    break;
-                                }
-
-                        nm = Mat("ScCheckMachine_" + made.Count, tex != null ? new Color(1.05f, 1.05f, 1.05f) : col, 0.5f, 0.3f, tex);
-                        nm.SetFloat("_Cull", 0f);
-                        EditorUtility.SetDirty(nm);
-                        made[sm] = nm;
-                    }
-
-                    dst[i] = nm;
-                }
-
-                r.sharedMaterials = dst;
+                var key = r.name.StartsWith("empty_2") ? "injection" : r.name.StartsWith("Cube.001") ? "pressA" : r.name.StartsWith("Cube.002") ? "pressB"
+                    : r.name.StartsWith("fillister") ? "assembly" : "tower";
+                if (!groups.TryGetValue(key, out var list))
+                    groups[key] = list = new List<Renderer>();
+                list.Add(r);
                 r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            var spots = new Dictionary<string, Vector2>
+            {
+                { "injection", new Vector2(-3.7f, 7.6f) },  // the long injection machine with the control panel
+                { "pressA", new Vector2(-6.6f, 5.6f) },
+                { "pressB", new Vector2(-6.6f, 9.4f) },
+                { "assembly", new Vector2(-8.4f, 7.6f) },   // hydraulic station assembly
+                { "tower", new Vector2(-5.6f, 12.2f) },     // hydraulic tower
+            };
+            foreach (var kv in groups)
+            {
+                var all = kv.Value[0].bounds;
+                foreach (var r in kv.Value)
+                    all.Encapsulate(r.bounds);
+                var centre = all.center;
+                foreach (var r in kv.Value)
+                    r.transform.RotateAround(centre, Vector3.up, 0f);
+                var nb = kv.Value[0].bounds;
+                foreach (var r in kv.Value)
+                    nb.Encapsulate(r.bounds);
+                var at = ScP(spots[kv.Key].x, 0f, spots[kv.Key].y);
+                var delta = new Vector3(at.x - nb.center.x, -nb.min.y, at.z - nb.center.z);
+                foreach (var r in kv.Value)
+                    r.transform.position += delta;
             }
         }
 

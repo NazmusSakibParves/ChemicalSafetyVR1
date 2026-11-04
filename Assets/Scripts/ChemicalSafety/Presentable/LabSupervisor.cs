@@ -45,7 +45,8 @@ namespace ChemicalSafety.Presentable
         private float _breathe;
         private bool _turning;
         private float _turnVel;
-        private float _gestT, _gestNext = 2f, _gestHold;
+        private float _gestT, _gestNext = 2f, _gestHold, _gestAmp = 0.8f, _gestAmpL = 0.7f;
+        private int _gestKind;
 
         private static readonly Dictionary<string, float> Tune = new Dictionary<string, float>();
 
@@ -288,14 +289,25 @@ namespace ChemicalSafety.Presentable
             _gestT += dt;
             if (_gestT > _gestNext)
             {
+                // every beat is different: right hand, left hand, both hands or none, at a different height, speed and pause
                 _gestT = 0f;
-                _gestNext = Random.Range(2.2f, 4.5f);
-                _gestHold = Random.Range(1.2f, 2.2f);
+                var pick = Random.value;
+                _gestKind = pick < 0.34f ? 0 : pick < 0.56f ? 1 : pick < 0.8f ? 2 : 3;
+                _gestAmp = Random.Range(0.45f, 1.05f);
+                _gestAmpL = Random.Range(0.35f, 1.0f);
+                _gestNext = Random.Range(2.0f, 6.0f);
+                _gestHold = Random.Range(0.9f, 2.6f);
             }
 
-            var lift = _talk * Mathf.Clamp01(Mathf.Sin(Mathf.Clamp01(_gestT / Mathf.Max(0.5f, _gestHold)) * Mathf.PI)) + _gesture * 0.6f * Mathf.Sin(_gesture * Mathf.PI);
-            lift = Mathf.Clamp01(lift) * (1f - _walkBlend);
+            var beat = Mathf.Clamp01(Mathf.Sin(Mathf.Clamp01(_gestT / Mathf.Max(0.5f, _gestHold)) * Mathf.PI));
+            var beatL = Mathf.Clamp01(Mathf.Sin(Mathf.Clamp01((_gestT - 0.25f) / Mathf.Max(0.5f, _gestHold)) * Mathf.PI)); // the left hand follows a moment later
+            var liftR = _talk * beat * (_gestKind == 0 || _gestKind == 2 ? _gestAmp : 0f) + _gesture * 0.6f * Mathf.Sin(_gesture * Mathf.PI);
+            var liftL = _talk * beatL * (_gestKind == 1 || _gestKind == 2 ? _gestAmpL : 0f);
+            liftR = Mathf.Clamp01(liftR) * (1f - _walkBlend);
+            liftL = Mathf.Clamp01(liftL) * (1f - _walkBlend);
+            var lift = liftR;
             var wob = Noise(t * 0.8f, _seed + 4f);
+            var wobL = Noise(t * 0.7f + 9f, _seed + 7f);
 
             var swingR = s * 20f * _walkBlend; // right arm swings opposite to the right leg
             var swingL = -s * 20f * _walkBlend;
@@ -305,14 +317,13 @@ namespace ChemicalSafety.Presentable
             Rot("ForeArmR", -elbow - Mathf.Max(0f, -swingR) * 0.6f - lift * (55f + wob * 8f), lift * 10f, -3f - lift * 8f);
             Rot("HandR", -6f - lift * 14f, 0f, lift * 12f * wob);
             // left arm: hangs quietly, a little forward bend
-            Rot("UpperArmL", -5f + swingL, 0f, armIn);
-            Rot("ForeArmL", -elbow - Mathf.Max(0f, -swingL) * 0.6f, 0f, 3f);
-            Rot("HandL", -6f, 0f, 0f);
+            Rot("UpperArmL", -5f + swingL - liftL * 20f, -liftL * 6f, armIn - liftL * 6f);
+            Rot("ForeArmL", -elbow - Mathf.Max(0f, -swingL) * 0.6f - liftL * (50f + wobL * 8f), -liftL * 10f, 3f + liftL * 8f);
+            Rot("HandL", -6f - liftL * 12f, 0f, -liftL * 12f * wobL);
 
             // fingers: a soft curl, a bit more when the hand lifts
-            var curl = 14f + lift * 14f + _breathe * 2f;
-            Rot("FingersR", 0f, 0f, -curl);
-            Rot("FingersL", 0f, 0f, curl);
+            Rot("FingersR", 0f, 0f, -(14f + lift * 14f + _breathe * 2f));
+            Rot("FingersL", 0f, 0f, 14f + liftL * 14f + _breathe * 2f);
         }
 
         // ------------------------------------------------------------------ head

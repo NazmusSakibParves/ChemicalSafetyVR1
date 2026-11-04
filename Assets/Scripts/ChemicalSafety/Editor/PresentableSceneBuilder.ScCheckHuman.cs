@@ -362,6 +362,20 @@ namespace ChemicalSafety.Editor
                     nt[k] = ni;
                 }
 
+                if (part == "Pants")
+                {
+                    // the trousers poked through the front of the coat (a black patch): slim the thighs under the coat, towards each leg axis
+                    for (var k = 0; k < pv.Count; k++)
+                    {
+                        var pvk = pv[k];
+                        var fade = Mathf.SmoothStep(1f, 0.74f, (pvk.y - 1.85f) / 0.12f) * 1f;
+                        var up = Mathf.SmoothStep(0f, 1f, (pvk.y - 2.55f) / 0.25f);
+                        var f = Mathf.Lerp(fade, 1f, up);
+                        var ax = pvk.x >= 0f ? 0.25f : -0.25f;
+                        pv[k] = new Vector3(ax + (pvk.x - ax) * f, pvk.y, 0.03f + (pvk.z - 0.03f) * f);
+                    }
+                }
+
                 var mesh = new Mesh { name = "ScSup_" + part };
                 mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
                 mesh.SetVertices(pv);
@@ -387,6 +401,7 @@ namespace ChemicalSafety.Editor
                 smr.sharedMaterial = ScSupMaterial(part, srcMats[si], cap, mode);
                 smr.shadowCastingMode = mode == 2 ? UnityEngine.Rendering.ShadowCastingMode.Off : UnityEngine.Rendering.ShadowCastingMode.On;
                 smr.receiveShadows = true;
+
             }
 
             AssetDatabase.SaveAssets();

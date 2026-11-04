@@ -49,6 +49,7 @@ namespace ChemicalSafety.Presentable
         private readonly Image[] _optBg = new Image[4];
         private RectTransform _nextBtn, _sdsPanel, _sdsContent, _roundBtn;
         private ScrollRect _sdsScroll;
+        private ScrollZone _sdsZone;
         private Image _sdsSheet;
         private bool _sdsOpen;
         private Coroutine _sdsAnim;
@@ -375,7 +376,7 @@ namespace ChemicalSafety.Presentable
             _locked = false;
             _correctShown = correctRow;
 
-            Place(_main.transform, 1.05f, -0.02f);
+            Place(_main.transform, 1.05f, -0.02f, 0.25f); // a little to the player's right, so the supervisor stands clear on its left
             ShowMain();
             if (supervisor != null)
             {
@@ -472,7 +473,7 @@ namespace ChemicalSafety.Presentable
                 StopCoroutine(_sdsAnim);
             if (instant || !isActiveAndEnabled)
             {
-                _sdsPanel.anchoredPosition = new Vector2(open ? 0f : 700f, _sdsPanel.anchoredPosition.y);
+                _sdsPanel.anchoredPosition = new Vector2(open ? 0f : 800f, _sdsPanel.anchoredPosition.y);
                 _sdsPanel.gameObject.SetActive(open);
                 return;
             }
@@ -485,7 +486,7 @@ namespace ChemicalSafety.Presentable
             PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
             _sdsPanel.gameObject.SetActive(true);
             var from = _sdsPanel.anchoredPosition.x;
-            var to = open ? 0f : 700f;
+            var to = open ? 0f : 800f;
             yield return PresentableFx.Tween(0.35f, t =>
             {
                 _sdsPanel.anchoredPosition = new Vector2(Mathf.Lerp(from, to, t), _sdsPanel.anchoredPosition.y);
@@ -510,8 +511,8 @@ namespace ChemicalSafety.Presentable
             var w = vp.rect.width;
             var sp = _sdsSheet.sprite;
             var aspect = sp != null ? sp.rect.height / Mathf.Max(1f, sp.rect.width) : 1.34f;
-            // a little larger than the window so the text is easy to read and the sheet scrolls
-            _sdsContent.sizeDelta = new Vector2(0f, w * aspect * 1.05f);
+            // the sheet fills the window width (text as large as the picture allows) and is taller than the window, so it scrolls
+            _sdsContent.sizeDelta = new Vector2(0f, w * aspect);
             _sdsScroll.verticalNormalizedPosition = 1f;
         }
 
@@ -647,9 +648,9 @@ namespace ChemicalSafety.Presentable
             _card.gameObject.SetActive(false);
 
             // ---- question panel (left) + SDS panel (right) on one canvas
-            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(1400f, 720f), Scale, true, 30);
+            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(1700f, 720f), Scale, true, 30);
             _mainGroup = _main.gameObject.AddComponent<CanvasGroup>();
-            var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.125f), new Vector2(0.665f, 1f));
+            var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.125f), new Vector2(0.5476f, 1f));
             var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
             PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.30f), true);
             PresentableUi.Img(panel, screen, panelTint, true).raycastTarget = true;
@@ -681,20 +682,20 @@ namespace ChemicalSafety.Presentable
             _verdictBg = PresentableUi.Img(strip, art.roundedSolid, new Color(0.1f, 0.3f, 0.5f, 0.0f), true);
             _verdict = T("Verdict", strip, new Vector2(0.03f, 0.08f), new Vector2(0.97f, 0.92f), 30f, Good, TextAlignmentOptions.Center, true, 14f);
 
-            _nextBtn = PresentableUi.Rect("Next", _main.transform, new Vector2(0.25f, 0.0f), new Vector2(0.455f, 0.115f));
+            _nextBtn = PresentableUi.Rect("Next", _main.transform, new Vector2(0.206f, 0.0f), new Vector2(0.375f, 0.115f));
             _nextBtn.gameObject.AddComponent<CanvasGroup>();
             var nextImg = PresentableUi.Img(_nextBtn, nextSp, Color.white, false, true, true);
             _nextText = T("Label", _nextBtn, new Vector2(0.12f, 0.15f), new Vector2(0.88f, 0.85f), 46f, HoloWhite, TextAlignmentOptions.Center, true, 18f);
             MakeButton("NextBtn", _main.transform, _nextBtn, nextImg, PressNext);
 
             // SDS side panel: the frame picture (584x924, glow padding inside the file) is shown unsliced; everything sits inside its visible edge
-            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(0.675f, 0f), new Vector2(1f, 1f));
+            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(0.555f, 0f), new Vector2(1f, 1f));
             _sdsPanel.gameObject.AddComponent<CanvasGroup>();
             var sdsBg = PresentableUi.Img(_sdsPanel, sdsFrame, new Color(0.82f, 0.9f, 1f, 0.97f), false);
             sdsBg.type = Image.Type.Simple;
             sdsBg.raycastTarget = true;
             _refTitle = T("RefTitle", _sdsPanel, new Vector2(0.15f, 0.87f), new Vector2(0.90f, 0.94f), 36f, HoloWhite, TextAlignmentOptions.Center, true, 14f);
-            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.15f, 0.15f), new Vector2(0.90f, 0.855f));
+            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.10f, 0.15f), new Vector2(0.92f, 0.855f));
             PresentableUi.Img(viewport, null, new Color(0f, 0f, 0f, 0.01f), false, true);
             viewport.gameObject.AddComponent<RectMask2D>();
             _sdsContent = PresentableUi.Rect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f));
@@ -709,6 +710,10 @@ namespace ChemicalSafety.Presentable
             _sdsScroll.vertical = true;
             _sdsScroll.movementType = ScrollRect.MovementType.Clamped;
             _sdsScroll.scrollSensitivity = 30f;
+            _sdsScroll.inertia = false;
+            // finger drag like a phone (FingerPokeSystem drives it); the ^ and v buttons stay as a backup
+            _sdsZone = viewport.gameObject.AddComponent<ScrollZone>();
+            _sdsZone.Init(viewport, _sdsContent);
             var up = PresentableUi.Rect("Up", _sdsPanel, new Vector2(0.17f, 0.075f), new Vector2(0.31f, 0.135f));
             var upImg = PresentableUi.Img(up, art.roundedSolid, new Color(0.55f, 0.85f, 1f, 0.35f), true, true);
             T("Arrow", up, Vector2.zero, Vector2.one, 34f, HoloWhite, TextAlignmentOptions.Center, true, 14f).text = "^";

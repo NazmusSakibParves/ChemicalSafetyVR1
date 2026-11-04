@@ -4,8 +4,8 @@
 
 Every mesh is simplified (fast_simplification), then the ORIGINAL texture mapping is put back: each new vertex takes the UV of
 the nearest original triangle (spatial hash, barycentric), and the original base colour textures are kept at <= 1024 px. So the
-machines keep their paint, plates and dirt instead of flat colours. The screw assembly (Mesh_136 / Mesh_137, 870k triangles of
-loose parts) is left out. Output default: Assets/Art/Presentable/3D/ScCheck/HydroPress.glb
+machines keep their paint, plates and dirt instead of flat colours. The screw assembly of the hydraulic station (Mesh_137, 870k triangles) is reduced to 100k, the two presses to 60k each, all
+other parts are untouched. Output default: Assets/Art/Presentable/3D/ScCheck/HydroPress.glb
 """
 import os
 import sys
@@ -17,10 +17,10 @@ from PIL import Image
 from trimesh.visual.material import PBRMaterial
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKIP = {"Mesh_137", "Mesh_136"}
-BUDGET = {"Cube.001_1": 70000, "Cube.002_1": 26000}  # the first press in detail, its twin lighter; every other part stays as the client made it
+SKIP = {"Mesh_137", "Mesh_136"}  # the 885k-triangle assembly of miniature screws
+BUDGET = {}  # nothing is simplified: the client's meshes, UV mapping and materials stay exactly as made
 DEFAULT_BUDGET = 10 ** 9
-MAX_TEX = 1024
+MAX_TEX = 2048
 
 
 class Grid:

@@ -84,8 +84,13 @@ namespace ChemicalSafety.Presentable
 
         // Every visible text of a panel must stay inside the safe area of its frame (not on the border arcs) and
         // option labels inside their own row.
-        private static int LayoutCheck(string where, Transform root)
+        private static int LayoutCheck(string where, Transform root, bool wholeCanvas = false)
         {
+            // wholeCanvas: panels that are laid out edge to edge on their canvas (Scenarios 13-18) only have to stay inside the canvas
+            var xLo = wholeCanvas ? 0.003f : 0.05f;
+            var xHi = wholeCanvas ? 1.005f : 0.95f;
+            var yLo = wholeCanvas ? 0.0f : 0.09f;
+            var yHi = wholeCanvas ? 1.0f : 0.95f;
             var canvas = root.GetComponentInChildren<Canvas>(true);
             if (canvas == null)
                 return 0;
@@ -118,7 +123,7 @@ namespace ChemicalSafety.Presentable
 
                 var mn = InCanvas(b.min);
                 var mx = InCanvas(b.max);
-                var outside = mn.x < 0.05f || mx.x > 0.95f || mn.y < 0.09f || mx.y > 0.95f;
+                var outside = mn.x < xLo || mx.x > xHi || mn.y < yLo || mx.y > yHi;
                 var inRow = true;
                 var parent = rt.parent as RectTransform;
                 if (parent != null && (parent.name.StartsWith("Row") || parent.name.StartsWith("Option")))
@@ -141,6 +146,79 @@ namespace ChemicalSafety.Presentable
 
             Say("layout " + where + ": " + count + " texts checked, violations = " + bad);
             return bad;
+        }
+
+        // Scenarios 13-18: the supervisor must stay clear of the question panel (and the SDS panel) as the player sees them.
+        private static void ScSupervisorClear(string where, ScCheckRunner runner)
+        {
+            var sup = Get<LabSupervisor>(runner, "supervisor");
+            var cam = Camera.main != null ? Camera.main : UnityEngine.Object.FindFirstObjectByType<Camera>();
+            var canvas = runner.MainPanel != null ? runner.MainPanel.GetComponentInChildren<Canvas>(true) : null;
+            if (sup == null || cam == null || canvas == null)
+            {
+                Say("supervisor clear check " + where + " skipped");
+                return;
+            }
+
+            Rect Screen3(Vector3[] pts)
+            {
+                float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+                foreach (var p in pts)
+                {
+                    var s = cam.WorldToViewportPoint(p);
+                    x0 = Mathf.Min(x0, s.x);
+                    y0 = Mathf.Min(y0, s.y);
+                    x1 = Mathf.Max(x1, s.x);
+                    y1 = Mathf.Max(y1, s.y);
+                }
+
+                return Rect.MinMaxRect(x0, y0, x1, y1);
+            }
+
+            var supPts = new System.Collections.Generic.List<Vector3>();
+            foreach (var r in sup.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (r.name == "CoatLining")
+                    continue;
+                var b = r.bounds;
+                for (var i = 0; i < 8; i++)
+                    supPts.Add(b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1)));
+            }
+
+            var corners = new Vector3[4];
+            ((RectTransform)canvas.transform).GetWorldCorners(corners);
+            var panelRect = Screen3(corners);
+            var supRect = Screen3(supPts.ToArray());
+            var inter = supRect;
+            inter.xMin = Mathf.Max(supRect.xMin, panelRect.xMin);
+            inter.xMax = Mathf.Min(supRect.xMax, panelRect.xMax);
+            inter.yMin = Mathf.Max(supRect.yMin, panelRect.yMin);
+            inter.yMax = Mathf.Min(supRect.yMax, panelRect.yMax);
+            var overlap = inter.width > 0f && inter.height > 0f ? inter.width * inter.height / Mathf.Max(0.0001f, supRect.width * supRect.height) : 0f;
+            var visible = supRect.xMax > 0f && supRect.xMin < 1f;
+            Say("supervisor vs question canvas " + where + ": overlap = " + (overlap * 100f).ToString("0") + "% (expected 0), in view = " + visible);
+        }
+
+        // Scenarios 13-18: a finger drag on the open SDS sheet must move it, like a phone.
+        private static void ScDragScrollCheck(string where, ScCheckRunner runner)
+        {
+            var scroll = Get<UnityEngine.UI.ScrollRect>(runner, "_sdsScroll");
+            if (scroll == null || scroll.content == null || scroll.viewport == null)
+            {
+                Say("SDS drag scroll " + where + " skipped");
+                return;
+            }
+
+            var vp = scroll.viewport;
+            var before = scroll.content.anchoredPosition.y;
+            var range = Mathf.Max(0f, scroll.content.rect.height - vp.rect.height);
+            var c = vp.rect.center;
+            ScrollZone.Handle(vp.TransformPoint(new Vector3(c.x, c.y - 80f, 0f)), 0.03f);
+            ScrollZone.Handle(vp.TransformPoint(new Vector3(c.x, c.y + 60f, 0f)), 0.03f); // finger moves up: the sheet follows
+            ScrollZone.Handle(vp.TransformPoint(new Vector3(c.x, c.y, 0.5f / Mathf.Max(0.0001f, vp.lossyScale.z))), 0.03f); // lifted away
+            var after = scroll.content.anchoredPosition.y;
+            Say("SDS drag scroll " + where + ": scrollable range = " + range.ToString("0") + ", moved " + (after - before).ToString("0") + " px (expected > 0)");
+            scroll.content.anchoredPosition = new Vector2(scroll.content.anchoredPosition.x, 0f);
         }
 
         private static T Get<T>(object o, string field)
@@ -1263,6 +1341,11 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(3f);
             yield return new WaitForEndOfFrame();
             Say("SUP " + tag + " " + sup.DebugDump());
+            var hide = SessionState.GetString("SupHide", ""); // debugging: comma list of supervisor parts to switch off for the photos
+            if (!string.IsNullOrEmpty(hide))
+                foreach (var r in sup.GetComponentsInChildren<SkinnedMeshRenderer>())
+                    if (Array.IndexOf(hide.Split(','), r.name) >= 0)
+                        r.enabled = false;
             var camGo = new GameObject("SupPhotoCam");
             var cam = camGo.AddComponent<Camera>();
             cam.nearClipPlane = 0.05f;
@@ -1289,6 +1372,22 @@ namespace ChemicalSafety.Presentable
                 tex.Apply();
                 RenderTexture.active = null;
                 File.WriteAllBytes(Path.Combine(_dir, "sup_" + tag + "_" + i + ".png"), tex.EncodeToPNG());
+            }
+
+            if (main != null)
+            {
+                // the machine wing, as the player sees it when looking left
+                foreach (var yaw in new[] { -35f, -70f, 28f })
+                {
+                    cam.fieldOfView = yaw > 0f ? 55f : 80f;
+                    cam.transform.SetPositionAndRotation(main.transform.position, Quaternion.Euler(yaw > 0f ? 22f : 8f, main.transform.eulerAngles.y + yaw, 0f));
+                    cam.Render();
+                    RenderTexture.active = rt;
+                    tex.ReadPixels(new Rect(0, 0, 900, 900), 0, 0);
+                    tex.Apply();
+                    RenderTexture.active = null;
+                    File.WriteAllBytes(Path.Combine(_dir, "sup_" + tag + "_wing" + (int)-yaw + ".png"), tex.EncodeToPNG());
+                }
             }
 
             Destroy(camGo);
@@ -1352,10 +1451,13 @@ namespace ChemicalSafety.Presentable
                         {
                             sdsTried = true;
                             yield return new WaitForSeconds(1.0f);
-                            LayoutCheck("SC" + n + " " + st, runner.MainPanel);
+                            LayoutCheck("SC" + n + " " + st, runner.MainPanel, true);
+                            ScSupervisorClear("SC" + n + " " + st, runner);
                             runner.ToggleSds();
                             yield return new WaitForSeconds(0.8f);
                             Say("SC" + n + " " + st + " SDS open = " + runner.SdsOpen + " (expected True)");
+                            ScDragScrollCheck("SC" + n + " " + st, runner);
+                            ScSupervisorClear("SC" + n + " " + st + " (SDS open)", runner);
                             if (shots)
                                 yield return Shot("151_sccheck_" + st + "_sds");
                             runner.ScrollSds(-0.5f);

@@ -93,6 +93,7 @@ namespace ChemicalSafety.Presentable
             }
 
             var tip = hand.PressPoint;
+            ScrollZone.Handle(tip, pressDepth * 1.5f); // phone-style drag scrolling; inert unless a scroll zone is registered
             Button best = null;
             Entry bestEntry = null;
             var bestDepth = float.MaxValue;
