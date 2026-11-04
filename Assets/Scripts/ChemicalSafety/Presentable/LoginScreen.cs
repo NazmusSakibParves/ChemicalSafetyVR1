@@ -19,9 +19,12 @@ namespace ChemicalSafety.Presentable
     public sealed class LoginScreen : MonoBehaviour
     {
         private const string Scn = "LOGIN";
-        private const float Px = 0.0009f; // metres per canvas pixel
-        private const float PanelDistance = 0.74f; // inside arm's reach so the fingertip can touch it
+        private const float Px = 0.00078f; // metres per canvas pixel (the card is about 0.67 m wide)
+        private const float KeyPx = 0.00088f; // keyboard pixel size: 76 px keys are 6.7 cm
+        private const float PanelDistance = 0.72f; // inside arm's reach so the fingertip can touch it
         private const float PanelDrop = 0.06f; // centre a little below the eyes
+        private const float FocusLift = 0.075f; // the card glides up this far while the keyboard is open, so the fields sit at eye level
+        private const float SeatedEyeHeight = 1.3f; // eye height under this counts as seated
         private const float ArcDegrees = 112f;
         private const float ArcRadius = 2.25f;
         private const float ArcHeight = 2.3f;
@@ -74,6 +77,26 @@ namespace ChemicalSafety.Presentable
         private float _enterT;
         private float _toggleX;
 
+        // focus mode: the card glides up and the keyboard rises under it while a field is being typed
+        private Transform _panelT;
+        private Vector3 _panelBase;
+        private Transform _kbT;
+        private Vector3 _kbBase;
+        private CanvasGroup _logoGroup;
+        private readonly List<CanvasGroup> _chrome = new List<CanvasGroup>();
+        private float _focusT;
+        private bool _seated;
+
+        // while the login is open the player only looks around: no teleport, no zoom, no stick movement
+        private Transform _rig;
+        private Vector3 _rigPos;
+        private Quaternion _rigRot;
+        private readonly List<Behaviour> _lockedProviders = new List<Behaviour>();
+        private RigZoomController _zoom;
+        private bool _zoomWas;
+        private CharacterController _cc;
+        private bool _ccWas;
+
         private sealed class KeyView
         {
             public Button button;
@@ -87,16 +110,19 @@ namespace ChemicalSafety.Presentable
         public bool IsDone => _done;
 
         /// <summary>Shows the login screen around the head, runs until START is accepted, then removes it.</summary>
-        public IEnumerator Run(Transform head, float floorY, ScreenFader fader)
+        public IEnumerator Run(Transform head, float floorY, ScreenFader fader, Transform rigRoot = null)
         {
             _head = head;
             _floorY = floorY;
             _done = false;
             _closing = false;
             _focus = Field.None;
+            _focusT = 0f;
             _name = string.Empty;
             _contact = string.Empty;
             Loc.SetLanguage(Lang.En);
+            LockRig(rigRoot);
+            FingerPokeSystem.LeftPokeEnabled = true; // both index fingers can type
             Build();
             Subscribe(true);
             yield return fader.FadeTo(0f, 1.0f);
@@ -110,9 +136,15 @@ namespace ChemicalSafety.Presentable
         /// <summary>Removes everything the screen created (called after the fade to black).</summary>
         public void Close()
         {
+            UnlockRig();
+            FingerPokeSystem.LeftPokeEnabled = false;
             if (_root != null)
                 Destroy(_root.gameObject);
             _root = null;
+            _chrome.Clear();
+            _panelT = null;
+            _kbT = null;
+            _logoGroup = null;
             _keys.Clear();
             _groups.Clear();
             _molecules.Clear();
@@ -138,6 +170,7 @@ namespace ChemicalSafety.Presentable
             if (fwd.sqrMagnitude < 0.01f)
                 fwd = Vector3.forward;
             var rootRot = Quaternion.LookRotation(fwd, Vector3.up);
+            _seated = _head.position.y - _floorY < SeatedEyeHeight;
             _root = new GameObject("LoginStage").transform;
             _root.SetPositionAndRotation(_head.position, rootRot);
 
@@ -151,9 +184,9 @@ namespace ChemicalSafety.Presentable
 
         private Vector3 Local(Vector3 p) => _root.TransformPoint(p);
 
-        private Canvas MakeCanvas(string name, Vector2 size, Vector3 localPos, float pitch)
+        private Canvas MakeCanvas(string name, Vector2 size, Vector3 localPos, float pitch, float px = Px)
         {
-            var canvas = PresentableUi.WorldCanvas(name, _root, size, Px, true, 5);
+            var canvas = PresentableUi.WorldCanvas(name, _root, size, px, true, 5);
             var t = canvas.transform;
             t.position = Local(localPos);
             var dir = (Local(localPos) - _head.position).normalized;
@@ -213,9 +246,15 @@ namespace ChemicalSafety.Presentable
         {
             const float cw = 860f, ch = 860f;
             var canvas = MakeCanvas("LoginPanel", new Vector2(cw, ch), new Vector3(0f, -PanelDrop, PanelDistance), 0f);
+            _panelT = canvas.transform;
+            _panelBase = _panelT.position;
             var host = canvas.transform;
 
             Pic(PresentableUi.Rect("Frame", host, Vector2.zero, Vector2.one), "Login_Panel");
+            // everything sits a little inside the neon frame, so no icon, field or button touches it
+            var content = PresentableUi.Rect("Content", host, Vector2.zero, Vector2.one);
+            content.localScale = Vector3.one * 0.93f;
+            host = content;
             Label(host, "Title", 40, 52, 820, 126, cw, ch, "title", 62f, TitleCol, true);
             Label(host, "Subtitle", 40, 126, 820, 178, cw, ch, "subtitle", 38f, SubCol, true);
             Label(host, "Welcome", 40, 214, 820, 272, cw, ch, "welcome", 46f, new Color(0.78f, 0.8f, 0.9f), true);
@@ -232,14 +271,15 @@ namespace ChemicalSafety.Presentable
             BuildField(host, cw, ch, 472, Field.Contact, "contact_hint", out _contactTmp, out _contactHint, out _contactFocusImg,
                 out _contactErrImg);
             // ~12 px below the field bottom (544); keep compact so footer stays inside the panel
-            _contactErr = Label(host, "ContactError", 240, 556, 820, 588, cw, ch, "err_contact_empty", 26f, ErrCol, false,
+            _contactErr = Label(host, "ContactError", 240, 548, 820, 578, cw, ch, "err_contact_empty", 26f, ErrCol, false,
                 TextAlignmentOptions.Left);
             _contactErr.gameObject.SetActive(false);
 
             // START — same band as before polish (halo centre ~620) so the footer fits above the frame
             _startRt = Place(host, "Start", 78, 550, 782, 700, cw, ch);
-            _startRt.anchoredPosition = new Vector2(0f, 430f - 620f);
-            _startRt.sizeDelta = new Vector2(704f, 150f);
+            _startRt.anchoredPosition = new Vector2(0f, 430f - 624f);
+            _startRt.sizeDelta = new Vector2(704f, 138f); // a little lower than the error line above it
+            Chrome(_startRt);
             Pic(_startRt, "Login_Start");
             var hotRt = PresentableUi.Rect("Hot", _startRt, Vector2.zero, Vector2.one);
             _startHot = Pic(hotRt, "Login_StartHot", new Color(1f, 1f, 1f, 0f));
@@ -252,6 +292,7 @@ namespace ChemicalSafety.Presentable
 
             // language toggle + credits — inside the neon frame (bottom inset ~y 760), not flush to the edge
             var bg = Place(host, "ToggleBg", 118, 692, 512, 746, cw, ch);
+            Chrome(bg);
             Pic(bg, "Login_ToggleBg");
             var onRt = PresentableUi.Centered("ToggleOn", bg, new Vector2(-98f, 0f), new Vector2(230f, 84f));
             Pic(onRt, "Login_ToggleOn");
@@ -268,12 +309,20 @@ namespace ChemicalSafety.Presentable
             MakeButton(hitEn, () => SetLanguage(Lang.En));
 
             // leave a clear gap after the toggle (ends x=512) before the credit label
-            Label(host, "DevBy", 540, 702, 690, 742, cw, ch, "developed_by", 28f, new Color(0.8f, 0.85f, 0.92f), true,
-                TextAlignmentOptions.Right);
+            Chrome(Label(host, "DevBy", 540, 702, 690, 742, cw, ch, "developed_by", 28f, new Color(0.8f, 0.85f, 0.92f), true,
+                TextAlignmentOptions.Right));
             // badge stays inside the frame (bottom ≤ ~768); slightly larger than the original 96×82
             var badge = Place(host, "Bmqas", 698, 688, 808, 768, cw, ch);
+            Chrome(badge);
             var bi = Pic(badge, "Login_Bmqas");
             bi.preserveAspect = true;
+        }
+
+        // the footer of the card (START, language toggle, credits) fades away while the keyboard is open and cannot be touched
+        private void Chrome(Component c)
+        {
+            var g = c.gameObject.AddComponent<CanvasGroup>();
+            _chrome.Add(g);
         }
 
         private void BuildField(Transform host, float cw, float ch, float top, Field which, string hintKey, out TextMeshProUGUI valueTmp,
@@ -315,7 +364,8 @@ namespace ChemicalSafety.Presentable
         private void BuildKeyboardAndLogos()
         {
             // partner logos under the panel
-            var logoCanvas = MakeCanvas("LoginLogos", new Vector2(860f, 120f), new Vector3(0f, -0.485f, PanelDistance - 0.04f), -8f);
+            var logoCanvas = MakeCanvas("LoginLogos", new Vector2(860f, 120f), new Vector3(0f, -0.475f, PanelDistance - 0.04f), -8f);
+            _logoGroup = logoCanvas.GetComponent<CanvasGroup>();
             var logo = PresentableUi.Rect("Logos", logoCanvas.transform, Vector2.zero, Vector2.one);
             var li = logo.gameObject.AddComponent<Image>();
             li.sprite = Spr("Login_Logos");
@@ -324,7 +374,11 @@ namespace ChemicalSafety.Presentable
 
             // touch keyboard
             const float cw = 860f, ch = 470f;
-            var kb = MakeCanvas("LoginKeyboard", new Vector2(cw, ch), new Vector3(0f, -0.77f, PanelDistance - 0.12f), -22f);
+            // chest-high, close and tilted like a laptop: about 27 degrees below the eye line instead of 51 (seated: a little closer and steeper)
+            var kbPos = _seated ? new Vector3(0f, -0.27f, 0.50f) : new Vector3(0f, -0.28f, 0.56f);
+            var kb = MakeCanvas("LoginKeyboard", new Vector2(cw, ch), kbPos, _seated ? 14f : 10f, KeyPx);
+            _kbT = kb.transform;
+            _kbBase = _kbT.position;
             _kbGroup = kb.GetComponent<CanvasGroup>();
             _groups.Remove(_kbGroup); // the keyboard fades with focus, not with the entrance
             _kbGroup.alpha = 0f;
@@ -372,7 +426,10 @@ namespace ChemicalSafety.Presentable
                 kv.isDigit = keys[i].Length == 1 && char.IsDigit(keys[i][0]);
                 kv.isLetter = keys[i].Length == 1 && char.IsLetter(keys[i][0]);
                 var id = keys[i];
-                tmp.text = id == "SHIFT" ? "⇧" : id == "BACK" ? "⌫" : id == "SPACE" ? string.Empty : id == "DONE" ? "OK" : id;
+                // the font has no arrow glyphs (they drew empty boxes): plain words on the two wide keys
+                tmp.text = id == "SHIFT" ? "SHIFT" : id == "BACK" ? "DEL" : id == "SPACE" ? string.Empty : id == "DONE" ? "OK" : id;
+                if (id == "SHIFT" || id == "BACK")
+                    tmp.fontSize = 24f;
                 kv.button = MakeButton(rt, () => OnKey(id));
                 _keys.Add(kv);
                 x += w + gap;
@@ -858,6 +915,58 @@ namespace ChemicalSafety.Presentable
 
         // ------------------------------------------------------------------ per-frame animation
 
+        // ------------------------------------------------------------------ rig lock
+
+        private void LockRig(Transform rigRoot)
+        {
+            _rig = rigRoot;
+            if (_rig == null)
+                return;
+            _rigPos = _rig.position;
+            _rigRot = _rig.rotation;
+            _lockedProviders.Clear();
+            foreach (var p in _rig.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true))
+            {
+                if (!p.enabled)
+                    continue;
+                p.enabled = false;
+                _lockedProviders.Add(p);
+            }
+
+            _zoom = FindFirstObjectByType<RigZoomController>();
+            _zoomWas = _zoom != null && _zoom.ZoomEnabled;
+            if (_zoom != null)
+                _zoom.ZoomEnabled = false;
+            _cc = _rig.GetComponentInChildren<CharacterController>(true);
+            _ccWas = _cc != null && _cc.enabled;
+            if (_cc != null)
+                _cc.enabled = false;
+        }
+
+        private void UnlockRig()
+        {
+            if (_rig == null)
+                return;
+            foreach (var p in _lockedProviders)
+            {
+                if (p != null)
+                    p.enabled = true;
+            }
+
+            _lockedProviders.Clear();
+            if (_zoom != null)
+                _zoom.ZoomEnabled = _zoomWas;
+            if (_cc != null)
+                _cc.enabled = _ccWas;
+            _rig = null;
+        }
+
+        private void LateUpdate()
+        {
+            if (_rig != null && _root != null)
+                _rig.SetPositionAndRotation(_rigPos, _rigRot); // the head still turns freely; the body does not move
+        }
+
         private void Update()
         {
             if (_root == null)
@@ -872,8 +981,25 @@ namespace ChemicalSafety.Presentable
             }
 
             var kbTarget = _focus != Field.None && !_closing ? 1f : 0f;
-            _kbGroup.alpha = Mathf.MoveTowards(_kbGroup.alpha, kbTarget, Time.unscaledDeltaTime * 5f);
-            _kbGroup.blocksRaycasts = kbTarget > 0f;
+            _focusT = Mathf.MoveTowards(_focusT, kbTarget, Time.unscaledDeltaTime * 3.4f);
+            var fe = _focusT * _focusT * (3f - 2f * _focusT);
+            _kbGroup.alpha = fe;
+            _kbGroup.blocksRaycasts = kbTarget > 0f && fe > 0.5f;
+            if (_panelT != null)
+                _panelT.position = _panelBase + Vector3.up * (FocusLift * fe);
+            if (_kbT != null)
+                _kbT.position = _kbBase - Vector3.up * (0.10f * (1f - fe));
+            foreach (var cg in _chrome)
+            {
+                if (cg == null)
+                    continue;
+                cg.alpha = 1f - fe;
+                cg.interactable = fe < 0.3f;
+                cg.blocksRaycasts = fe < 0.3f;
+            }
+
+            if (_logoGroup != null)
+                _logoGroup.alpha = ease * (1f - fe);
 
             // caret blink
             if (_focus != Field.None)

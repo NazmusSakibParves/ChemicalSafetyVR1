@@ -30,9 +30,19 @@ namespace ChemicalSafety.Presentable
         private static readonly List<Entry> Entries = new List<Entry>();
         private static Sprite _cursorSprite;
 
-        private Button _hovered;
-        private Button _armedBlock;
-        private int _band;
+        // one set of hover / press state per hand; the left hand only pokes while a screen asks for it (the login keyboard)
+        private sealed class HandState
+        {
+            public Button hovered;
+            public Button armed;
+            public int band;
+        }
+
+        private readonly HandState _right = new HandState();
+        private readonly HandState _left = new HandState();
+
+        /// <summary>When true the left index fingertip presses buttons too (two-hand typing on the login keyboard).</summary>
+        public static bool LeftPokeEnabled { get; set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -85,15 +95,24 @@ namespace ChemicalSafety.Presentable
 
         private void Update()
         {
-            var hand = GlovedHandPose.Right;
+            Process(GlovedHandPose.Right, _right, true);
+            if (LeftPokeEnabled)
+                Process(GlovedHandPose.Left, _left, false);
+            else if (_left.hovered != null || _left.armed != null)
+                ClearHover(_left);
+        }
+
+        private void Process(GlovedHandPose hand, HandState st, bool primary)
+        {
             if (hand == null || !hand.HasTip)
             {
-                ClearHover();
+                ClearHover(st);
                 return;
             }
 
             var tip = hand.PressPoint;
-            ScrollZone.Handle(tip, pressDepth * 1.5f); // phone-style drag scrolling; inert unless a scroll zone is registered
+            if (primary)
+                ScrollZone.Handle(tip, pressDepth * 1.5f); // phone-style drag scrolling; inert unless a scroll zone is registered
             Button best = null;
             Entry bestEntry = null;
             var bestDepth = float.MaxValue;
@@ -110,7 +129,8 @@ namespace ChemicalSafety.Presentable
 
                 if (!e.canvas.gameObject.activeInHierarchy || (e.group != null && e.group.alpha < 0.6f))
                 {
-                    HideCursor(e);
+                    if (primary)
+                        HideCursor(e);
                     continue;
                 }
 
@@ -118,7 +138,8 @@ namespace ChemicalSafety.Presentable
                 {
                     e.nextRefresh = Time.unscaledTime + 0.4f;
                     e.canvas.GetComponentsInChildren(false, e.buttons);
-                    EnsureCursor(e);
+                    if (primary)
+                        EnsureCursor(e);
                 }
 
                 foreach (var b in e.buttons)
@@ -147,41 +168,42 @@ namespace ChemicalSafety.Presentable
                     }
                 }
 
-                if (e != bestEntry)
+                if (primary && e != bestEntry)
                     HideCursor(e);
             }
 
-            if (best != _hovered)
+            if (best != st.hovered)
             {
-                ClearHover();
-                _hovered = best;
-                if (_hovered != null)
+                ClearHover(st);
+                st.hovered = best;
+                if (st.hovered != null)
                 {
-                    SetHover(_hovered, true);
-                    PresentableFx.Haptic(true, 0.15f, 0.03f);
+                    SetHover(st.hovered, true);
+                    PresentableFx.Haptic(primary, 0.15f, 0.03f);
                 }
             }
 
             if (best == null)
             {
-                _armedBlock = null;
-                _band = 0;
+                st.armed = null;
+                st.band = 0;
                 return;
             }
 
-            ShowCursor(bestEntry, bestLocal, bestDepth);
+            if (primary)
+                ShowCursor(bestEntry, bestLocal, bestDepth);
 
             // soft haptic ramp while the fingertip approaches the button
             var band = bestDepth < 0.03f ? 2 : bestDepth < 0.06f ? 1 : 0;
-            if (band > _band)
-                PresentableFx.Haptic(true, band == 2 ? 0.22f : 0.1f, 0.025f);
-            _band = band;
+            if (band > st.band)
+                PresentableFx.Haptic(primary, band == 2 ? 0.22f : 0.1f, 0.025f);
+            st.band = band;
 
-            if (bestDepth < pressDepth && _armedBlock != best)
+            if (bestDepth < pressDepth && st.armed != best)
             {
-                _armedBlock = best;
+                st.armed = best;
                 hand.PlayPokeCurl();
-                PresentableFx.Haptic(true, 0.5f, 0.07f);
+                PresentableFx.Haptic(primary, 0.5f, 0.07f);
                 PresentableFx.Play(PresentableFx.Tick, 0.8f);
                 var lift = best.GetComponent<HoverLift>();
                 if (lift != null)
@@ -190,9 +212,9 @@ namespace ChemicalSafety.Presentable
                     StartCoroutine(Ripple(bestEntry, bestLocal));
                 best.onClick.Invoke();
             }
-            else if (bestDepth > rearmDepth && _armedBlock == best)
+            else if (bestDepth > rearmDepth && st.armed == best)
             {
-                _armedBlock = null;
+                st.armed = null;
             }
         }
 
@@ -214,11 +236,13 @@ namespace ChemicalSafety.Presentable
                 Destroy(rt.gameObject);
         }
 
-        private void ClearHover()
+        private static void ClearHover(HandState st)
         {
-            if (_hovered != null)
-                SetHover(_hovered, false);
-            _hovered = null;
+            if (st.hovered != null)
+                SetHover(st.hovered, false);
+            st.hovered = null;
+            st.armed = null;
+            st.band = 0;
         }
 
         private static void SetHover(Button b, bool on)

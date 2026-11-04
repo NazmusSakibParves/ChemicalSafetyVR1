@@ -199,6 +199,56 @@ namespace ChemicalSafety.Presentable
             Say("supervisor vs question canvas " + where + ": overlap = " + (overlap * 100f).ToString("0") + "% (expected 0), in view = " + visible);
         }
 
+        // Login: the keyboard must be chest-high and clear of the card, the footer fades while typing, both fingers may type, the rig is locked.
+        private IEnumerator LoginErgoCheck(LoginScreen login)
+        {
+            var head = Get<Transform>(login, "_head");
+            var kbT = Get<Transform>(login, "_kbT");
+            var panelT = Get<Transform>(login, "_panelT");
+            var cam = Camera.main;
+            Say("login: left-hand poke enabled = " + FingerPokeSystem.LeftPokeEnabled + " (expected True), rig locked = " + (Get<Transform>(login, "_rig") != null) +
+                " (expected True), seated mode = " + Get<bool>(login, "_seated"));
+            var focus = typeof(LoginScreen).GetMethod("Focus", BindingFlags.NonPublic | BindingFlags.Instance);
+            var fieldType = typeof(LoginScreen).GetNestedType("Field", BindingFlags.NonPublic);
+            focus.Invoke(login, new object[] { Enum.ToObject(fieldType, 1) });
+            yield return new WaitForSeconds(1.3f);
+            var d = kbT.position - head.position;
+            var below = Mathf.Atan2(-d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+            Say("login keyboard: centre " + below.ToString("0") + " deg below the eye line (expected <= 35), " + d.magnitude.ToString("0.00") + " m away");
+            var chrome = Get<System.Collections.Generic.List<CanvasGroup>>(login, "_chrome");
+            Say("login: footer (START, toggle, credits) faded while typing = " + (chrome.Count > 0 && chrome[0].alpha < 0.1f) + " (expected True)");
+            if (cam != null)
+            {
+                Rect View(RectTransform rt)
+                {
+                    var c = new Vector3[4];
+                    rt.GetWorldCorners(c);
+                    float x0 = 9f, y0 = 9f, x1 = -9f, y1 = -9f;
+                    foreach (var w in c)
+                    {
+                        var v = cam.WorldToViewportPoint(w);
+                        x0 = Mathf.Min(x0, v.x); y0 = Mathf.Min(y0, v.y); x1 = Mathf.Max(x1, v.x); y1 = Mathf.Max(y1, v.y);
+                    }
+
+                    return Rect.MinMaxRect(x0, y0, x1, y1);
+                }
+
+                var contact = FindDeep(panelT, "ContactField") as RectTransform;
+                var kbRect = View((RectTransform)kbT);
+                if (contact != null)
+                {
+                    var cr = View(contact);
+                    Say("login: keyboard top edge " + kbRect.yMax.ToString("0.00") + " vs contact field bottom " + cr.yMin.ToString("0.00") + " in the view (keyboard must stay below the field)");
+                }
+
+                Say("login: keyboard inside the view = " + (kbRect.xMin > -0.05f && kbRect.xMax < 1.05f && kbRect.yMin > -0.1f));
+            }
+
+            yield return Shot("00_login_focus");
+            focus.Invoke(login, new object[] { Enum.ToObject(fieldType, 0) });
+            yield return new WaitForSeconds(0.9f);
+        }
+
         // Scenarios 13-18: a finger drag on the open SDS sheet must move it, like a phone.
         private static void ScDragScrollCheck(string where, ScCheckRunner runner)
         {
@@ -1825,6 +1875,7 @@ namespace ChemicalSafety.Presentable
                 yield return WaitStage("login", 30f);
                 yield return new WaitForSeconds(1.5f);
                 yield return Shot("00_login_en");
+                yield return LoginErgoCheck(login);
                 Say("login: name with digits rejected = " + !login.SubmitForTest("Ra5im", "01712345678", ChemicalSafety.Localization.Lang.En));
                 Say("login: 10-digit phone rejected = " + !login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.En));
                 Say("login: 12-digit phone rejected = " + !login.SubmitForTest("Rahim", "017123456789", ChemicalSafety.Localization.Lang.En));

@@ -303,7 +303,7 @@ namespace ChemicalSafety.Presentable
                 Stage("login");
                 if (clipboard != null)
                     clipboard.SetSuspended(true); // the SDS sheet is not part of the login view
-                yield return loginScreen.Run(_cam, rig != null ? rig.position.y : 0f, fader);
+                yield return loginScreen.Run(_cam, rig != null ? rig.position.y : 0f, fader, rig);
                 if (clipboard != null)
                     clipboard.SetSuspended(false);
             }
