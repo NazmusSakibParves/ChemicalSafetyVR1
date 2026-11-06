@@ -28,6 +28,8 @@ namespace ChemicalSafety.Presentable
         private Image _bangla;
         private bool _speaking;
         private bool _built;
+        private bool _compact;
+        private float _baseScale = 1f;
 
         public event Action SpeakerClicked;
         public event Action Continue;
@@ -114,6 +116,16 @@ namespace ChemicalSafety.Presentable
             _speakerIcon.color = c;
         }
 
+        /// <summary>World distance from the card centre down to the bottom of the Continue button (for docking a subtitle under it).</summary>
+        public float BottomExtentMeters
+        {
+            get
+            {
+                Build();
+                return (_canvasRt.sizeDelta.y * 0.5f + 160f) * metersPerPixel * _baseScale;
+            }
+        }
+
         public void SetSpeaking(bool speaking) => _speaking = speaking;
 
         /// <summary>Continue stays centred under the words on every scenario.</summary>
@@ -122,6 +134,19 @@ namespace ChemicalSafety.Presentable
             Build();
             if (centered)
                 Reflow();
+        }
+
+        /// <summary>
+        /// Controller-ray scenario (Scenario 1): the same card shape and layout, scaled uniformly on every side (so the
+        /// frame keeps its proportions) and shown further away. Other scenarios keep scale 1.
+        /// </summary>
+        public void SetCompact(bool on, float worldScale = 1.4f)
+        {
+            Build();
+            _compact = on;
+            _baseScale = on ? worldScale : 1f;
+            transform.localScale = Vector3.one * _baseScale;
+            Reflow();
         }
 
         /// <summary>Swaps the card text and grows the frame so the words stay inside.</summary>
@@ -137,9 +162,68 @@ namespace ChemicalSafety.Presentable
             Reflow();
         }
 
+        // Controller-ray scenario: the card shrinks to its words on every side (same 32 pt text and same Bangla image size as the
+        // other scenarios, even margins), keeping the frame's own proportions so the shape stays premium.
+        private void ReflowCompact()
+        {
+            const float textW = 760f;
+            _english.enableAutoSizing = false;
+            _english.fontSize = 32f;
+            _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
+            var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
+            _english.gameObject.SetActive(!useBn);
+            _bangla.gameObject.SetActive(useBn);
+            _english.ForceMeshUpdate();
+            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, 420f);
+
+            var aspect = 6f;
+            if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
+                aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
+            var bnH = useBn ? Mathf.Min(190f, 920f / Mathf.Max(0.1f, aspect)) : 0f;
+            var bnW = bnH * aspect;
+
+            const float padTop = 64f;
+            const float titleH = 56f;
+            const float speakerH = 172f;
+            const float speakerDrop = 28f;
+            const float gap = 18f;
+            const float padBot = 120f; // room under the text so it never touches the frame's lower edge
+            const float sidePad = 110f;
+            var contentW = useBn ? Mathf.Max(bnW, 520f) : textW;
+            var cardW = Mathf.Max(720f, contentW + 2f * sidePad);
+            var h = padTop + titleH + gap + speakerDrop + speakerH + gap + (useBn ? bnH : englishH) + padBot;
+
+            _canvasRt.sizeDelta = new Vector2(cardW, h);
+            _frameRt.sizeDelta = new Vector2(cardW * 1.269f, h * 1.175f); // the frame art's own ratios (as at 1300 x 790)
+
+            var y = padTop;
+            // the title keeps the frame-relative height it has in the normal card (about 17 % of the frame height from its top edge)
+            Band(_titleRt, 0.116f * h, titleH, 680f);
+            y += titleH + gap + speakerDrop;
+            Band(_speaker, y, speakerH, speakerH);
+            y += speakerH + gap;
+            Band(_english.rectTransform, y, englishH, textW);
+            Band(_bangla.rectTransform, y, bnH, bnW);
+
+            _continue.anchorMin = _continue.anchorMax = new Vector2(0.5f, 0f);
+            _continue.pivot = new Vector2(0.5f, 1f);
+            _continue.sizeDelta = new Vector2(420f, 78f);
+            var z = _continue.localPosition.z;
+            _continue.anchoredPosition = new Vector2(0f, -78f);
+            var p = _continue.localPosition;
+            p.z = z;
+            _continue.localPosition = p;
+        }
+
         // The frame hugs the words. Continue sits under the frame, not in the glass.
         private void Reflow()
         {
+            if (_compact)
+            {
+                ReflowCompact();
+                return;
+            }
+
             const float cardW = 1300f;
             const float textW = 920f;
             _english.enableAutoSizing = false;
@@ -155,7 +239,7 @@ namespace ChemicalSafety.Presentable
             var aspect = 6f;
             if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
                 aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
-            var bnH = useBn ? Mathf.Min(190f, 920f / Mathf.Max(0.1f, aspect)) : 0f;
+            var bnH = useBn ? Mathf.Min(190f, textW / Mathf.Max(0.1f, aspect)) : 0f;
             var bnW = bnH * aspect;
 
             const float padTop = 72f;
@@ -216,11 +300,11 @@ namespace ChemicalSafety.Presentable
             Reflow(); // the card has its final size and layout from the first frame (no small text that jumps later)
             gameObject.SetActive(true);
             _continue.gameObject.SetActive(false);
-            transform.localScale = Vector3.one * 0.85f;
+            transform.localScale = Vector3.one * 0.85f * _baseScale;
             yield return PresentableFx.Tween(0.5f, t =>
             {
                 _group.alpha = t;
-                transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.85f, 1f, t);
+                transform.localScale = Vector3.one * (_baseScale * Mathf.LerpUnclamped(0.85f, 1f, t));
             }, PresentableFx.EaseOutBack);
         }
 
@@ -241,7 +325,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.35f, t =>
             {
                 _group.alpha = 1f - t;
-                transform.localScale = Vector3.one * Mathf.Lerp(1f, 0.9f, t);
+                transform.localScale = Vector3.one * (_baseScale * Mathf.Lerp(1f, 0.9f, t));
             });
             gameObject.SetActive(false);
         }

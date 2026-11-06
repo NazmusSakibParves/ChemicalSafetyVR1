@@ -75,10 +75,33 @@ namespace ChemicalSafety.Presentable
         private Quaternion _cardRot = Quaternion.identity;
         private Vector3 _cardFwd = Vector3.forward;
         private bool _cardHasFwd;
+        private bool _showCardOnPick = true;
+        private GameObject _closeButton;
+
+        /// <summary>Controller-ray CLOSE button on the details card (put the container back).</summary>
+        public event Action CloseRequested;
+
+        /// <summary>When false a picked container is held without its details card (the SC02 ray flow, where it is stored next).</summary>
+        public void SetShowCardOnPick(bool on) => _showCardOnPick = on;
+
+        public bool IsHeldByIndex(int i) => _held != null && Array.IndexOf(_items, _held) == i;
+
+        public bool IsPlaced(int i) => i >= 0 && i < _items.Length && _items[i].placed;
 
         public bool HasHeld => _held != null;
         public string HeldName => _held != null ? _held.entry.title : "";
         public int Count => _items.Length;
+
+        /// <summary>The pallet node of container <paramref name="i"/> (builder order), for the Scenario 2 callouts.</summary>
+        public Transform ModelOf(int i)
+        {
+            if (i >= 0 && i < _items.Length)
+                return _items[i].entry.model;
+            return i >= 0 && i < entries.Length ? entries[i].model : null; // scene build: the items are made at runtime
+        }
+
+        /// <summary>Number of containers as authored (also valid while building the scene).</summary>
+        public int EntryCount => entries.Length;
 
         /// <summary>The held container's pallet node (for the placement logic), or null.</summary>
         public Transform HeldTransform => _held != null ? _held.entry.model : null;
@@ -286,7 +309,7 @@ namespace ChemicalSafety.Presentable
             if (item.poke != null)
                 item.poke.SetInteractable(false); // no accidental pokes on the container in the hand
             Pick(item);
-            ShowCard(item);
+            ShowCard(_showCardOnPick ? item : null);
             HeldChanged?.Invoke();
         }
 
@@ -416,6 +439,8 @@ namespace ChemicalSafety.Presentable
                 _reveal = null;
             }
 
+            if (_closeButton != null)
+                _closeButton.SetActive(PresentableInput.RayActive);
             if (item != null)
             {
                 _title.text = item.entry.title;
@@ -671,6 +696,20 @@ namespace ChemicalSafety.Presentable
                 if (chart != null)
                     chart.Open();
             });
+
+            // CLOSE (controller-ray flow only): sends the container back so the next one can be inspected
+            var closeRt = PresentableUi.Centered("CloseButton", _card, new Vector2(300f, -400f), new Vector2(250f, 96f));
+            closeRt.localPosition += new Vector3(0f, 0f, -8f);
+            var closeHit = PresentableUi.Img(closeRt, art.button != null ? art.button : art.roundedSolid, Color.white, raycast: true);
+            PresentableUi.Text("Label", closeRt, Vector2.zero, Vector2.one, "CLOSE", 40f, Color.white,
+                TextAlignmentOptions.Center, true, font);
+            var closeBtn = closeRt.gameObject.AddComponent<Button>();
+            closeBtn.transition = Selectable.Transition.None;
+            closeBtn.targetGraphic = closeHit;
+            closeBtn.onClick.AddListener(() => CloseRequested?.Invoke());
+            closeRt.gameObject.AddComponent<HoverLift>().Init(closeRt);
+            _closeButton = closeRt.gameObject;
+            _closeButton.SetActive(PresentableInput.RayActive);
 
             PresentableUi.AlwaysOnTop(canvas);
             _card.gameObject.SetActive(false);

@@ -65,6 +65,28 @@ namespace ChemicalSafety.Presentable
         private float _frontZ = float.NaN;
         private bool _cancel;
         private CompartmentDoor _nextDoor;
+        private bool _auto;
+
+        /// <summary>True when the last <see cref="AutoPlace"/> put the container in the right compartment.</summary>
+        public bool LastCorrect { get; private set; }
+
+        /// <summary>
+        /// Controller-ray flow: the held container goes into the chosen compartment by itself. Right compartment: the door opens,
+        /// the container flies in and the door closes. Wrong compartment: the same red door and warning card as the fingertip game,
+        /// and the container stays in the hand for another try.
+        /// </summary>
+        public IEnumerator AutoPlace(int doorIndex)
+        {
+            var held = inspect != null ? inspect.HeldIndex : -1;
+            if (held < 0 || doorIndex < 0 || doorIndex >= doors.Length || doors[doorIndex] == null || _busy)
+                yield break;
+            _auto = true;
+            yield return TryPlace(doors[doorIndex], held);
+            _auto = false;
+        }
+
+        /// <summary>The compartment (door index) container <paramref name="i"/> belongs in.</summary>
+        public int CompartmentOf(int i) => i >= 0 && i < containerCompartment.Length ? containerCompartment[i] : -1;
 
         public int Placed { get; private set; }
         public int Total => containerCompartment.Length;
@@ -220,6 +242,7 @@ namespace ChemicalSafety.Presentable
             var doorIndex = Array.IndexOf(doors, door);
             var target = containerCompartment[held];
             var correct = doorIndex == target;
+            LastCorrect = correct;
             var title = inspect.HeldEntry != null ? Humanize(inspect.HeldEntry.title) : "Container";
             inspect.HideCardForPlacement();
 
@@ -240,7 +263,8 @@ namespace ChemicalSafety.Presentable
                     "HAZARD: " + Hazards[Category(held), Mathf.Clamp(doorIndex, 0, 3)]);
                 yield return PresentableFx.Wait(2.2f);
                 HideCard();
-                inspect.RestoreCard();
+                if (!_auto)
+                    inspect.RestoreCard();
                 door.SetState(DoorState.Neutral);
                 yield return door.CloseRoutine();
                 _busy = false;
@@ -254,6 +278,13 @@ namespace ChemicalSafety.Presentable
             {
                 // should not happen; fall back to a pose in the compartment centre
                 Debug.LogWarning("[Presentable] No free slot in compartment " + target);
+                _busy = false;
+                yield break;
+            }
+
+            if (_auto)
+            {
+                yield return PlaceHeld(slot, held, door);
                 _busy = false;
                 yield break;
             }
@@ -297,15 +328,19 @@ namespace ChemicalSafety.Presentable
             var startRot = t.rotation;
             var startScale = t.localScale;
             PresentableFx.Play(PresentableFx.Whoosh, 0.5f);
-            yield return PresentableFx.Tween(0.75f, k =>
+            var flight = _auto ? 1.25f : 0.75f;
+            var lift = _auto ? 0.3f : 0.14f;
+            yield return PresentableFx.Tween(flight, k =>
             {
-                var arc = Mathf.Sin(k * Mathf.PI) * 0.14f;
+                var arc = Mathf.Sin(k * Mathf.PI) * lift;
                 t.position = Vector3.Lerp(startPos, endPos, k) + Vector3.up * arc;
                 t.rotation = Quaternion.Slerp(startRot, endRot, k);
                 t.localScale = Vector3.Lerp(startScale, endScale, k);
             }, PresentableFx.EaseOutCubic);
             t.SetPositionAndRotation(endPos, endRot);
             t.localScale = endScale;
+            if (_auto)
+                yield return PresentableFx.Tween(0.22f, k => t.localScale = endScale * (1f + 0.07f * Mathf.Sin(k * Mathf.PI)), PresentableFx.SmoothStep);
 
             PresentableFx.Play(PresentableFx.Success, 0.6f);
             PresentableFx.Haptic(true, 0.6f, 0.1f);

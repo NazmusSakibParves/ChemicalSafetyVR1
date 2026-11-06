@@ -70,6 +70,75 @@ namespace ChemicalSafety.Presentable
             yield return null;
         }
 
+        // Scenario 2 (callout flow): stand, then six chemicals one after the other, each with a callout and its own question.
+        // Question 2 is answered wrong on purpose (red cross + reasons), the others right; the last one ends with NEXT.
+        private IEnumerator Sc02CalloutSmoke()
+        {
+            var mcq = Get<PresentableMcqPanel>(_director, "mcqSc02");
+            var voiceSrc = Get<AudioSource>(_director, "voice");
+            yield return WaitStage("sc02Stand", 90f);
+            var head = Camera.main.transform.position;
+            var stand = Get<Transform>(_director, "sc02RayStand").position;
+            Say("SC02 stand: head " + Vector2.Distance(new Vector2(head.x, head.z), new Vector2(stand.x, stand.z)).ToString("0.00") + " m off the stand");
+            yield return Shot("11_sc02_stand");
+            for (var n = 1; n <= 6; n++)
+            {
+                yield return WaitStage("sc02Callout" + n, 120f);
+                var w = 0f;
+                while (!mcq.IsOpen && w < 25f)
+                {
+                    w += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(2.8f);
+                yield return Shot("sc02_q" + n + "_open");
+                LayoutCheck("SC02 Q" + n, mcq.transform);
+                var wrong = n == 2;
+                var q = mcq.Current;
+                var target = wrong ? (q.correctIndex + 1) % q.options.Length : q.correctIndex;
+                Say("SC02 Q" + n + " answer = " + (wrong ? "WRONG" : "CORRECT") + " prompt = " + q.prompt);
+                var row = FindDeep(mcq.transform, "Row" + (target + 1));
+                if (row != null)
+                    row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+                yield return new WaitForSeconds(2.2f);
+                yield return Shot("sc02_q" + n + "_reveal");
+                var reasons = 0;
+                foreach (var tmp in mcq.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+                {
+                    if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                        reasons++;
+                }
+
+                Say("SC02 Q" + n + " reveal: reasons shown = " + reasons + "/4");
+                if (n == 6)
+                {
+                    var nw = 0f;
+                    var nextOn = false;
+                    while (!nextOn && nw < 30f)
+                    {
+                        foreach (var tr in mcq.GetComponentsInChildren<Transform>())
+                            if (tr.name == "NextButton" && tr.gameObject.activeInHierarchy)
+                                nextOn = true;
+                        nw += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    Say("SC02 Q6: NEXT visible = " + nextOn + " after " + nw.ToString("0.0") + " s");
+                    yield return Shot("sc02_q6_next");
+                    Click(mcq.transform, "NextButton");
+                }
+                else
+                {
+                    yield return new WaitForSeconds(0.2f);
+                }
+            }
+
+            var att = ChemicalSafety.Results.SessionResults.Current != null && ChemicalSafety.Results.SessionResults.Current.attempts != null
+                ? ChemicalSafety.Results.SessionResults.Current.attempts.Find(a => a.lesson_id == "SC02") : null;
+            Say("SC02 marks: " + (att != null ? "score " + att.score + " / " + att.max_score + ", answers " + att.answers.Count : "NO ATTEMPT"));
+        }
+
         private IEnumerator WaitStage(string stage, float timeout = 120f)
         {
             var t = 0f;
@@ -2210,6 +2279,23 @@ namespace ChemicalSafety.Presentable
             yield return Shot("10_sc02_instruction");
             Click(panel.transform, "ContinueButton");
 
+            if (Get<bool>(_director, "sc02CalloutFlow"))
+            {
+                yield return Sc02CalloutSmoke();
+#if UNITY_EDITOR
+                // EditorPref ChemSafetySc02Only: login + Scenarios 1 and 2 only, then stop
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc02Only", false))
+                {
+                    Say("SC02-only run (login + Scenarios 1 and 2)");
+                    yield return new WaitForSeconds(1f);
+                    Say("DONE runtime errors/exceptions = " + _errors);
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    yield break;
+                }
+#endif
+                goto sc03Start;
+            }
+
             yield return WaitStage("sc02Explore");
             yield return new WaitForSeconds(1.2f);
             yield return Shot("11_sc02_room");
@@ -2515,6 +2601,7 @@ namespace ChemicalSafety.Presentable
             Click(mcq2.transform, "NextButton");
 
             // --- Scenario 3: instruction card at eye level, inspect the old drum, immediate-action question
+            sc03Start:
             yield return WaitStage("sc03Intro", 30f);
             var sc03 = Get<Sc03Inspect>(_director, "sc03Inspect");
             var det = Get<Sc03Detonation>(_director, "sc03Detonation");

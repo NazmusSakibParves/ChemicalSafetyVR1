@@ -63,6 +63,7 @@ namespace ChemicalSafety.Editor
             Sc01BakeProbe(env);
             var env2 = new GameObject("Environment_SC02").transform;
             var doors = BuildSc02Room(env2, art, out var chart, out var inspect, out var placement);
+            BakeSc02ChemIcons(inspect, art); // transparent pictures of the six containers for the Scenario 2 callouts
             env2.gameObject.SetActive(false);
             var env3 = new GameObject("Environment_SC03").transform;
             var sc3 = BuildSc03Room(env3, art);
@@ -708,6 +709,9 @@ namespace ChemicalSafety.Editor
                 art.voSc01CompleteEn = doneEn;
             art.voSc01WrongNextBn = V("VO_Sc01WrongNext_bn.mp3") ?? art.voSc01WrongNextBn;
             art.voSc01WrongNextEn = V("VO_Sc01WrongNext_en.mp3") ?? art.voSc01WrongNextEn;
+            art.voAnswerWrongSee = V("VO_AnswerWrongSee_bn.mp3") ?? art.voAnswerWrongSee;
+            art.voSc02WrongNextBn = V("VO_Sc02WrongNext_bn.mp3") ?? art.voSc02WrongNextBn;
+            art.voSc02WrongNextEn = V("VO_Sc02WrongNext_en.mp3") ?? art.voSc02WrongNextEn;
             var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
             if (sc02Hint != null)
                 art.voSc02PlaceHint = sc02Hint;

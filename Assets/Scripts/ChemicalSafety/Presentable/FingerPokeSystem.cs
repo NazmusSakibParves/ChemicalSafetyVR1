@@ -55,6 +55,14 @@ namespace ChemicalSafety.Presentable
             Entries.Add(new Entry { canvas = canvas, group = canvas.GetComponent<CanvasGroup>() });
         }
 
+        /// <summary>Registered interactive canvases (used by the controller ray, ControllerRayPointer).</summary>
+        public static void CollectCanvases(List<Canvas> into)
+        {
+            foreach (var e in Entries)
+                if (e.canvas != null)
+                    into.Add(e.canvas);
+        }
+
         /// <summary>
         /// Physical stop for the fingertip: the push (world space) that keeps a fingertip sphere of the given
         /// radius in front of every visible registered panel it is over, so the glove rests on the panel instead
@@ -95,6 +103,17 @@ namespace ChemicalSafety.Presentable
 
         private void Update()
         {
+            // controller-ray scenario (see PresentableInput): the fingertip does not press, the ray does
+            if (PresentableInput.RayActive)
+            {
+                ClearHover(_right);
+                ClearHover(_left);
+                foreach (var e in Entries)
+                    if (e.canvas != null)
+                        HideCursor(e);
+                return;
+            }
+
             Process(GlovedHandPose.Right, _right, true);
             if (LeftPokeEnabled)
                 Process(GlovedHandPose.Left, _left, false);

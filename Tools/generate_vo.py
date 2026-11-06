@@ -93,6 +93,10 @@ CLIPS = {
     # wrong answer in Scenario 1 (no retry): the reasons are on screen, NEXT goes on
     "VO_Sc01WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[2]),
     "VO_Sc01WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario two."),
+    # Scenario 2: wrong answer, the reasons are shown and the scenario goes on by itself / on the last question with NEXT
+    "VO_AnswerWrongSee_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন।"),
+    "VO_Sc02WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[3]),
+    "VO_Sc02WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario three."),
     "VO_Sc02Complete_bn": (BN_VOICE, complete_bn(2)),
     "VO_Sc02Complete_en": (EN_VOICE, complete_en(2)),
     "VO_Sc03Complete_bn": (BN_VOICE, complete_bn(3)),
@@ -301,6 +305,7 @@ CLIPS_EN = {
     "VO_WrongLabel": "Wrong label for this drum. Select the correct label again.",
     "VO_Wrong": "Wrong selection. Try again.",
     "VO_Correct": "Correct. Excellent! You have selected the correct answer.",
+    "VO_AnswerWrongSee": "Wrong answer. Read the reason for each option.",
     "VO_SC02_Instruction": "A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
     "VO_Sc02PlaceHint": "Place the chemical in the correct compartment for its type.",
     "VO_Sc02Decision": "Take decision. Inspect the containers to read their hazards, or click Continue when you are ready to store them.",

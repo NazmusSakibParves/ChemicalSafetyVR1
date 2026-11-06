@@ -53,6 +53,9 @@ namespace ChemicalSafety.Presentable
         private float _cradle;
         private float _cradleTarget;
         private Coroutine _graspRoutine;
+        private bool _controllerShown;
+        private Renderer[] _gloveRenderers;
+        private Renderer[] _pinchRenderers;
 
         /// <summary>The gloved right hand (null until it has spawned).</summary>
         public static GlovedHandPose Right { get; private set; }
@@ -115,10 +118,44 @@ namespace ChemicalSafety.Presentable
 
         // Physical-hand trick: tracking is never touched, but the rendered glove is pushed out of solid props
         // (drums, racks, carrier) so the fingertip stops at the surface instead of sliding through.
+        // Controller-ray scenarios (PresentableInput): the real controller model is shown instead of the glove, so the learner
+        // sees what they hold and where the ray starts. The glove stays in the scene (tracking, palm frame, held container).
+        private void SyncControllerVisual()
+        {
+            var want = PresentableInput.RayActive;
+            if (want == _controllerShown)
+                return;
+            _controllerShown = want;
+            if (_gloveRenderers == null)
+                _gloveRenderers = _hand.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in _gloveRenderers)
+                if (r != null)
+                    r.forceRenderingOff = want; // survives other scripts toggling 'enabled'
+            // the whole glove object (hand, cuff, sleeve, anything else on it) is switched off; its bones keep their world poses
+            _hand.gameObject.SetActive(!want);
+            if (controllerVisualToHide != null)
+                controllerVisualToHide.SetActive(want);
+            if (want && controllerVisualToHide != null && _pinchRenderers == null)
+            {
+                // the stock controller visual also carries the hand-tracking pinch pointer (a dark blob): only the controller body is wanted
+                var list = new System.Collections.Generic.List<Renderer>();
+                foreach (var r in controllerVisualToHide.transform.root.GetComponentsInChildren<Renderer>(true))
+                    if (r.transform.IsChildOf(transform) && r.name.Contains("Pinch"))
+                        list.Add(r);
+                _pinchRenderers = list.ToArray();
+            }
+        }
+
         private void LateUpdate()
         {
             if (_hand == null)
                 return;
+
+            SyncControllerVisual();
+            if (_controllerShown && _pinchRenderers != null)
+                foreach (var r in _pinchRenderers)
+                    if (r != null)
+                        r.forceRenderingOff = true;
 
             _hand.localPosition = _baseLocalPos;
             _hand.localRotation = _baseLocalRot;

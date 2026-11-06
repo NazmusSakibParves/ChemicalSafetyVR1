@@ -489,29 +489,20 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
 
             Stage("sc02Explore");
-            if (ray2)
-                yield return RunSc02RayFlow();
-            else
-                yield return RunPlacement();
-
-            Stage("sc02Question");
-            // the question opens in front of the user, back at the room entrance so the glass doors are not in the way
-            if (ray2)
+            if (sc02CalloutFlow)
             {
-                var qStand = sc02RayStand != null ? sc02RayStand : spawnSc02;
-                yield return fader.FadeTo(1f, 0.25f);
-                PlaceRig(qStand.position, Flat(qStand.forward));
-                mcqSc02.SetWorldScale(rayPanelScale);
-                PlacePanelRay(mcqSc02.transform, qStand.position, Flat(qStand.forward), rayPanelRiseSc02);
-                subtitle.Dock(mcqSc02.transform, () => 0.45f, 1.0f);
-                yield return fader.FadeTo(0f, 0.35f);
+                // client: no Take Decision, no clicking the containers one by one. Each chemical gets a callout and its own question.
+                yield return RunSc02Callouts();
             }
             else
             {
-                yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
+                if (ray2)
+                    yield return RunSc02RayFlow();
+                else
+                    yield return RunPlacement();
+                yield return RunSc02ClassicQuestion(ray2);
             }
 
-            yield return RunQuestion(mcqSc02, BuildSc02Question(), false, 2);
             if (ray2)
             {
                 LockLocomotion(false);
@@ -1675,6 +1666,266 @@ namespace ChemicalSafety.Presentable
         // container's properties card with CLOSE; Continue: pick a container, pick a compartment in the popup, and the container
         // is stored automatically (door opens, container flies in, door closes). Wrong compartment: red door + warning, try again.
         private bool _sc02Back;
+
+        // The pre-callout Scenario 2 question (one MCQ after the placement game). Kept as it was; sc02CalloutFlow = false brings it back.
+        private IEnumerator RunSc02ClassicQuestion(bool ray2)
+        {
+            Stage("sc02Question");
+            // the question opens in front of the user, back at the room entrance so the glass doors are not in the way
+            if (ray2)
+            {
+                var qStand = sc02RayStand != null ? sc02RayStand : spawnSc02;
+                yield return fader.FadeTo(1f, 0.25f);
+                PlaceRig(qStand.position, Flat(qStand.forward));
+                mcqSc02.SetWorldScale(rayPanelScale);
+                PlacePanelRay(mcqSc02.transform, qStand.position, Flat(qStand.forward), rayPanelRiseSc02);
+                subtitle.Dock(mcqSc02.transform, () => 0.45f, 1.0f);
+                yield return fader.FadeTo(0f, 0.35f);
+            }
+            else
+            {
+                yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
+            }
+
+            yield return RunQuestion(mcqSc02, BuildSc02Question(), false, 2);
+        }
+
+        // ------------------------------------------------------------------ Scenario 2: callout + question per chemical
+
+        [Tooltip("Scenario 2 as the client wants it: the learner stands at the cabinet, then a callout opens over each chemical in turn " +
+                 "(picture, properties) with its own question to the right. false = the old Take Decision / inspect / place game.")]
+        [SerializeField] private bool sc02CalloutFlow = true;
+        [SerializeField] private float sc02FirstCalloutDelay = 3f;
+        [SerializeField] private float sc02NextCalloutDelay = 3f;
+        [SerializeField] private float sc02ReadSeconds = 7f;
+
+        private Sc02Callout _sc02Callout;
+        private bool _sc02Placing;
+
+        private IEnumerator RunSc02Callouts()
+        {
+            var stand = sc02RayStand != null ? sc02RayStand : spawnSc02;
+            var fwd = Flat(stand.forward);
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.4f);
+            PlaceRig(stand.position, fwd);
+            if (placement != null)
+                placement.AdjustRows(_cam != null ? _cam.position.y - rig.position.y : 1.6f);
+            yield return fader.FadeTo(0f, 0.6f);
+
+            Stage("sc02Stand");
+            subtitle.Hide();
+            inspect.SetCardAllowed(false);
+            inspect.SetShowCardOnPick(false);
+            inspect.SetInteractable(false);
+            if (_sc02Callout == null)
+                _sc02Callout = Sc02Callout.Create(art);
+
+            // left to right as the learner sees the pallet
+            var right = Vector3.Cross(Vector3.up, fwd);
+            var order = new List<int>();
+            for (var i = 0; i < inspect.Count; i++)
+                order.Add(i);
+            order.Sort((a, b) => Vector3.Dot(inspect.ModelOf(a).position, right).CompareTo(Vector3.Dot(inspect.ModelOf(b).position, right)));
+
+            SessionResults.BeginScenario("SC02", Loc.Suffix());
+            yield return PresentableFx.Wait(sc02FirstCalloutDelay);
+            for (var n = 0; n < order.Count; n++)
+            {
+                var last = n == order.Count - 1;
+                yield return Sc02Chemical(order[n], n, last);
+                if (!last)
+                    yield return PresentableFx.Wait(sc02NextCalloutDelay);
+            }
+
+            SessionResults.EndScenario();
+            inspect.SetInteractable(false);
+            while (placement != null && placement.IsBusy)
+                yield return null;
+        }
+
+        private static Vector3 TopCentre(Transform model)
+        {
+            var rs = model.GetComponentsInChildren<Renderer>();
+            if (rs.Length == 0)
+                return model.position + Vector3.up * 0.8f;
+            var b = rs[0].bounds;
+            foreach (var r in rs)
+                b.Encapsulate(r.bounds);
+            return new Vector3(b.center.x, b.max.y, b.center.z);
+        }
+
+        private IEnumerator Sc02Chemical(int chem, int n, bool last)
+        {
+            Stage("sc02Callout" + (n + 1));
+            var model = inspect.ModelOf(chem);
+            var s = rayPanelScale * 1.05f;
+            var icon = art.sc02ChemIcons != null && chem < art.sc02ChemIcons.Length ? art.sc02ChemIcons[chem] : null;
+
+            // One large callout over the chemical: picture + properties on the left, the question box on the right, same height.
+            // It is centred on the container but kept near the middle of the view; its tail points down at the container.
+            var cam = _cam != null ? _cam.position : rig.position;
+            var standAxis = Flat(sc02RayStand != null ? sc02RayStand.forward : spawnSc02.forward);
+            var axisRight = Vector3.Cross(Vector3.up, standAxis);
+            var top = TopCentre(model);
+            var rel = Vector3.Dot(top - cam, axisRight);
+            var center = top + axisRight * (Mathf.Clamp(rel, -0.5f, 0.5f) - rel);
+
+            mcqSc02.SetEmbedded(true);
+            mcqSc02.SetWorldScale(s);
+            _sc02Callout.Follower = mcqSc02.transform;
+            mcqSc02.EmbeddedResult += _sc02Callout.ShowResult;
+            yield return _sc02Callout.Open(top, center, Sc02Content.ChemChip(n + 1, inspect.Count), Sc02Content.ChemName(chem),
+                Sc02Content.ChemProps(chem), icon, s);
+
+            _sc02Placing = false;
+            yield return AskSc02(chem, n, last);
+
+            mcqSc02.EmbeddedResult -= _sc02Callout.ShowResult;
+            mcqSc02.Hide();
+            if (!last)
+            {
+                yield return _sc02Callout.Close();
+                _sc02Callout.Follower = null;
+                mcqSc02.SetEmbedded(false);
+                yield return Sc02PlaceChemical(chem); // the chemical goes to its compartment
+            }
+            else
+            {
+                yield return _sc02Callout.Close();
+                _sc02Callout.Follower = null;
+                mcqSc02.SetEmbedded(false);
+                mcqSc02.SetWorldScale(1f);
+                yield return PresentableFx.Wait(0.35f);
+            }
+        }
+
+        private PresentableMcqPanel.Question BuildSc02ChemQuestion(int chem, int n, bool last)
+        {
+            var labels = Sc02Content.QuestionOptions(chem);
+            var reasons = Sc02Content.QuestionReasons(chem);
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var k = 0; k < options.Length; k++)
+                options[k] = new PresentableMcqPanel.Option { label = labels[k], reason = reasons[k], feedback = reasons[k] };
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc02Content.QuestionHeader,
+                prompt = Sc02Content.QuestionText(chem, n + 1),
+                options = options,
+                correctIndex = 1,
+                nextLabel = Sc02Content.FinishLabel,
+                fancy = true,
+                inlineReveal = true,
+                hideNext = !last,
+                tagCorrect = Sc02Content.TagCorrect,
+                tagWrong = Sc02Content.TagWrong,
+                holdNext = last ? (System.Func<bool>)(() => _sc02Placing) : null
+            };
+        }
+
+        // One question: shuffled, marked, the answer revealed on the rows with a reason under each option. Questions 1-5 carry on by
+        // themselves after the reading time; question 6 waits for NEXT (and for the chemical to reach its compartment).
+        private IEnumerator AskSc02(int chem, int n, bool last)
+        {
+            var panel = mcqSc02;
+            var q = BuildSc02ChemQuestion(chem, n, last);
+            var questionId = "SC02.Q" + (n + 1);
+            var order = ShuffleOptions(q, questionId);
+            q.sourceOrder = order;
+            var shown = new List<OptionPair>();
+            for (var i = 0; i < q.options.Length; i++)
+                shown.Add(new OptionPair { key = ((char)('A' + i)).ToString(), text = OptionText(q.options[i].label), optionId = order[i].ToString() });
+            SessionResults.OpenQuestion(questionId, q.prompt, shown, ((char)('A' + q.correctIndex)).ToString());
+
+            var revealed = false;
+            var nextPressed = false;
+            void OnAnswered(int index, bool correct)
+            {
+                SessionResults.RecordTry(((char)('A' + index)).ToString(), correct);
+                StopVoice();
+                if (last)
+                    StartCoroutine(Sc02PlaceChemical(chem)); // question 6: the chemical moves while the reasons are read, NEXT follows
+            }
+
+            void OnPopupShown(bool correct)
+            {
+                if (_answerVoice != null)
+                    StopCoroutine(_answerVoice);
+                _answerVoice = StartCoroutine(Sc02AnswerVoice(correct, last));
+            }
+
+            void OnRevealed(bool correct) => revealed = true;
+            void OnNext() => nextPressed = true;
+
+            panel.Answered += OnAnswered;
+            panel.PopupShown += OnPopupShown;
+            panel.Revealed += OnRevealed;
+            panel.NextPressed += OnNext;
+            panel.Show(q);
+            if (last)
+            {
+                while (!nextPressed)
+                    yield return null;
+            }
+            else
+            {
+                while (!revealed)
+                    yield return null;
+                yield return PresentableFx.Wait(sc02ReadSeconds);
+            }
+
+            panel.Answered -= OnAnswered;
+            panel.PopupShown -= OnPopupShown;
+            panel.Revealed -= OnRevealed;
+            panel.NextPressed -= OnNext;
+            if (_answerVoice != null)
+                StopCoroutine(_answerVoice);
+            StopVoice();
+        }
+
+        private IEnumerator Sc02AnswerVoice(bool correct, bool last)
+        {
+            yield return PresentableFx.Wait(0.25f);
+            StopVoice();
+            if (!last)
+            {
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                yield break;
+            }
+
+            if (!correct)
+            {
+                yield return PlayVoice(Loc.IsBangla ? art.voSc02WrongNextBn : art.voSc02WrongNextEn);
+                yield break;
+            }
+
+            yield return PlayVoice(art.voCorrect);
+            yield return PresentableFx.Wait(1f);
+            yield return PlayVoice(Loc.IsBangla ? art.voSc02CompleteBn : art.voSc02CompleteEn);
+        }
+
+        // The chemical is picked up and goes into its compartment (door opens, container flies in, door closes).
+        private IEnumerator Sc02PlaceChemical(int chem)
+        {
+            _sc02Placing = true;
+            inspect.ReturnAll();
+            inspect.SetShowCardOnPick(false);
+            inspect.SetInteractable(true);
+            var poke = inspect.PokeOf(chem);
+            if (poke != null)
+                poke.RayFire();
+            var wait = 0f;
+            while (!inspect.HasHeld && wait < 3f)
+            {
+                wait += Time.deltaTime;
+                yield return null;
+            }
+
+            if (inspect.HasHeld)
+                yield return placement.AutoPlace(placement.CompartmentOf(chem));
+            inspect.SetInteractable(false);
+            _sc02Placing = false;
+        }
 
         private IEnumerator RunSc02RayFlow()
         {

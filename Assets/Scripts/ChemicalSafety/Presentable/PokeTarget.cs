@@ -20,6 +20,18 @@ namespace ChemicalSafety.Presentable
 
         public bool Interactable { get; set; }
 
+        /// <summary>Colliders of this prop (the controller ray tests them).</summary>
+        public Collider[] Colliders => _cols;
+
+        /// <summary>Controller-ray press (ControllerRayPointer): same event as a fingertip poke.</summary>
+        public void RayFire()
+        {
+            if (!Interactable)
+                return;
+            PresentableFx.Haptic(true, 0.55f, 0.07f);
+            Fire(false);
+        }
+
         private void Awake()
         {
             _cols = GetComponentsInChildren<Collider>(true);
@@ -31,7 +43,7 @@ namespace ChemicalSafety.Presentable
                 return;
 
             var hand = GlovedHandPose.Right;
-            if (hand != null && hand.HasTip)
+            if (hand != null && hand.HasTip && !PresentableInput.RayActive)
             {
                 var tipPos = hand.TipPosition;
                 var inside = false;

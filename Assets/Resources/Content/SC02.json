@@ -40,6 +40,151 @@
    "key": "FinishLabel",
    "en": "NEXT",
    "bn": "নেক্সট"
+  },
+  {
+   "key": "DecisionTitle",
+   "en": "TAKE DECISION",
+   "bn": "সিদ্ধান্ত নিন"
+  },
+  {
+   "key": "DecisionBody",
+   "en": "Inspect the containers to read their hazards, or continue when you are ready to store them.",
+   "bn": "বিপদের তথ্য দেখতে কন্টেইনারগুলো পরিদর্শন করুন, অথবা রাখতে প্রস্তুত হলে কন্টিনিউ চাপুন।"
+  },
+  {
+   "key": "InspectionButton",
+   "en": "INSPECTION",
+   "bn": "ইন্সপেকশন"
+  },
+  {
+   "key": "ContinueButton",
+   "en": "CONTINUE",
+   "bn": "কন্টিনিউ"
+  },
+  {
+   "key": "PickContainerHint",
+   "en": "Select the container you want to store.",
+   "bn": "যে কন্টেইনারটি রাখতে চান সেটি নির্বাচন করুন।"
+  },
+  {
+   "key": "InspectHint",
+   "en": "Select a container to read its properties. Close it, then inspect the next one.",
+   "bn": "বৈশিষ্ট্য দেখতে একটি কন্টেইনার নির্বাচন করুন। বন্ধ করে পরেরটি দেখুন।"
+  },
+  {
+   "key": "DestTitle",
+   "en": "WHERE DO YOU STORE IT?",
+   "bn": "এটি কোথায় রাখবেন?"
+  },
+  {
+   "key": "DestTitleWrong",
+   "en": "WRONG COMPARTMENT - TRY AGAIN",
+   "bn": "ভুল কম্পার্টমেন্ট - আবার চেষ্টা করুন"
+  },
+  {
+   "key": "QuestionFormat",
+   "en": "Question 2.{0}: {1}. {2}",
+   "bn": "প্রশ্ন ২.{0}: {1}। {2}"
+  },
+  {
+   "key": "TagCorrect",
+   "en": "CORRECT",
+   "bn": "সঠিক"
+  },
+  {
+   "key": "TagWrong",
+   "en": "WRONG",
+   "bn": "ভুল"
+  },
+  {
+   "key": "C0Name",
+   "en": "FLAMMABLE SOLVENT (Isopropanol)",
+   "bn": "দাহ্য দ্রাবক (আইসোপ্রোপানল)"
+  },
+  {
+   "key": "Q0Title",
+   "en": "Flammable Solvent Placement",
+   "bn": "দাহ্য দ্রাবক রাখার স্থান"
+  },
+  {
+   "key": "Q0Ask",
+   "en": "Where does the flammable solvent drum go?",
+   "bn": "দাহ্য দ্রাবকের ড্রামটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "C1Name",
+   "en": "OXIDIZER (Hydrogen peroxide)",
+   "bn": "অক্সিডাইজার (হাইড্রোজেন পারক্সাইড)"
+  },
+  {
+   "key": "Q1Title",
+   "en": "Oxidizer Placement",
+   "bn": "অক্সিডাইজার রাখার স্থান"
+  },
+  {
+   "key": "Q1Ask",
+   "en": "Where does the oxidizer go?",
+   "bn": "অক্সিডাইজারটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "C2Name",
+   "en": "ACID (Sulfuric acid)",
+   "bn": "অ্যাসিড (সালফিউরিক অ্যাসিড)"
+  },
+  {
+   "key": "Q2Title",
+   "en": "Acid Placement",
+   "bn": "অ্যাসিড রাখার স্থান"
+  },
+  {
+   "key": "Q2Ask",
+   "en": "Where does the acid go?",
+   "bn": "অ্যাসিডটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "C3Name",
+   "en": "GENERAL CLEANER",
+   "bn": "সাধারণ ক্লিনার"
+  },
+  {
+   "key": "Q3Title",
+   "en": "General Cleaner Placement",
+   "bn": "সাধারণ ক্লিনার রাখার স্থান"
+  },
+  {
+   "key": "Q3Ask",
+   "en": "Where does the cleaner canister go?",
+   "bn": "ক্লিনারের ক্যানিস্টারটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "C4Name",
+   "en": "REACTIVE METAL (Magnesium powder)",
+   "bn": "বিক্রিয়াশীল ধাতু (ম্যাগনেসিয়াম পাউডার)"
+  },
+  {
+   "key": "Q4Title",
+   "en": "Reactive Metal Placement",
+   "bn": "বিক্রিয়াশীল ধাতু রাখার স্থান"
+  },
+  {
+   "key": "Q4Ask",
+   "en": "Where does the reactive metal go?",
+   "bn": "বিক্রিয়াশীল ধাতুর জারটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "C5Name",
+   "en": "SANITIZER SPRAY",
+   "bn": "স্যানিটাইজার স্প্রে"
+  },
+  {
+   "key": "Q5Title",
+   "en": "Sanitizer Spray Placement",
+   "bn": "স্যানিটাইজার স্প্রে রাখার স্থান"
+  },
+  {
+   "key": "Q5Ask",
+   "en": "Where does the spray bottle go?",
+   "bn": "স্প্রে বোতলটি কোথায় রাখা হবে?"
   }
  ],
  "arrays": [
@@ -71,6 +216,279 @@
     "সর্বোত্তম পদ্ধতি। দাহ্য পদার্থ ফায়ার-রেটেড ক্যাবিনেটে থাকে, অক্সিডাইজার ও অ্যাসিড থেকে আলাদা। এটি সামঞ্জস্য চার্টের সাথে মেলে।",
     "বিপজ্জনক দাহ্য দ্রাবকের জন্য সাধারণ সংরক্ষণ অনুমোদিত নয়।",
     "নাগালের মধ্যে হলেও দাহ্য দ্রাবকের জন্য ওয়াটার স্টেশন ভুল জায়গা।"
+   ]
+  },
+  {
+   "key": "Compartments",
+   "en": [
+    "Flammables",
+    "Oxidizers",
+    "Acids",
+    "General Storage"
+   ],
+   "bn": [
+    "দাহ্য পদার্থ",
+    "অক্সিডাইজার",
+    "অ্যাসিড",
+    "সাধারণ সংরক্ষণ"
+   ]
+  },
+  {
+   "key": "C0Props",
+   "en": [
+    "Highly flammable liquid, flash point about 12 °C",
+    "Vapours ignite from heat, sparks or static",
+    "Fire risk rises near oxidizers"
+   ],
+   "bn": [
+    "অত্যন্ত দাহ্য তরল, ফ্ল্যাশ পয়েন্ট প্রায় ১২ °সে.",
+    "তাপ, স্ফুলিঙ্গ বা স্থির বিদ্যুতে বাষ্প জ্বলে ওঠে",
+    "অক্সিডাইজারের কাছে আগুনের ঝুঁকি বাড়ে"
+   ]
+  },
+  {
+   "key": "Q0Options",
+   "en": [
+    "With the oxidizers",
+    "In the flammable-rated compartment, away from oxidizers and acids",
+    "With the acids",
+    "In any open compartment"
+   ],
+   "bn": [
+    "অক্সিডাইজারের সাথে",
+    "দাহ্য-রেটেড কম্পার্টমেন্টে, অক্সিডাইজার ও অ্যাসিড থেকে দূরে",
+    "অ্যাসিডের সাথে",
+    "যেকোনো খোলা কম্পার্টমেন্টে"
+   ]
+  },
+  {
+   "key": "Q0Reasons",
+   "en": [
+    "Flammable + oxidizer = immediate fire/explosion risk. Never co-store.",
+    "Matches compatibility chart. Flammables stored separately with fire-rated shelving.",
+    "Acid + flammable solvent = potential ignition on contact and toxic gas.",
+    "Ignoring segregation defeats the entire storage system."
+   ],
+   "bn": [
+    "দাহ্য + অক্সিডাইজার = তাৎক্ষণিক আগুন/বিস্ফোরণের ঝুঁকি। কখনো একসাথে রাখবেন না।",
+    "সামঞ্জস্য চার্টের সাথে মেলে। দাহ্য পদার্থ ফায়ার-রেটেড তাকে আলাদা রাখা হয়।",
+    "অ্যাসিড + দাহ্য দ্রাবক = স্পর্শেই জ্বলে ওঠার ও বিষাক্ত গ্যাসের ঝুঁকি।",
+    "পৃথকীকরণ না মানলে পুরো সংরক্ষণ ব্যবস্থাই অর্থহীন হয়ে যায়।"
+   ]
+  },
+  {
+   "key": "C1Props",
+   "en": [
+    "Strong oxidizer: supplies oxygen to a fire",
+    "Can ignite wood, paper and oils on contact",
+    "Decomposes when hot or contaminated"
+   ],
+   "bn": [
+    "শক্তিশালী অক্সিডাইজার: আগুনে অক্সিজেন জোগায়",
+    "স্পর্শে কাঠ, কাগজ ও তেল জ্বালিয়ে দিতে পারে",
+    "গরম বা দূষিত হলে ভেঙে যায়"
+   ]
+  },
+  {
+   "key": "Q1Options",
+   "en": [
+    "Next to the flammable solvents",
+    "In the oxidizers compartment, away from flammables and combustibles",
+    "On the open shelf beside paper and wooden pallets",
+    "With the general cleaners, to save space"
+   ],
+   "bn": [
+    "দাহ্য দ্রাবকের পাশে",
+    "অক্সিডাইজার কম্পার্টমেন্টে, দাহ্য ও জ্বলনযোগ্য বস্তু থেকে দূরে",
+    "কাগজ ও কাঠের প্যালেটের পাশের খোলা তাকে",
+    "জায়গা বাঁচাতে সাধারণ ক্লিনারের সাথে"
+   ]
+  },
+  {
+   "key": "Q1Reasons",
+   "en": [
+    "An oxidizer feeds a fire: a leak beside fuel can ignite or explode.",
+    "Oxidizers are kept apart, cool and in their original container, away from anything that can burn.",
+    "Combustible material can ignite on contact with an oxidizer leak.",
+    "Space is never a reason to break segregation: cleaners can react with oxidizers."
+   ],
+   "bn": [
+    "অক্সিডাইজার আগুনে ইন্ধন জোগায়: জ্বালানির পাশে লিক হলে আগুন বা বিস্ফোরণ হতে পারে।",
+    "অক্সিডাইজার আলাদা, ঠান্ডা জায়গায় নিজের কন্টেইনারে রাখা হয়, যা পুড়তে পারে তা থেকে দূরে।",
+    "অক্সিডাইজার লিক হলে জ্বলনযোগ্য বস্তুতে আগুন ধরতে পারে।",
+    "জায়গার অভাবে পৃথকীকরণ ভাঙা যায় না: ক্লিনার অক্সিডাইজারের সাথে বিক্রিয়া করতে পারে।"
+   ]
+  },
+  {
+   "key": "C2Props",
+   "en": [
+    "Corrosive: burns skin, eyes and metals",
+    "Reacts violently with bases and water",
+    "Releases heat and fumes with many chemicals"
+   ],
+   "bn": [
+    "ক্ষয়কারী: ত্বক, চোখ ও ধাতু পোড়ায়",
+    "ক্ষার ও পানির সাথে তীব্র বিক্রিয়া করে",
+    "অনেক রাসায়নিকের সাথে তাপ ও ধোঁয়া ছাড়ে"
+   ]
+  },
+  {
+   "key": "Q2Options",
+   "en": [
+    "With the caustic soda (alkali)",
+    "In the acids compartment, away from bases, flammables and oxidizers",
+    "With the oxidizers",
+    "On the top shelf, above eye level"
+   ],
+   "bn": [
+    "কস্টিক সোডার (ক্ষার) সাথে",
+    "অ্যাসিড কম্পার্টমেন্টে, ক্ষার, দাহ্য ও অক্সিডাইজার থেকে দূরে",
+    "অক্সিডাইজারের সাথে",
+    "চোখের উচ্চতার ওপরে, সবচেয়ে উঁচু তাকে"
+   ]
+  },
+  {
+   "key": "Q2Reasons",
+   "en": [
+    "Acid + base = violent exothermic neutralisation. Must be separated.",
+    "Corrosives go in a dedicated, acid-resistant compartment apart from incompatibles.",
+    "Strong acids and oxidizers can release toxic gas and heat. Segregate them.",
+    "A dropped corrosive splashes the face: acids are stored low, in a tray."
+   ],
+   "bn": [
+    "অ্যাসিড + ক্ষার = তীব্র তাপ-উৎপাদী নিষ্ক্রিয়করণ। অবশ্যই আলাদা রাখতে হবে।",
+    "ক্ষয়কারী পদার্থ অসামঞ্জস্যপূর্ণ বস্তু থেকে দূরে, অ্যাসিড-সহনীয় আলাদা কম্পার্টমেন্টে রাখা হয়।",
+    "শক্তিশালী অ্যাসিড ও অক্সিডাইজার বিষাক্ত গ্যাস ও তাপ ছাড়তে পারে। আলাদা রাখুন।",
+    "ক্ষয়কারী পদার্থ পড়ে গেলে মুখে ছিটকে লাগে: অ্যাসিড নিচে, ট্রের মধ্যে রাখা হয়।"
+   ]
+  },
+  {
+   "key": "C3Props",
+   "en": [
+    "Surface cleaner: low hazard",
+    "Eye irritant: avoid splashes",
+    "Never mix with acids or bleach"
+   ],
+   "bn": [
+    "পৃষ্ঠ পরিষ্কারক: কম ঝুঁকি",
+    "চোখে জ্বালা করে: ছিটকে লাগা এড়ান",
+    "অ্যাসিড বা ব্লিচের সাথে কখনো মেশাবেন না"
+   ]
+  },
+  {
+   "key": "Q3Options",
+   "en": [
+    "In the flammables compartment",
+    "In general storage, capped, labelled and below eye level",
+    "Inside the acids compartment",
+    "In the oxidizers compartment"
+   ],
+   "bn": [
+    "দাহ্য পদার্থের কম্পার্টমেন্টে",
+    "সাধারণ সংরক্ষণে, ঢাকনা আটকে, লেবেলসহ ও চোখের নিচের উচ্চতায়",
+    "অ্যাসিড কম্পার্টমেন্টের ভেতরে",
+    "অক্সিডাইজার কম্পার্টমেন্টে"
+   ]
+  },
+  {
+   "key": "Q3Reasons",
+   "en": [
+    "Not a flammable: it takes up fire-rated space the solvents need.",
+    "Low-hazard cleaner is compatible with general storage when it is capped and labelled.",
+    "Cleaner mixed with acid spills can release harmful fumes. Keep it out of the acid area.",
+    "That compartment is only for oxidizers: unrelated products add unnecessary reaction risk."
+   ],
+   "bn": [
+    "এটি দাহ্য নয়: দ্রাবকের জন্য দরকারি ফায়ার-রেটেড জায়গা নষ্ট হয়।",
+    "কম ঝুঁকির ক্লিনার ঢাকনা আটকে ও লেবেলসহ সাধারণ সংরক্ষণে রাখা নিরাপদ।",
+    "অ্যাসিড ছিটকে ক্লিনারের সাথে মিশলে ক্ষতিকর ধোঁয়া হতে পারে। অ্যাসিড এলাকা থেকে দূরে রাখুন।",
+    "ওই কম্পার্টমেন্ট শুধু অক্সিডাইজারের জন্য: অন্য পণ্য রাখলে অকারণে বিক্রিয়ার ঝুঁকি বাড়ে।"
+   ]
+  },
+  {
+   "key": "C4Props",
+   "en": [
+    "Flammable solid: fine dust ignites easily",
+    "Reacts with water and acids, releasing hydrogen",
+    "Must be kept dry"
+   ],
+   "bn": [
+    "দাহ্য কঠিন পদার্থ: সূক্ষ্ম গুঁড়ো সহজে জ্বলে",
+    "পানি ও অ্যাসিডের সাথে বিক্রিয়ায় হাইড্রোজেন ছাড়ে",
+    "অবশ্যই শুকনো রাখতে হবে"
+   ]
+  },
+  {
+   "key": "Q4Options",
+   "en": [
+    "Next to the acids",
+    "On a dry shelf in general storage, away from water and acids",
+    "With the oxidizers",
+    "Near the water station"
+   ],
+   "bn": [
+    "অ্যাসিডের পাশে",
+    "সাধারণ সংরক্ষণের শুকনো তাকে, পানি ও অ্যাসিড থেকে দূরে",
+    "অক্সিডাইজারের সাথে",
+    "ওয়াটার স্টেশনের কাছে"
+   ]
+  },
+  {
+   "key": "Q4Reasons",
+   "en": [
+    "Reactive metal + acid releases flammable hydrogen gas.",
+    "Water-reactive materials are kept dry and apart from acids, in a sealed container.",
+    "Oxidizer + reactive metal powder = fire and explosion hazard.",
+    "Water contact can make magnesium ignite or release hydrogen."
+   ],
+   "bn": [
+    "বিক্রিয়াশীল ধাতু + অ্যাসিড = দাহ্য হাইড্রোজেন গ্যাস তৈরি হয়।",
+    "পানি-বিক্রিয়াশীল পদার্থ সিল করা কন্টেইনারে শুকনো ও অ্যাসিড থেকে আলাদা রাখা হয়।",
+    "অক্সিডাইজার + বিক্রিয়াশীল ধাতুর গুঁড়ো = আগুন ও বিস্ফোরণের ঝুঁকি।",
+    "পানির সংস্পর্শে ম্যাগনেসিয়াম জ্বলে উঠতে বা হাইড্রোজেন ছাড়তে পারে।"
+   ]
+  },
+  {
+   "key": "C5Props",
+   "en": [
+    "Surface sanitizer in a spray bottle",
+    "Irritant: avoid eyes and skin",
+    "Do not mix with other cleaners"
+   ],
+   "bn": [
+    "স্প্রে বোতলে পৃষ্ঠ স্যানিটাইজার",
+    "জ্বালাকর: চোখ ও ত্বক এড়িয়ে চলুন",
+    "অন্য ক্লিনারের সাথে মেশাবেন না"
+   ]
+  },
+  {
+   "key": "Q5Options",
+   "en": [
+    "With the flammable solvents",
+    "In general storage, upright with the nozzle capped",
+    "Mixed into one bin with other cleaners",
+    "With the acids"
+   ],
+   "bn": [
+    "দাহ্য দ্রাবকের সাথে",
+    "সাধারণ সংরক্ষণে, সোজা করে নজল বন্ধ রেখে",
+    "অন্য ক্লিনারের সাথে একই বিনে মিশিয়ে",
+    "অ্যাসিডের সাথে"
+   ]
+  },
+  {
+   "key": "Q5Reasons",
+   "en": [
+    "A sanitizer is not a flammable liquid: do not crowd fire-rated space.",
+    "Low-hazard irritant: keep it upright, closed and separate from other chemicals.",
+    "Never mix cleaners: some combinations give off toxic gas.",
+    "Sanitizer residue can react with acid spills. Keep it away from the acids."
+   ],
+   "bn": [
+    "স্যানিটাইজার দাহ্য তরল নয়: ফায়ার-রেটেড জায়গা ভিড় করবেন না।",
+    "কম ঝুঁকির জ্বালাকর পণ্য: সোজা, বন্ধ এবং অন্য রাসায়নিক থেকে আলাদা রাখুন।",
+    "ক্লিনার কখনো মেশাবেন না: কিছু মিশ্রণ বিষাক্ত গ্যাস ছাড়ে।",
+    "স্যানিটাইজারের অবশিষ্টাংশ অ্যাসিডের সাথে বিক্রিয়া করতে পারে। অ্যাসিড থেকে দূরে রাখুন।"
    ]
   }
  ],

@@ -20,6 +20,9 @@ namespace ChemicalSafety.Presentable
         private Image _bangla;
         private TextMeshProUGUI _english;
         private Coroutine _fade;
+        private Transform _dock;
+        private System.Func<float> _dockDrop;
+        private float _dockScale = 1f;
 
         private void Awake()
         {
@@ -57,8 +60,17 @@ namespace ChemicalSafety.Presentable
             transform.rotation = Quaternion.Slerp(transform.rotation, rot, k);
         }
 
+        /// <summary>Subtitles are hidden for now in Scenario 1 and 2 (user request). Set to false to bring them back.</summary>
+        public static bool HiddenInScenarios1And2 = true;
+
         public void Show(Sprite bangla, string english, float seconds = 0f)
         {
+            if (HiddenInScenarios1And2 && (PresentableInput.ActiveScenario == 1 || PresentableInput.ActiveScenario == 2))
+            {
+                StartFade(0f, 0.01f, 0f);
+                return;
+            }
+
             // English mode: English line only. Bangla mode: the Bangla image only; a line that has no image falls back to the
             // text (BnTmp shows the Bangla translation of an English line).
             if (!ChemicalSafety.Localization.Loc.IsBangla)
@@ -93,6 +105,21 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Lowers / raises the subtitle bar (kept clear of the Instructions panel while it is open).</summary>
         public void SetHeightOffset(float offset) => heightOffset = offset;
+
+        /// <summary>
+        /// Controller-ray scenario: the bar is pinned to a panel (it does not follow the head) at a vertical distance from the
+        /// panel centre in metres (negative = below, positive = above), so it never sits inside the panel frame.
+        /// Pass null to return to the normal head-follow bar.
+        /// </summary>
+        public void Dock(Transform anchor, System.Func<float> verticalOffset, float scale)
+        {
+            _dock = anchor;
+            _dockDrop = verticalOffset;
+            _dockScale = _dock != null ? scale : 1f;
+            transform.localScale = Vector3.one * _dockScale;
+            if (_dock != null)
+                SnapToView();
+        }
 
         public bool IsVisible => _group != null && _group.alpha > 0.05f;
 
@@ -131,6 +158,13 @@ namespace ChemicalSafety.Presentable
 
         private void Target(out Vector3 pos, out Quaternion rot)
         {
+            if (_dock != null)
+            {
+                pos = _dock.position + Vector3.up * (_dockDrop != null ? _dockDrop() : -0.5f);
+                rot = _dock.rotation;
+                return;
+            }
+
             var fwd = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
             if (fwd.sqrMagnitude < 0.001f)
                 fwd = Vector3.forward;

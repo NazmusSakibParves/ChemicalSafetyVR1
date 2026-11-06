@@ -44,6 +44,8 @@ namespace ChemicalSafety.Presentable
             public bool fancy;
             [Tooltip("Scenario 1: no result popup. The answer is marked on the rows (green tick + border on the right one, red cross on a wrong pick) with a one-line reason under every option, then NEXT. A wrong answer also goes on to NEXT (no retry).")]
             public bool inlineReveal;
+            [Tooltip("inlineReveal: no NEXT button after the reveal; the director carries on by itself (Revealed event). Scenario 2, questions 1-5.")]
+            public bool hideNext;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -124,6 +126,25 @@ namespace ChemicalSafety.Presentable
         public event Action<int, bool> Answered;
         public event Action NextPressed;
 
+        /// <summary>inlineReveal with hideNext: the answer is marked on the rows and the reasons are up (isCorrect).</summary>
+        public event Action<bool> Revealed;
+
+        /// <summary>Embedded in a callout (Scenario 2): the answer was given; the callout, not this panel, takes the result colour.</summary>
+        public event Action<bool> EmbeddedResult;
+
+        private bool _embedded;
+
+        /// <summary>
+        /// Embedded: the panel draws no frame and no dark plate of its own (the callout around it is the frame) and its own box
+        /// effects are off, so the question sits on the right half of the callout.
+        /// </summary>
+        public void SetEmbedded(bool on)
+        {
+            _embedded = on;
+            if (_fx != null)
+                _fx.Embedded = on;
+        }
+
         /// <summary>Raised when the red card is closed with its X and the question is open for a retry.</summary>
         public event Action WrongClosed;
 
@@ -198,6 +219,7 @@ namespace ChemicalSafety.Presentable
             if (question.fancy)
             {
                 _fx = oldFx != null ? oldFx : gameObject.AddComponent<Sc06McqFx>();
+                _fx.Embedded = _embedded;
                 _fx.Attach(this);
             }
             else if (oldFx != null)
@@ -386,8 +408,16 @@ namespace ChemicalSafety.Presentable
             PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
             PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
             _header.color = Color.white;
-            if (_fx != null)
+            if (_embedded)
+            {
+                if (_fx != null)
+                    _fx.OnResult(correct, index, true, true);
+                EmbeddedResult?.Invoke(correct);
+            }
+            else if (_fx != null)
+            {
                 _fx.OnResult(correct, index, true);
+            }
             LayoutReveal();
 
             var rightIdx = Mathf.Clamp(_question.correctIndex, 0, _rows.Count - 1);
@@ -429,6 +459,13 @@ namespace ChemicalSafety.Presentable
             // right answer: the drum goes onto the trolley first (the director holds NEXT until that has finished)
             while (_question.holdNext != null && _question.holdNext())
                 yield return null;
+            if (_question.hideNext)
+            {
+                PopupShown?.Invoke(correct);
+                Revealed?.Invoke(correct);
+                yield break;
+            }
+
             _inlineNextLabel.text = _question.nextLabel;
             PopupShown?.Invoke(correct);
             yield return PopupIn(_inlineNext);
@@ -479,9 +516,9 @@ namespace ChemicalSafety.Presentable
         private void SetQuestionChrome(bool visible)
         {
             if (_frame != null)
-                _frame.gameObject.SetActive(visible);
+                _frame.gameObject.SetActive(visible && !_embedded);
             if (_readPlate != null)
-                _readPlate.gameObject.SetActive(visible);
+                _readPlate.gameObject.SetActive(visible && !_embedded);
             if (_header != null)
                 _header.gameObject.SetActive(visible);
             if (_prompt != null)

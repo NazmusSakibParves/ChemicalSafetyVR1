@@ -157,9 +157,14 @@ namespace ChemicalSafety.Presentable
 
         // ------------------------------------------------------------------ results
 
-        public void OnResult(bool correct, int index, bool wholeBox = false)
+        /// <summary>Embedded in a callout (Scenario 2): no frame effects of its own, the callout carries them.</summary>
+        public bool Embedded { get; set; }
+
+        public void OnResult(bool correct, int index, bool wholeBox = false, bool embedded = false)
         {
             SetRowDecor(false); // rows may stay on screen (Scenario 1 reveal): no glow or chevron left frozen on them
+            if (embedded)
+                return;
             if (wholeBox)
             {
                 // Scenario 1: the rows stay, the whole box takes the result colour (emerald / ruby) with a glossy sheen
@@ -406,6 +411,16 @@ namespace ChemicalSafety.Presentable
             {
                 for (var i = 0; i < _chevrons.Count; i++)
                     _chevrons[i].color = new Color(0.55f, 0.95f, 1f, 0f);
+            }
+
+            if (Embedded)
+            {
+                // Scenario 2: the callout round the box has the light and the sheen; only the rows keep their own life
+                foreach (var c in _comet)
+                    c.gameObject.SetActive(false);
+                _scan.gameObject.SetActive(false);
+                _sheen.gameObject.SetActive(false);
+                return;
             }
 
             UpdateComet();

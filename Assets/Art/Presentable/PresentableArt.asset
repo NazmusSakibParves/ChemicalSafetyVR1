@@ -114,6 +114,16 @@ MonoBehaviour:
   voSc01CompleteEn: {fileID: 8300000, guid: f32af67cb14814648b74f202a99fc5d2, type: 3}
   voSc01WrongNextBn: {fileID: 8300000, guid: 2baf4d5c1b4829243b41085f72832e23, type: 3}
   voSc01WrongNextEn: {fileID: 8300000, guid: 91e8f78a92cc9e148a03655def16b8aa, type: 3}
+  voAnswerWrongSee: {fileID: 8300000, guid: b1724c301bab0084a818920ff0bb993d, type: 3}
+  voSc02WrongNextBn: {fileID: 8300000, guid: 4df5bb48517607044b37b48e409b39ac, type: 3}
+  voSc02WrongNextEn: {fileID: 8300000, guid: eddeda35e8097d245b313e2e422adbca, type: 3}
+  sc02ChemIcons:
+  - {fileID: 5384863988372700972, guid: 6a35c8072eaf34241980dff0b07b221b, type: 3}
+  - {fileID: 925556955474847729, guid: 332ce893edb4b6f4cae2c46e020f5ce4, type: 3}
+  - {fileID: -1424258146441663564, guid: 43cebf0f82462534e9b80a4a26e383cf, type: 3}
+  - {fileID: -7763189286893258322, guid: a3ed54d13b0e98d4f83d29ddef1f9d85, type: 3}
+  - {fileID: -6665381298302559031, guid: 77df9074d1d7caf4ba7c554fcbe0afcb, type: 3}
+  - {fileID: 312913632390642000, guid: dace596d846bec34bbd8c05309eba3c0, type: 3}
   voSc02Instruction: {fileID: 8300000, guid: 632f7303f04d88f4e831a9d93c4535de, type: 3}
   voSc02CompleteBn: {fileID: 8300000, guid: 47f60c82f25e3e040928c9757e1845c9, type: 3}
   voSc02PlaceHint: {fileID: 8300000, guid: e3a2e91636e125947bade95b01b10dc4, type: 3}
