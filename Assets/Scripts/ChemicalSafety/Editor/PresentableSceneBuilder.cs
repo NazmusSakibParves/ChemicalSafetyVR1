@@ -252,6 +252,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("spawnSc03").objectReferenceValue = sc3.spawn;
             so.FindProperty("sc03InspectStand").objectReferenceValue = sc3.stand;
             so.FindProperty("sc03ScanStand").objectReferenceValue = sc3.scanStand;
+            so.FindProperty("sc03RayStand").objectReferenceValue = sc3.rayStand;
             so.FindProperty("sc03Inspect").objectReferenceValue = sc3.inspect;
             so.FindProperty("sc03Detonation").objectReferenceValue = sc3.detonation;
             so.FindProperty("mcqSc03").objectReferenceValue = mcq3;
@@ -712,6 +713,9 @@ namespace ChemicalSafety.Editor
             art.voAnswerWrongSee = V("VO_AnswerWrongSee_bn.mp3") ?? art.voAnswerWrongSee;
             art.voSc02WrongNextBn = V("VO_Sc02WrongNext_bn.mp3") ?? art.voSc02WrongNextBn;
             art.voSc02WrongNextEn = V("VO_Sc02WrongNext_en.mp3") ?? art.voSc02WrongNextEn;
+            art.voSc03WrongNextBn = V("VO_Sc03WrongNext_bn.mp3") ?? art.voSc03WrongNextBn;
+            art.voSc03WrongNextEn = V("VO_Sc03WrongNext_en.mp3") ?? art.voSc03WrongNextEn;
+            art.voSc03Protocol = V("VO_Sc03Protocol_bn.mp3") ?? art.voSc03Protocol;
             var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
             if (sc02Hint != null)
                 art.voSc02PlaceHint = sc02Hint;

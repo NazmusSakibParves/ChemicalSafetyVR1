@@ -97,6 +97,10 @@ CLIPS = {
     "VO_AnswerWrongSee_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন।"),
     "VO_Sc02WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[3]),
     "VO_Sc02WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario three."),
+    # Scenario 3 on the ray: wrong answer (reasons + NEXT), and the narration of the emergency protocol (right answer)
+    "VO_Sc03WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[4]),
+    "VO_Sc03WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario four."),
+    "VO_Sc03Protocol_bn": (BN_VOICE, "নষ্ট হলে জরুরি পদক্ষেপ: ড্রাম খুলবেন না। এলাকা খালি করুন। সুপারভাইজারকে জানান। বিশেষজ্ঞ নিষ্পত্তি দলকে ডাকুন।"),
     "VO_Sc02Complete_bn": (BN_VOICE, complete_bn(2)),
     "VO_Sc02Complete_en": (EN_VOICE, complete_en(2)),
     "VO_Sc03Complete_bn": (BN_VOICE, complete_bn(3)),
@@ -306,6 +310,7 @@ CLIPS_EN = {
     "VO_Wrong": "Wrong selection. Try again.",
     "VO_Correct": "Correct. Excellent! You have selected the correct answer.",
     "VO_AnswerWrongSee": "Wrong answer. Read the reason for each option.",
+    "VO_Sc03Protocol": "Emergency action if degraded: do not open the drum. Evacuate the area. Notify the supervisor. Contact specialist disposal.",
     "VO_SC02_Instruction": "A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
     "VO_Sc02PlaceHint": "Place the chemical in the correct compartment for its type.",
     "VO_Sc02Decision": "Take decision. Inspect the containers to read their hazards, or click Continue when you are ready to store them.",

@@ -44,5 +44,17 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionWrongTitle => Loc.A("SC03", "OptionWrongTitle");
 
         public static string ModuleComplete => Loc.T("SC03", "ModuleComplete");
+
+        // ---- inline-reveal question (ray flow): a reason under every option
+        public static string TagCorrect => Loc.T("SC03", "TagCorrect");
+        public static string TagWrong => Loc.T("SC03", "TagWrong");
+        public static string[] OptionReasons => Loc.A("SC03", "OptionReasons");
+
+        // ---- emergency response protocol animation (right answer), from the SDS line "Emergency action if degraded"
+        public static string ProtocolHeader => Loc.T("SC03", "ProtocolHeader");
+        public static string ProtocolSource => Loc.T("SC03", "ProtocolSource");
+        public static string ProtocolDone => Loc.T("SC03", "ProtocolDone");
+        public static string[] ProtocolTitles => Loc.A("SC03", "ProtocolTitles");
+        public static string[] ProtocolLines => Loc.A("SC03", "ProtocolLines");
     }
 }

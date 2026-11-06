@@ -70,6 +70,9 @@ namespace ChemicalSafety.Presentable
 
         public bool IsActive => _active || _pending;
 
+        /// <summary>The hero drum (for the Scenario 3 protocol animation).</summary>
+        public Transform Drum => drum;
+
         private void Awake()
         {
             if (origin == null)

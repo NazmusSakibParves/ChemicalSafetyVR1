@@ -60,12 +60,12 @@ namespace ChemicalSafety.Presentable
             transform.rotation = Quaternion.Slerp(transform.rotation, rot, k);
         }
 
-        /// <summary>Subtitles are hidden for now in Scenario 1 and 2 (user request). Set to false to bring them back.</summary>
+        /// <summary>Subtitles are hidden for now in Scenario 1, 2 and 3 (user request). Set to false to bring them back.</summary>
         public static bool HiddenInScenarios1And2 = true;
 
         public void Show(Sprite bangla, string english, float seconds = 0f)
         {
-            if (HiddenInScenarios1And2 && (PresentableInput.ActiveScenario == 1 || PresentableInput.ActiveScenario == 2))
+            if (HiddenInScenarios1And2 && (PresentableInput.ActiveScenario == 1 || PresentableInput.ActiveScenario == 2 || PresentableInput.ActiveScenario == 3))
             {
                 StartFade(0f, 0.01f, 0f);
                 return;

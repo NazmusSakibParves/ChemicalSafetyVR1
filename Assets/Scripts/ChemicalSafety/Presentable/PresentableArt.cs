@@ -139,6 +139,11 @@ namespace ChemicalSafety.Presentable
         [Tooltip("VO_Sc02WrongNext_bn / _en.mp3 - wrong answer on the last Scenario 2 question: reasons shown, click NEXT.")]
         public AudioClip voSc02WrongNextBn;
         public AudioClip voSc02WrongNextEn;
+        [Tooltip("VO_Sc03WrongNext_bn / _en.mp3 - wrong answer in Scenario 3 on the ray: reasons shown, click NEXT.")]
+        public AudioClip voSc03WrongNextBn;
+        public AudioClip voSc03WrongNextEn;
+        [Tooltip("VO_Sc03Protocol_bn.mp3 (+ English twin in Resources/VoEn): the emergency protocol narration of the right answer.")]
+        public AudioClip voSc03Protocol;
         [Tooltip("Scenario 2: transparent picture of each container (builder order), rendered from the 3D model at scene build.")]
         public Sprite[] sc02ChemIcons;
         public AudioClip voSc02Instruction;

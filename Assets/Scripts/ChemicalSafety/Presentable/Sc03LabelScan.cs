@@ -43,6 +43,8 @@ namespace ChemicalSafety.Presentable
         private float _nextHaptic;
         private bool _built;
         private bool _forceHand;
+        private bool _auto;
+        private float _autoSeconds = 2f;
 
         public event Action Completed;
         public bool IsArmed => _armed;
@@ -60,7 +62,22 @@ namespace ChemicalSafety.Presentable
             Place();
         }
 
-        public void Disarm() => _armed = false;
+        public void Disarm()
+        {
+            _armed = false;
+            _auto = false;
+        }
+
+        /// <summary>
+        /// Controller-ray flow: nobody has to touch and hold. The label is scanned by itself (brackets tighten, the scan line runs,
+        /// the ring fills) over <paramref name="seconds"/>, then <see cref="Completed"/> fires as usual.
+        /// </summary>
+        public void AutoScan(float seconds)
+        {
+            Arm();
+            _auto = true;
+            _autoSeconds = Mathf.Max(0.5f, seconds);
+        }
 
         /// <summary>Editor tests: follow the right glove even without a headset.</summary>
         public void ForceHandMode() => _forceHand = true;
@@ -94,7 +111,12 @@ namespace ChemicalSafety.Presentable
             var near = false;
             var touching = false;
             var hand = GlovedHandPose.Right;
-            if ((XRSettings.isDeviceActive || _forceHand) && hand != null && hand.HasTip)
+            if (_auto)
+            {
+                near = true;
+                touching = true;
+            }
+            else if ((XRSettings.isDeviceActive || _forceHand) && hand != null && hand.HasTip)
             {
                 // anchor local +z points out of the label towards the user
                 var local = labelAnchor.InverseTransformPoint(hand.PressPoint);
@@ -114,7 +136,7 @@ namespace ChemicalSafety.Presentable
             _near = near;
             _touching = touching;
 
-            _p = Mathf.Clamp01(_p + (touching ? Time.deltaTime / holdSeconds : -Time.deltaTime * 1.4f));
+            _p = Mathf.Clamp01(_p + (touching ? Time.deltaTime / (_auto ? _autoSeconds : holdSeconds) : -Time.deltaTime * 1.4f));
             if (touching && Time.unscaledTime >= _nextHaptic)
             {
                 _nextHaptic = Time.unscaledTime + 0.09f;

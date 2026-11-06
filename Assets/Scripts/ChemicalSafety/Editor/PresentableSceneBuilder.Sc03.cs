@@ -19,6 +19,7 @@ namespace ChemicalSafety.Editor
             public Transform spawn;
             public Transform stand;
             public Transform scanStand;
+            public Transform rayStand;
         }
 
         private const float Sc03Ox = 80f;
@@ -231,28 +232,28 @@ namespace ChemicalSafety.Editor
             // cobwebs: every ceiling corner and the top corners of every rack bay
             var webCorner = DecalMat("Sc03WebCorner", "Web_Corner", new Color(1f, 1f, 1f, 0.8f));
             var webFull = DecalMat("Sc03WebFull", "Web_Full", new Color(1f, 1f, 1f, 0.7f));
-            foreach (var sxc in new[] { -1f, 1f })
+            // client: only a couple of cobwebs stay (one ceiling corner and one rack-bay corner); the rest were removed
             {
+                var sxc = -1f;
                 var cx = ox + sxc * half;
                 WebCorner(props, new Vector3(cx, ceil, zBack), Vector3.forward, new Vector3(-sxc, 0f, 0f), 1.0f, webCorner);
-                WebCorner(props, new Vector3(cx, ceil, zFront), Vector3.back, new Vector3(-sxc, 0f, 0f), 1.0f, webCorner);
-                WebCorner(props, new Vector3(cx, ceil, zBack), new Vector3(-sxc, 0f, 0f), Vector3.forward, 1.0f, webCorner);
-                WebCorner(props, new Vector3(cx, ceil, zFront), new Vector3(-sxc, 0f, 0f), Vector3.back, 1.0f, webCorner);
             }
 
+            var webBay = true;
             foreach (var bay in bays)
             {
                 var rot = Quaternion.Euler(0f, bay.yaw, 0f);
                 var frontN = rot * Vector3.forward;
-                foreach (var sxc in new[] { -1f, 1f })
+                if (webBay)
                 {
-                    var anchor3 = bay.pos + rot * new Vector3(sxc * 1.27f, rackH - 0.05f, 0.34f);
-                    WebCorner(props, anchor3, frontN, rot * new Vector3(-sxc, 0f, 0f), 0.75f, webCorner);
+                    webBay = false;
+                    const float sxb = 1f;
+                    var anchor3 = bay.pos + rot * new Vector3(sxb * 1.27f, rackH - 0.05f, 0.34f);
+                    WebCorner(props, anchor3, frontN, rot * new Vector3(-sxb, 0f, 0f), 0.75f, webCorner);
                 }
 
-                // a round web hanging in the front plane of the top tier
-                DecalQuad("WebFull", props, bay.pos + rot * new Vector3((float)(rnd.NextDouble() - 0.5) * 1.4f, 2.35f, 0.345f),
-                    frontN, Vector3.up, new Vector2(0.55f, 0.55f), webFull);
+                // (the round "WebFull" hanging in each bay is gone; its random draw stays so the other props do not move)
+                rnd.NextDouble();
             }
 
             // dust motes, light shafts under the tubes, an old tube that dims now and then
@@ -415,6 +416,11 @@ namespace ChemicalSafety.Editor
             refs.stand = Marker("Stand_SC03", env, new Vector3(ox - half + 0.37f + 0.29f + 0.95f, 0f, heroZ), 270f);
             // arm's reach from the label for the hold-to-scan (the report and the question use the stand above)
             refs.scanStand = Marker("Stand_SC03_Scan", env, new Vector3(ox - half + 0.37f + 0.29f + 0.6f, 0f, heroZ), 270f);
+            // controller-ray flow: one stand about 3 m from the label, so the whole hero rack, the drum, the aisle and the far rack are in view.
+            // It looks along the line to the label (slightly off the long axis of the room so the aisle shows).
+            var rayPos = new Vector3(ox - half + 0.37f + 0.29f + 2.9f, 0f, heroZ + 0.45f);
+            var toLabel = new Vector3(ox - half + 0.37f + 0.29f, 0f, heroZ) - rayPos;
+            refs.rayStand = Marker("Stand_SC03_Ray", env, rayPos, Mathf.Atan2(toLabel.x, toLabel.z) * Mathf.Rad2Deg);
             return refs;
         }
 

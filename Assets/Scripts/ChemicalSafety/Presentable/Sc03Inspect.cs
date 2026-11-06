@@ -50,6 +50,7 @@ namespace ChemicalSafety.Presentable
         public Sc03LabelScan LabelScan => labelScan;
         public bool ScanArmed => labelScan != null && labelScan.IsArmed;
         public Transform ReportCard => _card;
+        public Transform LabelAnchor => labelAnchor;
 
         /// <summary>Raised when the finger presses the arrow or the Continue button (smoke test hooks this too).</summary>
         public event Action ArrowPressed;
@@ -103,6 +104,24 @@ namespace ChemicalSafety.Presentable
             touchButton.Arm(true);
         }
 
+        /// <summary>Controller-ray flow: the label is scanned by itself over <paramref name="seconds"/>; returns when the scan is done.</summary>
+        public IEnumerator AutoScan(float seconds)
+        {
+            Build();
+            _touched = false;
+            if (labelScan == null)
+            {
+                _touched = true;
+                yield break;
+            }
+
+            labelScan.Completed -= OnScanned;
+            labelScan.Completed += OnScanned;
+            labelScan.AutoScan(seconds);
+            while (!_touched)
+                yield return null;
+        }
+
         public void DisarmTouch()
         {
             if (labelScan != null)
@@ -111,8 +130,28 @@ namespace ChemicalSafety.Presentable
                 touchButton.Disarm();
         }
 
-        /// <summary>Ring, enlarged label scan and the typed report card; returns once the card is complete.</summary>
-        public IEnumerator ShowReport()
+        private bool _hasCardPose;
+        private Vector3 _cardPos;
+        private Quaternion _cardRot;
+        private float _cardWorldScale = 1f;
+
+        /// <summary>
+        /// Controller-ray flow: the report card hangs where the director puts it (beside the drum, at the learner's eye height)
+        /// at <paramref name="scale"/> times its normal size, instead of 0.66 m in front of the head. <see cref="ClearCardPose"/> undoes it.
+        /// </summary>
+        public void SetCardPose(Vector3 position, Quaternion rotation, float scale)
+        {
+            _hasCardPose = true;
+            _cardPos = position;
+            _cardRot = rotation;
+            _cardWorldScale = Mathf.Max(0.2f, scale);
+        }
+
+        public void ClearCardPose() => _hasCardPose = false;
+
+        /// <summary>Ring, enlarged label scan and the typed report card; returns once the card is complete.
+        /// <paramref name="withContinue"/> false (ray flow): no Continue button, the director hides the card by itself.</summary>
+        public IEnumerator ShowReport(bool withContinue = true)
         {
             Build();
             _continued = false;
@@ -163,6 +202,8 @@ namespace ChemicalSafety.Presentable
             foreach (var r in _rows)
                 r.maxVisibleCharacters = 99999;
 
+            if (!withContinue)
+                yield break;
             var cg = _continue.GetComponent<CanvasGroup>();
             cg.alpha = 0f;
             _continue.gameObject.SetActive(true);
@@ -205,6 +246,14 @@ namespace ChemicalSafety.Presentable
         // The card hangs in front of the head a little to the right (like the report in step04) so Continue is within reach.
         private void PlaceCard()
         {
+            if (_hasCardPose)
+            {
+                _card.SetPositionAndRotation(_cardPos, _cardRot);
+                _card.localScale = _cardScale * _cardWorldScale;
+                return;
+            }
+
+            _card.localScale = _cardScale;
             if (_cam == null)
                 _cam = Camera.main != null ? Camera.main.transform : null;
             if (_cam == null)

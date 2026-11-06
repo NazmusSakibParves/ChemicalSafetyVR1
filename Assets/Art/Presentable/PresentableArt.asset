@@ -117,6 +117,9 @@ MonoBehaviour:
   voAnswerWrongSee: {fileID: 8300000, guid: b1724c301bab0084a818920ff0bb993d, type: 3}
   voSc02WrongNextBn: {fileID: 8300000, guid: 4df5bb48517607044b37b48e409b39ac, type: 3}
   voSc02WrongNextEn: {fileID: 8300000, guid: eddeda35e8097d245b313e2e422adbca, type: 3}
+  voSc03WrongNextBn: {fileID: 8300000, guid: 96316be18a19a7846b610db445d60b00, type: 3}
+  voSc03WrongNextEn: {fileID: 8300000, guid: a63648e39b2fd084db9a177fbc32d3bc, type: 3}
+  voSc03Protocol: {fileID: 8300000, guid: 143aca8db30f4bd45811b33125fb46ee, type: 3}
   sc02ChemIcons:
   - {fileID: 5384863988372700972, guid: 6a35c8072eaf34241980dff0b07b221b, type: 3}
   - {fileID: 925556955474847729, guid: 332ce893edb4b6f4cae2c46e020f5ce4, type: 3}

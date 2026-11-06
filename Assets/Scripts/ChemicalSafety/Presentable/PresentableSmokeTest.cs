@@ -70,6 +70,85 @@ namespace ChemicalSafety.Presentable
             yield return null;
         }
 
+        // Scenario 3 (controller ray): one stand, the scan and the report run by themselves, the question is answered once
+        // (EditorPref ChemSafetySc03Wrong = a wrong answer, otherwise the right one) and the protocol / NEXT are checked.
+        private IEnumerator Sc03RaySmoke(PresentableMcqPanel mcq3, Sc03Detonation det)
+        {
+            var sc03 = Get<Sc03Inspect>(_director, "sc03Inspect");
+            yield return WaitStage("sc03Inspect", 60f);
+            yield return new WaitForSeconds(1.2f);
+            var head = Camera.main.transform.position;
+            var stand = Get<Transform>(_director, "sc03RayStand").position;
+            var label = Get<Transform>(sc03, "labelAnchor").position;
+            Say("SC03 stand: head " + Vector2.Distance(new Vector2(head.x, head.z), new Vector2(stand.x, stand.z)).ToString("0.00") +
+                " m off the stand, " + Vector2.Distance(new Vector2(head.x, head.z), new Vector2(label.x, label.z)).ToString("0.00") + " m from the label");
+            yield return Shot("sc03r_stand");
+            yield return WaitStage("sc03Scan", 40f);
+            yield return new WaitForSeconds(1.3f);
+            yield return Shot("sc03r_scan");
+            yield return WaitStage("sc03Report", 40f);
+            yield return new WaitForSeconds(4.5f);
+            Say("SC03 report visible = " + sc03.ReportVisible + " (no touch and hold, no Continue)");
+            yield return Shot("sc03r_report");
+            yield return WaitStage("sc03Question", 60f);
+            var w = 0f;
+            while (!mcq3.IsOpen && w < 25f)
+            {
+                w += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("sc03r_question");
+            LayoutCheck("SC03 MCQ", mcq3.transform);
+            var wrong = false;
+#if UNITY_EDITOR
+            wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc03Wrong", false);
+#endif
+            var q = mcq3.Current;
+            var target = wrong ? (q.correctIndex + 1) % q.options.Length : q.correctIndex;
+            Say("SC03 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + q.inlineReveal);
+            var row = FindDeep(mcq3.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.0f);
+            yield return Shot("sc03r_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq3.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC03 reveal: reasons shown = " + reasons + "/4, wrong popup open = " +
+                (FindDeep(mcq3.transform, "WrongPopup") != null && FindDeep(mcq3.transform, "WrongPopup").gameObject.activeInHierarchy));
+            Say("SC03 blast running after the answer = " + det.IsActive + " (expected False)");
+            var frame = 0;
+            var nw = 0f;
+            var nextOn = false;
+            while (!nextOn && nw < 40f)
+            {
+                foreach (var tr in mcq3.GetComponentsInChildren<Transform>())
+                    if (tr.name == "NextButton" && tr.gameObject.activeInHierarchy)
+                        nextOn = true;
+                if (!wrong && frame < 10 && nw >= frame * 1.3f)
+                {
+                    yield return Shot("sc03r_proto_" + frame);
+                    frame++;
+                }
+
+                nw += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC03 NEXT visible = " + nextOn + " after " + nw.ToString("0.0") + " s" + (wrong ? " (no animation)" : " (after the protocol)"));
+            yield return Shot("sc03r_next");
+            Click(mcq3.transform, "NextButton");
+            var att = ChemicalSafety.Results.SessionResults.Current != null && ChemicalSafety.Results.SessionResults.Current.attempts != null
+                ? ChemicalSafety.Results.SessionResults.Current.attempts.Find(a => a.lesson_id == "SC03") : null;
+            Say("SC03 marks: " + (att != null ? "score " + att.score + " / " + att.max_score + ", answers " + att.answers.Count : "NO ATTEMPT"));
+        }
+
         // Scenario 2 (callout flow): stand, then six chemicals one after the other, each with a callout and its own question.
         // Question 2 is answered wrong on purpose (red cross + reasons), the others right; the last one ends with NEXT.
         private IEnumerator Sc02CalloutSmoke()
@@ -2634,6 +2713,24 @@ namespace ChemicalSafety.Presentable
             yield return Shot("16_sc03_instruction");
             Click(panel.transform, "ContinueButton");
 
+            if (PresentableInput.AllowedIn(3))
+            {
+                // controller-ray flow: one stand, automatic scan and report, inline-reveal question, protocol animation
+                yield return Sc03RaySmoke(mcq3, det);
+#if UNITY_EDITOR
+                // EditorPref ChemSafetySc03Only: login + Scenarios 1, 2 and 3 only, then stop
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc03Only", false))
+                {
+                    Say("SC03-only run (login + Scenarios 1 to 3)");
+                    yield return new WaitForSeconds(1f);
+                    Say("DONE runtime errors/exceptions = " + _errors);
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    yield break;
+                }
+#endif
+                goto sc04Start;
+            }
+
             yield return WaitStage("sc03Inspect", 30f);
             yield return new WaitForSeconds(2.2f);
             var clip3 = Get<SdsClipboardController>(_director, "clipboard");
@@ -2752,6 +2849,7 @@ namespace ChemicalSafety.Presentable
             Click(mcq3.transform, "NextButton");
 
             // Scenario 4 is entered only after SC03 Next. The checks above are unchanged.
+            sc04Start:
             yield return WaitStage("sc04Intro", 30f);
             var cont4 = FindDeep(panel.transform, "ContinueButton");
             var w4 = 0f;

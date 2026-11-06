@@ -546,6 +546,14 @@ namespace ChemicalSafety.Presentable
             PlaceRig(spawnSc03.position, spawnSc03.forward);
             yield return fader.FadeTo(0f, 0.9f);
 
+            var ray3 = PresentableInput.RayActive;
+            if (ray3)
+            {
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, rayCardScale);
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
+            }
+
             Stage("sc03Intro");
             _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc03Content.InstructionEnglish, art.bnSc03InstructionPanel);
@@ -575,6 +583,32 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
 
+            if (ray3)
+            {
+                yield return RunSc03RayFlow();
+            }
+            else
+            {
+                yield return RunSc03ClassicInspectAndQuestion();
+            }
+
+            if (ray3)
+            {
+                LockLocomotion(false);
+                mcqSc03.SetWorldScale(1f);
+                instructionPanel.SetCompact(false);
+                subtitle.Dock(null, null, 1f);
+            }
+
+            PresentableInput.ActiveScenario = 4; // Scenario 4 and later are finger touch again
+
+            if (envSc04 != null)
+                yield return RunScenario4();
+        }
+
+        // The Scenario 3 finger flow as it was (touch & hold scan, report with Continue, popup question + blast on a wrong answer).
+        private IEnumerator RunSc03ClassicInspectAndQuestion()
+        {
             Stage("sc03Inspect");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.35f);
@@ -612,9 +646,91 @@ namespace ChemicalSafety.Presentable
             Stage("sc03Question");
             PlaceAtEyeLevel(mcqSc03.transform, panelDistance, false);
             yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
+        }
 
-            if (envSc04 != null)
-                yield return RunScenario4();
+        // ------------------------------------------------------------------ Scenario 3 on the controller ray
+
+        [SerializeField] private Transform sc03RayStand;
+        [Tooltip("Scenario 3 on the ray: false = a wrong answer no longer blows the drum up (client). The blast code stays for the finger flow.")]
+        [SerializeField] private bool sc03BlastOnWrong = false;
+        [SerializeField] private float sc03AutoScanDelay = 2.5f;
+        [SerializeField] private float sc03AutoScanSeconds = 2.2f;
+        [SerializeField] private float sc03ReportMinSeconds = 6f;
+
+        private bool _sc03Protocol;
+        private Sc03Protocol _sc03Prot;
+
+        // Popups float at the learner's own eye height (a seated learner is not looking up, a standing one not down).
+        private float Sc03ViewHeight()
+        {
+            var eye = _cam != null ? _cam.position.y : 1.6f;
+            return Mathf.Clamp(eye - 0.05f, 1.05f, 1.7f);
+        }
+
+        // Where a popup goes: beside the drum (to the learner's right, towards the aisle), at eye height, facing the learner.
+        private void Sc03PopupPose(float sideways, float towardsAisle, out Vector3 position, out Quaternion rotation)
+        {
+            var anchor = sc03Inspect.LabelAnchor;
+            var label = anchor.position;
+            var aisle = Flat(anchor.forward);
+            var cam = _cam != null ? _cam.position : rig.position;
+            var viewDir = Flat(new Vector3(label.x - cam.x, 0f, label.z - cam.z));
+            var right = Vector3.Cross(Vector3.up, viewDir);
+            position = new Vector3(label.x, Sc03ViewHeight(), label.z) + aisle * towardsAisle + right * sideways;
+            rotation = Quaternion.LookRotation(Flat(position - cam), Vector3.up);
+        }
+
+        private IEnumerator RunSc03RayFlow()
+        {
+            Stage("sc03Inspect");
+            var stand = sc03RayStand != null ? sc03RayStand : sc03InspectStand;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.35f);
+            PlaceRig(stand.position, Flat(stand.forward));
+            clipboard.SetVisible(false);
+            yield return fader.FadeTo(0f, 0.5f);
+
+            // one stand for everything: the whole room and the drum in view, then it goes on by itself (no touch and hold)
+            yield return PresentableFx.Wait(sc03AutoScanDelay);
+            Stage("sc03Scan");
+            yield return sc03Inspect.AutoScan(sc03AutoScanSeconds);
+            yield return PresentableFx.Wait(0.4f);
+
+            Stage("sc03Report");
+            Sc03PopupPose(1.45f, 0.45f, out var cardPos, out var cardRot);
+            sc03Inspect.SetCardPose(cardPos, cardRot, 3.2f);
+            yield return sc03Inspect.ShowReport(false);
+            var t0 = Time.time;
+            yield return PlayVoice(art.voSc03Inspect);
+            while (Time.time - t0 < sc03ReportMinSeconds)
+                yield return null;
+            yield return sc03Inspect.HideReport();
+            sc03Inspect.ClearCardPose();
+
+            Stage("sc03Question");
+            // beside the drum, at eye height: the drum and the label stay in view
+            Sc03PopupPose(1.6f, 0.6f, out var mcqPos, out var mcqRot);
+            mcqSc03.SetWorldScale(2.0f);
+            mcqSc03.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
+        }
+
+        // Right answer: the SDS line "Emergency action if degraded: DO NOT OPEN - Evacuate - Notify supervisor - Contact specialist
+        // disposal" plays as an emergency response protocol around the drum. NEXT comes when it has finished.
+        private IEnumerator Sc03ProtocolRoutine()
+        {
+            _sc03Protocol = true;
+            if (_sc03Prot == null)
+                _sc03Prot = Sc03Protocol.Create(art, envSc03 != null ? envSc03.transform : null);
+            yield return PresentableFx.Wait(1.0f);
+            StartCoroutine(PlayVoice(art.voCorrect));
+            yield return PresentableFx.Wait(1.6f);
+            var anchor = sc03Inspect.LabelAnchor;
+            Sc03PopupPose(-1.5f, 0.6f, out var panelPos, out var panelRot);
+            var drumCentre = sc03Detonation != null && sc03Detonation.Drum != null ? sc03Detonation.Drum.position : anchor.position - anchor.forward * 0.29f;
+            StartCoroutine(PlayVoice(art.voSc03Protocol));
+            yield return _sc03Prot.Play(drumCentre, anchor, panelPos, panelRot, 2.4f, spawnSc03 != null ? spawnSc03.position : rig.position);
+            _sc03Protocol = false;
         }
 
         // SC04 starts only after the SC03 question is finished. SC01–SC03 rooms and questions are unchanged.
@@ -2680,8 +2796,11 @@ namespace ChemicalSafety.Presentable
                     StartCoroutine(Sc01DrumToTrolley());
 
                 StopVoice();
-                if (scenario == 3 && !correct && sc03Detonation != null)
+                // Scenario 3 on the ray: no blast any more (client); the answer is shown with its reasons, a right one plays the protocol
+                if (scenario == 3 && !correct && sc03Detonation != null && (sc03BlastOnWrong || !PresentableInput.RayActive))
                     sc03Detonation.Explode();
+                if (scenario == 3 && correct && PresentableInput.RayActive)
+                    StartCoroutine(Sc03ProtocolRoutine());
                 if (scenario == 7 && correct)
                     StartCoroutine(Sc07Win(panel)); // the fire is put out first, then the right-answer card opens
             }
@@ -2748,6 +2867,16 @@ namespace ChemicalSafety.Presentable
             {
                 // no retry in Scenario 1: it says why and sends the learner on with NEXT
                 yield return PlayVoice(Loc.IsBangla ? art.voSc01WrongNextBn : art.voSc01WrongNextEn);
+                yield break;
+            }
+
+            if (scenario == 3 && PresentableInput.RayActive)
+            {
+                // the "correct" line and the protocol narration already played during the animation; NEXT is up now
+                if (!correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc03WrongNextBn : art.voSc03WrongNextEn);
+                else
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc03CompleteBn : art.voSc03CompleteEn);
                 yield break;
             }
 
@@ -3891,8 +4020,10 @@ namespace ChemicalSafety.Presentable
             };
         }
 
-        private static PresentableMcqPanel.Question BuildSc03Question()
+        private PresentableMcqPanel.Question BuildSc03Question()
         {
+            var ray = PresentableInput.RayActive;
+            var reasons = Sc03Content.OptionReasons;
             var options = new PresentableMcqPanel.Option[Sc03Content.OptionLabels.Length];
             for (var i = 0; i < options.Length; i++)
             {
@@ -3900,7 +4031,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc03Content.OptionLabels[i],
                     feedback = Sc03Content.OptionFeedback[i],
-                    wrongTitle = Sc03Content.OptionWrongTitle[i]
+                    wrongTitle = Sc03Content.OptionWrongTitle[i],
+                    reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty
                 };
             }
 
@@ -3912,7 +4044,12 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc03Content.CorrectTitle,
                 nextLabel = Sc03Content.FinishLabel,
                 options = options,
-                fancy = true
+                fancy = true,
+                // ray flow: as Scenarios 1 and 2 - tick / cross, a reason under every option, NEXT (also after a wrong answer, no retry)
+                inlineReveal = ray,
+                tagCorrect = Sc03Content.TagCorrect,
+                tagWrong = Sc03Content.TagWrong,
+                holdNext = ray ? (System.Func<bool>)(() => _sc03Protocol) : null
             };
         }
 
