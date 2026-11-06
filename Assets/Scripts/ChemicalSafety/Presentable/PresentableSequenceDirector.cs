@@ -1695,6 +1695,9 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Scenario 2 as the client wants it: the learner stands at the cabinet, then a callout opens over each chemical in turn " +
                  "(picture, properties) with its own question to the right. false = the old Take Decision / inspect / place game.")]
         [SerializeField] private bool sc02CalloutFlow = true;
+        [Tooltip("World scale of the Scenario 2 callout. The callout is about 2 m from the learner (Scenario 1's card is about 1 m away at 1.15), " +
+                 "so it needs roughly this much to keep the question text as readable.")]
+        [SerializeField] private float sc02CalloutScale = 2.0f;
         [SerializeField] private float sc02FirstCalloutDelay = 3f;
         [SerializeField] private float sc02NextCalloutDelay = 3f;
         [SerializeField] private float sc02ReadSeconds = 7f;
@@ -1759,7 +1762,7 @@ namespace ChemicalSafety.Presentable
         {
             Stage("sc02Callout" + (n + 1));
             var model = inspect.ModelOf(chem);
-            var s = rayPanelScale * 1.05f;
+            var s = sc02CalloutScale;
             var icon = art.sc02ChemIcons != null && chem < art.sc02ChemIcons.Length ? art.sc02ChemIcons[chem] : null;
 
             // One large callout over the chemical: picture + properties on the left, the question box on the right, same height.

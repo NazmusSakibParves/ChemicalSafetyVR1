@@ -63,7 +63,8 @@ namespace ChemicalSafety.Editor
                     b.Encapsulate(r.bounds);
                 var radius = b.extents.magnitude;
                 var dist = radius / Mathf.Sin(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * 1.08f;
-                var dir3 = new Vector3(0.28f, 0.16f, -1f).normalized;
+                // from the learner's side (+Z): that is where the labels and stickers are
+                var dir3 = new Vector3(0.28f, 0.16f, 1f).normalized;
                 cam.transform.position = b.center + dir3 * dist;
                 cam.transform.LookAt(b.center);
                 cam.Render();

@@ -14,9 +14,11 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public sealed class Sc02Callout : MonoBehaviour
     {
-        private const float W = 2480f;
+        private const float W = 2067f; // 40 % for the chemical (827 px), 60 % for the question box (1240 px = its own canvas width)
         private const float H = 900f;
         public const float Mpp = 0.00055f;
+        private const float PartX = (0.4f - 0.5f) * W; // the partition, left of the body centre
+        private const float RightHalfX = (0.7f - 0.5f) * W; // centre of the question half, right of the body centre
         private const float BodyLift = 100f;   // body centre above the canvas centre (the tail lives below the body)
         private const float TailTip = 405f;    // tail tip below the canvas centre
 
@@ -165,61 +167,61 @@ namespace ChemicalSafety.Presentable
             var content = PresentableUi.Rect("Content", _body, Vector2.zero, Vector2.one);
             _content = content.gameObject.AddComponent<CanvasGroup>();
 
-            _chip = PresentableUi.Text("Chip", content, new Vector2(0.035f, 0.905f), new Vector2(0.30f, 0.965f), string.Empty, 28f,
+            _chip = PresentableUi.Text("Chip", content, new Vector2(0.025f, 0.905f), new Vector2(0.26f, 0.965f), string.Empty, 26f,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f), TextAlignmentOptions.MidlineLeft, true, font);
             _chip.characterSpacing = 6f;
-            _title = PresentableUi.Text("Title", content, new Vector2(0.035f, 0.795f), new Vector2(0.485f, 0.905f), string.Empty, 52f, Color.white,
+            _title = PresentableUi.Text("Title", content, new Vector2(0.025f, 0.795f), new Vector2(0.385f, 0.905f), string.Empty, 44f, Color.white,
                 TextAlignmentOptions.MidlineLeft, true, font);
             _title.textWrappingMode = TextWrappingModes.Normal;
             _title.enableAutoSizing = true;
-            _title.fontSizeMin = 30f;
-            _title.fontSizeMax = 52f;
-            PresentableUi.Img(PresentableUi.Rect("Rule", content, new Vector2(0.035f, 0.786f), new Vector2(0.485f, 0.792f)), _hGradient,
+            _title.fontSizeMin = 26f;
+            _title.fontSizeMax = 44f;
+            PresentableUi.Img(PresentableUi.Rect("Rule", content, new Vector2(0.025f, 0.786f), new Vector2(0.385f, 0.792f)), _hGradient,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.8f));
-            Box("RuleAccent", content, new Vector2(0.035f, 0.783f), new Vector2(0.085f, 0.795f), Orange);
+            Box("RuleAccent", content, new Vector2(0.025f, 0.783f), new Vector2(0.062f, 0.795f), Orange);
 
             // the hologram stage: soft light cone, a floor glow with a bright core, the chemical floating above it
-            _beam = PresentableUi.Img(PresentableUi.Rect("Beam", content, new Vector2(0.045f, 0.11f), new Vector2(0.195f, 0.76f)), _vGradient,
+            _beam = PresentableUi.Img(PresentableUi.Rect("Beam", content, new Vector2(0.030f, 0.11f), new Vector2(0.145f, 0.76f)), _vGradient,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.20f));
-            _stageGlow = PresentableUi.Img(PresentableUi.Rect("StageGlow", content, new Vector2(0.015f, 0.075f), new Vector2(0.225f, 0.215f)), _art.radialGlow,
+            _stageGlow = PresentableUi.Img(PresentableUi.Rect("StageGlow", content, new Vector2(0.006f, 0.075f), new Vector2(0.170f, 0.215f)), _art.radialGlow,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.55f));
-            PresentableUi.Img(PresentableUi.Rect("StageCore", content, new Vector2(0.055f, 0.105f), new Vector2(0.185f, 0.175f)), _art.radialGlow,
+            PresentableUi.Img(PresentableUi.Rect("StageCore", content, new Vector2(0.040f, 0.105f), new Vector2(0.136f, 0.175f)), _art.radialGlow,
                 new Color(0.85f, 1f, 1f, 0.8f));
-            _iconRt = PresentableUi.Rect("Icon", content, new Vector2(0.04f, 0.15f), new Vector2(0.20f, 0.775f));
+            _iconRt = PresentableUi.Rect("Icon", content, new Vector2(0.022f, 0.15f), new Vector2(0.154f, 0.775f));
             _icon = PresentableUi.Img(_iconRt, null, Color.white, preserveAspect: true);
 
             // three property rows: numbered chip + text on a faint plate
             for (var i = 0; i < 3; i++)
             {
                 var top = 0.745f - i * 0.225f;
-                var row = PresentableUi.Rect("Row" + i, content, new Vector2(0.235f, top - 0.20f), new Vector2(0.485f, top));
+                var row = PresentableUi.Rect("Row" + i, content, new Vector2(0.168f, top - 0.20f), new Vector2(0.385f, top));
                 _rowRts[i] = row;
                 _rows[i] = row.gameObject.AddComponent<CanvasGroup>();
                 Box("Plate", row, Vector2.zero, Vector2.one, new Color(0.30f, 0.80f, 1f, 0.07f));
                 Box("Accent", row, new Vector2(0f, 0.12f), new Vector2(0.012f, 0.88f), Cyan);
-                var chipBg = Box("NumBg", row, new Vector2(0.04f, 0.20f), new Vector2(0.15f, 0.80f), new Color(0.05f, 0.30f, 0.52f, 1f));
+                var chipBg = Box("NumBg", row, new Vector2(0.04f, 0.22f), new Vector2(0.17f, 0.78f), new Color(0.05f, 0.30f, 0.52f, 1f));
                 chipBg.rectTransform.localRotation = Quaternion.identity;
-                var num = PresentableUi.Text("Num", chipBg.rectTransform, Vector2.zero, Vector2.one, "0" + (i + 1), 30f, new Color(0.85f, 0.98f, 1f),
+                var num = PresentableUi.Text("Num", chipBg.rectTransform, Vector2.zero, Vector2.one, "0" + (i + 1), 26f, new Color(0.85f, 0.98f, 1f),
                     TextAlignmentOptions.Center, true, font);
                 num.enableAutoSizing = false;
-                _lines[i] = PresentableUi.Text("Text", row, new Vector2(0.18f, 0.04f), new Vector2(0.985f, 0.96f), string.Empty, 34f,
+                _lines[i] = PresentableUi.Text("Text", row, new Vector2(0.21f, 0.04f), new Vector2(0.985f, 0.96f), string.Empty, 28f,
                     new Color(0.93f, 0.98f, 1f), TextAlignmentOptions.MidlineLeft, false, font);
                 _lines[i].textWrappingMode = TextWrappingModes.Normal;
                 _lines[i].enableAutoSizing = true;
-                _lines[i].fontSizeMin = 22f;
-                _lines[i].fontSizeMax = 34f;
+                _lines[i].fontSizeMin = 18f;
+                _lines[i].fontSizeMax = 28f;
                 _lines[i].overflowMode = TextOverflowModes.Truncate;
             }
 
             // the partition: a light line with a diamond node and a travelling spark
-            _partGlow = PresentableUi.Img(PresentableUi.Rect("PartGlow", _body, new Vector2(0.4955f, 0.035f), new Vector2(0.5045f, 0.965f)), _vGradient,
+            _partGlow = PresentableUi.Img(PresentableUi.Rect("PartGlow", _body, new Vector2(0.3955f, 0.035f), new Vector2(0.4045f, 0.965f)), _vGradient,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.30f));
-            _partCore = PresentableUi.Img(PresentableUi.Rect("PartCore", _body, new Vector2(0.4991f, 0.04f), new Vector2(0.5009f, 0.96f)), _vGradient,
+            _partCore = PresentableUi.Img(PresentableUi.Rect("PartCore", _body, new Vector2(0.3991f, 0.04f), new Vector2(0.4009f, 0.96f)), _vGradient,
                 new Color(0.85f, 1f, 1f, 0.95f));
-            var node = PresentableUi.Centered("PartNode", _body, Vector2.zero, new Vector2(30f, 30f));
+            var node = PresentableUi.Centered("PartNode", _body, new Vector2(PartX, 0f), new Vector2(30f, 30f));
             node.localRotation = Quaternion.Euler(0f, 0f, 45f);
             PresentableUi.Img(node, _art.roundedSolid, new Color(0.85f, 1f, 1f, 1f), sliced: true);
-            _partDot = PresentableUi.Img(PresentableUi.Centered("PartDot", _body, Vector2.zero, new Vector2(70f, 70f)), _art.radialGlow,
+            _partDot = PresentableUi.Img(PresentableUi.Centered("PartDot", _body, new Vector2(PartX, 0f), new Vector2(70f, 70f)), _art.radialGlow,
                 new Color(0.85f, 1f, 1f, 0.9f));
 
             // result layers (hidden until the answer): travelling light round the frame, glossy sheen across the whole callout
@@ -365,7 +367,7 @@ namespace ChemicalSafety.Presentable
 
             // the question box rides exactly on the right half
             if (Follower != null)
-                Follower.SetPositionAndRotation(BodyCenter + _bubble.right * (W * 0.25f * Mpp * _scale), _bubble.rotation);
+                Follower.SetPositionAndRotation(BodyCenter + _bubble.right * (RightHalfX * Mpp * _scale), _bubble.rotation);
 
             // the hologram floats; the stage light and the partition spark breathe
             var bob = Mathf.Sin(_t * 1.7f);
@@ -381,7 +383,7 @@ namespace ChemicalSafety.Presentable
             }
 
             var sp = Mathf.PingPong(_t * 0.28f, 1f);
-            _partDot.rectTransform.anchoredPosition = new Vector2(0f, Mathf.Lerp(-H * 0.42f, H * 0.42f, sp));
+            _partDot.rectTransform.anchoredPosition = new Vector2(PartX, Mathf.Lerp(-H * 0.42f, H * 0.42f, sp));
         }
 
         // ------------------------------------------------------------------ result
@@ -505,12 +507,12 @@ namespace ChemicalSafety.Presentable
             var host = _body;
             for (var i = 0; i < n; i++)
             {
-                var rt = PresentableUi.Centered("Spark" + i, host, new Vector2(W * 0.25f, 0f), Vector2.one * Random.Range(30f, 64f));
+                var rt = PresentableUi.Centered("Spark" + i, host, new Vector2(RightHalfX, 0f), Vector2.one * Random.Range(30f, 64f));
                 imgs[i] = PresentableUi.Img(rt, _art.radialGlow, cols[i % cols.Length]);
                 var a = Random.Range(0f, Mathf.PI * 2f);
                 var s = Random.Range(300f, 900f);
                 vel[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * s;
-                pos[i] = new Vector2(W * 0.25f, 0f);
+                pos[i] = new Vector2(RightHalfX, 0f);
                 life[i] = Random.Range(0.8f, 1.4f);
             }
 
