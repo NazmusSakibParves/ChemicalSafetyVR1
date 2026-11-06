@@ -131,9 +131,16 @@ namespace ChemicalSafety.Presentable
         public AudioClip voCarrier;
         public AudioClip voSc01CompleteBn;
         public AudioClip voSc01CompleteEn;
+        [Tooltip("VO_Sc01WrongNext_bn / _en.mp3 - wrong answer in Scenario 1: reasons are shown, click NEXT to go on.")]
+        public AudioClip voSc01WrongNextBn;
+        public AudioClip voSc01WrongNextEn;
         public AudioClip voSc02Instruction;
         public AudioClip voSc02CompleteBn;
         public AudioClip voSc02PlaceHint;
+        public AudioClip voSc02Decision;
+        public AudioClip voSc02Inspect;
+        public AudioClip voSc02Pick;
+        public AudioClip voSc02Dest;
         public AudioClip voSc02CompleteEn;
         public AudioClip voSc03Instruction;
         public AudioClip voSc03Touch;

@@ -1078,6 +1078,15 @@ namespace ChemicalSafety.Presentable
             Click(mcq9.transform, "NextButton");
         }
 
+        // Gate cards: the simulated right glove rests where the card's BACK button appears and pressed it by itself in the
+        // chained run (the director then looped SC10 a third time). The test clicks the buttons itself, so the fingertips are off meanwhile.
+        private void FingerGuard(bool on)
+        {
+            var fps = _director != null ? _director.GetComponent<FingerPokeSystem>() : null;
+            if (fps != null)
+                fps.enabled = on;
+        }
+
         private IEnumerator Sc10Wait(System.Func<bool> done, float timeout)
         {
             var t = 0f;
@@ -1238,6 +1247,7 @@ namespace ChemicalSafety.Presentable
                 yield return Sc10Icon(spill, "sc10Dispose", tag, () => spill.Disposed, shots ? "114_sc10_dispose" : null);
                 Say("SC10 " + tag + ": disposed = " + spill.Disposed + " (expected True)");
 
+                FingerGuard(false); // the resting simulated glove must not press the gate by itself (harness artefact)
                 yield return WaitStage("sc10Gate", 40f);
                 yield return Sc10Wait(() => gate.Visible, 15f);
                 yield return new WaitForSeconds(1.3f);
@@ -1246,6 +1256,7 @@ namespace ChemicalSafety.Presentable
                 if (shots)
                     yield return Shot("115_sc10_gate");
                 Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+                FingerGuard(true);
             }
 
             yield return WaitStage("sc10Question", 20f);
@@ -1332,6 +1343,7 @@ namespace ChemicalSafety.Presentable
                 if (shots)
                     yield return Shot("126_sc11_radio_talk");
 
+                FingerGuard(false); // the resting simulated glove must not press the gate by itself (harness artefact)
                 yield return WaitStage("sc11Gate", 60f);
                 yield return Sc10Wait(() => gate.Visible, 15f);
                 yield return new WaitForSeconds(1.3f);
@@ -1340,6 +1352,7 @@ namespace ChemicalSafety.Presentable
                 if (shots)
                     yield return Shot("127_sc11_gate");
                 Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+                FingerGuard(true);
             }
 
             yield return WaitStage("sc11Question", 20f);
@@ -1632,6 +1645,7 @@ namespace ChemicalSafety.Presentable
                     yield return Shot("137_sc12_review");
                 Click(station.transform, "NextButton");
 
+                FingerGuard(false); // the resting simulated glove must not press the gate by itself (harness artefact)
                 yield return WaitStage("sc12Gate", 30f);
                 yield return Sc10Wait(() => gate.Visible, 10f);
                 yield return new WaitForSeconds(1.3f);
@@ -1640,6 +1654,7 @@ namespace ChemicalSafety.Presentable
                 if (shots)
                     yield return Shot("138_sc12_gate");
                 Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+                FingerGuard(true);
             }
 
             yield return WaitStage("sc12Question", 20f);
@@ -1995,87 +2010,103 @@ namespace ChemicalSafety.Presentable
                 Say(d.name + " plate alpha at start = " + g.alpha);
             }
 
-            var hs1 = Get<FloorHotspot>(_director, "hotspotSc01");
-            Say("Hotspot_SC01 position = " + hs1.transform.position);
-            hs1.Activate();
-            yield return WaitStage("pickLabel");
             var voice = Get<AudioSource>(_director, "voice");
-            yield return new WaitForSeconds(0.5f);
-            Say("voice clip after hotspot = " + (voice.clip != null ? voice.clip.name : "none") +
-                " playing=" + voice.isPlaying);
-            yield return new WaitForSeconds(2.2f);
             var rig = Get<Transform>(_director, "rig");
-            Say("rig position after glide = " + rig.position + " camera=" + Camera.main.transform.position);
-            yield return Shot("02_pick_stage");
-
-            var popup = Get<LabelPickPopup>(_director, "labelPopup");
-            var pokes = Get<PokeTarget[]>(_director, "drumPokes");
-            var buttons = Get<FloatingTouchButton[]>(_director, "drumButtons");
-            for (var bi = 0; bi < buttons.Length; bi++)
+            // controller-ray flow (PresentableInput): no stand-here marker, no drum label picking, no carrier button
+            var rayMode = ChemicalSafety.Presentable.PresentableInput.AllowedIn(1);
+            Say("SC01 input mode = " + (rayMode ? "ControllerRay" : "FingerTouch"));
+            if (rayMode)
             {
-                var dp = drums[bi].transform.position;
-                var bp = buttons[bi].transform.position;
-                Say("arrow " + (bi + 1) + " offset from drum centre: dx=" + (bp.x - dp.x).ToString("0.000") + " dz=" +
-                    (bp.z - dp.z).ToString("0.000") + " height=" + bp.y.ToString("0.00"));
-            }
-
-            // close-up of a drum Touch button (arrow icon)
-            var btnCam = Camera.main.transform;
-            var btnKeep = btnCam.rotation;
-            btnCam.rotation = Quaternion.LookRotation(buttons[1].transform.position - btnCam.position);
-            yield return new WaitForSeconds(0.2f);
-            yield return Shot("02b_touch_button");
-            yield return new WaitForSeconds(0.35f);
-            yield return Shot("02c_touch_button_blink");
-            btnCam.rotation = btnKeep;
-            var order = new[] { 1, 0, 3, 2 };
-            var step = 0;
-            foreach (var i in order)
-            {
-                Say("touch drum " + (i + 1) + " button armed=" + buttons[i].IsArmed);
-                PressButton(buttons[i]);
+                yield return WaitStage("explore");
                 yield return new WaitForSeconds(0.8f);
-                Say("popup open = " + popup.IsOpen);
-                if (step == 0)
-                    LayoutCheck("SC01 label popup", popup.transform);
-                if (step == 0)
-                {
-                    yield return Shot("03_popup");
-                    yield return PanelStopTest(popup);
-                }
-
-                if (step == 0)
-                {
-                    // wrong first on the first drum
-                    var wrong = (i + 1) % 4;
-                    Click(popup.transform, "Option" + (wrong + 1));
-                    yield return new WaitForSeconds(1.0f);
-                    Say("after wrong: popup open = " + popup.IsOpen + " voice=" +
-                        (voice.clip != null ? voice.clip.name : "none") + " playing=" + voice.isPlaying);
-                    LayoutCheck("SC01 label popup (wrong)", popup.transform);
-                    yield return Shot("04_popup_wrong");
-                }
-
-                Click(popup.transform, "Option" + (i + 1));
-                yield return new WaitForSeconds(1.2f);
-                var g = Get<CanvasGroup>(drums[i], "_bubbleGroup");
-                Say("drum " + (i + 1) + " done: popup open=" + popup.IsOpen + " plate alpha=" + g.alpha +
-                    " pokable again=" + pokes[i].Interactable);
-                if (step == 0 || step == 3)
-                    yield return Shot("05_plate_" + (step + 1));
-                step++;
+                Say("ray: rig position = " + rig.position + " head=" + Camera.main.transform.position);
+                var instr = Get<InstructionPanelView>(_director, "instructionPanel");
+                Say("ray: instruction card distance from head = " +
+                    Vector3.Distance(Camera.main.transform.position, instr.transform.position).ToString("0.00"));
+                yield return Shot("02_ray_view");
             }
+            else
+            {
+                var hs1 = Get<FloorHotspot>(_director, "hotspotSc01");
+                Say("Hotspot_SC01 position = " + hs1.transform.position);
+                hs1.Activate();
+                yield return WaitStage("pickLabel");
+                yield return new WaitForSeconds(0.5f);
+                Say("voice clip after hotspot = " + (voice.clip != null ? voice.clip.name : "none") +
+                    " playing=" + voice.isPlaying);
+                yield return new WaitForSeconds(2.2f);
+                Say("rig position after glide = " + rig.position + " camera=" + Camera.main.transform.position);
+                yield return Shot("02_pick_stage");
 
-            yield return WaitStage("trolley");
-            yield return new WaitForSeconds(2.5f);
-            var trolley = Get<GameObject>(_director, "trolley");
-            Say("trolley active = " + trolley.activeSelf + " pos=" + trolley.transform.position);
-            yield return Shot("06_trolley");
-            var carrierBtn = Get<FloatingTouchButton>(_director, "carrierButton");
-            Say("carrier button armed = " + carrierBtn.IsArmed + " subtitle visible = " + Get<WorldSubtitle>(_director, "subtitle").IsVisible);
-            PressButton(carrierBtn);
-            yield return new WaitForSeconds(1.1f);
-            yield return Shot("06b_loaded");
+                var popup = Get<LabelPickPopup>(_director, "labelPopup");
+                var pokes = Get<PokeTarget[]>(_director, "drumPokes");
+                var buttons = Get<FloatingTouchButton[]>(_director, "drumButtons");
+                for (var bi = 0; bi < buttons.Length; bi++)
+                {
+                    var dp = drums[bi].transform.position;
+                    var bp = buttons[bi].transform.position;
+                    Say("arrow " + (bi + 1) + " offset from drum centre: dx=" + (bp.x - dp.x).ToString("0.000") + " dz=" +
+                        (bp.z - dp.z).ToString("0.000") + " height=" + bp.y.ToString("0.00"));
+                }
+
+                // close-up of a drum Touch button (arrow icon)
+                var btnCam = Camera.main.transform;
+                var btnKeep = btnCam.rotation;
+                btnCam.rotation = Quaternion.LookRotation(buttons[1].transform.position - btnCam.position);
+                yield return new WaitForSeconds(0.2f);
+                yield return Shot("02b_touch_button");
+                yield return new WaitForSeconds(0.35f);
+                yield return Shot("02c_touch_button_blink");
+                btnCam.rotation = btnKeep;
+                var order = new[] { 1, 0, 3, 2 };
+                var step = 0;
+                foreach (var i in order)
+                {
+                    Say("touch drum " + (i + 1) + " button armed=" + buttons[i].IsArmed);
+                    PressButton(buttons[i]);
+                    yield return new WaitForSeconds(0.8f);
+                    Say("popup open = " + popup.IsOpen);
+                    if (step == 0)
+                        LayoutCheck("SC01 label popup", popup.transform);
+                    if (step == 0)
+                    {
+                        yield return Shot("03_popup");
+                        yield return PanelStopTest(popup);
+                    }
+
+                    if (step == 0)
+                    {
+                        // wrong first on the first drum
+                        var wrong = (i + 1) % 4;
+                        Click(popup.transform, "Option" + (wrong + 1));
+                        yield return new WaitForSeconds(1.0f);
+                        Say("after wrong: popup open = " + popup.IsOpen + " voice=" +
+                            (voice.clip != null ? voice.clip.name : "none") + " playing=" + voice.isPlaying);
+                        LayoutCheck("SC01 label popup (wrong)", popup.transform);
+                        yield return Shot("04_popup_wrong");
+                    }
+
+                    Click(popup.transform, "Option" + (i + 1));
+                    yield return new WaitForSeconds(1.2f);
+                    var g = Get<CanvasGroup>(drums[i], "_bubbleGroup");
+                    Say("drum " + (i + 1) + " done: popup open=" + popup.IsOpen + " plate alpha=" + g.alpha +
+                        " pokable again=" + pokes[i].Interactable);
+                    if (step == 0 || step == 3)
+                        yield return Shot("05_plate_" + (step + 1));
+                    step++;
+                }
+
+                yield return WaitStage("trolley");
+                yield return new WaitForSeconds(2.5f);
+                var trolley = Get<GameObject>(_director, "trolley");
+                Say("trolley active = " + trolley.activeSelf + " pos=" + trolley.transform.position);
+                yield return Shot("06_trolley");
+                var carrierBtn = Get<FloatingTouchButton>(_director, "carrierButton");
+                Say("carrier button armed = " + carrierBtn.IsArmed + " subtitle visible = " + Get<WorldSubtitle>(_director, "subtitle").IsVisible);
+                PressButton(carrierBtn);
+                yield return new WaitForSeconds(1.1f);
+                yield return Shot("06b_loaded");
+            }
 
             yield return WaitStage("mcq1");
             yield return new WaitForSeconds(2f);
@@ -2083,33 +2114,75 @@ namespace ChemicalSafety.Presentable
             Say("mcq1 open = " + mcq1.IsOpen);
             LayoutCheck("SC01 MCQ", mcq1.transform);
             yield return Shot("07_question");
-            Click(mcq1.transform, "Row1");
-            yield return new WaitForSeconds(1.2f);
-            LayoutCheck("SC01 MCQ wrong card", mcq1.transform);
-            yield return Shot("08_wrong");
-            Click(mcq1.transform, "Close");
-            yield return new WaitForSeconds(0.8f);
-            Click(mcq1.transform, "Row4");
+            // no wrong popup / retry in Scenario 1: the answer is marked on the rows with a reason under each, then NEXT
+            // EditorPref ChemSafetySc01Wrong: pick the wrong option (Faded label) instead of the right one. Run the smoke test twice to see both cases.
+            var wrongRun = false;
+#if UNITY_EDITOR
+            wrongRun = UnityEditor.EditorPrefs.GetBool("ChemSafetySc01Wrong", false);
+#endif
+            Say("SC01 answer case = " + (wrongRun ? "WRONG (Row1 faded label)" : "CORRECT (Row4 GHS vs SDS matched)"));
+            Click(mcq1.transform, wrongRun ? "Row1" : "Row4");
             var heard = "";
+            var heardWrongNext = "";
             var sawCorrect1 = false;
             var waited = 0f;
-            while (waited < 8f)
+            // right answer: the drum goes onto the trolley first (about 7 s), the voice starts together with NEXT
+            var nextFrame = 0.8f;
+            var frameNo = 0;
+            while (waited < (wrongRun ? 8f : 22f))
             {
+                // the trolley sequence as a strip of frames (Temp/Smoke/09t_N.png), to look for the drum / trolley overlap
+                if (!wrongRun && frameNo < 9 && waited >= nextFrame)
+                {
+                    yield return Shot("09t_" + frameNo);
+                    frameNo++;
+                    nextFrame += 1.0f;
+                }
+
                 if (voice.clip != null && voice.clip.name.Contains("Sc01Complete"))
                     heard = voice.clip.name;
+                if (voice.clip != null && voice.clip.name.Contains("Sc01WrongNext"))
+                    heardWrongNext = voice.clip.name;
                 if (voice.clip != null && voice.clip.name == "VO_Correct_bn")
                     sawCorrect1 = true;
                 waited += Time.unscaledDeltaTime;
                 yield return null;
             }
 
+            var reasonShown = 0;
+            foreach (var tmp in mcq1.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasonShown++;
+            }
+
+            var nextShown = false;
+            foreach (var tr1 in mcq1.GetComponentsInChildren<Transform>())
+            {
+                if (tr1.name == "NextButton" && tr1.gameObject.activeInHierarchy)
+                    nextShown = true;
+            }
+
+            Say("SC01 reveal: reasons shown = " + reasonShown + "/4, NEXT visible = " + nextShown + ", wrong popup open = " +
+                (FindDeep(mcq1.transform, "WrongPopup") != null && FindDeep(mcq1.transform, "WrongPopup").gameObject.activeInHierarchy));
+            Say("SC01 vo: wrong-next clip = " + (heardWrongNext.Length > 0 ? heardWrongNext : "not heard") +
+                ", scenario complete clip = " + (heard.Length > 0 ? heard : "not heard") + " (expected: " +
+                (wrongRun ? "wrong-next only" : "complete") + ")");
             Say("scenario complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect1);
             Say("SC01 fancy MCQ = " + (mcq1.Current != null && mcq1.Current.fancy) +
                 ", fx active = " + (mcq1.Fx != null && mcq1.Fx.Active) +
                 ", chevrons = " + (mcq1.Fx != null ? mcq1.Fx.ChevronCount : 0) +
                 ", comet = " + (mcq1.Fx != null ? mcq1.Fx.CometCount : 0));
-            yield return Shot("09_correct");
-            LayoutCheck("SC01 MCQ correct card", mcq1.transform);
+            yield return Shot(wrongRun ? "09_wrong" : "09_correct");
+            if (rayMode && !wrongRun)
+            {
+                var rt = Get<GameObject>(_director, "trolley");
+                yield return new WaitForSeconds(4f);
+                Say("ray: trolley active = " + rt.activeSelf + " pos=" + rt.transform.position);
+                yield return Shot("09b_ray_trolley");
+            }
+
+            LayoutCheck(wrongRun ? "SC01 MCQ wrong reveal" : "SC01 MCQ correct reveal", mcq1.transform);
             Click(mcq1.transform, "NextButton");
 
 #if UNITY_EDITOR
@@ -2150,162 +2223,263 @@ namespace ChemicalSafety.Presentable
             roomCam.localRotation = Quaternion.Euler(-4f, -62f, 0f) ;
             roomCam.localRotation = roomKeep;
 
-            var hsPick = Get<FloorHotspot>(_director, "hotspotSc02Pick");
             var placement = Get<ContainerPlacement>(_director, "placement");
             var inspect = Get<ContainerInspect>(_director, "inspect");
             var doors = Get<CompartmentDoor[]>(_director, "doors");
             var chart = Get<ChartViewer>(_director, "chart");
-            Say("pick marker armed = " + hsPick.IsArmed +
-                ", placement = " + (placement != null) + ", inspect = " + (inspect != null && inspect.Count == 6));
-
-            // reach: horizontal distance from the Stand Here marker to every container (arm reach is about 0.7 m)
-            for (var ri = 0; ri < inspect.Count; ri++)
+            // controller-ray flow (PresentableInput): fixed stand, Take Decision box, inspect with CLOSE, popup, automatic placement
+            var rayMode2 = PresentableInput.AllowedIn(2);
+            Say("SC02 input mode = " + (rayMode2 ? "ControllerRay" : "FingerTouch"));
+            if (rayMode2)
             {
-                var cr = inspect.PokeOf(ri).GetComponent<Renderer>();
-                var cp = cr != null ? cr.bounds.center : inspect.PokeOf(ri).transform.position;
-                var mp = hsPick.transform.position;
-                Say("reach container " + ri + " from the pick marker: " +
-                    Vector2.Distance(new Vector2(cp.x, cp.z), new Vector2(mp.x, mp.z)).ToString("0.00") + " m");
-            }
+                var dec = Get<Sc02DecisionBox>(_director, "sc02Decision");
+                var popup2 = Get<LabelPickPopup>(_director, "sc02DestPopup");
+                var wd = 0f;
+                while (!dec.Visible && wd < 30f)
+                {
+                    wd += Time.unscaledDeltaTime;
+                    yield return null;
+                }
 
-            // walk to the pallet marker
-            hsPick.Activate();
-            yield return new WaitForSeconds(0.6f);
-
-            // doors with nothing in the hand: plain open / close
-            Poke(doors[0].GetComponent<PokeTarget>());
-            yield return new WaitForSeconds(1.0f);
-            Say("door 0 open after a poke (empty hand) = " + doors[0].IsOpen);
-            yield return Shot("12_sc02_door");
-            Poke(doors[0].GetComponent<PokeTarget>());
-            yield return new WaitForSeconds(1.0f);
-            Say("door 0 open after the second poke = " + doors[0].IsOpen + " (expected False)");
-
-            if (chart != null)
-            {
-                Poke(chart.GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(1.0f);
+                var head2 = Camera.main.transform.position;
+                var stand2 = Get<Transform>(_director, "sc02RayStand").position;
+                Say("ray: head at the stand = " + Vector2.Distance(new Vector2(head2.x, head2.z), new Vector2(stand2.x, stand2.z)).ToString("0.00") + " m off");
+                yield return Shot("11d_sc02_take_decision");
+                LayoutCheck("SC02 Take Decision", dec.Card);
+                dec.PressInspection();
                 yield return new WaitForSeconds(0.6f);
-                Say("chart open = " + chart.IsOpen);
-                yield return Shot("13_sc02_chart");
-                Click(chart.transform, "CloseChart");
-                yield return new WaitForSeconds(0.4f);
-            }
+                var icard = FindDeep(inspect.transform, "InspectCard");
+                for (var ci = 0; ci < inspect.Count; ci++)
+                {
+                    Poke(inspect.PokeOf(ci));
+                    yield return new WaitForSeconds(1.0f);
+                    var spill2 = inspect.CheckCardFits();
+                    Say("ray: card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill2.Length == 0) +
+                        (spill2.Length > 0 ? " FAIL spill: " + spill2 : ""));
+                    if (ci == 0)
+                        yield return Shot("13g_sc02_ray_inspect");
+                    Click(icard, "CloseButton");
+                    yield return new WaitForSeconds(0.7f);
+                }
 
-            // container inspect: hand + card + chart box + card text fit
-            Poke(inspect.PokeOf(0));
-            yield return new WaitForSeconds(1.0f);
-            Say("held after poke 1 = " + inspect.HeldName);
-            yield return Shot("13b_inspect_held");
+                var wd2 = 0f;
+                while (!dec.Visible && wd2 < 10f)
+                {
+                    wd2 += Time.unscaledDeltaTime;
+                    yield return null;
+                }
 
-            // grip: put the left glove where a hand would be; the container should rest in the palm with the
-            // fingers closed round it, and the scan beam runs from it to the details card
-            var cam0 = Camera.main.transform;
-            inspect.ForceHandMode();
-            var lhand = GlovedHandPose.Left;
-            if (lhand != null)
-            {
-                lhand.transform.SetPositionAndRotation(
-                    cam0.position + cam0.forward * 0.5f + cam0.right * -0.16f + cam0.up * -0.2f, cam0.rotation);
-                yield return new WaitForSeconds(1.3f);
-                yield return Shot("13f_grip");
-                var beamT = inspect.transform.Find("ScanBeam");
-                var beamLr = beamT != null ? beamT.GetComponent<LineRenderer>() : null;
-                Say("scan beam visible = " + (beamLr != null && beamLr.enabled));
+                Say("ray: Take Decision back after all six inspected = " + dec.Visible);
+                dec.PressContinue();
+                yield return new WaitForSeconds(0.6f);
+                var comp2 = new[] { 0, 1, 2, 3, 3, 3 };
+                var order2 = new[] { 2, 0, 1, 3, 4, 5 };
+                for (var oi = 0; oi < order2.Length; oi++)
+                {
+                    var c2 = order2[oi];
+                    var wp = 0f;
+                    // the previous container is still being stored (door closing) until the next pick is allowed again
+                    while ((placement.IsBusy || inspect.HasHeld || !inspect.PokeOf(c2).Interactable) && wp < 15f)
+                    {
+                        wp += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    Poke(inspect.PokeOf(c2));
+                    yield return new WaitForSeconds(1.2f);
+                    Say("ray: container " + c2 + " held = " + inspect.HeldName + ", compartment popup open = " + popup2.IsOpen);
+                    if (oi == 0)
+                    {
+                        LayoutCheck("SC02 compartment popup", popup2.transform);
+                        yield return Shot("12e_sc02_popup");
+                        var wrongIdx = comp2[c2] == 0 ? 1 : 0;
+                        Click(popup2.transform, "Option" + (wrongIdx + 1));
+                        yield return new WaitForSeconds(1.8f);
+                        Say("ray: wrong compartment door state = " + doors[wrongIdx].State + ", still holding = " + inspect.HasHeld);
+                        yield return Shot("12b_wrong_placement");
+                        var wr = 0f;
+                        while (!popup2.IsOpen && wr < 8f)
+                        {
+                            wr += Time.unscaledDeltaTime;
+                            yield return null;
+                        }
+
+                        Say("ray: popup reopened after the warning = " + popup2.IsOpen + ", placed = " + placement.Placed);
+                    }
+
+                    Click(popup2.transform, "Option" + (comp2[c2] + 1));
+                    var before2 = placement.Placed;
+                    yield return new WaitForSeconds(1.0f);
+                    if (oi == 0)
+                        yield return Shot("12f_sc02_flight");
+                    var tw2 = 0f;
+                    while (placement.Placed == before2 && tw2 < 10f)
+                    {
+                        tw2 += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    Say("ray: placed " + placement.Placed + " / " + placement.Total);
+                    if (oi == 5)
+                        yield return Shot("12d_placed_6");
+                }
             }
             else
             {
-                Say("FAIL: no left glove for the grip test");
-            }
-            var card = FindDeep(inspect.transform, "InspectCard");
-            Click(card, "ChartBox");
-            yield return new WaitForSeconds(0.6f);
-            Say("chart open from card = " + chart.IsOpen);
-            yield return new WaitForSeconds(0.5f);
-            Say("details card visible while the chart is open = " + inspect.CardVisible + " (expected False)");
-            Click(chart.transform, "CloseChart");
-            yield return new WaitForSeconds(0.7f);
-            Say("details card visible after the chart closed = " + inspect.CardVisible + " (expected True)");
-            yield return ChartBoxTouchTest(inspect, chart);
-            for (var ci = 0; ci < inspect.Count; ci++)
-            {
-                Poke(inspect.PokeOf(ci));
-                yield return new WaitForSeconds(0.9f);
-                var spill = inspect.CheckCardFits();
-                Say("card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill.Length == 0) +
-                    (spill.Length > 0 ? " FAIL spill: " + spill : ""));
-                if (ci == 0 || ci == 5)
-                    yield return Shot("13e_inspect_card_" + ci);
-            }
+                var hsPick = Get<FloorHotspot>(_director, "hotspotSc02Pick");
+                Say("pick marker armed = " + hsPick.IsArmed +
+                    ", placement = " + (placement != null) + ", inspect = " + (inspect != null && inspect.Count == 6));
 
-            inspect.ReturnAll();
-            yield return new WaitForSeconds(1.0f);
-
-            // the storage game: all six containers into their compartments
-            // container order: 0 flammable drum, 1 oxidizer, 2 acid, 3 cleaner canister, 4 reactive jar, 5 spray
-            var compartment = new[] { 0, 1, 2, 3, 3, 3 };
-            var placeOrder = new[] { 2, 0, 1, 3, 4, 5 };
-            // no waiting for a walk to the cabinet in the test: the rig glides there after a short patience
-            typeof(PresentableSequenceDirector).GetField("shelfPatience", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(_director, 0.4f);
-            var ghostT = placement.transform.Find("SlotGhost");
-            for (var oi = 0; oi < placeOrder.Length; oi++)
-            {
-                var ci2 = placeOrder[oi];
-                var tw = 0f;
-                while (!hsPick.IsArmed && tw < 15f)
+                // reach: horizontal distance from the Stand Here marker to every container (arm reach is about 0.7 m)
+                for (var ri = 0; ri < inspect.Count; ri++)
                 {
-                    tw += Time.unscaledDeltaTime;
-                    yield return null;
+                    var cr = inspect.PokeOf(ri).GetComponent<Renderer>();
+                    var cp = cr != null ? cr.bounds.center : inspect.PokeOf(ri).transform.position;
+                    var mp = hsPick.transform.position;
+                    Say("reach container " + ri + " from the pick marker: " +
+                        Vector2.Distance(new Vector2(cp.x, cp.z), new Vector2(mp.x, mp.z)).ToString("0.00") + " m");
                 }
 
+                // walk to the pallet marker
                 hsPick.Activate();
-                yield return new WaitForSeconds(0.3f);
-                Poke(inspect.PokeOf(ci2));
-                yield return new WaitForSeconds(3.0f); // voice-over starts, rig glides to the cabinet
-                var headNow = Camera.main.transform.position;
-                var stand = Get<Transform>(_director, "shelfStand").position;
-                Say("container " + ci2 + " held = " + inspect.HeldName + ", distance to the cabinet stand = " +
-                    Vector2.Distance(new Vector2(headNow.x, headNow.z), new Vector2(stand.x, stand.z)).ToString("0.00") + " m");
-                if (oi == 0)
-                    Say("eye-level board y = " + FindFirstObjectByType<CabinetRows>(FindObjectsInactive.Include).CurrentEyeBoardY.ToString("0.00") +
-                        ", place voice-over = " + (Get<AudioSource>(_director, "voice").clip != null
-                            ? Get<AudioSource>(_director, "voice").clip.name : "none"));
-                if (oi == 0)
-                    Say("details card visible at the cabinet = " + inspect.CardVisible + " (expected True)");
+                yield return new WaitForSeconds(0.6f);
 
-                if (oi == 0)
+                // doors with nothing in the hand: plain open / close
+                Poke(doors[0].GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(1.0f);
+                Say("door 0 open after a poke (empty hand) = " + doors[0].IsOpen);
+                yield return Shot("12_sc02_door");
+                Poke(doors[0].GetComponent<PokeTarget>());
+                yield return new WaitForSeconds(1.0f);
+                Say("door 0 open after the second poke = " + doors[0].IsOpen + " (expected False)");
+
+                if (chart != null)
                 {
-                    // a wrong door first: red, the container stays in the hand
-                    var wrongDoor = compartment[ci2] == 0 ? 1 : 0;
-                    Poke(doors[wrongDoor].GetComponent<PokeTarget>());
+                    Poke(chart.GetComponent<PokeTarget>());
+                    yield return new WaitForSeconds(0.6f);
+                    Say("chart open = " + chart.IsOpen);
+                    yield return Shot("13_sc02_chart");
+                    Click(chart.transform, "CloseChart");
+                    yield return new WaitForSeconds(0.4f);
+                }
+
+                // container inspect: hand + card + chart box + card text fit
+                Poke(inspect.PokeOf(0));
+                yield return new WaitForSeconds(1.0f);
+                Say("held after poke 1 = " + inspect.HeldName);
+                yield return Shot("13b_inspect_held");
+
+                // grip: put the left glove where a hand would be; the container should rest in the palm with the
+                // fingers closed round it, and the scan beam runs from it to the details card
+                var cam0 = Camera.main.transform;
+                inspect.ForceHandMode();
+                var lhand = GlovedHandPose.Left;
+                if (lhand != null)
+                {
+                    lhand.transform.SetPositionAndRotation(
+                        cam0.position + cam0.forward * 0.5f + cam0.right * -0.16f + cam0.up * -0.2f, cam0.rotation);
+                    yield return new WaitForSeconds(1.3f);
+                    yield return Shot("13f_grip");
+                    var beamT = inspect.transform.Find("ScanBeam");
+                    var beamLr = beamT != null ? beamT.GetComponent<LineRenderer>() : null;
+                    Say("scan beam visible = " + (beamLr != null && beamLr.enabled));
+                }
+                else
+                {
+                    Say("FAIL: no left glove for the grip test");
+                }
+                var card = FindDeep(inspect.transform, "InspectCard");
+                Click(card, "ChartBox");
+                yield return new WaitForSeconds(0.6f);
+                Say("chart open from card = " + chart.IsOpen);
+                yield return new WaitForSeconds(0.5f);
+                Say("details card visible while the chart is open = " + inspect.CardVisible + " (expected False)");
+                Click(chart.transform, "CloseChart");
+                yield return new WaitForSeconds(0.7f);
+                Say("details card visible after the chart closed = " + inspect.CardVisible + " (expected True)");
+                yield return ChartBoxTouchTest(inspect, chart);
+                for (var ci = 0; ci < inspect.Count; ci++)
+                {
+                    Poke(inspect.PokeOf(ci));
+                    yield return new WaitForSeconds(0.9f);
+                    var spill = inspect.CheckCardFits();
+                    Say("card " + ci + " (" + inspect.HeldName + ") text fits = " + (spill.Length == 0) +
+                        (spill.Length > 0 ? " FAIL spill: " + spill : ""));
+                    if (ci == 0 || ci == 5)
+                        yield return Shot("13e_inspect_card_" + ci);
+                }
+
+                inspect.ReturnAll();
+                yield return new WaitForSeconds(1.0f);
+
+                // the storage game: all six containers into their compartments
+                // container order: 0 flammable drum, 1 oxidizer, 2 acid, 3 cleaner canister, 4 reactive jar, 5 spray
+                var compartment = new[] { 0, 1, 2, 3, 3, 3 };
+                var placeOrder = new[] { 2, 0, 1, 3, 4, 5 };
+                // no waiting for a walk to the cabinet in the test: the rig glides there after a short patience
+                typeof(PresentableSequenceDirector).GetField("shelfPatience", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(_director, 0.4f);
+                var ghostT = placement.transform.Find("SlotGhost");
+                for (var oi = 0; oi < placeOrder.Length; oi++)
+                {
+                    var ci2 = placeOrder[oi];
+                    var tw = 0f;
+                    while (!hsPick.IsArmed && tw < 15f)
+                    {
+                        tw += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
+
+                    hsPick.Activate();
+                    yield return new WaitForSeconds(0.3f);
+                    Poke(inspect.PokeOf(ci2));
+                    yield return new WaitForSeconds(3.0f); // voice-over starts, rig glides to the cabinet
+                    var headNow = Camera.main.transform.position;
+                    var stand = Get<Transform>(_director, "shelfStand").position;
+                    Say("container " + ci2 + " held = " + inspect.HeldName + ", distance to the cabinet stand = " +
+                        Vector2.Distance(new Vector2(headNow.x, headNow.z), new Vector2(stand.x, stand.z)).ToString("0.00") + " m");
+                    if (oi == 0)
+                        Say("eye-level board y = " + FindFirstObjectByType<CabinetRows>(FindObjectsInactive.Include).CurrentEyeBoardY.ToString("0.00") +
+                            ", place voice-over = " + (Get<AudioSource>(_director, "voice").clip != null
+                                ? Get<AudioSource>(_director, "voice").clip.name : "none"));
+                    if (oi == 0)
+                        Say("details card visible at the cabinet = " + inspect.CardVisible + " (expected True)");
+
+                    if (oi == 0)
+                    {
+                        // a wrong door first: red, the container stays in the hand
+                        var wrongDoor = compartment[ci2] == 0 ? 1 : 0;
+                        Poke(doors[wrongDoor].GetComponent<PokeTarget>());
+                        yield return new WaitForSeconds(1.6f);
+                        Say("wrong door state = " + doors[wrongDoor].State + ", still holding = " + inspect.HasHeld +
+                            ", door open = " + doors[wrongDoor].IsOpen);
+                        yield return Shot("12b_wrong_placement");
+                        yield return new WaitForSeconds(2.6f);
+                        Say("after the warning: door state = " + doors[wrongDoor].State + ", door open = " + doors[wrongDoor].IsOpen +
+                            ", placed = " + placement.Placed);
+                    }
+
+                    Poke(doors[compartment[ci2]].GetComponent<PokeTarget>());
                     yield return new WaitForSeconds(1.6f);
-                    Say("wrong door state = " + doors[wrongDoor].State + ", still holding = " + inspect.HasHeld +
-                        ", door open = " + doors[wrongDoor].IsOpen);
-                    yield return Shot("12b_wrong_placement");
-                    yield return new WaitForSeconds(2.6f);
-                    Say("after the warning: door state = " + doors[wrongDoor].State + ", door open = " + doors[wrongDoor].IsOpen +
-                        ", placed = " + placement.Placed);
-                }
+                    Say("right door state = " + doors[compartment[ci2]].State + ", slot ghost visible = " +
+                        (ghostT != null && ghostT.gameObject.activeSelf));
+                    if (oi == 0)
+                        yield return Shot("12c_correct_placement");
+                    if (ghostT != null && ghostT.gameObject.activeSelf)
+                        Poke(ghostT.GetComponent<PokeTarget>());
+                    var before = placement.Placed;
+                    tw = 0f;
+                    while (placement.Placed == before && tw < 10f)
+                    {
+                        tw += Time.unscaledDeltaTime;
+                        yield return null;
+                    }
 
-                Poke(doors[compartment[ci2]].GetComponent<PokeTarget>());
-                yield return new WaitForSeconds(1.6f);
-                Say("right door state = " + doors[compartment[ci2]].State + ", slot ghost visible = " +
-                    (ghostT != null && ghostT.gameObject.activeSelf));
-                if (oi == 0)
-                    yield return Shot("12c_correct_placement");
-                if (ghostT != null && ghostT.gameObject.activeSelf)
-                    Poke(ghostT.GetComponent<PokeTarget>());
-                var before = placement.Placed;
-                tw = 0f;
-                while (placement.Placed == before && tw < 10f)
-                {
-                    tw += Time.unscaledDeltaTime;
-                    yield return null;
+                    Say("placed " + placement.Placed + " / " + placement.Total);
+                    if (oi == 0 || oi == 5)
+                        yield return Shot("12d_placed_" + (oi + 1));
                 }
-
-                Say("placed " + placement.Placed + " / " + placement.Total);
-                if (oi == 0 || oi == 5)
-                    yield return Shot("12d_placed_" + (oi + 1));
             }
 
             var mcq2 = Get<PresentableMcqPanel>(_director, "mcqSc02");
@@ -2316,7 +2490,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            yield return new WaitForSeconds(1.2f);
+            yield return new WaitForSeconds(2.4f); // the option rows slide in one after the other; measure when they have settled
             LayoutCheck("SC02 MCQ", mcq2.transform);
             Say("mcq2 open = " + mcq2.IsOpen + " after " + placement.Placed + " / " + placement.Total + " placed");
             yield return Shot("14_sc02_question");

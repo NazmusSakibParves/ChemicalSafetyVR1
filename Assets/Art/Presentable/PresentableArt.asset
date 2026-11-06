@@ -112,9 +112,15 @@ MonoBehaviour:
   voCarrier: {fileID: 8300000, guid: 2485e139d58dba24082d9fb0a166cc3f, type: 3}
   voSc01CompleteBn: {fileID: 8300000, guid: f81e6fdc4a5d9de46ab56d5a6e9b97ac, type: 3}
   voSc01CompleteEn: {fileID: 8300000, guid: f32af67cb14814648b74f202a99fc5d2, type: 3}
+  voSc01WrongNextBn: {fileID: 8300000, guid: 2baf4d5c1b4829243b41085f72832e23, type: 3}
+  voSc01WrongNextEn: {fileID: 8300000, guid: 91e8f78a92cc9e148a03655def16b8aa, type: 3}
   voSc02Instruction: {fileID: 8300000, guid: 632f7303f04d88f4e831a9d93c4535de, type: 3}
   voSc02CompleteBn: {fileID: 8300000, guid: 47f60c82f25e3e040928c9757e1845c9, type: 3}
   voSc02PlaceHint: {fileID: 8300000, guid: e3a2e91636e125947bade95b01b10dc4, type: 3}
+  voSc02Decision: {fileID: 8300000, guid: c79ee1e743ef611449c8397ecae0e3dc, type: 3}
+  voSc02Inspect: {fileID: 8300000, guid: 36903e4a7620daf45960efce72456f02, type: 3}
+  voSc02Pick: {fileID: 8300000, guid: 429868f94d7c91740a47b25c6650a35b, type: 3}
+  voSc02Dest: {fileID: 8300000, guid: 104521b3fd935434496f83190b97d00b, type: 3}
   voSc02CompleteEn: {fileID: 8300000, guid: 36e30c48813f4e648ab15f4c5253a727, type: 3}
   voSc03Instruction: {fileID: 8300000, guid: 9146cb392781cf54c9d363aedae95640, type: 3}
   voSc03Touch: {fileID: 8300000, guid: 19e02005bfc18ab4782028b0f7683b97, type: 3}

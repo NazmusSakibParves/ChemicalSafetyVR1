@@ -79,6 +79,7 @@ namespace ChemicalSafety.Presentable
             _active = true;
             _landed = false;
             _t = 0f;
+            HideResult(); // a result from a previous question never carries over
             _fx.gameObject.SetActive(true);
             _burst.gameObject.SetActive(false);
             _flash.gameObject.SetActive(false);
@@ -102,6 +103,7 @@ namespace ChemicalSafety.Presentable
         public void Detach()
         {
             _active = false;
+            HideResult();
             if (_fx != null)
                 _fx.gameObject.SetActive(false);
             if (_burst != null)
@@ -155,8 +157,19 @@ namespace ChemicalSafety.Presentable
 
         // ------------------------------------------------------------------ results
 
-        public void OnResult(bool correct, int index)
+        public void OnResult(bool correct, int index, bool wholeBox = false)
         {
+            SetRowDecor(false); // rows may stay on screen (Scenario 1 reveal): no glow or chevron left frozen on them
+            if (wholeBox)
+            {
+                // Scenario 1: the rows stay, the whole box takes the result colour (emerald / ruby) with a glossy sheen
+                StartResult(correct);
+                StartCoroutine(SparkBurst(true, !correct));
+                if (!correct)
+                    StartCoroutine(RedFlicker(true));
+                return;
+            }
+
             _fx.gameObject.SetActive(false); // the question frame is hidden while the result card is up
             if (correct)
                 StartCoroutine(SparkBurst());
@@ -164,8 +177,136 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(RedFlicker());
         }
 
+        // ------------------------------------------------------------------ whole-box result (Scenario 1)
+
+        private bool _resultMode;
+        private Color _resMain;
+        private Color _resLight;
+        private RectTransform _resBack;
+        private RectTransform _resFront;
+        private Image _resHalo1;
+        private Image _resHalo2;
+        private Image _resGlow;
+        private Image _resWash;
+        private Image _resSheen;
+
+        private void EnsureResult()
+        {
+            if (_resBack != null)
+                return;
+            // behind the frame: a coloured ring and a soft bloom round the whole box
+            _resBack = PresentableUi.Rect("ResBack", _canvas, Vector2.zero, Vector2.one);
+            _resBack.SetSiblingIndex(0);
+            _resGlow = PresentableUi.Img(PresentableUi.Centered("ResGlow", _resBack, Vector2.zero, _canvas.rect.size * 1.55f),
+                _art.radialGlow, Color.white);
+            _resHalo2 = PresentableUi.Img(PresentableUi.Rect("ResHalo2", _resBack, Vector2.zero, Vector2.one, new Vector2(-92f, -78f),
+                new Vector2(92f, 78f)), _art.roundedSolid, Color.white, sliced: true);
+            _resHalo1 = PresentableUi.Img(PresentableUi.Rect("ResHalo1", _resBack, Vector2.zero, Vector2.one, new Vector2(-62f, -48f),
+                new Vector2(62f, 48f)), _art.roundedSolid, Color.white, sliced: true);
+            // over the question plate, under the rows: a light wash of the colour (first child of the fx container)
+            _resWash = PresentableUi.Img(PresentableUi.Rect("ResWash", _fx, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.96f)),
+                _art.roundedSolid, Color.white, sliced: true);
+            _resWash.rectTransform.SetSiblingIndex(0);
+            // on top, clipped to the box: the glossy sheen that sweeps across
+            _resFront = PresentableUi.Rect("ResFront", _canvas, new Vector2(0.01f, 0.01f), new Vector2(0.99f, 0.99f));
+            _resFront.gameObject.AddComponent<RectMask2D>();
+            _resSheen = PresentableUi.Img(PresentableUi.Centered("ResSheen", _resFront, Vector2.zero,
+                new Vector2(340f, _canvas.rect.height * 1.6f)), _hGradient, Color.white);
+            _resSheen.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -18f);
+            foreach (var g in _resBack.GetComponentsInChildren<Graphic>(true))
+                Top(g);
+            Top(_resWash);
+            Top(_resSheen);
+        }
+
+        private void StartResult(bool correct)
+        {
+            EnsureResult();
+            _resultMode = true;
+            _resMain = correct ? PresentableMcqPanel.EmeraldMain : PresentableMcqPanel.RubyMain;
+            _resLight = correct ? PresentableMcqPanel.EmeraldLight : PresentableMcqPanel.RubyLight;
+            _fx.gameObject.SetActive(true);
+            _scan.gameObject.SetActive(false);
+            _sheen.gameObject.SetActive(false);
+            _resBack.gameObject.SetActive(true);
+            _resFront.gameObject.SetActive(true);
+            _resWash.gameObject.SetActive(true);
+            _resSheen.color = new Color(1f, 1f, 1f, 0f);
+            StartCoroutine(ResultLoop());
+            StartCoroutine(ResultSheen());
+        }
+
+        private void HideResult()
+        {
+            _resultMode = false;
+            if (_resBack != null)
+                _resBack.gameObject.SetActive(false);
+            if (_resFront != null)
+                _resFront.gameObject.SetActive(false);
+            if (_resWash != null)
+                _resWash.gameObject.SetActive(false);
+            if (_panel != null && _art != null && _art.frameWide != null)
+                _panel.TintFrame(Color.white);
+        }
+
+        // Ring, bloom and wash swell in, then breathe. The frame itself takes a share of the colour.
+        private IEnumerator ResultLoop()
+        {
+            var t0 = Time.time;
+            while (_resultMode)
+            {
+                var t = Time.time - t0;
+                var appear = Mathf.Clamp01(t / 0.5f);
+                var breathe = 0.5f + 0.5f * Mathf.Sin(t * 2.2f);
+                _resHalo1.color = new Color(_resMain.r, _resMain.g, _resMain.b, appear * (0.62f + 0.22f * breathe));
+                _resHalo2.color = new Color(_resMain.r, _resMain.g, _resMain.b, appear * (0.16f + 0.10f * breathe));
+                _resGlow.color = new Color(_resMain.r, _resMain.g, _resMain.b, appear * (0.20f + 0.12f * breathe));
+                _resWash.color = new Color(_resMain.r, _resMain.g, _resMain.b, appear * (0.05f + 0.06f * breathe));
+                if (_art.frameWide != null)
+                    _panel.TintFrame(Color.Lerp(Color.white, Color.Lerp(_resLight, _resMain, 0.4f), appear * 0.55f));
+                yield return null;
+            }
+        }
+
+        // A slanted band of light crosses the whole box: three strong passes first, then a soft one every few seconds.
+        private IEnumerator ResultSheen()
+        {
+            var w = _canvas.rect.width;
+            var pass = 0;
+            yield return PresentableFx.Wait(0.35f);
+            while (_resultMode)
+            {
+                var strength = pass < 3 ? 0.62f : 0.34f;
+                var from = -w * 0.78f;
+                var to = w * 0.78f;
+                for (var t = 0f; t < 1f && _resultMode; t += Time.deltaTime / 0.95f)
+                {
+                    _resSheen.rectTransform.anchoredPosition = new Vector2(Mathf.Lerp(from, to, t), 0f);
+                    var c = Color.Lerp(Color.white, _resLight, 0.35f);
+                    _resSheen.color = new Color(c.r, c.g, c.b, Mathf.Sin(t * Mathf.PI) * strength);
+                    yield return null;
+                }
+
+                _resSheen.color = new Color(1f, 1f, 1f, 0f);
+                pass++;
+                yield return PresentableFx.Wait(pass < 3 ? 1.1f : 4.5f);
+            }
+        }
+
+        private void SetRowDecor(bool on)
+        {
+            for (var i = 0; i < _chevrons.Count; i++)
+            {
+                var show = on && i < _rows;
+                _chevrons[i].gameObject.SetActive(show);
+                _glows[i].gameObject.SetActive(show);
+            }
+        }
+
         public void OnRetry()
         {
+            HideResult();
+            SetRowDecor(true);
             if (_flash != null)
                 _flash.gameObject.SetActive(false);
             _fx.gameObject.SetActive(true);
@@ -173,30 +314,38 @@ namespace ChemicalSafety.Presentable
                 _hover[i] = false;
         }
 
-        private IEnumerator RedFlicker()
+        private IEnumerator RedFlicker(bool ruby = false)
         {
             _flash.gameObject.SetActive(true);
+            var tone = ruby ? PresentableMcqPanel.RubyMain : new Color(1f, 0.18f, 0.14f, 1f);
+            var peak = ruby ? 0.42f : 0.55f;
             for (var t = 0f; t < 0.9f; t += Time.deltaTime)
             {
                 var k = t / 0.9f;
-                var a = Mathf.Abs(Mathf.Sin(k * Mathf.PI * 3f)) * (1f - k) * 0.55f;
-                _flash.color = new Color(1f, 0.18f, 0.14f, a);
+                var a = Mathf.Abs(Mathf.Sin(k * Mathf.PI * 3f)) * (1f - k) * peak;
+                _flash.color = new Color(tone.r, tone.g, tone.b, a);
                 yield return null;
             }
 
             _flash.gameObject.SetActive(false);
         }
 
-        private IEnumerator SparkBurst()
+        private IEnumerator SparkBurst(bool wow = false, bool ruby = false)
         {
             yield return PresentableFx.Wait(0.25f);
             _burst.gameObject.SetActive(true);
-            const int n = 46;
+            var n = wow ? (ruby ? 40 : 80) : 46;
             var imgs = new Image[n];
             var vel = new Vector2[n];
             var pos = new Vector2[n];
             var life = new float[n];
             var cols = new[] { new Color(0.4f, 1f, 0.55f), new Color(0.75f, 1f, 0.8f), new Color(1f, 0.92f, 0.5f), Color.white };
+            if (wow)
+            {
+                cols = ruby
+                    ? new[] { PresentableMcqPanel.RubyMain, PresentableMcqPanel.RubyLight, Color.white }
+                    : new[] { PresentableMcqPanel.EmeraldMain, PresentableMcqPanel.EmeraldLight, new Color(1f, 0.90f, 0.55f), Color.white };
+            }
             for (var i = 0; i < n; i++)
             {
                 var rt = PresentableUi.Centered("Spark" + i, _burst, new Vector2(0f, 40f), Vector2.one * Random.Range(28f, 58f));
@@ -260,6 +409,8 @@ namespace ChemicalSafety.Presentable
             }
 
             UpdateComet();
+            if (_resultMode)
+                return; // Scenario 1 result: the comet runs in the result colour, the scan line and title sheen rest
 
             // scan line over the question, a sheen across the title
             var size = _canvas.rect.size;
@@ -290,12 +441,14 @@ namespace ChemicalSafety.Presentable
             var hx = size.x * 0.5f * 1.04f - cometInset.x;
             var hy = size.y * 0.5f * 1.04f - cometInset.y;
             var perimeter = 4f * (hx + hy);
+            var lap = _resultMode ? 2.4f : lapSeconds;
             for (var i = 0; i < _comet.Count; i++)
             {
-                var u = Mathf.Repeat(_t / lapSeconds - i * 0.0085f, 1f);
+                var u = Mathf.Repeat(_t / lap - i * 0.0085f, 1f);
                 _comet[i].rectTransform.anchoredPosition = PointOnRect(u, hx, hy);
                 var fade = 1f - i / (float)_comet.Count;
-                var c = i == 0 ? new Color(1f, 1f, 1f, 0.95f) : new Color(0.45f, 0.95f, 1f, 0.7f * fade);
+                var tail = _resultMode ? _resLight : new Color(0.45f, 0.95f, 1f, 1f);
+                var c = i == 0 ? new Color(1f, 1f, 1f, 0.95f) : new Color(tail.r, tail.g, tail.b, 0.8f * fade);
                 _comet[i].color = c;
             }
         }
@@ -366,7 +519,8 @@ namespace ChemicalSafety.Presentable
                 var row = _panel.RowRoot(i);
                 var gRt = PresentableUi.Rect("FxGlow", row, new Vector2(0.01f, 0.06f), new Vector2(0.99f, 0.94f));
                 var g = PresentableUi.Img(gRt, _art.roundedSolid, new Color(0.35f, 0.9f, 1f, 0f), sliced: true);
-                gRt.SetSiblingIndex(1);
+                var frameRt = row.Find("Frame");
+                gRt.SetSiblingIndex(frameRt != null ? frameRt.GetSiblingIndex() + 1 : 1); // behind the label, above the frame
                 _glows.Add(g);
                 var cRt = PresentableUi.Rect("FxChevron", row, new Vector2(0.925f, 0.12f), new Vector2(0.99f, 0.88f));
                 var chev = PresentableUi.Text(cRt, "»", 48f, new Color(0.55f, 0.95f, 1f, 0f), TextAlignmentOptions.Center, true, _art.englishFont);

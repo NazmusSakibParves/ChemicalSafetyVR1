@@ -32,6 +32,10 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform spawnDrumView;
         [SerializeField] private Transform rackFocus;
         [SerializeField] private FloorHotspot hotspotSc01;
+        [SerializeField] private Transform sc02RayStand; // controller-ray flow: where the learner stands to see the 6 containers and the cabinet
+        [SerializeField] private Sc02DecisionBox sc02Decision;
+        [SerializeField] private LabelPickPopup sc02DestPopup;
+        [SerializeField] private Transform sc01RayStand; // controller-ray flow: where the learner is placed to view the 4 drums
         [SerializeField] private PresentableMcqPanel mcqSc01;
         [SerializeField] private DrumCallout[] drums = new DrumCallout[4];
 
@@ -303,9 +307,31 @@ namespace ChemicalSafety.Presentable
                 Stage("login");
                 if (clipboard != null)
                     clipboard.SetSuspended(true); // the SDS sheet is not part of the login view
+                // the welcome greeting belongs to the login page: English first (the default language), 1 s gap, then Bangla
+                _welcomeDone = false;
+                _welcomeVoice = StartCoroutine(LoginWelcomeVoice());
                 yield return loginScreen.Run(_cam, rig != null ? rig.position.y : 0f, fader, rig);
+                // the greeting is for the login page only: if it is still running when the learner leaves, it stops here
+                // and never carries into Scenario 1
+                if (_welcomeVoice != null)
+                    StopCoroutine(_welcomeVoice);
+                _welcomeVoice = null;
+                if (!_welcomeDone)
+                    StopVoice();
+                _welcomeDone = true;
                 if (clipboard != null)
                     clipboard.SetSuspended(false);
+            }
+
+            // Scenario 1 may run on the controller ray (PresentableInput). The fingertip flow below stays as it was.
+            PresentableInput.ActiveScenario = 1;
+            var rayFlow = PresentableInput.RayActive;
+            if (rayFlow)
+            {
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, rayCardScale);
+                // subtitles sit in the clear space under the card, never inside its frame
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
             }
 
             foreach (var d in drums)
@@ -322,15 +348,10 @@ namespace ChemicalSafety.Presentable
             // whether the learner is sitting or standing, so it does not jump up after the greeting.
             BeginEyeInstruction();
             yield return instructionPanel.Show();
-            instructionPanel.SetSpeaking(true);
-            yield return SubtitledVoice(art.bnWelcomeSub, Sc01Content.WelcomeSub,
-                Sc01(art.voSalam, art.trialSalam));
-            instructionPanel.SetSpeaking(false);
-
+            // (the greeting belongs to the login page only; it was stopped when the login ended)
             Stage("gap");
 
-            // 2. Instruction after a 2s gap. Same eye-level card and centred Continue as Scenario 3.
-            yield return PresentableFx.Wait(gapAfterSalam);
+            // 2. Instruction. Same eye-level card and centred Continue as Scenario 3.
             Stage("instruction");
             instructionPanel.SetContinueCentered(true);
             instructionPanel.SetSpeaking(true);
@@ -361,42 +382,59 @@ namespace ChemicalSafety.Presentable
 
             Stage("transition");
 
-            // 3. Transition to the drum rack (step04) with a gentle zoom-in glide
-            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
-            yield return fader.FadeTo(1f, 0.4f);
-            var viewFwd = Flat(spawnDrumView.forward);
-            PlaceRig(spawnDrumView.position - viewFwd * glideBackDistance, viewFwd);
-            yield return fader.FadeTo(0f, 0.5f);
-            yield return Glide(spawnDrumView.position, 1.8f);
+            if (rayFlow)
+            {
+                yield return RunSc01RayFlow();
+            }
+            else
+            {
 
-            Stage("explore");
+                // 3. Transition to the drum rack (step04) with a gentle zoom-in glide
+                PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+                yield return fader.FadeTo(1f, 0.4f);
+                var viewFwd = Flat(spawnDrumView.forward);
+                PlaceRig(spawnDrumView.position - viewFwd * glideBackDistance, viewFwd);
+                yield return fader.FadeTo(0f, 0.5f);
+                yield return Glide(spawnDrumView.position, 1.8f);
 
-            // 4. Explore + hotspot
-            zoom.Configure(rig, rackFocus);
-            zoom.ZoomEnabled = true;
-            yield return WaitHotspot(hotspotSc01);
-            zoom.ZoomEnabled = false;
+                Stage("explore");
 
-            Stage("pickLabel");
+                // 4. Explore + hotspot
+                zoom.Configure(rig, rackFocus);
+                zoom.ZoomEnabled = true;
+                yield return WaitHotspot(hotspotSc01);
+                zoom.ZoomEnabled = false;
 
-            // 4b. Voice prompt (once), step up to the drums, then poke each drum and name its label.
-            _introVoice = StartCoroutine(PickLabelVoices());
-            yield return Glide(drumPokeStand.position, 1.2f);
-            yield return RunDrumPicking();
+                Stage("pickLabel");
 
-            Stage("trolley");
-            yield return RunCarrier();
+                // 4b. Voice prompt (once), step up to the drums, then poke each drum and name its label.
+                _introVoice = StartCoroutine(PickLabelVoices());
+                yield return Glide(drumPokeStand.position, 1.2f);
+                yield return RunDrumPicking();
 
-            Stage("mcq1");
+                Stage("trolley");
+                yield return RunCarrier();
 
-            // 5. MCQ 1 — face the drums (step05: drums visible behind the panel, no name plates)
-            foreach (var d in drums)
-                d?.SetCalloutVisible(false);
-            var toDrums = Flat(rackFocus.position - hotspotSc01.transform.position);
-            yield return FadeReposition(hotspotSc01.transform, Vector3.Slerp(viewFwd, toDrums, 0.6f), mcqSc01);
-            yield return RunQuestion(mcqSc01, BuildSc01Question(), true);
+                Stage("mcq1");
+
+                // 5. MCQ 1 — face the drums (step05: drums visible behind the panel, no name plates)
+                foreach (var d in drums)
+                    d?.SetCalloutVisible(false);
+                var toDrums = Flat(rackFocus.position - hotspotSc01.transform.position);
+                yield return FadeReposition(hotspotSc01.transform, Vector3.Slerp(viewFwd, toDrums, 0.6f), mcqSc01);
+                yield return RunQuestion(mcqSc01, BuildSc01Question(), true);
+            }
 
             Stage("sc02");
+            if (rayFlow)
+            {
+                LockLocomotion(false);
+                mcqSc01.SetWorldScale(1f);
+                instructionPanel.SetCompact(false);
+                subtitle.Dock(null, null, 1f);
+            }
+
+            PresentableInput.ActiveScenario = 2;
 
             // 6. SC02 storage room (the warehouse is hidden so only one room draws)
             foreach (var d in drums)
@@ -412,6 +450,14 @@ namespace ChemicalSafety.Presentable
             clipboard.SetSheet(art.sdsSc02);
             PlaceRig(spawnSc02.position, spawnSc02.forward);
             yield return fader.FadeTo(0f, 0.6f);
+
+            var ray2 = PresentableInput.RayActive;
+            if (ray2)
+            {
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, rayCardScale);
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
+            }
 
             Stage("sc02Intro");
             _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
@@ -443,12 +489,38 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
 
             Stage("sc02Explore");
-            yield return RunPlacement();
+            if (ray2)
+                yield return RunSc02RayFlow();
+            else
+                yield return RunPlacement();
 
             Stage("sc02Question");
             // the question opens in front of the user, back at the room entrance so the glass doors are not in the way
-            yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
+            if (ray2)
+            {
+                var qStand = sc02RayStand != null ? sc02RayStand : spawnSc02;
+                yield return fader.FadeTo(1f, 0.25f);
+                PlaceRig(qStand.position, Flat(qStand.forward));
+                mcqSc02.SetWorldScale(rayPanelScale);
+                PlacePanelRay(mcqSc02.transform, qStand.position, Flat(qStand.forward), rayPanelRiseSc02);
+                subtitle.Dock(mcqSc02.transform, () => 0.45f, 1.0f);
+                yield return fader.FadeTo(0f, 0.35f);
+            }
+            else
+            {
+                yield return FadeReposition(spawnSc02, Flat(spawnSc02.forward), mcqSc02);
+            }
+
             yield return RunQuestion(mcqSc02, BuildSc02Question(), false, 2);
+            if (ray2)
+            {
+                LockLocomotion(false);
+                mcqSc02.SetWorldScale(1f);
+                instructionPanel.SetCompact(false);
+                subtitle.Dock(null, null, 1f);
+            }
+
+            PresentableInput.ActiveScenario = 3;
 
             if (envSc03 != null)
                 yield return RunScenario3();
@@ -1553,10 +1625,369 @@ namespace ChemicalSafety.Presentable
 
         private bool _eyeInstruction;
 
+        [Header("Controller ray (Scenario 1)")]
+        [SerializeField] private float rayCardDistance = 1.4f;
+        [SerializeField] private float rayCardScale = 1.45f;
+        [SerializeField] private float rayPanelDistance = 1.05f;
+        [SerializeField] private float rayPanelScale = 1.3f;
+        [Tooltip("Scenario 1: the drums stand below the card, so it is a little smaller and its centre a little above the eyes.")]
+        [SerializeField] private float rayPanelScaleSc01 = 1.15f;
+        [SerializeField] private float rayPanelRiseSc01 = 0.15f;
+        [Tooltip("Scenario 2: the card is centred on the eyes.")]
+        [SerializeField] private float rayPanelRiseSc02 = 0f;
+        [SerializeField] private float rayStartDelay = 5f;
+
+        private bool _sc01Moved;
+        private bool _sc01Moving;
+        private readonly List<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider> _lockedProviders =
+            new List<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>();
+
+        // The learner keeps the head free but does not move: no thumbstick walking / turning / teleport.
+        private void LockLocomotion(bool lockIt)
+        {
+            if (rig == null)
+                return;
+            if (lockIt)
+            {
+                _lockedProviders.Clear();
+                foreach (var p in rig.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionProvider>(true))
+                {
+                    if (!p.enabled)
+                        continue;
+                    p.enabled = false;
+                    _lockedProviders.Add(p);
+                }
+
+                if (zoom != null)
+                    zoom.ZoomEnabled = false;
+            }
+            else
+            {
+                foreach (var p in _lockedProviders)
+                    if (p != null)
+                        p.enabled = true;
+                _lockedProviders.Clear();
+            }
+        }
+
+        // ------------------------------------------------------------------ Scenario 2, controller-ray flow
+        // Fixed stand with a view of the 6 containers and the cabinet. Take Decision (Inspection / Continue); inspecting shows a
+        // container's properties card with CLOSE; Continue: pick a container, pick a compartment in the popup, and the container
+        // is stored automatically (door opens, container flies in, door closes). Wrong compartment: red door + warning, try again.
+        private bool _sc02Back;
+
+        private IEnumerator RunSc02RayFlow()
+        {
+            var stand = sc02RayStand != null ? sc02RayStand : spawnSc02;
+            var fwd = Flat(stand.forward);
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.4f);
+            PlaceRig(stand.position, fwd);
+            if (placement != null)
+                placement.AdjustRows(_cam != null ? _cam.position.y - rig.position.y : 1.6f);
+            yield return fader.FadeTo(0f, 0.6f);
+
+            Stage("sc02Explore");
+            chart?.SetDistance(0.58f);
+            var inspected = new HashSet<int>();
+            void OnHeld()
+            {
+                var i = inspect.HeldIndex;
+                if (i >= 0)
+                    inspected.Add(i);
+            }
+
+            inspect.HeldChanged += OnHeld;
+            var total = inspect.Count;
+            bool AllInspected()
+            {
+                for (var i = 0; i < total; i++)
+                    if (!inspected.Contains(i) && !inspect.IsPlaced(i))
+                        return false;
+                return true;
+            }
+
+            var eye = _cam != null ? _cam.position.y : 1.6f;
+            var cardPos = new Vector3(stand.position.x, 0f, stand.position.z) + fwd * 1.1f + Vector3.up * (eye + rayPanelRiseSc02);
+            var cardRot = Quaternion.LookRotation(fwd, Vector3.up);
+
+            var firstTime = true;
+            while (placement != null && placement.Placed < placement.Total)
+            {
+                Stage("sc02Decision");
+                var choice = 0;
+                void OnInsp() => choice = 1;
+                void OnCont() => choice = 2;
+                sc02Decision.Inspection += OnInsp;
+                sc02Decision.Continue += OnCont;
+                sc02Decision.Show(cardPos, cardRot, rayPanelScale, !AllInspected());
+                StopVoice();
+                StartCoroutine(PlayVoice(art.voSc02Decision));
+                if (firstTime)
+                {
+                    subtitle.Dock(sc02Decision.Card, () => -0.52f, 1.0f);
+                    firstTime = false;
+                }
+
+                while (choice == 0)
+                    yield return null;
+                sc02Decision.Inspection -= OnInsp;
+                sc02Decision.Continue -= OnCont;
+                sc02Decision.Hide();
+                StopVoice();
+
+                if (choice == 1)
+                {
+                    Stage("sc02Inspect");
+                    var closeRequested = false;
+                    void OnClose() => closeRequested = true;
+                    inspect.CloseRequested += OnClose;
+                    inspect.SetShowCardOnPick(true);
+                    inspect.SetCardAllowed(true);
+                    inspect.SetInteractable(true);
+                    StartCoroutine(SubtitledVoice(null, Sc02Content.InspectHint, art.voSc02Inspect));
+                    do
+                    {
+                        closeRequested = false;
+                        while (!closeRequested)
+                            yield return null;
+                        inspect.ReturnAll();
+                        inspect.SetInteractable(true);
+                    } while (!AllInspected());
+
+                    inspect.CloseRequested -= OnClose;
+                    inspect.SetInteractable(false);
+                    subtitle.Hide();
+                    continue; // everything inspected: Take Decision comes back by itself
+                }
+
+                // Continue: store the six containers one after the other
+                _sc02Back = false;
+                while (!_sc02Back && placement.Placed < placement.Total)
+                    yield return Sc02PlaceOne(stand.position, fwd);
+            }
+
+            inspect.HeldChanged -= OnHeld;
+            while (placement != null && placement.IsBusy)
+                yield return null;
+            yield return PresentableFx.Wait(0.4f);
+            inspect.SetShowCardOnPick(true);
+            inspect.SetInteractable(false);
+            subtitle.Hide();
+        }
+
+        private IEnumerator Sc02PlaceOne(Vector3 standPos, Vector3 fwd)
+        {
+            Stage("sc02Place");
+            inspect.ReturnAll();
+            inspect.SetShowCardOnPick(false);
+            inspect.SetInteractable(true);
+            StartCoroutine(SubtitledVoice(null, Sc02Content.PickContainerHint, art.voSc02Pick));
+            while (!inspect.HasHeld)
+                yield return null;
+            StopVoice();
+            subtitle.Hide();
+
+            var eye = _cam != null ? _cam.position.y : 1.6f;
+            sc02DestPopup.Configure(Sc02Content.Compartments, Sc02Content.DestTitle, Sc02Content.DestTitleWrong);
+            sc02DestPopup.SetWorldScale(rayPanelScale);
+            sc02DestPopup.transform.SetPositionAndRotation(
+                new Vector3(standPos.x, 0f, standPos.z) + fwd * 1.05f + Vector3.up * (eye + rayPanelRiseSc02),
+                Quaternion.LookRotation(fwd, Vector3.up));
+            while (true)
+            {
+                var chosen = -1;
+                var closed = false;
+                void OnChosen(int c) => chosen = c;
+                void OnClosed() => closed = true;
+                sc02DestPopup.Chosen += OnChosen;
+                sc02DestPopup.Closed += OnClosed;
+                sc02DestPopup.Open();
+                StartCoroutine(PlayVoice(art.voSc02Dest));
+                while (chosen < 0 && !closed)
+                    yield return null;
+                sc02DestPopup.Chosen -= OnChosen;
+                sc02DestPopup.Closed -= OnClosed;
+                StopVoice();
+                sc02DestPopup.Close();
+                if (closed)
+                {
+                    inspect.ReturnAll();
+                    _sc02Back = true;
+                    yield break;
+                }
+
+                yield return placement.AutoPlace(chosen);
+                if (placement.LastCorrect)
+                    yield break;
+                yield return PresentableFx.Wait(0.3f);
+            }
+        }
+
+        private IEnumerator RunSc01RayFlow()
+        {
+            Stage("transition");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.4f);
+            var stand = sc01RayStand != null ? sc01RayStand : spawnDrumView;
+            var fwd = Flat(stand.forward);
+            PlaceRig(stand.position, fwd);
+            yield return fader.FadeTo(0f, 0.6f);
+
+            Stage("explore");
+            // the four name plates (1. Faded Label ... 4.) float above the drums for the whole scenario
+            for (var i = 0; i < drums.Length; i++)
+                drums[i]?.RevealPlate();
+
+            yield return PresentableFx.Wait(rayStartDelay); // the learner takes in the room and the four drums first
+
+            Stage("mcq1");
+            mcqSc01.SetWorldScale(rayPanelScaleSc01);
+            PlacePanelRay(mcqSc01.transform, stand.position, fwd, rayPanelRiseSc01);
+            // above the question card: below it the learner is looking at the drums
+            subtitle.Dock(mcqSc01.transform, () => 0.45f, 1.0f);
+            yield return RunQuestion(mcqSc01, BuildSc01Question(), true);
+            while (_sc01Moving)
+                yield return null;
+        }
+
+        // Straight ahead of the learner, bottom edge at eye level so the drums below it stay uncovered.
+        private void PlacePanelRay(Transform panel, Vector3 standPos, Vector3 forward, float rise)
+        {
+            var fwd = Flat(forward);
+            var eye = _cam != null ? _cam.position.y : 1.6f;
+            panel.position = new Vector3(standPos.x, 0f, standPos.z) + fwd * rayPanelDistance + Vector3.up * (eye + rise);
+            panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+        }
+
+        // Correct answer: the trolley rolls to the rack, the right drum lifts off and settles on the toe plate, the trolley rolls off.
+        private IEnumerator Sc01DrumToTrolley()
+        {
+            _sc01Moved = true;
+            var idx = Mathf.Clamp(Sc01Content.CorrectIndex, 0, drums.Length - 1);
+            var hero = drums[idx] != null ? drums[idx].transform : null;
+            if (hero == null || trolley == null || carrierLoad == null)
+                yield break;
+            _sc01Moving = true;
+
+            var tr = trolley.transform;
+            carrierLoad.SetActive(false);
+            trolley.SetActive(true);
+            PresentableFx.Play(PresentableFx.Chime, 0.8f);
+            var baseScale = tr.localScale;
+            yield return PresentableFx.Tween(0.5f, t => tr.localScale = baseScale * Mathf.LerpUnclamped(0.5f, 1f, t),
+                PresentableFx.EaseOutBack);
+
+            // Hand truck geometry measured on DrumCarrier.glb (root local): width along z, depth along x, the toe plate
+            // reaches to x = +0.21, the rails and handle are at x <= +0.10. A drum stands on the plate, back against the rails.
+            // (The old pose put the drum 0.18 m along z, i.e. beside the frame and through its side: "the trolley is inside the drum".)
+            const float seatX = 0.417f;   // drum centre in front of the rails, over the plate
+            const float seatY = 0.57f;    // centre height with the rim on the plate
+            const float seatTilt = 6f;    // leans back on the rails
+            const float faceRack = 270f;  // yaw that points the toe plate (+x) at the rack (+z)
+            const float stagingGap = 0.30f;
+
+            var rackRenderers = hero.GetComponentsInChildren<Renderer>(true);
+            var hb = rackRenderers.Length > 0 ? rackRenderers[0].bounds : new Bounds(hero.position, Vector3.zero);
+            foreach (var r in rackRenderers)
+                hb.Encapsulate(r.bounds);
+            var hc = hb.center;
+            var yawFace = Quaternion.Euler(0f, faceRack, 0f);
+            var parked = tr.position;
+            var parkedYaw = tr.eulerAngles.y;
+            var seatPos = new Vector3(hc.x, 0f, hc.z - seatX); // the trolley root when loaded
+            var staging = seatPos + new Vector3(0f, 0f, -stagingGap); // toe plate still clear of the drum
+
+            // roll in, turning to face the rack
+            PresentableFx.Play(PresentableFx.Whoosh, 0.4f);
+            yield return PresentableFx.Tween(1.3f, t =>
+            {
+                var p = Vector3.Lerp(parked, staging, t);
+                p.y = parked.y;
+                tr.position = p;
+                tr.rotation = Quaternion.Euler(0f, Mathf.LerpAngle(parkedYaw, faceRack, Mathf.SmoothStep(0f, 1f, t)), 0f);
+            }, PresentableFx.EaseOutCubic);
+            tr.position = new Vector3(staging.x, parked.y, staging.z);
+            tr.rotation = yawFace;
+
+            // the drum is lifted a hand's breadth, the toe plate slides under it, the drum settles and leans back on the rails
+            carrierLoad.SetActive(true);
+            drums[idx].SetCalloutVisible(false, 0.3f); // its plate leaves with the drum
+            var load = carrierLoad.transform;
+            var startY = hc.y;
+            var peakY = Mathf.Max(startY, seatY) + 0.17f;
+            var faceCamera = Quaternion.Euler(0f, 180f, 0f); // the label side towards the learner
+            var leanAxis = yawFace * Vector3.forward;         // the truck's width axis
+            load.SetPositionAndRotation(new Vector3(hc.x, startY, hc.z), faceCamera);
+            foreach (var r in rackRenderers)
+                r.enabled = false;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.5f);
+            yield return PresentableFx.Tween(1.8f, t =>
+            {
+                var slide = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.30f, 0.72f, t));
+                tr.position = new Vector3(Mathf.Lerp(staging.x, seatPos.x, slide), parked.y, Mathf.Lerp(staging.z, seatPos.z, slide));
+                float y;
+                if (t < 0.30f)
+                    y = Mathf.Lerp(startY, peakY, Mathf.SmoothStep(0f, 1f, t / 0.30f));
+                else if (t < 0.72f)
+                    y = peakY;
+                else
+                    y = Mathf.Lerp(peakY, seatY, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1f, t)));
+                var lean = seatTilt * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1f, t));
+                load.SetPositionAndRotation(new Vector3(hc.x, y, hc.z), Quaternion.AngleAxis(lean, leanAxis) * faceCamera);
+            }, x => x);
+            tr.position = new Vector3(seatPos.x, parked.y, seatPos.z);
+            load.SetPositionAndRotation(new Vector3(hc.x, seatY, hc.z), Quaternion.AngleAxis(seatTilt, leanAxis) * faceCamera);
+            PresentableFx.Haptic(true, 0.5f, 0.08f);
+            PresentableFx.Haptic(false, 0.5f, 0.08f);
+            PresentableFx.Play(PresentableFx.Tick, 0.9f);
+            StartCoroutine(Sc01LandRing(new Vector3(hc.x, 0f, hc.z)));
+            yield return PresentableFx.Wait(0.4f);
+
+            // loaded: like a real hand truck it tips back a little, is pulled handle first to the right (never toward the
+            // learner's face: it used to roll to under a metre from the camera and its drum filled the view), and folds away
+            var p0 = tr.position;
+            var away = p0 + new Vector3(1.5f, 0f, 0.15f);
+            var scale0 = tr.localScale;
+            yield return PresentableFx.Tween(2.0f, t =>
+            {
+                var e = Mathf.SmoothStep(0f, 1f, t);
+                tr.position = Vector3.Lerp(p0, away, e);
+                // the handle (local -x) ends up pointing along the way it is pulled (+x of the room)
+                tr.rotation = Quaternion.Euler(0f, Mathf.Lerp(faceRack, 180f, e), 0f) *
+                              Quaternion.Euler(0f, 0f, 4f * Mathf.Sin(Mathf.Min(1f, t * 3f) * Mathf.PI * 0.5f));
+                tr.localScale = scale0 * Mathf.Lerp(1f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.65f, 1f, t)));
+            }, x => x);
+            trolley.SetActive(false);
+            tr.localScale = scale0;
+            _sc01Moving = false;
+        }
+
+        // A soft ring of light on the floor where the drum settles on the trolley.
+        private IEnumerator Sc01LandRing(Vector3 floorPos)
+        {
+            var canvas = PresentableUi.WorldCanvas("Sc01LandRing", null, new Vector2(400f, 400f), 0.0024f, false, 5);
+            canvas.transform.position = new Vector3(floorPos.x, 0.012f, floorPos.z);
+            canvas.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            var img = PresentableUi.Img(PresentableUi.Rect("Glow", canvas.transform, Vector2.zero, Vector2.one), art.radialGlow,
+                new Color(PresentableMcqPanel.EmeraldMain.r, PresentableMcqPanel.EmeraldMain.g, PresentableMcqPanel.EmeraldMain.b, 0f));
+            var s0 = canvas.transform.localScale;
+            yield return PresentableFx.Tween(1.0f, t =>
+            {
+                canvas.transform.localScale = s0 * Mathf.Lerp(0.5f, 1.5f, t);
+                img.color = new Color(PresentableMcqPanel.EmeraldMain.r, PresentableMcqPanel.EmeraldMain.g, PresentableMcqPanel.EmeraldMain.b,
+                    0.7f * (1f - t));
+            }, PresentableFx.EaseOutCubic);
+            Destroy(canvas.gameObject);
+        }
+
+
         private void LateUpdate()
         {
             if (!_eyeInstruction || instructionPanel == null)
                 return;
+            if (PresentableInput.RayActive)
+                return; // ray: the card stays where it appeared (world fixed), the ray aims at it
             // Reaching for the speaker or Continue: freeze the card so the target does not slide away.
             if (FingerCovers(instructionPanel.transform, 0.22f, 200f))
                 return;
@@ -1565,6 +1996,8 @@ namespace ChemicalSafety.Presentable
 
         private float EyeCardDistance()
         {
+            if (PresentableInput.RayActive)
+                return rayCardDistance; // pointing from a distance: the learner sees the whole room behind the card
             // Headset: close enough to poke without a full arm extension. The desk preview stays further back.
             return XRSettings.isDeviceActive ? Mathf.Min(sc03CardDistance, 0.52f) : 0.95f;
         }
@@ -1980,7 +2413,17 @@ namespace ChemicalSafety.Presentable
                         d?.ClearHighlight();
                     if (drum < drums.Length && drums[drum] != null)
                         drums[drum].Highlight(correct ? PresentableUi.Green : PresentableUi.Red, true);
+                    // the answer is shown, not retried: after a wrong pick the right drum lights up green as well
+                    if (!correct && q.inlineReveal)
+                    {
+                        var right = order[q.correctIndex];
+                        if (right < drums.Length && drums[right] != null)
+                            drums[right].Highlight(PresentableUi.Green, true);
+                    }
                 }
+
+                if (scenario == 1 && correct && PresentableInput.RayActive && !_sc01Moved)
+                    StartCoroutine(Sc01DrumToTrolley());
 
                 StopVoice();
                 if (scenario == 3 && !correct && sc03Detonation != null)
@@ -2045,6 +2488,13 @@ namespace ChemicalSafety.Presentable
             {
                 correctClip = Sc01(art.voCorrect, art.trialCorrect);
                 wrongClip = Sc01(art.voWrong, art.trialWrong);
+            }
+
+            if (scenario == 1 && !correct && art.voSc01WrongNextBn != null)
+            {
+                // no retry in Scenario 1: it says why and sends the learner on with NEXT
+                yield return PlayVoice(Loc.IsBangla ? art.voSc01WrongNextBn : art.voSc01WrongNextEn);
+                yield break;
             }
 
             yield return PlayVoice(correct ? correctClip : wrongClip);
@@ -2235,6 +2685,47 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(0.1f);
         }
 
+        // Login page greeting: the English clip, then a 1 s gap, then the Bangla clip, whatever language is selected.
+        private bool _welcomeDone = true;
+        private Coroutine _welcomeVoice;
+
+        private IEnumerator LoginWelcomeVoice()
+        {
+            yield return PresentableFx.Wait(1.2f); // the login page fades in first
+            var english = Resources.Load<AudioClip>("VoEn/VO_AssalamuAlaikum");
+            Debug.Log("[Voice] login greeting: English clip " + (english != null ? english.name : "MISSING"));
+            yield return PlayVoiceAsIs(english);
+            yield return PresentableFx.Wait(1f);
+            Debug.Log("[Voice] login greeting: Bangla clip " + (art.voSalam != null ? art.voSalam.name : "MISSING"));
+            yield return PlayVoiceAsIs(art.voSalam);
+            _welcomeDone = true;
+        }
+
+        // Plays exactly this clip (no English / Bangla swap by the selected language).
+        private IEnumerator PlayVoiceAsIs(AudioClip clip)
+        {
+            if (clip == null || voice == null)
+                yield break;
+            if (clip.loadState != AudioDataLoadState.Loaded)
+                clip.LoadAudioData();
+            voice.Stop();
+            voice.clip = clip;
+            voice.Play();
+            var waited = 0f;
+            while (!voice.isPlaying && waited < 3f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            waited = 0f;
+            while (voice.isPlaying && voice.clip == clip && waited < 30f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
         private void StopVoice()
         {
             if (voice != null)
@@ -2303,8 +2794,13 @@ namespace ChemicalSafety.Presentable
             var label = Sc01Content.OptionLabels;
             var wrong = Sc01Content.OptionWrongLabels;
             var feedback = Sc01Content.OptionFeedback;
+            var reason = Sc01Content.OptionReasons;
             return new PresentableMcqPanel.Question
             {
+                inlineReveal = true, // client: no right / wrong popup, tick / cross on the rows + a reason under each, then NEXT (also after a wrong answer)
+                tagCorrect = Sc01Content.TagCorrect,
+                tagWrong = Sc01Content.TagWrong,
+                holdNext = () => _sc01Moving,
                 header = Sc01Content.QuestionHeader,
                 prompt = Sc01Content.QuestionPrompt,
                 correctTitle = Sc01Content.CorrectTitle,
@@ -2319,14 +2815,16 @@ namespace ChemicalSafety.Presentable
                         wrongLabel = wrong[0],
                         icons = new[] { art.thumbNoLabel },
                         overlays = new[] { art.labelFaded },
-                        feedback = feedback[0]
+                        feedback = feedback[0],
+                        reason = reason[0]
                     },
                     new PresentableMcqPanel.Option
                     {
                         label = label[1],
                         wrongLabel = wrong[1],
                         icons = new[] { art.thumbNoLabel },
-                        feedback = feedback[1]
+                        feedback = feedback[1],
+                        reason = reason[1]
                     },
                     new PresentableMcqPanel.Option
                     {
@@ -2334,14 +2832,16 @@ namespace ChemicalSafety.Presentable
                         wrongLabel = wrong[2],
                         icons = new[] { art.iconGhs, art.iconSds, art.thumbNoLabel },
                         overlays = new Sprite[] { null, null, art.labelMethanol },
-                        feedback = feedback[2]
+                        feedback = feedback[2],
+                        reason = reason[2]
                     },
                     new PresentableMcqPanel.Option
                     {
                         label = label[3],
                         icons = new[] { art.thumbNoLabel },
                         overlays = new[] { art.labelIsopropanol },
-                        feedback = feedback[3]
+                        feedback = feedback[3],
+                        reason = reason[3]
                     }
                 },
                 fancy = true

@@ -22,12 +22,15 @@ namespace ChemicalSafety.Presentable
         public static string CorrectTitle => Loc.T("SC01", "CorrectTitle");
         public static string WrongTitle => Loc.T("SC01", "WrongTitle");
         public static string FinishLabel => Loc.T("SC01", "FinishLabel");
+        public static string TagCorrect => Loc.T("SC01", "TagCorrect");
+        public static string TagWrong => Loc.T("SC01", "TagWrong");
 
-        /// <summary>Index of the correct option in the unshuffled order (Correctly Labelled).</summary>
+        /// <summary>Index of the correct option in the unshuffled order (GHS vs SDS Matched).</summary>
         public const int CorrectIndex = 3;
 
         public static string[] OptionLabels => Loc.A("SC01", "OptionLabels");
         public static string[] OptionWrongLabels => Loc.A("SC01", "OptionWrongLabels");
         public static string[] OptionFeedback => Loc.A("SC01", "OptionFeedback");
+        public static string[] OptionReasons => Loc.A("SC01", "OptionReasons");
     }
 }

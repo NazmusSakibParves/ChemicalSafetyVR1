@@ -1,4 +1,5 @@
 using System.Collections;
+using ChemicalSafety.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,6 +23,8 @@ namespace ChemicalSafety.Presentable
         private static readonly Color PillFill = new Color(0.02f, 0.09f, 0.17f, 0.96f);
         private static readonly Color PillBorder = new Color(0.3f, 0.78f, 1f, 1f);
 
+        private TextMeshProUGUI _text;
+        private string _numberHex;
         private Transform _cam;
         private Transform _bubble;
         private CanvasGroup _bubbleGroup;
@@ -71,6 +74,8 @@ namespace ChemicalSafety.Presentable
             text.enableAutoSizing = true;
             text.fontSizeMin = 26f;
             text.fontSizeMax = 44f;
+            _text = text;
+            _numberHex = hex;
 
             var floor = PresentableUi.WorldCanvas("FloorGlow", transform, new Vector2(400f, 400f), 0.0024f, false, 5);
             floor.transform.position = new Vector3(transform.position.x, transform.position.y + 0.01f,
@@ -130,8 +135,19 @@ namespace ChemicalSafety.Presentable
             _pulse = false;
         }
 
+        // The plate is built before the language is chosen; Bangla shows the same words as the question options.
+        private void RefreshCaption()
+        {
+            if (_text == null || !Loc.IsBangla)
+                return;
+            var labels = Sc01Content.OptionLabels;
+            if (number >= 1 && number <= labels.Length)
+                _text.text = "<color=#" + _numberHex + ">" + number + ".</color> " + labels[number - 1];
+        }
+
         private IEnumerator PopPlate()
         {
+            RefreshCaption();
             yield return PresentableFx.Tween(0.4f, t =>
             {
                 _bubbleGroup.alpha = Mathf.Clamp01(t * 2f);

@@ -26,6 +26,8 @@ namespace ChemicalSafety.Presentable
             [Tooltip("Optional sticker drawn on top of the matching icon (same index).")]
             public Sprite[] overlays = Array.Empty<Sprite>();
             [TextArea(2, 4)] public string feedback;
+            [Tooltip("One line shown under this option once the question is answered (inlineReveal).")]
+            public string reason;
         }
 
         [Serializable]
@@ -40,6 +42,11 @@ namespace ChemicalSafety.Presentable
             public string nextLabel = "NEXT";
             [Tooltip("Shared fancy look (SC01–SC10): options arrive one by one, glow and chevrons, a light comet round the frame (Sc06McqFx).")]
             public bool fancy;
+            [Tooltip("Scenario 1: no result popup. The answer is marked on the rows (green tick + border on the right one, red cross on a wrong pick) with a one-line reason under every option, then NEXT. A wrong answer also goes on to NEXT (no retry).")]
+            public bool inlineReveal;
+            public string tagCorrect = "CORRECT";
+            public string tagWrong = "WRONG";
+            [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
             [NonSerialized] public int[] sourceOrder; // for each shown slot, the index the option had before the per-session shuffle
             [NonSerialized] public Func<bool> holdCorrect; // true while a cutscene must finish before the right-answer card opens
         }
@@ -51,6 +58,13 @@ namespace ChemicalSafety.Presentable
             public Image fill;
             public Image frame;
             public Image check;
+            public Image cross;
+            public Image verdict; // coloured outline behind the row frame (inlineReveal)
+            public Image bloom;   // soft outer glow behind the outline (inlineReveal)
+            public Image wash;    // light colour wash over the bar (inlineReveal)
+            public Image gloss;   // white highlight on the top half of the bar (inlineReveal)
+            public Image badge;   // round glow behind the tick / cross (inlineReveal)
+            public TextMeshProUGUI reason; // line under the row (inlineReveal)
             public TextMeshProUGUI label;
             public Image[] icons;
             public Image[] overlays;
@@ -66,6 +80,15 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private PresentableArt art;
         [SerializeField] private Vector2 sizePx = new Vector2(1240f, 900f);
         [SerializeField] private float metersPerPixel = 0.00055f;
+
+        private float _worldScale = 1f;
+
+        /// <summary>Controller-ray scenario: same card, same text sizes in pixels, scaled uniformly so it reads from further away.</summary>
+        public void SetWorldScale(float scale)
+        {
+            _worldScale = Mathf.Max(0.1f, scale);
+            transform.localScale = Vector3.one * _worldScale;
+        }
 
         private readonly List<Row> _rows = new List<Row>();
         private Question _question;
@@ -83,6 +106,9 @@ namespace ChemicalSafety.Presentable
         private TextMeshProUGUI _wrongBody;
         private RectTransform _nextButton;
         private TextMeshProUGUI _nextLabel;
+        private RectTransform _inlineNext;
+        private TextMeshProUGUI _inlineNextLabel;
+        private Image _inlineNextGlow;
         private bool _locked;
         private bool _built;
         private Sc06McqFx _fx;
@@ -138,7 +164,8 @@ namespace ChemicalSafety.Presentable
                 var n = opt.icons == null ? 0 : Mathf.Min(opt.icons.Length, _rows[i].icons.Length);
                 const float iconW = 0.082f;
                 const float iconGap = 0.014f;
-                const float iconRight = 0.95f;
+                // inlineReveal (Scenario 1): the icons keep clear of the » chevron at the right edge of the row
+                var iconRight = question.inlineReveal ? 0.885f : 0.95f;
                 var labelRight = n > 0 ? iconRight - n * (iconW + iconGap) - 0.02f : 0.92f;
                 _rows[i].label.rectTransform.anchorMin = new Vector2(0.06f, 0.08f);
                 _rows[i].label.rectTransform.anchorMax = new Vector2(labelRight, 0.92f);
@@ -161,6 +188,7 @@ namespace ChemicalSafety.Presentable
             }
 
             ApplyNormalState();
+            ResetInline();
             _correctPopup.gameObject.SetActive(false);
             _wrongPopup.gameObject.SetActive(false);
             _nextButton.gameObject.SetActive(false);
@@ -203,7 +231,9 @@ namespace ChemicalSafety.Presentable
             var correct = index == _question.correctIndex;
             var opt = _question.options[index];
 
-            if (correct)
+            if (_question.inlineReveal)
+                StartCoroutine(ShowInline(index, correct));
+            else if (correct)
                 StartCoroutine(ShowCorrect(index, opt));
             else
                 StartCoroutine(ShowWrong(index, opt));
@@ -263,6 +293,152 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(Shake(_rows[index].root));
             yield return PopupIn(_wrongPopup);
             PopupShown?.Invoke(false);
+        }
+
+        // ------------------------------------------------------------------ inlineReveal (Scenario 1)
+
+        private const float RowH = 0.128f;
+        private const float RowGap = 0.012f;
+        private const float RevealRowH = 0.105f;
+        private const float RevealSlot = 0.1575f;
+
+        // Scenario 1 result colours: emerald and ruby (jewel tones with a light edge), not the plain RGB green / red
+        public static readonly Color EmeraldMain = new Color(0.13f, 0.90f, 0.63f, 1f);
+        public static readonly Color EmeraldLight = new Color(0.62f, 1f, 0.86f, 1f);
+        public static readonly Color RubyMain = new Color(1f, 0.24f, 0.37f, 1f);
+        public static readonly Color RubyLight = new Color(1f, 0.64f, 0.70f, 1f);
+
+        /// <summary>Normal question layout again (prompt visible, rows in their slots) and the reveal pieces hidden.</summary>
+        private void ResetInline()
+        {
+            _readPlate.anchorMin = new Vector2(0.06f, 0.10f);
+            _readPlate.anchorMax = new Vector2(0.94f, 0.83f);
+            _prompt.gameObject.SetActive(true);
+            _inlineNext.gameObject.SetActive(false);
+            for (var i = 0; i < _rows.Count; i++)
+            {
+                var top = 0.655f - i * (RowH + RowGap);
+                var r = _rows[i];
+                r.root.anchorMin = new Vector2(0.05f, top - RowH);
+                r.root.anchorMax = new Vector2(0.95f, top);
+                r.verdict.gameObject.SetActive(false);
+                r.bloom.gameObject.SetActive(false);
+                r.wash.gameObject.SetActive(false);
+                r.gloss.gameObject.SetActive(false);
+                r.badge.gameObject.SetActive(false);
+                r.cross.gameObject.SetActive(false);
+                r.reason.gameObject.SetActive(false);
+                r.label.rectTransform.anchorMin = new Vector2(0.06f, r.label.rectTransform.anchorMin.y);
+            }
+        }
+
+        // Rows move up (the question line is gone) so every option has a one-line reason under it, and NEXT fits below.
+        private void LayoutReveal()
+        {
+            _prompt.gameObject.SetActive(false);
+            _readPlate.anchorMin = new Vector2(0.06f, 0.17f);
+            _readPlate.anchorMax = new Vector2(0.94f, 0.83f);
+            for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
+            {
+                var top = 0.825f - i * RevealSlot;
+                var r = _rows[i];
+                r.root.anchorMin = new Vector2(0.05f, top - RevealRowH);
+                r.root.anchorMax = new Vector2(0.95f, top);
+                r.label.rectTransform.anchorMin = new Vector2(0.105f, r.label.rectTransform.anchorMin.y);
+                var rr = r.reason.rectTransform;
+                rr.anchorMin = new Vector2(0.09f, top - RevealRowH - 0.0485f);
+                rr.anchorMax = new Vector2(0.94f, top - RevealRowH - 0.0035f);
+            }
+        }
+
+        // The marked row's bloom swells in and then breathes softly; the badge pops.
+        private IEnumerator RowGlowIn(Row r, Color main, float delay)
+        {
+            var badgeRt = r.badge.rectTransform;
+            r.bloom.color = new Color(main.r, main.g, main.b, 0f);
+            badgeRt.localScale = Vector3.zero;
+            if (delay > 0f)
+                yield return PresentableFx.Wait(delay);
+            yield return PresentableFx.Tween(0.45f, t =>
+            {
+                r.bloom.color = new Color(main.r, main.g, main.b, 0.30f * t);
+                badgeRt.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, t);
+            }, PresentableFx.EaseOutBack);
+            badgeRt.localScale = Vector3.one;
+            var t0 = Time.time;
+            while (r.bloom.gameObject.activeInHierarchy)
+            {
+                var pulse = 0.5f + 0.5f * Mathf.Sin((Time.time - t0) * 2.4f);
+                r.bloom.color = new Color(main.r, main.g, main.b, 0.18f + 0.16f * pulse);
+                yield return null;
+            }
+        }
+
+        /// <summary>Tint of the panel frame (the result colour fades in on the whole box).</summary>
+        public void TintFrame(Color c)
+        {
+            if (_frame != null)
+                _frame.color = c;
+        }
+
+        private IEnumerator ShowInline(int index, bool correct)
+        {
+            PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
+            PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
+            _header.color = Color.white;
+            if (_fx != null)
+                _fx.OnResult(correct, index, true);
+            LayoutReveal();
+
+            var rightIdx = Mathf.Clamp(_question.correctIndex, 0, _rows.Count - 1);
+            for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
+            {
+                var r = _rows[i];
+                var isRight = i == rightIdx;
+                var isPick = i == index;
+                var good = isRight;
+                var marked = isRight || isPick;
+                var main = good ? EmeraldMain : RubyMain;
+                var light = good ? EmeraldLight : RubyLight;
+                r.verdict.gameObject.SetActive(marked);
+                r.verdict.color = main;
+                r.bloom.gameObject.SetActive(marked);
+                r.wash.gameObject.SetActive(marked);
+                r.wash.color = new Color(main.r, main.g, main.b, 0.18f);
+                r.gloss.gameObject.SetActive(marked);
+                r.check.gameObject.SetActive(isRight);
+                r.check.color = Color.white;
+                r.cross.gameObject.SetActive(isPick && !isRight);
+                r.cross.color = Color.white;
+                r.badge.gameObject.SetActive(marked);
+                r.badge.color = new Color(main.r, main.g, main.b, 0.85f);
+                if (marked)
+                    StartCoroutine(RowGlowIn(r, main, isPick ? 0f : 0.12f));
+                var tagColor = good ? "#6BE38A" : "#FF8A80";
+                var tag = good ? _question.tagCorrect : _question.tagWrong;
+                r.reason.text = "<b><color=" + tagColor + ">" + tag + "</color></b>  " + _question.options[i].reason;
+                r.reason.color = good ? new Color(0.80f, 1f, 0.86f) : new Color(1f, 0.86f, 0.84f);
+                r.reason.gameObject.SetActive(true);
+                r.root.GetComponent<CanvasGroup>().alpha = isRight || isPick ? 1f : 0.85f;
+            }
+
+            if (!correct)
+                StartCoroutine(Shake(_rows[index].root));
+            yield return PresentableFx.Wait(0.6f);
+
+            // right answer: the drum goes onto the trolley first (the director holds NEXT until that has finished)
+            while (_question.holdNext != null && _question.holdNext())
+                yield return null;
+            _inlineNextLabel.text = _question.nextLabel;
+            PopupShown?.Invoke(correct);
+            yield return PopupIn(_inlineNext);
+            // the button breathes so it reads as the thing to press
+            while (_inlineNext.gameObject.activeInHierarchy)
+            {
+                var pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 3f);
+                _inlineNextGlow.color = new Color(0.30f, 0.80f, 1f, 0.22f + 0.30f * pulse);
+                yield return null;
+            }
         }
 
         private void OnWrongClosed()
@@ -353,11 +529,11 @@ namespace ChemicalSafety.Presentable
             // the panel takes input only after the pop-in and once no fingertip is in front of it.
             _group.interactable = false;
             _group.blocksRaycasts = true;
-            transform.localScale = Vector3.one * 0.8f;
+            transform.localScale = Vector3.one * (0.8f * _worldScale);
             yield return PresentableFx.Tween(0.45f, t =>
             {
                 _group.alpha = Mathf.Clamp01(t * 1.5f);
-                transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.8f, 1f, t);
+                transform.localScale = Vector3.one * (_worldScale * Mathf.LerpUnclamped(0.8f, 1f, t));
             }, PresentableFx.EaseOutBack);
             var guard = 0f;
             while (FingerInFront() && guard < 2.5f)
@@ -427,7 +603,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.3f, t =>
             {
                 _group.alpha = Mathf.Lerp(from, 0f, t);
-                transform.localScale = Vector3.one * Mathf.Lerp(1f, 0.9f, t);
+                transform.localScale = Vector3.one * (_worldScale * Mathf.Lerp(1f, 0.9f, t));
             });
         }
 
@@ -507,6 +683,7 @@ namespace ChemicalSafety.Presentable
             BuildCorrectPopup(root, font);
             BuildWrongPopup(root, font);
             BuildNextButton(root, font);
+            BuildInlineNext(panel, font);
             PresentableUi.AlwaysOnTop(canvas);
         }
 
@@ -559,9 +736,51 @@ namespace ChemicalSafety.Presentable
                 row.overlays[k] = PresentableUi.Img(stickerRt, null, Color.white, preserveAspect: true);
             }
 
-            var checkRt = PresentableUi.Rect("Check", row.root, new Vector2(0.015f, 0.28f), new Vector2(0.07f, 0.72f));
+            // round glow behind the tick / cross, then the mark itself (inlineReveal): bigger than before
+            var badgeRt = PresentableUi.Rect("Badge", row.root, new Vector2(-0.004f, 0.02f), new Vector2(0.098f, 0.98f));
+            row.badge = PresentableUi.Img(badgeRt, art.radialGlow, EmeraldMain, preserveAspect: true);
+            row.badge.gameObject.SetActive(false);
+            var checkRt = PresentableUi.Rect("Check", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
             row.check = PresentableUi.Img(checkRt, art.check, PresentableUi.Green, preserveAspect: true);
             row.check.gameObject.SetActive(false);
+
+            var crossRt = PresentableUi.Rect("Cross", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
+            row.cross = PresentableUi.Img(crossRt, art.cross, RubyLight, preserveAspect: true);
+            row.cross.gameObject.SetActive(false);
+
+            // colour wash and top gloss over the bar (below the words), inlineReveal only
+            var washRt = PresentableUi.Rect("Wash", row.root, new Vector2(0.004f, 0.06f), new Vector2(0.996f, 0.94f));
+            row.wash = PresentableUi.Img(washRt, art.roundedSolid, new Color(EmeraldMain.r, EmeraldMain.g, EmeraldMain.b, 0.16f), sliced: true);
+            washRt.SetSiblingIndex(row.fill.transform.GetSiblingIndex() + 1);
+            row.wash.gameObject.SetActive(false);
+            var glossRt = PresentableUi.Rect("Gloss", row.root, new Vector2(0.02f, 0.52f), new Vector2(0.98f, 0.93f));
+            row.gloss = PresentableUi.Img(glossRt, art.roundedSolid, new Color(1f, 1f, 1f, 0.13f), sliced: true);
+            glossRt.SetSiblingIndex(row.wash.transform.GetSiblingIndex() + 1);
+            row.gloss.gameObject.SetActive(false);
+
+            // coloured outline and soft bloom behind the frame (inlineReveal): emerald on the right option, ruby on a wrong pick
+            var bloomRt = PresentableUi.Rect("Bloom", row.root, Vector2.zero, Vector2.one, new Vector2(-20f, -20f), new Vector2(20f, 20f));
+            row.bloom = PresentableUi.Img(bloomRt, art.roundedSolid, new Color(EmeraldMain.r, EmeraldMain.g, EmeraldMain.b, 0.16f), sliced: true);
+            bloomRt.SetSiblingIndex(0);
+            row.bloom.gameObject.SetActive(false);
+            var verdictRt = PresentableUi.Rect("Verdict", row.root, Vector2.zero, Vector2.one, new Vector2(-8f, -8f), new Vector2(8f, 8f));
+            row.verdict = PresentableUi.Img(verdictRt, art.roundedSolid, EmeraldMain, sliced: true);
+            verdictRt.SetSiblingIndex(1);
+            row.verdict.gameObject.SetActive(false);
+
+            // one-line reason under the row; sits in the panel, not in the row, so the row's hover lift does not move it
+            var reasonRt = PresentableUi.Rect("Reason" + (index + 1), root, new Vector2(0.09f, 0.1f), new Vector2(0.94f, 0.15f));
+            reasonRt.localPosition += new Vector3(0f, 0f, -12f);
+            row.reason = PresentableUi.Text(reasonRt, string.Empty, 22f, Color.white, TextAlignmentOptions.MidlineLeft, false, font);
+            row.reason.richText = true;
+            row.reason.fontStyle = FontStyles.Italic;
+            row.reason.textWrappingMode = TextWrappingModes.NoWrap;
+            row.reason.overflowMode = TextOverflowModes.Ellipsis;
+            row.reason.enableAutoSizing = true;
+            row.reason.fontSizeMin = 14f;
+            row.reason.fontSizeMax = 22f;
+            row.reason.raycastTarget = false;
+            row.reason.gameObject.SetActive(false);
             return row;
         }
 
@@ -643,6 +862,44 @@ namespace ChemicalSafety.Presentable
             btn.onClick.AddListener(OnNextClicked);
             _nextButton.gameObject.AddComponent<HoverLift>().Init(_nextButton);
             _nextButton.gameObject.SetActive(false);
+        }
+
+        // inlineReveal: the same NEXT pill, on the panel below the last option (there is no result popup to hang it on)
+        private void BuildInlineNext(Transform panel, TMP_FontAsset font)
+        {
+            _inlineNext = PresentableUi.Rect("NextButton", panel, new Vector2(0.30f, 0.03f), new Vector2(0.70f, 0.165f));
+            _inlineNext.localPosition += new Vector3(0f, 0f, -30f);
+            _inlineNext.gameObject.AddComponent<CanvasGroup>();
+            var hit = PresentableUi.Img(PresentableUi.Rect("Hit", _inlineNext, Vector2.zero, Vector2.one), null,
+                new Color(1f, 1f, 1f, 0.02f), raycast: true);
+
+            // A real button, not a text pill: soft shadow, pulsing glow, light border, blue body with a top gloss and an arrow.
+            var half = new Vector2(190f, 50f);
+            var mid = new Vector2(0.5f, 0.5f);
+            _inlineNextGlow = PresentableUi.Img(PresentableUi.Rect("Glow", _inlineNext, mid, mid, -half * 1.35f, half * 1.35f),
+                art.radialGlow, new Color(0.30f, 0.80f, 1f, 0.35f));
+            PresentableUi.Img(PresentableUi.Rect("Shadow", _inlineNext, mid, mid, new Vector2(-half.x - 6f, -half.y - 14f),
+                new Vector2(half.x + 6f, half.y - 6f)), art.roundedSolid, new Color(0f, 0.02f, 0.06f, 0.45f), sliced: true);
+            PresentableUi.Img(PresentableUi.Rect("Border", _inlineNext, mid, mid, -half, half), art.roundedSolid,
+                new Color(0.62f, 0.92f, 1f, 1f), sliced: true);
+            PresentableUi.Img(PresentableUi.Rect("Body", _inlineNext, mid, mid, -half + new Vector2(4f, 4f), half - new Vector2(4f, 4f)),
+                art.roundedSolid, new Color(0.06f, 0.44f, 0.90f, 1f), sliced: true);
+            PresentableUi.Img(PresentableUi.Rect("Shade", _inlineNext, mid, mid, new Vector2(-half.x + 4f, -half.y + 4f),
+                new Vector2(half.x - 4f, -4f)), art.roundedSolid, new Color(0.02f, 0.16f, 0.50f, 0.55f), sliced: true);
+            PresentableUi.Img(PresentableUi.Rect("Gloss", _inlineNext, mid, mid, new Vector2(-half.x + 10f, 4f),
+                new Vector2(half.x - 10f, half.y - 7f)), art.roundedSolid, new Color(1f, 1f, 1f, 0.20f), sliced: true);
+            _inlineNextLabel = PresentableUi.Text("Label", _inlineNext, mid, mid, "NEXT", 42f, Color.white, bold: true, font: font);
+            _inlineNextLabel.rectTransform.offsetMin = new Vector2(-half.x + 30f, -half.y);
+            _inlineNextLabel.rectTransform.offsetMax = new Vector2(half.x - 90f, half.y);
+            _inlineNextLabel.characterSpacing = 6f;
+            PresentableUi.Img(PresentableUi.Rect("Arrow", _inlineNext, mid, mid, new Vector2(half.x - 84f, -26f),
+                new Vector2(half.x - 32f, 26f)), art.iconNext != null ? art.iconNext : art.cross, Color.white, preserveAspect: true);
+            var btn = _inlineNext.gameObject.AddComponent<Button>();
+            btn.transition = Selectable.Transition.None;
+            btn.targetGraphic = hit;
+            btn.onClick.AddListener(OnNextClicked);
+            _inlineNext.gameObject.AddComponent<HoverLift>().Init(_inlineNext);
+            _inlineNext.gameObject.SetActive(false);
         }
     }
 

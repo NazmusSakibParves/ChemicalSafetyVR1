@@ -60,6 +60,7 @@ namespace ChemicalSafety.Editor
             BuildDressing(env);
 
             var drums = BuildHeroRack(env, art, out var rackFocus, out var drumPokes);
+            Sc01BakeProbe(env);
             var env2 = new GameObject("Environment_SC02").transform;
             var doors = BuildSc02Room(env2, art, out var chart, out var inspect, out var placement);
             env2.gameObject.SetActive(false);
@@ -147,9 +148,17 @@ namespace ChemicalSafety.Editor
             // about a metre from the rack face: the floating Touch buttons are within arm's reach
             var drumPokeStand = Marker("DrumPokeStand", spawns, new Vector3(0f, 0f, 5.1f), 0f);
             var trolleyStand = Marker("TrolleyStand", spawns, new Vector3(0.7f, 0f, 4.15f), 0f);
+            // controller-ray flow: auto-placed here, about 2.7 m from the rack so the 4 drums and the side aisles are all in view
+            var sc01RayStand = Marker("Sc01RayStand", spawns, new Vector3(0f, 0f, 3.5f), 0f);
 
             var labelPopup = Child("LabelPickPopup", flow).AddComponent<LabelPickPopup>();
             SetRef(labelPopup, "art", art);
+            // Scenario 2 controller-ray flow
+            var sc02RayStand = Marker("Sc02RayStand", spawns, new Vector3(40.3f, 0f, 1.3f), 180f);
+            var sc02Decision = Child("Sc02DecisionBox", flow).AddComponent<Sc02DecisionBox>();
+            SetRef(sc02Decision, "art", art);
+            var sc02DestPopup = Child("Sc02DestPopup", flow).AddComponent<LabelPickPopup>();
+            SetRef(sc02DestPopup, "art", art);
 
             var instruction = new GameObject("InstructionPanel");
             instruction.transform.SetParent(flow);
@@ -196,6 +205,7 @@ namespace ChemicalSafety.Editor
             voice.volume = 1f;
             var zoom = directorGo.AddComponent<RigZoomController>();
             directorGo.AddComponent<RayVisualSuppressor>();
+            directorGo.AddComponent<ControllerRayPointer>(); // idle unless PresentableInput allows the ray in the running scenario
             directorGo.AddComponent<QuestRenderTuning>();
             SetRef(directorGo.AddComponent<FingerPokeSystem>(), "art", art);
             SetRef(directorGo.AddComponent<HeadSolidGuard>(), "fader", fader);
@@ -214,9 +224,13 @@ namespace ChemicalSafety.Editor
             so.FindProperty("loginScreen").objectReferenceValue = BuildLogin(flow, art);
             so.FindProperty("spawnDrumView").objectReferenceValue = spawnDrumView;
             so.FindProperty("rackFocus").objectReferenceValue = rackFocus;
+            so.FindProperty("sc01RayStand").objectReferenceValue = sc01RayStand;
             so.FindProperty("hotspotSc01").objectReferenceValue = hotspot1;
             so.FindProperty("mcqSc01").objectReferenceValue = mcq1;
             so.FindProperty("spawnSc02").objectReferenceValue = spawnSc02;
+            so.FindProperty("sc02RayStand").objectReferenceValue = sc02RayStand;
+            so.FindProperty("sc02Decision").objectReferenceValue = sc02Decision;
+            so.FindProperty("sc02DestPopup").objectReferenceValue = sc02DestPopup;
             so.FindProperty("hotspotSc02Pick").objectReferenceValue = hotspotPick;
             so.FindProperty("shelfStand").objectReferenceValue = shelfStand;
             so.FindProperty("placement").objectReferenceValue = placement;
@@ -692,9 +706,15 @@ namespace ChemicalSafety.Editor
             var doneEn = V("VO_Sc01Complete_en.mp3");
             if (doneEn != null)
                 art.voSc01CompleteEn = doneEn;
+            art.voSc01WrongNextBn = V("VO_Sc01WrongNext_bn.mp3") ?? art.voSc01WrongNextBn;
+            art.voSc01WrongNextEn = V("VO_Sc01WrongNext_en.mp3") ?? art.voSc01WrongNextEn;
             var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
             if (sc02Hint != null)
                 art.voSc02PlaceHint = sc02Hint;
+            art.voSc02Decision = V("VO_Sc02Decision_bn.mp3") ?? art.voSc02Decision;
+            art.voSc02Inspect = V("VO_Sc02Inspect_bn.mp3") ?? art.voSc02Inspect;
+            art.voSc02Pick = V("VO_Sc02Pick_bn.mp3") ?? art.voSc02Pick;
+            art.voSc02Dest = V("VO_Sc02Dest_bn.mp3") ?? art.voSc02Dest;
             var sc02DoneBn = V("VO_Sc02Complete_bn.mp3");
             if (sc02DoneBn != null)
                 art.voSc02CompleteBn = sc02DoneBn;
@@ -972,9 +992,49 @@ namespace ChemicalSafety.Editor
         // paint) is baked into one texture by Tools/generate_floor.py and laid over the collision floor.
         private static void BuildFloorMarkings(Transform env)
         {
-            var mat = Mat("FloorBaked", Color.white, 0.6f, 0f, EnvTex("FLOOR_Baked"));
+            // The grey collision box ("Floor") has its top at y = 0 and the baked quad lies 4 mm above it over the same 14 x 30 m.
+            // Two surfaces that close shimmer against each other in the headset (z-fighting, "waves"). The box keeps its collider
+            // (teleport, standing) but is no longer drawn: the baked quad is the only visible floor.
+            var floorBox = env.Find("Floor");
+            if (floorBox != null && floorBox.TryGetComponent<MeshRenderer>(out var floorRenderer))
+                floorRenderer.enabled = false;
+            var mat = Mat("FloorBaked", Color.white, 0.86f, 0f, EnvTex("FLOOR_Baked")); // polished, reflects the racks
             QuadObj("Floor_Baked", env, new Vector3(0f, 0.004f, 1f), new Vector3(90f, 0f, 0f), new Vector2(14f, 30f),
                 mat);
+        }
+
+        // Baked box-projected reflection probe for the warehouse (SC01 only: the volume covers just this hall).
+        private static void Sc01BakeProbe(Transform env)
+        {
+            try
+            {
+                var go = new GameObject("Sc01ReflectionProbe");
+                go.transform.SetParent(env, false);
+                go.transform.position = new Vector3(0f, 2.2f, 2.5f);
+                var probe = go.AddComponent<ReflectionProbe>();
+                probe.mode = ReflectionProbeMode.Baked;
+                probe.resolution = 256;
+                probe.size = new Vector3(13.8f, 7.2f, 29.6f);
+                probe.center = new Vector3(0f, 1.2f, -1.5f);
+                probe.boxProjection = true;
+                probe.intensity = 1f;
+                probe.importance = 1;
+                var path = GenDir + "/Sc01Probe.exr";
+                if (UnityEditor.Lightmapping.BakeReflectionProbe(probe, path))
+                {
+                    AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                    probe.bakedTexture = AssetDatabase.LoadAssetAtPath<Texture>(path);
+                }
+                else
+                {
+                    Debug.LogWarning("[SC01] reflection probe bake failed, the hall uses the default reflections");
+                    Object.DestroyImmediate(go);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SC01] reflection probe skipped: " + e.Message);
+            }
         }
 
         // ---------------------------------------------------------------- racks / dressing
@@ -1166,7 +1226,7 @@ namespace ChemicalSafety.Editor
         // Detailed 12-sided drum revolved from a profile: chime rims, two rolling hoops, recessed lid (~360 tris).
         private static Mesh RealisticDrumMesh()
         {
-            var path = GenDir + "/Mesh_RealisticDrum.asset";
+            var path = GenDir + "/Mesh_RealisticDrum_v2.asset";
             var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (mesh == null)
             {
@@ -1174,15 +1234,19 @@ namespace ChemicalSafety.Editor
                 AssetDatabase.CreateAsset(mesh, path);
             }
 
+            // steel drum: rolled bottom chime, two bevelled rolling hoops, rolled top chime with a seam ridge, recessed lid with a lid ring
             var profile = new[]
             {
-                new Vector2(0.47f, -0.5f), new Vector2(0.50f, -0.47f), new Vector2(0.49f, -0.42f),
-                new Vector2(0.49f, -0.19f), new Vector2(0.505f, -0.175f), new Vector2(0.505f, -0.155f),
-                new Vector2(0.49f, -0.14f), new Vector2(0.49f, 0.14f), new Vector2(0.505f, 0.155f),
-                new Vector2(0.505f, 0.175f), new Vector2(0.49f, 0.19f), new Vector2(0.49f, 0.42f),
-                new Vector2(0.50f, 0.47f), new Vector2(0.47f, 0.5f), new Vector2(0.44f, 0.485f), new Vector2(0f, 0.485f)
+                new Vector2(0.44f, -0.5f), new Vector2(0.485f, -0.495f), new Vector2(0.502f, -0.475f), new Vector2(0.502f, -0.445f),
+                new Vector2(0.488f, -0.425f), new Vector2(0.488f, -0.2f), new Vector2(0.497f, -0.188f), new Vector2(0.508f, -0.178f),
+                new Vector2(0.508f, -0.158f), new Vector2(0.497f, -0.148f), new Vector2(0.488f, -0.138f), new Vector2(0.488f, 0.138f),
+                new Vector2(0.497f, 0.148f), new Vector2(0.508f, 0.158f), new Vector2(0.508f, 0.178f), new Vector2(0.497f, 0.188f),
+                new Vector2(0.488f, 0.2f), new Vector2(0.488f, 0.425f), new Vector2(0.502f, 0.445f), new Vector2(0.502f, 0.475f),
+                new Vector2(0.485f, 0.495f), new Vector2(0.455f, 0.5f), new Vector2(0.44f, 0.488f), new Vector2(0.43f, 0.47f),
+                new Vector2(0.415f, 0.468f), new Vector2(0.41f, 0.482f), new Vector2(0.39f, 0.482f), new Vector2(0.38f, 0.466f),
+                new Vector2(0.36f, 0.466f), new Vector2(0f, 0.466f)
             };
-            const int seg = 12;
+            const int seg = 28;
             var verts = new List<Vector3>();
             var norms = new List<Vector3>();
             var uvs = new List<Vector2>();
@@ -1215,7 +1279,41 @@ namespace ChemicalSafety.Editor
                 }
             }
 
+            // two bungs on the lid (threaded plug + raised rim)
+            void Bung(float cx, float cz, float r, float h)
+            {
+                const int bs = 14;
+                var baseIdx = verts.Count;
+                var cy = 0.466f;
+                for (var ring = 0; ring < 3; ring++)
+                {
+                    var rr = ring == 0 ? r : ring == 1 ? r * 0.9f : 0f;
+                    var yy = ring == 0 ? cy : cy + h;
+                    for (var i = 0; i <= bs; i++)
+                    {
+                        var a = i / (float)bs * Mathf.PI * 2f;
+                        var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                        verts.Add(new Vector3(cx, yy, cz) + d * rr);
+                        norms.Add(ring == 2 ? Vector3.up : (d * 0.8f + Vector3.up * 0.2f).normalized);
+                        uvs.Add(new Vector2(i / (float)bs, 0.97f));
+                    }
+                }
+
+                for (var ring = 0; ring < 2; ring++)
+                {
+                    for (var i = 0; i < bs; i++)
+                    {
+                        var a = baseIdx + ring * (bs + 1) + i;
+                        tris.AddRange(new[] { a, a + bs + 1, a + bs + 2, a, a + bs + 2, a + 1 });
+                    }
+                }
+            }
+
+            Bung(0.2f, 0.12f, 0.06f, 0.028f);
+            Bung(-0.16f, -0.2f, 0.04f, 0.022f);
+
             mesh.Clear();
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16;
             mesh.SetVertices(verts);
             mesh.SetNormals(norms);
             mesh.SetUVs(0, uvs);
@@ -1524,7 +1622,7 @@ namespace ChemicalSafety.Editor
                 AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/Methanol.png"),
                 AssetDatabase.LoadAssetAtPath<Texture2D>(DesignerDir + "/Drum label/Isopropanol.png")
             };
-            var captions = new[] { "Faded Label", "No Label", "Mismatched GHS vs SDS", "Correctly Labelled" };
+            var captions = new[] { "Faded Label", "No Label", "Mismatched GHS vs SDS", "GHS vs SDS Matched" };
 
             var callouts = new DrumCallout[4];
             pokes = new PokeTarget[4];
@@ -2485,6 +2583,8 @@ namespace ChemicalSafety.Editor
             PresentableUi.AlwaysOnTop(card);
             if (border == null)
                 Debug.LogWarning("[Presentable] carrier card border missing");
+            // client: no text floating above the trolley (the hint is spoken and subtitled instead)
+            card.gameObject.SetActive(false);
 
             // floating Touch button in front of the handle
             var btnGo = new GameObject("CarrierTouchButton");

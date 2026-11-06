@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using ChemicalSafety.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,7 +18,7 @@ namespace ChemicalSafety.Presentable
         private static readonly Color RedHover = new Color(0.5f, 0.1f, 0.1f, 0.9f);
 
         public static readonly string[] Names =
-            { "Faded Label", "No Label", "Mismatched GHS vs SDS", "Correctly Labelled" };
+            { "Faded Label", "No Label", "Mismatched GHS vs SDS", "GHS vs SDS Matched" };
 
         [SerializeField] private PresentableArt art;
         [SerializeField] private Vector2 sizePx = new Vector2(1000f, 720f);
@@ -34,6 +35,26 @@ namespace ChemicalSafety.Presentable
         private readonly bool[] _hover = new bool[4];
         private bool _built;
         private bool _wrong;
+        private string[] _names = Names;
+        private float _worldScale = 1f;
+
+        /// <summary>Controller-ray flow: same card and text sizes in pixels, scaled uniformly to read from further away.</summary>
+        public void SetWorldScale(float scale) => _worldScale = Mathf.Max(0.1f, scale);
+        private string _titleOk = "SELECT THE CORRECT LABEL";
+        private string _titleWrong = "WRONG LABEL - TRY AGAIN";
+
+        /// <summary>Another list (up to 4 rows) and titles, e.g. the SC02 compartment popup. Call before Open().</summary>
+        public void Configure(string[] names, string title, string wrongTitle)
+        {
+            Build();
+            _names = names;
+            _titleOk = title;
+            _titleWrong = wrongTitle;
+            for (var i = 0; i < _labels.Length; i++)
+                if (_labels[i] != null && i < names.Length)
+                    _labels[i].text = names[i];
+            SetWrong(false);
+        }
 
         /// <summary>Index into <see cref="Names"/>.</summary>
         public event Action<int> Chosen;
@@ -53,6 +74,14 @@ namespace ChemicalSafety.Presentable
         {
             Build();
             IsOpen = true;
+            if (ReferenceEquals(_names, Names) && Loc.IsBangla)
+            {
+                // the four Scenario 1 label names, same words as the question options
+                var bn = Sc01Content.OptionLabels;
+                for (var i = 0; i < _labels.Length && i < bn.Length; i++)
+                    _labels[i].text = bn[i];
+            }
+
             SetWrong(false);
             StopAllCoroutines();
             StartCoroutine(PopIn());
@@ -72,7 +101,7 @@ namespace ChemicalSafety.Presentable
             _panelFill.color = wrong
                 ? new Color(0.22f, 0.04f, 0.05f, 0.88f)
                 : new Color(0.02f, 0.05f, 0.09f, 0.82f);
-            _title.text = wrong ? "WRONG LABEL - TRY AGAIN" : "SELECT THE CORRECT LABEL";
+            _title.text = wrong ? _titleWrong : _titleOk;
             _title.color = Color.white;
             for (var i = 0; i < _rowBorders.Length; i++)
             {
@@ -119,11 +148,11 @@ namespace ChemicalSafety.Presentable
         {
             _group.interactable = true;
             _group.blocksRaycasts = true;
-            transform.localScale = Vector3.one * 0.8f;
+            transform.localScale = Vector3.one * (0.8f * _worldScale);
             yield return PresentableFx.Tween(0.35f, t =>
             {
                 _group.alpha = Mathf.Clamp01(t * 1.6f);
-                transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.8f, 1f, t);
+                transform.localScale = Vector3.one * (_worldScale * Mathf.LerpUnclamped(0.8f, 1f, t));
             }, PresentableFx.EaseOutBack);
         }
 
@@ -135,7 +164,7 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Tween(0.25f, t =>
             {
                 _group.alpha = Mathf.Lerp(from, 0f, t);
-                transform.localScale = Vector3.one * Mathf.Lerp(1f, 0.9f, t);
+                transform.localScale = Vector3.one * (_worldScale * Mathf.Lerp(1f, 0.9f, t));
             });
         }
 

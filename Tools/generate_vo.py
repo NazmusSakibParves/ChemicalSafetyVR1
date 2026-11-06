@@ -82,9 +82,17 @@ CLIPS = {
     # said after a right answer in EVERY scenario: no scenario-specific words (label, drum, ...)
     "VO_Correct_bn": (BN_VOICE, "সঠিক। চমৎকার! আপনি সঠিক উত্তরটি নির্বাচন করেছেন।", "-8%"),  # third value = speaking rate
     "VO_Sc02PlaceHint_bn": (BN_VOICE, "কেমিক্যালটি নির্দিষ্ট কম্পার্টমেন্টে রাখুন।"),
+    # Scenario 2, controller-ray flow (Take Decision box, inspect, pick, compartment popup)
+    "VO_Sc02Decision_bn": (BN_VOICE, "সিদ্ধান্ত নিন। বিপদের তথ্য দেখতে কন্টেইনারগুলো পরিদর্শন করুন, অথবা রাখতে প্রস্তুত হলে কন্টিনিউ বাটনে ক্লিক করুন।"),
+    "VO_Sc02Inspect_bn": (BN_VOICE, "বৈশিষ্ট্য দেখতে একটি কন্টেইনার নির্বাচন করুন। বন্ধ করে পরেরটি দেখুন।"),
+    "VO_Sc02Pick_bn": (BN_VOICE, "যে কন্টেইনারটি রাখতে চান সেটি নির্বাচন করুন।"),
+    "VO_Sc02Dest_bn": (BN_VOICE, "এটি কোথায় রাখবেন?"),
     # scenario endings: the same sentence every time, only the numbers change
     "VO_Sc01Complete_bn": (BN_VOICE, complete_bn(1)),
     "VO_Sc01Complete_en": (EN_VOICE, complete_en(1)),
+    # wrong answer in Scenario 1 (no retry): the reasons are on screen, NEXT goes on
+    "VO_Sc01WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[2]),
+    "VO_Sc01WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario two."),
     "VO_Sc02Complete_bn": (BN_VOICE, complete_bn(2)),
     "VO_Sc02Complete_en": (EN_VOICE, complete_en(2)),
     "VO_Sc03Complete_bn": (BN_VOICE, complete_bn(3)),
@@ -295,6 +303,10 @@ CLIPS_EN = {
     "VO_Correct": "Correct. Excellent! You have selected the correct answer.",
     "VO_SC02_Instruction": "A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
     "VO_Sc02PlaceHint": "Place the chemical in the correct compartment for its type.",
+    "VO_Sc02Decision": "Take decision. Inspect the containers to read their hazards, or click Continue when you are ready to store them.",
+    "VO_Sc02Inspect": "Select a container to read its properties. Close it, then inspect the next one.",
+    "VO_Sc02Pick": "Select the container you want to store.",
+    "VO_Sc02Dest": "Where do you store it?",
     "VO_SC03_Instruction": "You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do.",
     "VO_Sc03Touch": "Touch and hold the drum label with your finger to scan it.",
     "VO_Sc03Inspect": "The drum is organic peroxide. Crystals have formed on the drum and the label has expired.",
