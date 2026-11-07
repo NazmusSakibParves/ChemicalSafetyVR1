@@ -45,6 +45,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private FloatingTouchButton[] drumButtons = new FloatingTouchButton[4];
         [Tooltip("About a metre from the rack face so the floating Touch buttons are within arm's reach.")]
         [SerializeField] private Transform drumPokeStand;
+        [Tooltip("Scenario 1: the yellow flat-platform cart of the reference hall (drum arcs onto the platform, the cart is pulled away).")]
+        [SerializeField] private bool flatCart;
         [SerializeField] private GameObject trolley;
         [SerializeField] private FloatingTouchButton carrierButton;
         [SerializeField] private GameObject carrierLoad;
@@ -325,6 +327,7 @@ namespace ChemicalSafety.Presentable
 
             // Scenario 1 may run on the controller ray (PresentableInput). The fingertip flow below stays as it was.
             PresentableInput.ActiveScenario = 1;
+            instructionPanel.SetGlass(true); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
             var rayFlow = PresentableInput.RayActive;
             if (rayFlow)
             {
@@ -426,6 +429,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc02");
+            instructionPanel.SetGlass(false); // the other scenarios keep their own frame
             if (rayFlow)
             {
                 LockLocomotion(false);
@@ -1740,6 +1744,8 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Scenario 1: the drums stand below the card, so it is a little smaller and its centre a little above the eyes.")]
         [SerializeField] private float rayPanelScaleSc01 = 1.15f;
         [SerializeField] private float rayPanelRiseSc01 = 0.15f;
+        [Tooltip("Scenario 1 (ray): the instruction card and the question card sit this far to the LEFT of the view (metres) so the drums and the hall stay uncovered. 0 = centred like before.")]
+        [SerializeField] private float rayPanelLeftSc01 = 0.85f;
         [Tooltip("Scenario 2: the card is centred on the eyes.")]
         [SerializeField] private float rayPanelRiseSc02 = 0f;
         [SerializeField] private float rayStartDelay = 5f;
@@ -2213,7 +2219,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("mcq1");
             mcqSc01.SetWorldScale(rayPanelScaleSc01);
-            PlacePanelRay(mcqSc01.transform, stand.position, fwd, rayPanelRiseSc01);
+            PlacePanelRay(mcqSc01.transform, stand.position, fwd, rayPanelRiseSc01, rayPanelLeftSc01);
             // above the question card: below it the learner is looking at the drums
             subtitle.Dock(mcqSc01.transform, () => 0.45f, 1.0f);
             yield return RunQuestion(mcqSc01, BuildSc01Question(), true);
@@ -2222,12 +2228,16 @@ namespace ChemicalSafety.Presentable
         }
 
         // Straight ahead of the learner, bottom edge at eye level so the drums below it stay uncovered.
-        private void PlacePanelRay(Transform panel, Vector3 standPos, Vector3 forward, float rise)
+        private void PlacePanelRay(Transform panel, Vector3 standPos, Vector3 forward, float rise, float left = 0f)
         {
             var fwd = Flat(forward);
             var eye = _cam != null ? _cam.position.y : 1.6f;
-            panel.position = new Vector3(standPos.x, 0f, standPos.z) + fwd * rayPanelDistance + Vector3.up * (eye + rise);
-            panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            var origin = new Vector3(standPos.x, 0f, standPos.z);
+            var right = Vector3.Cross(Vector3.up, fwd);
+            panel.position = origin + fwd * rayPanelDistance - right * left + Vector3.up * (eye + rise);
+            // moved to the left: turn it toward the learner so it stays readable and the ray still hits it square-on
+            var look = left > 0.001f ? Flat(panel.position - origin) : fwd;
+            panel.rotation = Quaternion.LookRotation(look, Vector3.up);
         }
 
         // Correct answer: the trolley rolls to the rack, the right drum lifts off and settles on the toe plate, the trolley rolls off.
@@ -2239,6 +2249,12 @@ namespace ChemicalSafety.Presentable
             if (hero == null || trolley == null || carrierLoad == null)
                 yield break;
             _sc01Moving = true;
+            if (flatCart)
+            {
+                yield return Sc01DrumToFlatCart(hero);
+                _sc01Moving = false;
+                yield break;
+            }
 
             var tr = trolley.transform;
             carrierLoad.SetActive(false);
@@ -2333,6 +2349,88 @@ namespace ChemicalSafety.Presentable
             _sc01Moving = false;
         }
 
+        // Reference-hall cart: it rolls up beside the correct drum, the drum arcs over onto the platform (upright, label to the
+        // learner) and the cart is pulled away handle first.
+        private IEnumerator Sc01DrumToFlatCart(Transform hero)
+        {
+            var tr = trolley.transform;
+            var load = carrierLoad.transform;
+            var seatLocal = load.localPosition; // set by the builder: centre of the drum standing on the platform
+            carrierLoad.SetActive(false);
+            if (!trolley.activeSelf) // the cart normally stands in the corner from the start (reference): no pop-in then
+            {
+                trolley.SetActive(true);
+                PresentableFx.Play(PresentableFx.Chime, 0.8f);
+                var baseScale = tr.localScale;
+                yield return PresentableFx.Tween(0.5f, t => tr.localScale = baseScale * Mathf.LerpUnclamped(0.5f, 1f, t),
+                    PresentableFx.EaseOutBack);
+            }
+            else
+            {
+                PresentableFx.Play(PresentableFx.Chime, 0.8f);
+            }
+
+            var rackRenderers = hero.GetComponentsInChildren<Renderer>(true);
+            var hb = rackRenderers.Length > 0 ? rackRenderers[0].bounds : new Bounds(hero.position, Vector3.zero);
+            foreach (var r in rackRenderers)
+                hb.Encapsulate(r.bounds);
+            var hc = hb.center;
+            const float yaw = -90f; // platform front toward the drums
+            var rot = Quaternion.Euler(0f, yaw, 0f);
+            var parked = tr.position;
+            var parkedYaw = tr.eulerAngles.y;
+            var stage = new Vector3(hc.x + 1.0f, parked.y, hc.z);
+
+            // rolls out of the corner and turns its platform toward the drums
+            PresentableFx.Play(PresentableFx.Whoosh, 0.4f);
+            yield return PresentableFx.Tween(1.4f, t =>
+            {
+                var p = Vector3.Lerp(parked, stage, Mathf.SmoothStep(0f, 1f, t));
+                p.y = parked.y;
+                tr.position = p;
+                tr.rotation = Quaternion.Euler(0f, Mathf.LerpAngle(parkedYaw, yaw, Mathf.SmoothStep(0f, 1f, t)), 0f);
+            }, x => x);
+            tr.position = stage;
+            tr.rotation = rot;
+
+            // the drum leaves the pallet in an arc and settles on the platform
+            var seat = stage + rot * Vector3.Scale(seatLocal, tr.localScale);
+            carrierLoad.SetActive(true);
+            drums[Mathf.Clamp(Sc01Content.CorrectIndex, 0, drums.Length - 1)].SetCalloutVisible(false, 0.3f);
+            var face = Quaternion.Euler(0f, 180f, 0f);
+            load.SetPositionAndRotation(hc, face);
+            foreach (var r in rackRenderers)
+                r.enabled = false;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.5f);
+            yield return PresentableFx.Tween(1.5f, t =>
+            {
+                var p = Vector3.Lerp(hc, seat, Mathf.SmoothStep(0f, 1f, t));
+                p.y += Mathf.Sin(t * Mathf.PI) * 0.5f;
+                load.SetPositionAndRotation(p, face);
+            }, x => x);
+            load.SetPositionAndRotation(seat, face);
+            PresentableFx.Haptic(true, 0.5f, 0.08f);
+            PresentableFx.Haptic(false, 0.5f, 0.08f);
+            PresentableFx.Play(PresentableFx.Tick, 0.9f);
+            StartCoroutine(Sc01LandRing(new Vector3(seat.x, 0f, seat.z)));
+            yield return PresentableFx.Wait(0.4f);
+
+            // pulled away handle first (the handle is local -z), folds away at the end
+            var p0 = tr.position;
+            var away = p0 + new Vector3(1.2f, 0f, -0.9f); // the tall wall is just to the right: leave along it, not through it
+            var scale0 = tr.localScale;
+            yield return PresentableFx.Tween(2.0f, t =>
+            {
+                var e = Mathf.SmoothStep(0f, 1f, t);
+                tr.position = Vector3.Lerp(p0, away, e);
+                tr.rotation = Quaternion.Euler(0f, yaw + 18f * e, 0f);
+                tr.localScale = scale0 * Mathf.Lerp(1f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.65f, 1f, t)));
+            }, x => x);
+            trolley.SetActive(false);
+            tr.localScale = scale0;
+            tr.rotation = rot;
+        }
+
         // A soft ring of light on the floor where the drum settles on the trolley.
         private IEnumerator Sc01LandRing(Vector3 floorPos)
         {
@@ -2376,6 +2474,15 @@ namespace ChemicalSafety.Presentable
         {
             _eyeInstruction = true;
             PlaceAtEyeLevel(instructionPanel.transform, EyeCardDistance(), false);
+            // Scenario 1 on the controller ray: the card sits to the left of the view, the hall stays visible
+            if (PresentableInput.RayActive && PresentableInput.ActiveScenario == 1 && _cam != null && rayPanelLeftSc01 > 0.001f)
+            {
+                var origin = new Vector3(_cam.position.x, 0f, _cam.position.z);
+                var t = instructionPanel.transform;
+                var right = Vector3.Cross(Vector3.up, Flat(_cam.forward));
+                t.position -= right * rayPanelLeftSc01;
+                t.rotation = Quaternion.LookRotation(Flat(t.position - new Vector3(_cam.position.x, t.position.y, _cam.position.z)), Vector3.up);
+            }
         }
 
         private void EndEyeInstruction()
@@ -2613,7 +2720,7 @@ namespace ChemicalSafety.Presentable
                 drum = carrierLoad.transform;
                 endPos = drum.localPosition;
                 endRot = drum.localRotation;
-                startPos = endPos + new Vector3(0f, -0.42f, 0.28f);
+                startPos = endPos + (flatCart ? new Vector3(0f, -0.3f, 0.55f) : new Vector3(0f, -0.42f, 0.28f));
                 startRot = Quaternion.identity;
                 drum.localPosition = startPos;
                 drum.localRotation = startRot;

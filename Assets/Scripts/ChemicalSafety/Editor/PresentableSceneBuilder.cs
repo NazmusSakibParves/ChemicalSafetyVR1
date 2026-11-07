@@ -45,6 +45,7 @@ namespace ChemicalSafety.Editor
             GenerateRedVariants();
             SolidLayer = EnsureLayer("SolidProps");
             ConfigureImports();
+            ConfigureSc01Textures();
             var artPath = AssetDatabase.GetAssetPath(BuildArtAsset());
             Mats.Clear();
 
@@ -53,11 +54,18 @@ namespace ChemicalSafety.Editor
 
             SetupLighting();
             var env = new GameObject("Environment_SC01").transform;
-            BuildShell(env);
-            BuildFloorMarkings(env);
-            BuildSideRacks(env);
-            BuildSigns(env, art);
-            BuildDressing(env);
+            if (Sc01UseReferenceHall)
+            {
+                BuildSc01Hall(env, art);
+            }
+            else
+            {
+                BuildShell(env);
+                BuildFloorMarkings(env);
+                BuildSideRacks(env);
+                BuildSigns(env, art);
+                BuildDressing(env);
+            }
 
             var drums = BuildHeroRack(env, art, out var rackFocus, out var drumPokes);
             Sc01BakeProbe(env);
@@ -128,7 +136,8 @@ namespace ChemicalSafety.Editor
             var hotspotPick = Hotspot("Hotspot_SC02_Pick", flow, art, new Vector3(40.2f, 0f, -0.25f));
             var shelfStand = Marker("ShelfStand", spawns, new Vector3(40f, 0f, -1.85f), 0f); // no marker graphic
 
-            var trolley = BuildCarrier(env, art, new Vector3(1.95f, 0f, 5.7f), out var carrierButton, out var carrierLoad);
+            var trolley = BuildCarrier(env, art, Sc01UseReferenceHall ? new Vector3(2.75f, 0f, 6.3f) : new Vector3(1.95f, 0f, 5.7f),
+                out var carrierButton, out var carrierLoad);
             var drumButtons = new FloatingTouchButton[4];
             for (var i = 0; i < 4; i++)
             {
@@ -198,6 +207,10 @@ namespace ChemicalSafety.Editor
             var clipboard = Child("SdsClipboard", flow).AddComponent<SdsClipboardController>();
             SetRef(clipboard, "art", art);
             SetRef(clipboard, "leftHand", leftController);
+            // the SDS sheet is closed at the start and after the login: only the left controller X opens / hides it
+            var cso = new SerializedObject(clipboard);
+            cso.FindProperty("startVisible").boolValue = false;
+            cso.ApplyModifiedPropertiesWithoutUndo();
 
             var directorGo = Child("PresentableDirector", flow);
             var voice = directorGo.AddComponent<AudioSource>();
@@ -238,6 +251,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("mcqSc02").objectReferenceValue = mcq2;
             so.FindProperty("labelPopup").objectReferenceValue = labelPopup;
             so.FindProperty("drumPokeStand").objectReferenceValue = drumPokeStand;
+            so.FindProperty("flatCart").boolValue = Sc01UseReferenceHall;
             so.FindProperty("trolley").objectReferenceValue = trolley;
             so.FindProperty("carrierButton").objectReferenceValue = carrierButton;
             so.FindProperty("carrierLoad").objectReferenceValue = carrierLoad;
@@ -435,6 +449,17 @@ namespace ChemicalSafety.Editor
                         ti.textureType = TextureImporterType.Sprite;
                         ti.spriteImportMode = SpriteImportMode.Single;
                         changed = true;
+                    }
+
+                    // Scenario 1 glass instruction card + button are 9-slice sprites
+                    if (path.Contains("/Generated/Glass_"))
+                    {
+                        var borderG = path.Contains("Glass_Panel") ? new Vector4(84f, 84f, 84f, 84f) : new Vector4(56f, 56f, 56f, 56f);
+                        if (ti.spriteBorder != borderG)
+                        {
+                            ti.spriteBorder = borderG;
+                            changed = true;
+                        }
                     }
 
                     // Scenario 5 hologram cards are 9-slice sprites
@@ -677,6 +702,9 @@ namespace ChemicalSafety.Editor
             art.holoPanel = LoadSprite("2D/Sc05/Holo_Panel");
             art.holoButton = LoadSprite("2D/Sc05/Holo_Button");
             art.holoButtonPrimary = LoadSprite("2D/Sc05/Holo_ButtonPrimary");
+            art.glassPanel = LoadSprite("2D/Generated/Glass_Panel");   // Tools/generate_sc01_ui.py
+            art.glassButton = LoadSprite("2D/Generated/Glass_Button");
+            art.glassDivider = LoadSprite("2D/Generated/Glass_Divider");
             art.iconBack = LoadSprite("2D/Sc05/Icon_Back");
             art.iconNext = LoadSprite("2D/Sc05/Icon_Next");
             art.iconClose = LoadSprite("2D/Sc05/Icon_Close");
@@ -1022,8 +1050,8 @@ namespace ChemicalSafety.Editor
                 var probe = go.AddComponent<ReflectionProbe>();
                 probe.mode = ReflectionProbeMode.Baked;
                 probe.resolution = 256;
-                probe.size = new Vector3(13.8f, 7.2f, 29.6f);
-                probe.center = new Vector3(0f, 1.2f, -1.5f);
+                probe.size = Sc01UseReferenceHall ? new Vector3(8.6f, 7.4f, 24.8f) : new Vector3(13.8f, 7.2f, 29.6f);
+                probe.center = Sc01UseReferenceHall ? new Vector3(0f, 1.3f, 1f) : new Vector3(0f, 1.2f, -1.5f);
                 probe.boxProjection = true;
                 probe.intensity = 1f;
                 probe.importance = 1;
@@ -1614,13 +1642,26 @@ namespace ChemicalSafety.Editor
             }
 
 
-            var pallet = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
-            const float palletH = 0.12f;
-            var heroPallet = Box("HeroPallet", rack.transform, new Vector3(0f, surface + palletH * 0.5f, rackZ),
-                new Vector3(2.75f, palletH, 0.7f), pallet);
-            heroPallet.layer = SolidLayer;
-            foreach (var ux in new[] { -1.43f, 1.43f })
-                AddSolidBox(rack.transform, "HeroUpright", new Vector3(ux, 1.97f, rackZ), new Vector3(0.1f, 3.95f, 0.78f));
+            float palletH;
+            if (Sc01UseReferenceHall)
+            {
+                // reference render: no shelf, the four drums stand in a row on two wooden pallets in front of a concrete wall
+                foreach (var rr in rack.GetComponentsInChildren<Renderer>())
+                    rr.enabled = false;
+                surface = 0f;
+                palletH = 0.14f;
+                BuildHeroPallets(env, rackZ, palletH); // world coordinates: the rack root itself sits at z = rackZ
+            }
+            else
+            {
+                var pallet = Mat("PalletWood", new Color(0.62f, 0.45f, 0.26f), 0.15f);
+                palletH = 0.12f;
+                var heroPallet = Box("HeroPallet", rack.transform, new Vector3(0f, surface + palletH * 0.5f, rackZ),
+                    new Vector3(2.75f, palletH, 0.7f), pallet);
+                heroPallet.layer = SolidLayer;
+                foreach (var ux in new[] { -1.43f, 1.43f })
+                    AddSolidBox(rack.transform, "HeroUpright", new Vector3(ux, 1.97f, rackZ), new Vector3(0.1f, 3.95f, 0.78f));
+            }
 
             var labelMesh = CurvedLabelMesh(0.3f, 0.36f);
             var labels = new[]
@@ -1636,7 +1677,7 @@ namespace ChemicalSafety.Editor
             pokes = new PokeTarget[4];
             for (var i = 0; i < 4; i++)
             {
-                var x = -1.02f + i * 0.68f;
+                var x = -1.02f + i * 0.68f + (Sc01UseReferenceHall ? Sc01HeroShift : 0f);
                 var drum = PlaceModel("3D/Drum", "HeroDrum_" + (i + 1), rack.transform,
                     new Vector3(x, surface + palletH, rackZ), 180f + (i - 1.5f) * 6f, out var radius, out var height);
 
@@ -2482,7 +2523,7 @@ namespace ChemicalSafety.Editor
 
         // Large 3-blade industrial fans hung from the roof beams. Big, low enough to be seen from the
         // aisle, with one painted blade tip so the spin reads at a glance.
-        private static void BuildCeilingFans(Transform env)
+        private static void BuildCeilingFans(Transform env, Vector3[] spots = null, float mountY = 7.075f, float hubHeight = 5.4f, float planScale = 1f)
         {
             var hubMat = Mat("FanHub", new Color(0.16f, 0.17f, 0.19f), 0.4f, 0.8f);
             var rodMat = Mat("FanRod", new Color(0.22f, 0.23f, 0.25f), 0.35f, 0.8f);
@@ -2494,14 +2535,15 @@ namespace ChemicalSafety.Editor
                 Mat("FanBlade_C", new Color(0.6f, 0.58f, 0.55f), 0.36f, 0.8f)
             };
 
-            const float beamBottom = 7.075f;
-            const float hubY = 5.4f;
+            var beamBottom = mountY;
+            var hubY = hubHeight;
             var rodLength = beamBottom - hubY - 0.22f;
-            foreach (var z in new[] { -10f, -2f, 6f, 14f })
+            foreach (var spot in spots ?? new[] { new Vector3(0f, mountY, -10f), new Vector3(0f, mountY, -2f), new Vector3(0f, mountY, 6f), new Vector3(0f, mountY, 14f) })
             {
                 var fan = new GameObject("CeilingFan").transform;
                 fan.SetParent(env, false);
-                fan.position = new Vector3(0f, beamBottom, z);
+                fan.position = spot;
+                fan.localScale = new Vector3(planScale, 1f, planScale); // smaller blades where the trusses are close
 
                 Prim("MountPlate", PrimitiveType.Cylinder, fan, new Vector3(0f, -0.02f, 0f),
                     new Vector3(0.3f, 0.02f, 0.3f), hubMat);
@@ -2544,6 +2586,8 @@ namespace ChemicalSafety.Editor
         private static GameObject BuildCarrier(Transform env, PresentableArt art, Vector3 floorPos,
             out FloatingTouchButton button, out GameObject loadDrum)
         {
+            if (Sc01UseReferenceHall)
+                return BuildSc01Cart(env, art, floorPos, out button, out loadDrum);
             var root = new GameObject("DrumCarrier").transform;
             root.SetParent(env, false);
             root.SetPositionAndRotation(floorPos, Quaternion.Euler(0f, 180f, 0f));

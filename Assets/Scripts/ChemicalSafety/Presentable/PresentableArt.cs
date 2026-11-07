@@ -66,6 +66,11 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Thin glowing gold ring for the SC03 inspection.")]
         public Sprite ringThin;
 
+        [Header("Scenario 1 glass instruction card (client reference)")]
+        public Sprite glassPanel;
+        public Sprite glassButton;
+        public Sprite glassDivider;
+
         [Header("Scenario 5 hologram cards")]
         public Sprite holoPanel;
         public Sprite holoButton;

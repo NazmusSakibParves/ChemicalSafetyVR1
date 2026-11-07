@@ -53,6 +53,9 @@ MonoBehaviour:
   sc03Label: {fileID: 21300000, guid: 0cc2ccf62a12bb740994fa06faa83f5d, type: 3}
   scanFrame: {fileID: 21300000, guid: b62be6570af1d324f86e67b594d7d4cd, type: 3}
   ringThin: {fileID: 21300000, guid: d1034a8b78db1eb4ca45550aa1f32188, type: 3}
+  glassPanel: {fileID: 21300000, guid: c55edd549bc21a7488cb889d3150e8e6, type: 3}
+  glassButton: {fileID: 21300000, guid: 076a745581e864640aac18e6d3c6a1fc, type: 3}
+  glassDivider: {fileID: 21300000, guid: c7f9d04ed08d90649942396f65ed18d6, type: 3}
   holoPanel: {fileID: 21300000, guid: de89a7b4eeceac240bc84c6c407c3c13, type: 3}
   holoButton: {fileID: 21300000, guid: 48afb8a19b52e6741be5f666b9b84cda, type: 3}
   holoButtonPrimary: {fileID: 21300000, guid: 7cca478a99656ee4ba6dc310a70b699b, type: 3}
