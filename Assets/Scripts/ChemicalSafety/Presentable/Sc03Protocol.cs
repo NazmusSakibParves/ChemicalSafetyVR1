@@ -63,6 +63,16 @@ namespace ChemicalSafety.Presentable
         private const float PathLen = 4f; // the lane canvas is 2000 px x 0.002 = 4 m
         private Vector3 _drum;
 
+        // caution sticker slapped on the shelf under the drum (client): replaces the padlock and the rings
+        private const int StickerCount = 2;
+        private readonly Transform[] _stk = new Transform[StickerCount];
+        private readonly CanvasGroup[] _stkGroup = new CanvasGroup[StickerCount];
+        private readonly Image[] _stkFlash = new Image[StickerCount];
+        private readonly Vector3[] _stkPos = new Vector3[StickerCount];
+        private Vector3 _stkBase;
+        private Quaternion _stkRot;
+        private Vector3 _stkOut;
+
         private bool _built;
         private bool _running;
         private int _active = -1;
@@ -114,6 +124,9 @@ namespace ChemicalSafety.Presentable
             BuildSeal();
             BuildFloorRing();
             BuildPath();
+            BuildStickers();
+            foreach (var st in _stk)
+                st.gameObject.SetActive(false);
             _panel.gameObject.SetActive(false);
             _seal.gameObject.SetActive(false);
             _floorRing.gameObject.SetActive(false);
@@ -273,6 +286,97 @@ namespace ChemicalSafety.Presentable
             PresentableUi.AlwaysOnTop(canvas);
         }
 
+        // Two yellow warning stickers side by side (client): on the left a warning triangle with CAUTION / DANGER, on the right a
+        // prohibition sign with DO NOT / OPEN. Plain yellow with black icon and text (no black frame), about 42 x 20 cm each.
+        private void BuildStickers()
+        {
+            BuildStickerPanel(0, "ProtocolStickerA", true, "CAUTION", "DANGER");
+            BuildStickerPanel(1, "ProtocolStickerB", false, "DO NOT", "OPEN");
+        }
+
+        private void BuildStickerPanel(int i, string name, bool warning, string line1, string line2)
+        {
+            const float w = 540f, h = 256f;
+            var canvas = PresentableUi.WorldCanvas(name, transform, new Vector2(w, h), 0.00078f, false, 36 + i);
+            _stk[i] = canvas.transform;
+            _stkBase = _stk[i].localScale;
+            _stkGroup[i] = canvas.gameObject.AddComponent<CanvasGroup>();
+            var root = (RectTransform)_stk[i];
+            var black = new Color(0.05f, 0.05f, 0.05f, 1f);
+            var yellow = new Color(1f, 0.82f, 0.05f, 1f);
+            Box("Edge", root, Vector2.zero, Vector2.one, new Color(0.86f, 0.64f, 0.02f, 1f)); // a deeper yellow edge, no black
+            Box("Paper", root, Vector2.zero, Vector2.one, yellow, new Vector2(7f, 7f), new Vector2(-7f, -7f));
+
+            var iconCx = -w * 0.5f + 24f + 85f;
+            if (warning)
+            {
+                var tri = PresentableUi.Img(PresentableUi.Centered("Icon", root, new Vector2(iconCx, 4f), new Vector2(176f, 160f)), TriangleSprite(), black);
+                tri.raycastTarget = false;
+                var bang = PresentableUi.Text("Bang", root, new Vector2(iconCx - 80f, -78f + 4f), new Vector2(160f, 130f), "!", 120f, yellow,
+                    TextAlignmentOptions.Center, true, _art.englishFont);
+                bang.rectTransform.anchorMin = bang.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                bang.rectTransform.sizeDelta = new Vector2(100f, 120f);
+                bang.rectTransform.anchoredPosition = new Vector2(iconCx, -14f);
+                bang.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+            else
+            {
+                // prohibition sign: a thick ring with a slash
+                var ringSprite = _art.ring != null ? _art.ring : _art.circle;
+                PresentableUi.Img(PresentableUi.Centered("Ring", root, new Vector2(iconCx, 0f), new Vector2(172f, 172f)), ringSprite, black, preserveAspect: true);
+                PresentableUi.Img(PresentableUi.Centered("Ring2", root, new Vector2(iconCx, 0f), new Vector2(160f, 160f)), ringSprite, black, preserveAspect: true);
+                var slash = Box("Slash", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), black, new Vector2(iconCx - 72f, -9f), new Vector2(iconCx + 72f, 9f));
+                slash.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -45f);
+            }
+
+            var t1 = PresentableUi.Text("Line1", root, new Vector2(0.385f, 0.50f), new Vector2(0.97f, 0.86f), line1, 80f, black,
+                TextAlignmentOptions.Center, true, _art.englishFont);
+            t1.enableAutoSizing = true;
+            t1.fontSizeMin = 30f;
+            t1.fontSizeMax = 84f;
+            t1.textWrappingMode = TextWrappingModes.NoWrap;
+            var t2 = PresentableUi.Text("Line2", root, new Vector2(0.385f, 0.14f), new Vector2(0.97f, 0.52f), line2, 80f, black,
+                TextAlignmentOptions.Center, true, _art.englishFont);
+            t2.enableAutoSizing = true;
+            t2.fontSizeMin = 30f;
+            t2.fontSizeMax = 84f;
+            t2.textWrappingMode = TextWrappingModes.NoWrap;
+            // a short flash where it hits the shelf
+            _stkFlash[i] = PresentableUi.Img(PresentableUi.Centered("Flash", root, Vector2.zero, new Vector2(w * 1.4f, h * 2.2f)), _art.radialGlow,
+                new Color(1f, 0.95f, 0.6f, 0f));
+        }
+
+        // equilateral-ish triangle, apex up, anti-aliased (the warning icon)
+        private static Sprite _triangle;
+
+        private static Sprite TriangleSprite()
+        {
+            if (_triangle != null)
+                return _triangle;
+            const int w = 128, h = 128;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[w * h];
+            var half = w * 0.5f - 2f;
+            var cosA = 1f / Mathf.Sqrt(1f + (half / (h - 6f)) * (half / (h - 6f)));
+            for (var y = 0; y < h; y++)
+            {
+                var t = Mathf.Clamp01((y - 3f) / (h - 6f)); // 0 at the base, 1 at the apex
+                var hw = (1f - t) * half;
+                for (var x = 0; x < w; x++)
+                {
+                    var dEdge = (hw - Mathf.Abs(x + 0.5f - w * 0.5f)) * cosA;
+                    var dBase = y - 3f + 0.5f;
+                    var d = Mathf.Min(dEdge, dBase);
+                    px[y * w + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(d + 0.5f) * 255f));
+                }
+            }
+
+            tex.SetPixels32(px);
+            tex.Apply();
+            _triangle = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+            return _triangle;
+        }
+
         private void BuildFloorRing()
         {
             var canvas = PresentableUi.WorldCanvas("ProtocolFloorRing", transform, new Vector2(640f, 640f), 0.0016f, false, 5);
@@ -336,6 +440,14 @@ namespace ChemicalSafety.Presentable
             var floorY = drumCentre.y - 0.46f;
             _floorRing.SetPositionAndRotation(new Vector3(drumCentre.x, floorY + 0.01f, drumCentre.z), Quaternion.Euler(90f, 0f, 0f));
             _seal.position = drumCentre + aisle * 0.42f + Vector3.up * 0.12f;
+            // the sticker goes on the front edge of the shelf the drum stands on (the shelf front is 0.34 m from the drum's centre axis,
+            // its top is the drum's base): centred on the front beam / deck edge, facing the aisle, a few mm proud of the metal
+            _stkOut = aisle;
+            var stickerCentre = new Vector3(drumCentre.x, label.position.y - 0.53f - 0.085f, drumCentre.z) + aisle * (0.32f + 0.0175f + 0.006f);
+            var along = Vector3.Cross(Vector3.up, aisle); // the learner's left when facing the shelf
+            _stkPos[0] = stickerCentre + along * 0.235f;  // left: CAUTION / DANGER
+            _stkPos[1] = stickerCentre - along * 0.235f;  // right: DO NOT OPEN
+            _stkRot = Quaternion.LookRotation(-aisle, Vector3.up);
 
             var start = new Vector3(drumCentre.x + aisle.x * 0.8f, 0.02f, drumCentre.z + aisle.z * 0.8f);
             var end = new Vector3(exitTarget.x, 0.02f, exitTarget.z);
@@ -428,30 +540,70 @@ namespace ChemicalSafety.Presentable
             _sheen.color = new Color(1f, 1f, 1f, 0f);
             _floorRing.gameObject.SetActive(false);
             _seal.gameObject.SetActive(false);
+            foreach (var st in _stk)
+                st.gameObject.SetActive(false);
             _path.gameObject.SetActive(false);
             _exit.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------ beats
 
-        // 1. a ruby ring of light closes round the drum, the padlock drops in and the floor ring pulses
+        // 1. DO NOT OPEN: two yellow warning stickers (CAUTION / DANGER and DO NOT OPEN, each with an icon) are slapped on the shelf under the
+        // drum one after the other (client: no padlock and no ring)
         private IEnumerator Seal()
         {
-            _seal.gameObject.SetActive(true);
-            _floorRing.gameObject.SetActive(true);
-            _sealGroup.alpha = 0f;
-            _floorRingGroup.alpha = 0f;
-            _lock.anchoredPosition = new Vector2(0f, 700f);
-            var sealBase = _seal.localScale;
-            yield return PresentableFx.Tween(0.7f, t =>
+            StartCoroutine(Slap(0));
+            yield return PresentableFx.Wait(0.4f);
+            yield return Slap(1);
+        }
+
+        private IEnumerator Slap(int i)
+        {
+            var st = _stk[i];
+            st.gameObject.SetActive(true);
+            _stkGroup[i].alpha = 0f;
+            _stkFlash[i].color = new Color(1f, 0.95f, 0.6f, 0f);
+            var rot = _stkRot;
+            var end = _stkPos[i];
+            var start = end + _stkOut * 0.55f + Vector3.up * 0.2f;
+            st.SetPositionAndRotation(start, rot);
+            st.localScale = _stkBase * 1.9f;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.5f);
+
+            // it flies in from the learner's side, a little tilted, and speeds up as it comes onto the shelf
+            var tilt = i == 0 ? 16f : -16f;
+            yield return PresentableFx.Tween(0.5f, t =>
             {
-                _sealGroup.alpha = Mathf.Clamp01(t * 1.6f);
-                _floorRingGroup.alpha = t;
-                _seal.localScale = sealBase * Mathf.LerpUnclamped(1.5f, 1f, t);
-            }, PresentableFx.EaseOutCubic);
+                var e = t * t * t;
+                st.position = Vector3.Lerp(start, end, e);
+                st.rotation = rot * Quaternion.Euler(0f, 0f, Mathf.Lerp(tilt, 0f, e));
+                st.localScale = _stkBase * Mathf.Lerp(1.9f, 1f, e);
+                _stkGroup[i].alpha = Mathf.Clamp01(t * 3f);
+            }, x => x);
+
+            // slap: it presses flat, a flash, a tick and a short squash
+            st.SetPositionAndRotation(end, rot);
+            PresentableFx.Play(PresentableFx.Tick, 1f);
             PresentableFx.Haptic(true, 0.9f, 0.15f);
-            yield return PresentableFx.Tween(0.45f, t => _lock.anchoredPosition = new Vector2(0f, Mathf.Lerp(700f, 400f, t)), PresentableFx.EaseOutBack);
-            PresentableFx.Play(PresentableFx.Error, 0.4f);
+            StartCoroutine(StickerFlash(i));
+            yield return PresentableFx.Tween(0.3f, t =>
+            {
+                var k = Mathf.Sin(t * Mathf.PI);
+                st.localScale = new Vector3(_stkBase.x * (1f + 0.10f * k), _stkBase.y * (1f - 0.08f * k), _stkBase.z);
+            });
+            st.localScale = _stkBase;
+        }
+
+        private IEnumerator StickerFlash(int i)
+        {
+            var img = _stkFlash[i];
+            var rt = img.rectTransform;
+            yield return PresentableFx.Tween(0.5f, t =>
+            {
+                rt.localScale = Vector3.one * Mathf.Lerp(0.7f, 1.2f, t);
+                img.color = new Color(1f, 0.95f, 0.6f, (1f - t) * 0.75f);
+            }, PresentableFx.EaseOutCubic);
+            img.color = new Color(1f, 0.95f, 0.6f, 0f);
         }
 
         // 2. the path lights up from the drum to the exit and the chevrons march along it
