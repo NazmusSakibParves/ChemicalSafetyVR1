@@ -17,6 +17,8 @@ namespace ChemicalSafety.Presentable
         private const float W = 2067f; // 40 % for the chemical (827 px), 60 % for the question box (1240 px = its own canvas width)
         private const float H = 900f;
         public const float Mpp = 0.00055f;
+        private const float TailW = 420f;        // width of the speech-bubble tail rect (canvas px)
+        private const float TailApexX = 235f / 256f; // where the sharp tip is in the tail sprite (0..1 from the left)
         private const float PartX = (0.4f - 0.5f) * W; // the partition, left of the body centre
         private const float RightHalfX = (0.7f - 0.5f) * W; // centre of the question half, right of the body centre
         private const float BodyLift = 100f;   // body centre above the canvas centre (the tail lives below the body)
@@ -135,13 +137,16 @@ namespace ChemicalSafety.Presentable
             _halo1 = Box("Halo1", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f),
                 new Vector2(-W * 0.5f - 44f, -H * 0.5f - 38f + BodyLift), new Vector2(W * 0.5f + 44f, H * 0.5f + 38f + BodyLift));
 
-            // leader from the tail down to the container's HEAD, ending in a glowing ring on the container (client: it must read at
-            // once as THIS container's callout). Drawn first so the tail and the card sit over it; sized and placed in Open().
-            _stem = PresentableUi.Centered("Stem", root, new Vector2(0f, -480f), new Vector2(16f, 120f));
-            _stemImg = PresentableUi.Img(_stem, _art.roundedSolid, new Color(Cyan.r, Cyan.g, Cyan.b, 0.95f), sliced: true);
-            _headRt = PresentableUi.Centered("Head", root, new Vector2(0f, -550f), new Vector2(170f, 170f));
+            // Speech-bubble tail (client picture): a long triangle that starts wide at the bottom of the card and narrows to a sharp
+            // tip touching the container's head. Navy fill + a cyan outline that takes the result colour. Drawn first so the card sits
+            // over its top; sized and placed in Open(). A small pulsing dot marks the tip on the container.
+            _stem = PresentableUi.Centered("TailPointer", root, new Vector2(0f, -450f), new Vector2(TailW, 200f));
+            _stem.pivot = new Vector2(TailApexX, 1f); // the pivot is the sharp tip: it sits on the container's head
+            PresentableUi.Img(_stem, TailSprite(false), new Color(0.02f, 0.10f, 0.20f, 0.97f));
+            _stemImg = PresentableUi.Img(PresentableUi.Rect("Line", _stem, Vector2.zero, Vector2.one), TailSprite(true), Cyan);
+            _headRt = PresentableUi.Centered("Head", root, new Vector2(0f, -550f), new Vector2(96f, 96f));
             _headGlow = PresentableUi.Img(_headRt, _art.radialGlow, new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f));
-            _headCore = PresentableUi.Img(PresentableUi.Centered("Core", _headRt, Vector2.zero, new Vector2(38f, 38f)), _art.roundedSolid,
+            _headCore = PresentableUi.Img(PresentableUi.Centered("Core", _headRt, Vector2.zero, new Vector2(20f, 20f)), _art.roundedSolid,
                 new Color(0.9f, 1f, 1f, 1f), sliced: true);
 
             // tail: a diamond with a thin light stem down to the container
@@ -150,6 +155,8 @@ namespace ChemicalSafety.Presentable
             PresentableUi.Img(_tail, _art.roundedSolid, Cyan, sliced: true);
             PresentableUi.Img(PresentableUi.Rect("Fill", _tail, Vector2.zero, Vector2.one, new Vector2(7f, 7f), new Vector2(-7f, -7f)),
                 _art.roundedSolid, new Color(0.02f, 0.10f, 0.20f, 1f), sliced: true);
+
+            _tail.gameObject.SetActive(false); // replaced by the long pointer above
 
             _body = PresentableUi.Centered("Body", root, new Vector2(0f, BodyLift), new Vector2(W, H));
             // frame: cyan edge, deep blue rim, navy glass
@@ -256,6 +263,49 @@ namespace ChemicalSafety.Presentable
             gameObject.SetActive(false);
         }
 
+        // Speech-bubble tail (client picture): a slanted, slightly curved pointer. Wide root at the top-left, one long convex edge and one
+        // shorter concave edge, meeting in a sharp tip at the bottom right. The filled shape, or only its outline band (7 px), anti-aliased.
+        private static readonly Sprite[] TailSprites = new Sprite[2];
+
+        private static Sprite TailSprite(bool outline)
+        {
+            var i = outline ? 1 : 0;
+            if (TailSprites[i] != null)
+                return TailSprites[i];
+            const int w = 256, h = 256;
+            const float apex = 235f;                // tip x at the bottom row
+            const float l0 = 30f, r0 = 130f;        // root at the top row
+            const float lc = 62f, rc = 168f;        // bezier control x of the left (long, convex) and right (short, concave) edge
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[w * h];
+            for (var y = 0; y < h; y++)
+            {
+                var t = (h - 1f - y) / (h - 1f); // 0 at the top (root), 1 at the bottom (tip)
+                var u = 1f - t;
+                var xl = u * u * l0 + 2f * u * t * lc + t * t * apex;
+                var xr = u * u * r0 + 2f * u * t * rc + t * t * apex;
+                // local slope of each edge (px of x per row) -> true perpendicular distance
+                var dl = 2f * u * (lc - l0) + 2f * t * (apex - lc);
+                var dr = 2f * u * (rc - r0) + 2f * t * (apex - rc);
+                var cl = 1f / Mathf.Sqrt(1f + (dl / (h - 1f)) * (dl / (h - 1f)));
+                var cr = 1f / Mathf.Sqrt(1f + (dr / (h - 1f)) * (dr / (h - 1f)));
+                for (var x = 0; x < w; x++)
+                {
+                    var cx = x + 0.5f;
+                    var d = Mathf.Min((cx - xl) * cl, (xr - cx) * cr); // px inside the nearest slanted edge
+                    var a = Mathf.Clamp01(d + 0.5f);
+                    if (outline)
+                        a *= 1f - Mathf.Clamp01(d - 7f + 0.5f);
+                    px[y * w + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                }
+            }
+
+            tex.SetPixels32(px);
+            tex.Apply();
+            TailSprites[i] = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+            return TailSprites[i];
+        }
+
         // ------------------------------------------------------------------ open / close
 
         /// <summary>Opens the callout. <paramref name="anchorTop"/> is the top centre of the container, <paramref name="centerX"/> the
@@ -283,19 +333,21 @@ namespace ChemicalSafety.Presentable
             if (_cam == null && Camera.main != null)
                 _cam = Camera.main.transform;
             // canvas centre: the tail tip a hand's breadth above the container
-            _basePos = new Vector3(center.x, anchorTop.y + (0.05f + TailTip * Mpp) * _scale, center.z);
+            _basePos = new Vector3(center.x, anchorTop.y + (0.08f + TailTip * Mpp) * _scale, center.z);
             _bubble.position = _basePos;
             Face();
             // the tail points down at the container even when the callout is clamped to the middle of the view
             var offset = Vector3.Dot(anchorTop - _basePos, _bubble.right);
             _tailPx = Mathf.Clamp(offset / (Mpp * _scale), -W * 0.5f + 220f, W * 0.5f - 220f);
             _tail.anchoredPosition = new Vector2(_tailPx, BodyLift - H * 0.5f - 18f);
-            // the stem runs from the tip of the tail down to the container's head, where the ring glows
-            var tipPx = BodyLift - H * 0.5f - 18f - 49f;
+            // the pointer runs from just inside the bottom edge of the card down to the container's head (tip on the head)
+            var topPx = BodyLift - H * 0.5f + 4f;
             var headPx = -(_basePos.y - anchorTop.y) / (Mpp * _scale);
-            var stemTop = tipPx + 14f;
-            _stem.anchoredPosition = new Vector2(_tailPx, (stemTop + headPx) * 0.5f);
-            _stem.sizeDelta = new Vector2(16f, Mathf.Max(24f, stemTop - headPx));
+            _stem.pivot = new Vector2(TailApexX, 1f);
+            _stem.anchoredPosition = new Vector2(_tailPx, topPx);
+            _stem.sizeDelta = new Vector2(TailW, Mathf.Max(80f, topPx - headPx));
+            // the tail leans like a speech-bubble tail: its wide root is toward the middle of the card, its tip on the container's head
+            _stem.localScale = new Vector3(_tailPx > 0f ? 1f : -1f, 1f, 1f);
             _headRt.anchoredPosition = new Vector2(_tailPx, headPx);
 
             IsOpen = true;

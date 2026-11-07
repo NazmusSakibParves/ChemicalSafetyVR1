@@ -50,6 +50,7 @@ namespace ChemicalSafety.Presentable
         private TMP_Text _cardBody;
         private TMP_Text _cardCount;
         private Coroutine _cardRoutine;
+        private float _cardScale = 1f;
         private GameObject _ghost;
         private MeshFilter _ghostMesh;
         private MeshRenderer _ghostRenderer;
@@ -517,7 +518,18 @@ namespace ChemicalSafety.Presentable
                 var fwd = camT.forward;
                 fwd.y = 0f;
                 fwd = fwd.sqrMagnitude < 0.01f ? Vector3.forward : fwd.normalized;
-                _card.SetPositionAndRotation(camT.position + fwd * 0.55f, Quaternion.LookRotation(fwd, Vector3.up));
+                var pos = camT.position + fwd * 0.55f;
+                _cardScale = 1f;
+                if (_auto)
+                {
+                    // ray flows (client): the card is small and sits low in the front-left corner of the view, so it never covers the
+                    // question card that is still open for the last chemical; it shows as soon as the container lands
+                    var left = -Vector3.Cross(Vector3.up, fwd);
+                    pos = camT.position + fwd * 0.62f + left * 0.5f + Vector3.down * 0.2f;
+                    _cardScale = 0.62f;
+                }
+
+                _card.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, Vector3.up));
             }
             _card.gameObject.SetActive(true);
             if (_cardRoutine != null)
@@ -540,7 +552,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator FadeCard(float target)
         {
             var from = _cardGroup.alpha;
-            var baseScale = Vector3.one * 0.0005f;
+            var baseScale = Vector3.one * (0.0005f * _cardScale);
             yield return PresentableFx.Tween(0.25f, t =>
             {
                 _cardGroup.alpha = Mathf.Lerp(from, target, t);
