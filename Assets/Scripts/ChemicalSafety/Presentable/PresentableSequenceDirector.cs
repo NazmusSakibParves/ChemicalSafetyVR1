@@ -1145,8 +1145,10 @@ namespace ChemicalSafety.Presentable
                 // the rail is on the right of the view: cards go to the LEFT, above the table-free part of the scene
                 Sc04PopupPose(-0.8f, 0.15f, 1.6f, out var gatePos, out var gateRot);
                 masks.ShowGateAt(gatePos, gateRot, sc05PopupScale);
+                StartCoroutine(PlayVoice(art.voSc05Gate));
                 while (!masks.NextChosen && !masks.BackChosen)
                     yield return null;
+                StopVoice();
                 masks.HideGatePublic();
                 again = masks.BackChosen;
             }

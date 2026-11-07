@@ -187,7 +187,7 @@ namespace ChemicalSafety.Editor
             var wallBackMat = Sc05Pbr("Sc05WallBackPbr", "Wall", new Color(0.95f, 0.95f, 0.95f), new Vector2(w / 2.4f, 1.9f), 0.9f, 1f);
             var wallSideMat = Sc05Pbr("Sc05WallSidePbr", "Wall", new Color(0.95f, 0.95f, 0.95f), new Vector2(d / 2.4f, 1.9f), 0.9f, 1f);
             var ceilMat = Sc05Pbr("Sc05CeilPbr", "Ceil", Color.white, new Vector2(w / 2.4f, d / 2.4f), 1f, 0.8f, false);
-            var pillarMat = Sc05Pbr("Sc05PillarPbr", "Wall", new Color(1f, 1f, 1f), new Vector2(0.8f, 1.8f), 0.9f, 1f);
+            var pillarMat = Sc05Pbr("Sc05PillarPbr", "Wall", new Color(1.5f, 1.5f, 1.5f), new Vector2(0.8f, 1.8f), 0.12f, 1f);
 
             void Shell(string name, Vector3 pos, Vector3 size, Material mat)
             {
@@ -222,7 +222,7 @@ namespace ChemicalSafety.Editor
             // warehouse look: the client's wide aged plate above the rail; the earlier look: the yellow plate beside the masks
             var signTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + (wh ? "/2D/Sc05/VaporSignClient.png" : "/2D/Sc05/VaporSign.png"));
             var signMat = Mat(wh ? "Sc05SignClient" : "Sc05Sign", Color.white, 0.35f, 0.05f, signTex, null, false, true);
-            QuadObj("VaporSign", room, wh ? new Vector3(pox - 0.57f, 2.62f, pillarFront + 0.012f) : new Vector3(dpx, 2.08f, pillarFront + 0.012f),
+            QuadObj("VaporSign", room, wh ? new Vector3(pox - 0.57f, 2.42f, pillarFront + 0.012f) : new Vector3(dpx, 2.08f, pillarFront + 0.012f),
                 new Vector3(0f, 180f, 0f), wh ? new Vector2(1.2f, 0.6f) : new Vector2(0.62f, 0.5f), signMat).GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
 
             // gas detector, reads 85 and pulses red
@@ -599,7 +599,7 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < 4; i++)
                 arr.GetArrayElementAtIndex(i).objectReferenceValue = maskGroups[i];
             iso.ApplyModifiedPropertiesWithoutUndo();
-            refs.spawn = Marker("Spawn_SC05", room, wh ? new Vector3(ox - 0.23f, 0f, 3.6f) : new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), 180f);
+            refs.spawn = Marker("Spawn_SC05", room, wh ? new Vector3(ox - 0.22f, 0f, 3.6f) : new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), 180f);
             return refs;
         }
 

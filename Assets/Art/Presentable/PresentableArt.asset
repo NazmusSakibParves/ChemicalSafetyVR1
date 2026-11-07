@@ -150,6 +150,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c13c1394f0b9a0640a7c13af14f196be, type: 3}
   - {fileID: 8300000, guid: f84a8d8b1885314488e5d5b7697c4e04, type: 3}
   voSc04Gate: {fileID: 8300000, guid: 41f2eef0e761cc04f9c22685402a991e, type: 3}
+  voSc05Gate: {fileID: 8300000, guid: 201ad581f3026bc468526a99ae4ff94d, type: 3}
   voSc04CompleteBn: {fileID: 8300000, guid: cf457c27f87a1074a8eb40209ceafed9, type: 3}
   voSc04CompleteEn: {fileID: 8300000, guid: 2f7e70415a42adf4f8b8627bc4ccf778, type: 3}
   voSc05Instruction: {fileID: 8300000, guid: 8737509005987db499671174f710e66e, type: 3}

@@ -76,6 +76,23 @@ namespace ChemicalSafety.Editor
             return mesh;
         }
 
+        // A white hazard label on the front (+Z) face of a jerry can, so the cans read clearly (the picture).
+        private static void WhJerryLabel(Transform can, Material[] labelMats, System.Random rnd)
+        {
+            if (labelMats == null || labelMats.Length == 0)
+                return;
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            q.name = "JerryLabel";
+            Object.DestroyImmediate(q.GetComponent<Collider>());
+            q.transform.SetParent(can, false);
+            q.transform.localPosition = new Vector3(0f, 0.16f, 0.102f);
+            q.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            q.transform.localScale = new Vector3(0.22f, 0.17f, 1f);
+            var r = q.GetComponent<MeshRenderer>();
+            r.sharedMaterial = labelMats[rnd.Next(labelMats.Length)];
+            r.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
         private static void WhPallet(Transform parent, Vector3 floorCentre, float w, float d, float yaw)
         {
             var g = new GameObject("Pallet").transform;
@@ -136,17 +153,7 @@ namespace ChemicalSafety.Editor
                 }
 
                 if (label && labelMats != null)
-                {
-                    var lh = new GameObject("Label");
-                    lh.transform.SetParent(parent, false);
-                    lh.transform.localPosition = baseAt + new Vector3(0f, height * 0.52f, 0f);
-                    lh.transform.localRotation = Quaternion.Euler(0f, ((float)rnd.NextDouble() - 0.5f) * 50f, 0f);
-                    lh.transform.localScale = Vector3.one * ((radius + 0.004f) / 0.3f);
-                    lh.AddComponent<MeshFilter>().sharedMesh = CurvedLabelMesh(0.3f, 0.36f);
-                    var lmr = lh.AddComponent<MeshRenderer>();
-                    lmr.sharedMaterial = labelMats[rnd.Next(labelMats.Length)];
-                    lmr.shadowCastingMode = ShadowCastingMode.Off;
-                }
+                    WhDrumLabelFlat(parent, baseAt + new Vector3(0f, height * 0.52f, 0f), radius, labelMats, rnd);
 
                 return;
             }
@@ -158,15 +165,26 @@ namespace ChemicalSafety.Editor
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic);
             if (!label || labelMats == null)
                 return;
-            var l = new GameObject("Label");
-            l.transform.SetParent(parent, false);
-            l.transform.localPosition = baseAt + new Vector3(0f, 0.46f, 0f);
-            l.transform.localRotation = Quaternion.Euler(0f, ((float)rnd.NextDouble() - 0.5f) * 50f, 0f);
-            l.transform.localScale = Vector3.one * (0.294f / 0.3f);
-            l.AddComponent<MeshFilter>().sharedMesh = CurvedLabelMesh(0.3f, 0.36f);
-            var mr = l.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = labelMats[rnd.Next(labelMats.Length)];
-            mr.shadowCastingMode = ShadowCastingMode.Off;
+            WhDrumLabelFlat(parent, baseAt + new Vector3(0f, 0.46f, 0f), 0.29f, labelMats, rnd);
+        }
+
+        // A flat hazard label on the front (+Z) of a drum, turned a little around the drum's axis (flat quads always show, the curved mesh did not).
+        private static void WhDrumLabelFlat(Transform parent, Vector3 centreLocal, float radius, Material[] labelMats, System.Random rnd)
+        {
+            var pivot = new GameObject("LabelPivot").transform;
+            pivot.SetParent(parent, false);
+            pivot.localPosition = centreLocal;
+            pivot.localRotation = Quaternion.Euler(0f, ((float)rnd.NextDouble() - 0.5f) * 36f, 0f);
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            q.name = "DrumLabel";
+            Object.DestroyImmediate(q.GetComponent<Collider>());
+            q.transform.SetParent(pivot, false);
+            q.transform.localPosition = new Vector3(0f, 0f, radius * 0.985f);
+            q.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            q.transform.localScale = new Vector3(radius * 0.9f, radius * 1.1f, 1f);
+            var r = q.GetComponent<MeshRenderer>();
+            r.sharedMaterial = labelMats[rnd.Next(labelMats.Length)];
+            r.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         // Pallet rack run along X (front, and the labels, toward local +Z): blue uprights, orange beams, three levels of pallets with
@@ -180,8 +198,8 @@ namespace ChemicalSafety.Editor
             var upright = Mat("Sc05RackBlue", new Color(0.09f, 0.13f, 0.27f), 0.3f, 0.25f, grunge);
             var beam = Mat("Sc05RackOrange", new Color(0.70f, 0.30f, 0.07f), 0.3f, 0.2f, grunge);
             var wood = Mat("Sc05WhPallet", new Color(0.78f, 0.7f, 0.58f), 0.1f, 0f, Sc01Tex("Pallet_Albedo"));
-            var jerryGrey = Mat("Sc05JerryGrey", new Color(0.55f, 0.56f, 0.55f), 0.35f, 0f, grunge);
-            var jerryBlue = Mat("Sc05JerryBlue", new Color(0.16f, 0.30f, 0.62f), 0.35f, 0f, grunge);
+            var jerryGrey = Mat("Sc05JerryGrey", new Color(0.82f, 0.83f, 0.8f), 0.5f, 0f, grunge);
+            var jerryBlue = Mat("Sc05JerryBlue", new Color(0.14f, 0.36f, 0.95f), 0.55f, 0f, grunge);
             var rnd = new System.Random(seed);
             const float bayW = 1.95f, depth = 1.3f, height = 3.45f;
             var levels = new[] { 0.14f, 1.30f, 2.46f };
@@ -210,6 +228,7 @@ namespace ChemicalSafety.Editor
                             {
                                 var cm = rnd.NextDouble() < 0.5 ? jerryGrey : jerryBlue;
                                 var go = MeshObj("Jerry", run, WhJerryMesh(), new Vector3(cx - 0.75f + c * 0.3f, y + 0.09f, rowZ), Vector3.one, cm);
+                                WhJerryLabel(go.transform, labelMats, rnd);
                                 go.transform.localRotation = Quaternion.Euler(0f, (float)(rnd.NextDouble() - 0.5) * 16f, 0f);
                             }
 
@@ -317,37 +336,82 @@ namespace ChemicalSafety.Editor
             var steel = Mat("Sc05WhSteel", new Color(0.55f, 0.57f, 0.58f), 0.5f, 0.5f);
             var dark = Mat("Sc05WhDark", new Color(0.16f, 0.17f, 0.18f), 0.3f, 0.2f);
             // rail
-            Sc04RollerZ("ClothesRail", parent, new Vector3(x1 - 0.32f, 1.9f, zMid), 2.6f, 0.014f, steel);
-            foreach (var dz in new[] { -1.3f, 1.3f })
-                Box("RailBracket", parent, new Vector3(x1 - 0.16f, 1.9f, zMid + dz), new Vector3(0.3f, 0.03f, 0.03f), steel, false);
-            var tints = new[] { new Color(0.40f, 0.43f, 0.47f), new Color(0.22f, 0.32f, 0.46f), new Color(0.62f, 0.62f, 0.6f), new Color(0.3f, 0.34f, 0.3f) };
-            for (var i = 0; i < tints.Length; i++)
+            Sc04RollerZ("ClothesRail", parent, new Vector3(x1 - 0.32f, 2.3f, zMid - 1.15f), 2.0f, 0.014f, steel);
+            foreach (var dz in new[] { -2.15f, -0.15f })
+                Box("RailBracket", parent, new Vector3(x1 - 0.16f, 2.3f, zMid + dz), new Vector3(0.3f, 0.03f, 0.03f), steel, false);
+            var tints = new[] { new Color(0.40f, 0.43f, 0.47f), new Color(0.62f, 0.62f, 0.6f), new Color(0.22f, 0.32f, 0.46f), new Color(0.74f, 0.74f, 0.72f), new Color(0.3f, 0.34f, 0.3f), new Color(0.5f, 0.52f, 0.55f), new Color(0.66f, 0.66f, 0.64f), new Color(0.28f, 0.33f, 0.4f) };
+            var fabricNames = new[] { "Houndstooth", "Knit", "Tweed", "Leopard", "Stripe", "Peach" };
+            var hangerWood = Mat("Sc05Hanger", new Color(0.72f, 0.55f, 0.3f), 0.3f, 0f);
+            for (var i = 0; i < 6; i++)
             {
                 var g = Sc12Part("Sc12Ppe.glb", "Apron", parent);
                 g.name = "WorkApron" + i;
                 foreach (var c in g.GetComponentsInChildren<Collider>(true))
                     Object.DestroyImmediate(c);
-                Sc12Tint(g, "Sc05Apron" + i, tints[i], 0.15f);
-                FitHeight(g, 1.0f);
+                // the client's clothes picture: its fabrics (houndstooth, knit, tweed, print, stripes, peach) on the 3D garments
+                var fabricTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc05/Fabric_" + fabricNames[i % fabricNames.Length] + ".png");
+                if (fabricTex != null)
+                {
+                    var fm = Mat("Sc05Fabric" + i, Color.white, 0.1f, 0f, fabricTex);
+                    foreach (var fr in g.GetComponentsInChildren<Renderer>(true))
+                    {
+                        var fms = new Material[fr.sharedMaterials.Length];
+                        for (var q = 0; q < fms.Length; q++)
+                            fms[q] = fm;
+                        fr.sharedMaterials = fms;
+                    }
+                }
+                else
+                {
+                    Sc12Tint(g, "Sc05Apron" + i, tints[i], 0.15f);
+                }
+
+                FitHeight(g, 0.78f);
                 var b = BoundsOfTree(g.transform);
                 g.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
                 b = BoundsOfTree(g.transform);
-                g.transform.position += new Vector3(x1 - 0.36f - b.center.x, 1.86f - b.max.y, zMid - 1.0f + i * 0.62f - b.center.z);
+                g.transform.position += new Vector3(x1 - 0.36f - b.center.x, 2.26f - b.max.y, zMid - 1.95f + i * 0.3f - b.center.z);
+                var hz = zMid - 1.95f + i * 0.3f;
+                Box("Hanger" + i, parent, new Vector3(x1 - 0.34f, 2.2f, hz), new Vector3(0.025f, 0.03f, 0.32f), hangerWood, false);
+                Box("HangerHook" + i, parent, new Vector3(x1 - 0.32f, 2.27f, hz), new Vector3(0.012f, 0.1f, 0.012f), steel, false);
                 sway.Add(new Sc05FactoryFx.Swayer { target = g.transform, degrees = 2.2f, speed = 0.7f + 0.15f * i });
             }
 
-            // wash trough: steel top with a basin, legs, gooseneck tap, wall pipe
-            var zT = zMid + 0.25f; // the trough right under the clothes (the picture)
-            Box("TroughTop", parent, new Vector3(x1 - 0.33f, 0.86f, zT), new Vector3(0.6f, 0.06f, 1.5f), steel, false);
-            Box("TroughBasin", parent, new Vector3(x1 - 0.33f, 0.84f, zT), new Vector3(0.42f, 0.04f, 0.9f), dark, false);
-            foreach (var dz in new[] { -0.68f, 0.68f })
-                foreach (var dx in new[] { -0.26f, 0.26f })
-                    Box("TroughLeg", parent, new Vector3(x1 - 0.33f + dx, 0.42f, zT + dz), new Vector3(0.05f, 0.84f, 0.05f), steel, false);
-            Cyl("TapPipe", parent, new Vector3(x1 - 0.1f, 0.86f, zT), 0.45f, 0.018f, steel);
-            Box("TapArm", parent, new Vector3(x1 - 0.2f, 1.31f, zT), new Vector3(0.22f, 0.03f, 0.03f), steel, false);
-            Cyl("TapNozzle", parent, new Vector3(x1 - 0.3f, 1.25f, zT), 0.07f, 0.016f, steel);
-            // a bucket and a stack of rags
-            Cyl("Bucket", parent, new Vector3(x1 - 0.5f, 0f, zT + 1.25f), 0.3f, 0.14f, Mat("Sc05WhBucket", new Color(0.18f, 0.32f, 0.6f), 0.35f, 0f));
+            // wash sink unit against the wall (the picture): green-grey steel cabinet, steel top, dark basin, backsplash, gooseneck tap, white towels
+            var zT = zMid + 0.25f;
+            var cab = Mat("Sc05WhSinkCabinet", new Color(0.27f, 0.33f, 0.31f), 0.25f, 0.3f);
+            var towel = Mat("Sc05WhTowel", new Color(0.86f, 0.85f, 0.8f), 0.05f, 0f);
+            Box("SinkBody", parent, new Vector3(x1 - 0.33f, 0.42f, zT), new Vector3(0.6f, 0.84f, 1.6f), cab, false);
+            Box("TroughTop", parent, new Vector3(x1 - 0.33f, 0.87f, zT), new Vector3(0.64f, 0.05f, 1.64f), steel, false);
+            Box("TroughBasin", parent, new Vector3(x1 - 0.33f, 0.865f, zT - 0.35f), new Vector3(0.44f, 0.06f, 0.8f), dark, false);
+            Box("SinkBack", parent, new Vector3(x1 - 0.05f, 1.05f, zT), new Vector3(0.06f, 0.4f, 1.64f), cab, false);
+            Cyl("TapPipe", parent, new Vector3(x1 - 0.1f, 0.88f, zT - 0.35f), 0.45f, 0.018f, steel);
+            Box("TapArm", parent, new Vector3(x1 - 0.2f, 1.33f, zT - 0.35f), new Vector3(0.22f, 0.03f, 0.03f), steel, false);
+            Cyl("TapNozzle", parent, new Vector3(x1 - 0.3f, 1.27f, zT - 0.35f), 0.07f, 0.016f, steel);
+            Cyl("Bucket", parent, new Vector3(x1 - 0.4f, 0f, zT + 1.3f), 0.24f, 0.09f, Mat("Sc05WhBucket", new Color(0.18f, 0.32f, 0.6f), 0.35f, 0f));
+
+            // old and rusty: rust and grime patches on the cabinet front, the top and the back panel
+            var rustTex = EnvTex("STAIN_Rust");
+            if (rustTex != null)
+            {
+                var sinkRust = MatAlpha("Sc05SinkRust", rustTex, new Color(0.62f, 0.3f, 0.1f, 0.78f), false);
+                var rr = new System.Random(52);
+                for (var k = 0; k < 9; k++)
+                    QuadObj("SinkRust" + k, parent, new Vector3(x1 - 0.634f - k * 0.00004f, 0.12f + (float)rr.NextDouble() * 0.7f, zT - 0.7f + (float)rr.NextDouble() * 1.4f),
+                        new Vector3(0f, 90f, (float)rr.NextDouble() * 360f), Vector2.one * (0.3f + (float)rr.NextDouble() * 0.4f), sinkRust);
+                for (var k = 0; k < 4; k++)
+                    QuadObj("SinkTopRust" + k, parent, new Vector3(x1 - 0.2f - (float)rr.NextDouble() * 0.25f, 0.898f + k * 0.00004f, zT - 0.7f + (float)rr.NextDouble() * 1.4f),
+                        new Vector3(90f, (float)rr.NextDouble() * 360f, 0f), Vector2.one * (0.3f + (float)rr.NextDouble() * 0.25f), sinkRust);
+            }
+
+            var sinkBlot = Sc03Tex("Stain_Blot");
+            if (sinkBlot != null)
+            {
+                var sinkGrime = Mat("Sc05SinkGrime", new Color(0.12f, 0.1f, 0.07f, 0.4f), 0.1f, 0f, sinkBlot, null, false, true);
+                for (var k = 0; k < 8; k++)
+                    QuadObj("SinkGrime" + k, parent, new Vector3(x1 - 0.636f - k * 0.00004f, 0.1f + k * 0.1f, zT - 0.6f + k * 0.17f), new Vector3(0f, 90f, k * 47f),
+                        Vector2.one * 0.35f, sinkGrime);
+            }
 
             // SPOT CLEANING sign
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc05/Sign_SpotCleaning.png");
@@ -408,14 +472,14 @@ namespace ChemicalSafety.Editor
             if (mood != null)
             {
                 var mso = new SerializedObject(mood);
-                mso.FindProperty("ambientSky").colorValue = new Color(0.74f, 0.74f, 0.73f);
-                mso.FindProperty("ambientEquator").colorValue = new Color(0.62f, 0.62f, 0.61f);
-                mso.FindProperty("ambientGround").colorValue = new Color(0.30f, 0.30f, 0.29f);
-                mso.FindProperty("fogColor").colorValue = new Color(0.70f, 0.70f, 0.69f);
-                mso.FindProperty("fogStart").floatValue = 1.2f;
-                mso.FindProperty("fogEnd").floatValue = 17f;
+                mso.FindProperty("ambientSky").colorValue = new Color(0.98f, 0.97f, 0.94f);
+                mso.FindProperty("ambientEquator").colorValue = new Color(0.88f, 0.87f, 0.84f);
+                mso.FindProperty("ambientGround").colorValue = new Color(0.52f, 0.5f, 0.47f);
+                mso.FindProperty("fogColor").colorValue = new Color(0.82f, 0.82f, 0.8f);
+                mso.FindProperty("fogStart").floatValue = 8f;
+                mso.FindProperty("fogEnd").floatValue = 48f;
                 mso.FindProperty("sunIntensity").floatValue = 0.06f;
-                mso.FindProperty("reflectionIntensity").floatValue = 0.3f;
+                mso.FindProperty("reflectionIntensity").floatValue = 0.5f;
                 mso.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -432,9 +496,9 @@ namespace ChemicalSafety.Editor
             var d = WhFront - WhBack;
 
             // ---- shell: stained concrete (metric UVs)
-            var wallMat = Sc01Pbr("Sc05WhWallLight", "Wall", new Color(0.96f, 0.93f, 0.87f), 0.25f, 1.0f);
-            var floorMat = Sc01Pbr("Sc05WhFloorLight", "Floor", new Color(0.92f, 0.90f, 0.86f), 0.35f, 1.0f);
-            var ceilMat = Sc01Pbr("Sc05WhCeilLight", "Wall", new Color(0.78f, 0.77f, 0.74f), 0.2f, 0.9f);
+            var wallMat = Sc01Pbr("Sc05WhWallGrey", "Wall", new Color(0.74f, 0.75f, 0.74f), 0.25f, 1.0f);
+            var floorMat = Sc01Pbr("Sc05WhFloorConcrete", "Wall", new Color(0.86f, 0.85f, 0.82f), 0.3f, 1.0f);
+            var ceilMat = Sc01Pbr("Sc05WhCeilGrey", "Wall", new Color(0.62f, 0.63f, 0.63f), 0.2f, 0.9f);
             TexBox("Floor", room, new Vector3(cx, -0.05f, cz), new Vector3(w, 0.1f, d), 0f, floorMat, 2.4f, true);
             var floorSolid = room.Find("FloorSolid");
             if (floorSolid != null)
@@ -476,8 +540,35 @@ namespace ChemicalSafety.Editor
                     else if (i % 3 == 1)
                         QuadObj("SmudgeR" + i, room, new Vector3(x0 + 0.07f, y, wallZ), new Vector3(0f, -90f, 0f), Vector2.one * sz, smudge);
                     else
-                        QuadObj("SmudgeB" + i, room, new Vector3(x0 + 0.5f + (float)rs.NextDouble() * (w - 1f), y, WhBack + 0.07f), Vector3.zero, Vector2.one * sz, smudge);
+                        QuadObj("SmudgeB" + i, room, new Vector3(x0 + 0.5f + (float)rs.NextDouble() * (w - 1f), y, WhBack + 0.07f), new Vector3(0f, 180f, 0f), Vector2.one * sz, smudge);
                 }
+            }
+
+            // the pillar in the picture is heavily stained: dark smudges and drips all over its front face
+            if (blotTex != null)
+            {
+                var psm = Mat("Sc05PillarSmudge", new Color(0.22f, 0.17f, 0.11f, 0.34f), 0.1f, 0f, blotTex, null, false, true);
+                var pr = new System.Random(31);
+                for (var i = 0; i < 80; i++)
+                    QuadObj("PillarSmudge" + i, room, new Vector3(pox - 1.8f + (float)pr.NextDouble() * 1.8f, 0.5f + (float)pr.NextDouble() * 3.2f, 0.603f + i * 0.00004f),
+                        new Vector3(0f, 180f, (float)pr.NextDouble() * 360f), Vector2.one * (0.25f + (float)pr.NextDouble() * 0.5f), psm);
+            }
+
+            // old dirty pillar: a grimy grunge layer over its whole front face (matte, not shiny)
+            var pgTex = Sc01Tex("Grunge_Albedo");
+            if (pgTex != null)
+            {
+                var pgMat = MatAlpha("Sc05PillarGrunge", pgTex, new Color(0.55f, 0.48f, 0.38f, 0.6f), false);
+                QuadObj("PillarGrunge", room, new Vector3(pox - 0.9f, 2.2f, 0.601f), new Vector3(0f, 180f, 0f), new Vector2(1.9f, 4.4f), pgMat);
+            }
+
+            // old whitewashed pillar: long grimy drip streaks down its face
+            var pillarDrip = Sc03Tex("Grime_Drip");
+            if (pillarDrip != null)
+            {
+                var pdm = Mat("Sc05PillarDrip", new Color(0.2f, 0.15f, 0.1f, 0.55f), 0.1f, 0f, pillarDrip, null, false, true);
+                for (var i = 0; i < 7; i++)
+                    QuadObj("PillarDrip" + i, room, new Vector3(pox - 1.75f + i * 0.28f, 2.1f, 0.604f + i * 0.00003f), new Vector3(0f, 180f, 0f), new Vector2(0.55f, 2.6f), pdm);
             }
 
             var grimeTex = Sc03Tex("Grime_Drip");
@@ -504,26 +595,31 @@ namespace ChemicalSafety.Editor
             Box("Duct", room, new Vector3(ox + 1.3f, WhH - 0.62f, cz), new Vector3(0.9f, 0.55f, d - 0.6f), duct, false);
             Sc04RollerZ("CeilPipe", room, new Vector3(ox - 1.4f, WhH - 0.55f, cz), d - 0.6f, 0.08f, pipeMat);
             Sc04RollerZ("CeilPipeB", room, new Vector3(ox - 1.75f, WhH - 0.5f, cz), d - 0.6f, 0.045f, pipeMat);
-            var tubeMat = Mat("Sc05WhTube", new Color(0.95f, 0.97f, 0.92f), 0.2f, 0f, null, new Color(1.2f, 1.2f, 1.15f), false);
+            var tubeMat = Mat("Sc05WhTube", new Color(0.95f, 0.97f, 0.92f), 0.2f, 0f, null, new Color(2.6f, 2.6f, 2.5f), false);
             var housing = Mat("Sc05WhTubeHousing", new Color(0.55f, 0.56f, 0.56f), 0.4f, 0.3f);
-            var tubeSpots = new[] { new Vector2(ox - 0.9f, 1.4f), new Vector2(ox + 1.5f, -1.6f), new Vector2(ox - 0.7f, -4.6f), new Vector2(ox + 1.7f, -7.6f), new Vector2(ox - 0.3f, -10.6f) };
+            var tubeSpots = new[] { new Vector2(ox - 0.35f, -1.2f), new Vector2(ox + 1.2f, -1.6f), new Vector2(ox - 0.7f, -4.6f), new Vector2(ox + 1.7f, -7.6f), new Vector2(ox - 0.3f, -10.6f) };
             for (var i = 0; i < tubeSpots.Length; i++)
             {
-                var p = new Vector3(tubeSpots[i].x, WhH - 0.3f, tubeSpots[i].y);
+                var p = new Vector3(tubeSpots[i].x, WhH - 0.8f, tubeSpots[i].y);
+                var parts = new List<GameObject>();
                 // hanging fixture: two chains, housing, two tubes
-                Box("TubeChainA", room, p + new Vector3(-0.5f, 0.2f, 0f), new Vector3(0.01f, 0.3f, 0.01f), housing, false);
-                Box("TubeChainB", room, p + new Vector3(0.5f, 0.2f, 0f), new Vector3(0.01f, 0.3f, 0.01f), housing, false);
-                Box("TubeHousing" + i, room, p + Vector3.up * 0.04f, new Vector3(1.3f, 0.05f, 0.14f), housing, false);
-                var t1 = Box("Tube" + i + "a", room, p - new Vector3(0f, 0f, 0.035f), new Vector3(1.2f, 0.035f, 0.035f), tubeMat, false);
-                Box("Tube" + i + "b", room, p + new Vector3(0f, 0f, 0.035f), new Vector3(1.2f, 0.035f, 0.035f), tubeMat, false);
+                parts.Add(Box("TubeChainA", room, p + new Vector3(-1.0f, 0.45f, 0f), new Vector3(0.012f, 0.8f, 0.012f), housing, false));
+                parts.Add(Box("TubeChainB", room, p + new Vector3(1.0f, 0.45f, 0f), new Vector3(0.012f, 0.8f, 0.012f), housing, false));
+                parts.Add(Box("TubeHousing" + i, room, p + Vector3.up * 0.04f, new Vector3(2.3f, 0.05f, 0.16f), housing, false));
+                var t1 = Box("Tube" + i + "a", room, p - new Vector3(0f, 0f, 0.035f), new Vector3(2.2f, 0.04f, 0.04f), tubeMat, false);
+                parts.Add(t1);
+                parts.Add(Box("Tube" + i + "b", room, p + new Vector3(0f, 0f, 0.035f), new Vector3(2.2f, 0.04f, 0.04f), tubeMat, false));
+                if (i == 0)
+                    foreach (var part in parts)
+                        part.transform.RotateAround(p, Vector3.up, 24f); // the big tube near the camera is angled like the picture
                 var lightGo = new GameObject("TubeLight" + i);
                 lightGo.transform.SetParent(room, false);
                 lightGo.transform.position = p + Vector3.down * 0.5f;
                 var l = lightGo.AddComponent<Light>();
                 l.type = LightType.Point;
                 l.color = new Color(0.92f, 0.95f, 0.9f);
-                l.range = 8.5f;
-                l.intensity = i < 2 ? 3.6f : 2.7f;
+                l.range = 11f;
+                l.intensity = i < 2 ? 6.5f : 5f;
                 l.shadows = LightShadows.None;
                 if (i == 1 || i == 3)
                     flicks.Add(new Sc05FactoryFx.Flicker { light = l, glow = t1.GetComponent<Renderer>(), baseIntensity = l.intensity, seed = i * 7.3f });
@@ -532,14 +628,24 @@ namespace ChemicalSafety.Editor
             // ---- window on the left wall (top-left of the view): emissive pane, bars, cool fill and a warm cookie spot with a shaft
             var glow = Mat("Sc05WhWindow", new Color(0.88f, 0.94f, 1f), 0f, 0f, null, new Color(1.25f, 1.32f, 1.4f), true);
             var frame = Mat("Sc05WhWinFrame", new Color(0.3f, 0.31f, 0.3f), 0.3f, 0.3f);
-            const float wz = -2.6f;
-            const float wy = 3.35f;
+            const float wz = -0.2f;
+            const float wy = 3.5f;
             Box("WinGlass", room, new Vector3(x1 - 0.07f, wy, wz), new Vector3(0.02f, 1.4f, 2.4f), glow, false);
             Box("WinFrameTop", room, new Vector3(x1 - 0.09f, wy + 0.72f, wz), new Vector3(0.08f, 0.08f, 2.5f), frame, false);
             Box("WinFrameBot", room, new Vector3(x1 - 0.09f, wy - 0.72f, wz), new Vector3(0.1f, 0.1f, 2.5f), frame, false);
             for (var k = 0; k <= 4; k++)
                 Box("WinBarV", room, new Vector3(x1 - 0.1f, wy, wz - 1.2f + k * 0.6f), new Vector3(0.04f, 1.4f, 0.04f), frame, false);
             Box("WinBarH", room, new Vector3(x1 - 0.1f, wy, wz), new Vector3(0.04f, 0.04f, 2.4f), frame, false);
+            // dirty panes like the picture: dark smudges over the glass
+            var panesBlot = Sc03Tex("Stain_Blot");
+            if (panesBlot != null)
+            {
+                var paneDirt = Mat("Sc05WinDirt", new Color(0.35f, 0.32f, 0.28f, 0.2f), 0.1f, 0f, panesBlot, null, false, true);
+                for (var k = 0; k < 5; k++)
+                    QuadObj("PaneDirt" + k, room, new Vector3(x1 - 0.1f - k * 0.0004f, wy + (k % 2 == 0 ? -0.3f : 0.25f), wz - 0.9f + k * 0.45f), new Vector3(0f, 90f, k * 70f),
+                        Vector2.one * 0.9f, paneDirt);
+            }
+
             var fill = new GameObject("WindowFill");
             fill.transform.SetParent(room, false);
             fill.transform.position = new Vector3(x1 - 0.9f, wy, wz);
@@ -547,7 +653,7 @@ namespace ChemicalSafety.Editor
             fl.type = LightType.Point;
             fl.color = new Color(0.85f, 0.92f, 1f);
             fl.range = 7f;
-            fl.intensity = 3.0f;
+            fl.intensity = 4.5f;
             fl.shadows = LightShadows.None;
             var sunGo = new GameObject("WindowSun");
             sunGo.transform.SetParent(room, false);
@@ -559,7 +665,7 @@ namespace ChemicalSafety.Editor
             sun.color = new Color(1f, 0.94f, 0.8f);
             sun.spotAngle = 44f;
             sun.range = 10f;
-            sun.intensity = 12f;
+            sun.intensity = 18f;
             sun.shadows = LightShadows.None;
             sun.cookie = Sc04WindowCookie();
             var shaftTex = EnvTex("FX_Shaft");
@@ -578,14 +684,14 @@ namespace ChemicalSafety.Editor
             }
 
             // ---- the picture: ONE rack at the left of the aisle, running away from the learner, front toward the aisle (-X)
-            BuildSc05Rack(room, new Vector3(ox + 2.1f, 0f, -4.65f), 3, 11, labelMats, true, -90f);
+            BuildSc05Rack(room, new Vector3(ox + 1.1f, 0f, -3.3f), 2, 11, labelMats, true, -90f);
 
             // ---- floor pallets with drums: two beside the pillar (hero drums), one at the rack foot, one in the smoke further back
             var rnd = new System.Random(5);
             var pallets = new[]
             {
-                new Vector4(ox - 0.75f, 1.3f, 8f, 4f), new Vector4(ox + 0.9f, -2.4f, -6f, 4f), new Vector4(ox - 0.35f, -5.4f, 14f, 4f),
-                new Vector4(ox + 0.1f, -7.4f, 0f, 3f)
+                new Vector4(ox - 0.75f, 1.3f, 8f, 4f), new Vector4(ox - 0.15f, -3.9f, -6f, 4f), new Vector4(ox - 0.35f, -5.4f, 14f, 4f),
+                new Vector4(ox + 0.7f, -9.2f, 0f, 3f)
             };
             for (var p = 0; p < pallets.Length; p++)
             {
@@ -596,28 +702,37 @@ namespace ChemicalSafety.Editor
                 for (var k = 0; k < n; k++)
                 {
                     var off = rot * new Vector3(-0.3f + (k % 2) * 0.6f, 0.14f, -0.28f + (k / 2) * 0.56f);
-                    WhDrum(room, centre + off, rnd, p < 3, (k / 2) == 1 && rnd.NextDouble() < 0.7, labelMats, 0.4f, p < 2); // the two pallets near the learner use the client's Drum.glb
+                    WhDrum(room, centre + off, rnd, p < 3, p < 2 || ((k / 2) == 1 && rnd.NextDouble() < 0.7), labelMats, 0.4f, p < 2); // the two pallets near the learner use the client's Drum.glb
                 }
             }
 
             // a few more drums standing on the floor along the right and far left, jerry cans stacked at the rack foot
             WhDrum(room, new Vector3(ox - 1.6f, 0f, -2.0f), rnd, false, false, labelMats, 0.5f);
             WhDrum(room, new Vector3(ox - 2.0f, 0f, -3.1f), rnd, false, false, labelMats, 0.3f);
-            var jg = Mat("Sc05JerryGrey", new Color(0.55f, 0.56f, 0.55f), 0.35f, 0f, Sc01Tex("Grunge_Albedo"));
-            var jb = Mat("Sc05JerryBlue", new Color(0.16f, 0.30f, 0.62f), 0.35f, 0f, Sc01Tex("Grunge_Albedo"));
+            var jg = Mat("Sc05JerryGrey", new Color(0.82f, 0.83f, 0.8f), 0.5f, 0f, Sc01Tex("Grunge_Albedo"));
+            var jb = Mat("Sc05JerryBlue", new Color(0.14f, 0.36f, 0.95f), 0.55f, 0f, Sc01Tex("Grunge_Albedo"));
             for (var i = 0; i < 10; i++)
             {
-                var go = MeshObj("FloorJerry", room, WhJerryMesh(), new Vector3(ox + 0.95f, (i % 5 >= 3 ? 0.34f : 0f), -0.9f - (i % 5) * 0.27f - (i / 5) * 0.9f), Vector3.one,
+                var go = MeshObj("FloorJerry", room, WhJerryMesh(), new Vector3(ox + 0.05f, (i % 5 >= 3 ? 0.34f : 0f), -0.9f - (i % 5) * 0.27f - (i / 5) * 0.9f), Vector3.one,
                     i % 3 == 0 ? jb : jg);
                 go.transform.rotation = Quaternion.Euler(0f, 90f + (float)(rnd.NextDouble() - 0.5) * 18f, 0f);
+                WhJerryLabel(go.transform, labelMats, rnd);
             }
 
             // ---- back of the hall, right of centre in the smoke: the screen-printing machine; a calender at the far left
-            BuildSc05ScreenPrinter(room, new Vector3(ox - 2.1f, 0f, -8.4f), 0f, fan);
+            BuildSc05ScreenPrinter(room, new Vector3(ox - 1.3f, 0f, -6.6f), 0f, fan);
+            var bdTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc05/Backdrop_Machines.png");
+            if (bdTex != null)
+            {
+                // the client's picture of the printing machines as a soft backdrop behind the real 3D ones
+                var bdMat = MatAlpha("Sc05MachBackdrop", bdTex, new Color(1.25f, 1.25f, 1.25f, 1f), false);
+                QuadObj("MachineBackdrop", room, new Vector3(ox - 1.2f, 1.85f, -8.6f), new Vector3(0f, 180f, 0f), new Vector2(6.4f, 3.8f), bdMat);
+            }
+
             Sc04Calender(room, "BackCalender", new Vector3(ox + 2.4f, 0f, -12.4f), 2.6f, 1.1f, 1.95f, -1f, true);
 
             // ---- left wall: hanging work clothes and the wash trough
-            BuildSc05LeftWall(room, x1, -2.5f, art, sway);
+            BuildSc05LeftWall(room, x1, -0.2f, art, sway);
 
             // ---- pillar: a yellow-black hazard band at its foot, the client's VAPOR HAZARD sign is in the pillar code
             var black = Mat("Sc05WhBlack", new Color(0.06f, 0.06f, 0.07f), 0.3f, 0f);

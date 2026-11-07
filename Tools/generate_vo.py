@@ -152,6 +152,10 @@ CLIPS = {
         BN_VOICE,
         "এটি শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়।",
     ),
+    "VO_Sc05Gate_bn": (
+        BN_VOICE,
+        "মাস্ক পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
+    ),
     "VO_Sc05Complete_bn": (BN_VOICE, complete_bn(5)),
     "VO_Sc05Complete_en": (EN_VOICE, complete_en(5)),
     # Scenario 6
@@ -332,6 +336,7 @@ CLIPS_EN = {
     "VO_Sc04Glove1": "This is a thin blue nitrile glove. Against concentrated acid its rating is poor. Acid goes through in under thirty minutes.",
     "VO_Sc04Glove2": "This is a thick black neoprene glove. Against concentrated acid its rating is excellent. It holds for more than four hundred and eighty minutes.",
     "VO_Sc04Gate": gate_en("Glove inspection complete."),
+    "VO_Sc05Gate": gate_en("Mask inspection complete."),
     "VO_SC05_Instruction": "You are a storekeeper. In the factory store there are high levels of Toluene solvent vapors. Put on the right mask before you go in.",
     "VO_Sc05Mask0": "This is a simple dust mask, N95. It is incompatible with toluene solvent.",
     "VO_Sc05Mask1": "This is a half-face respirator with organic vapor cartridge. It is compatible with toluene solvent.",

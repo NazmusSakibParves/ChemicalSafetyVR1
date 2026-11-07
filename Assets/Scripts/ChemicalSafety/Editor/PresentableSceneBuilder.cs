@@ -795,6 +795,7 @@ namespace ChemicalSafety.Editor
             for (var gi = 0; gi < 3; gi++)
                 art.voSc04Glove[gi] = V("VO_Sc04Glove" + gi + "_bn.mp3");
             art.voSc04Gate = V("VO_Sc04Gate_bn.mp3");
+            art.voSc05Gate = V("VO_Sc05Gate_bn.mp3");
             var sc05Vo = V("VO_SC05_Instruction_bn.mp3");
             if (sc05Vo != null)
                 art.voSc05Instruction = sc05Vo;
