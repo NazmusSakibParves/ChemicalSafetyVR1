@@ -47,6 +47,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform drumPokeStand;
         [Tooltip("Scenario 1: the yellow flat-platform cart of the reference hall (drum arcs onto the platform, the cart is pulled away).")]
         [SerializeField] private bool flatCart;
+        [Tooltip("Scenario 1: the glass INSTRUCTIONS card + CONTINUE button (client picture). Off = the previous pop-up frame. Set by the scene builder.")]
+        [SerializeField] private bool sc01GlassCard;
         [SerializeField] private GameObject trolley;
         [SerializeField] private FloatingTouchButton carrierButton;
         [SerializeField] private GameObject carrierLoad;
@@ -327,7 +329,7 @@ namespace ChemicalSafety.Presentable
 
             // Scenario 1 may run on the controller ray (PresentableInput). The fingertip flow below stays as it was.
             PresentableInput.ActiveScenario = 1;
-            instructionPanel.SetGlass(true); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
+            instructionPanel.SetGlass(sc01GlassCard); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
             var rayFlow = PresentableInput.RayActive;
             if (rayFlow)
             {
@@ -1745,7 +1747,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float rayPanelScaleSc01 = 1.15f;
         [SerializeField] private float rayPanelRiseSc01 = 0.15f;
         [Tooltip("Scenario 1 (ray): the instruction card and the question card sit this far to the LEFT of the view (metres) so the drums and the hall stay uncovered. 0 = centred like before.")]
-        [SerializeField] private float rayPanelLeftSc01 = 0.85f;
+        [SerializeField] private float rayPanelLeftSc01; // set by the scene builder (Sc01CardsLeftOffset), 0 = centred
         [Tooltip("Scenario 2: the card is centred on the eyes.")]
         [SerializeField] private float rayPanelRiseSc02 = 0f;
         [SerializeField] private float rayStartDelay = 5f;

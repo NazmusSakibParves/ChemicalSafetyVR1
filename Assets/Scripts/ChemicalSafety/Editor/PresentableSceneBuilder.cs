@@ -209,7 +209,7 @@ namespace ChemicalSafety.Editor
             SetRef(clipboard, "leftHand", leftController);
             // the SDS sheet is closed at the start and after the login: only the left controller X opens / hides it
             var cso = new SerializedObject(clipboard);
-            cso.FindProperty("startVisible").boolValue = false;
+            cso.FindProperty("startVisible").boolValue = !Sc01SdsStartsHidden;
             cso.ApplyModifiedPropertiesWithoutUndo();
 
             var directorGo = Child("PresentableDirector", flow);
@@ -252,6 +252,8 @@ namespace ChemicalSafety.Editor
             so.FindProperty("labelPopup").objectReferenceValue = labelPopup;
             so.FindProperty("drumPokeStand").objectReferenceValue = drumPokeStand;
             so.FindProperty("flatCart").boolValue = Sc01UseReferenceHall;
+            so.FindProperty("sc01GlassCard").boolValue = Sc01UseGlassCard;
+            so.FindProperty("rayPanelLeftSc01").floatValue = Sc01CardsLeftOffset;
             so.FindProperty("trolley").objectReferenceValue = trolley;
             so.FindProperty("carrierButton").objectReferenceValue = carrierButton;
             so.FindProperty("carrierLoad").objectReferenceValue = carrierLoad;

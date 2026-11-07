@@ -13,8 +13,17 @@ namespace ChemicalSafety.Editor
     // workshop through a doorway, SAFETY FIRST board, dirty stained floor. Switch: Sc01UseReferenceHall (false = old hall).
     public static partial class PresentableSceneBuilder
     {
-        // ONE switch for the SC01 look. false builds the previous warehouse (code kept in BuildShell & co).
+        // ---- Scenario 1 look switches (client round of 2026-11-07), all in one place.
+        // To get the PREVIOUS Scenario 1 back, set them to  false / false / 0 / false  and run
+        // Chemical Safety > Presentable > Build Presentable Scene (the old code paths are all still there).
+        // hall, room, floor, racks, cart (client's glb), pallets under the hero drums, fans. false = the previous warehouse + hand truck
         private const bool Sc01UseReferenceHall = true;
+        // the glass INSTRUCTIONS card + CONTINUE button in Scenario 1. false = the previous cyan pop-up frame
+        private const bool Sc01UseGlassCard = true;
+        // ray mode: the instruction / question cards sit this far to the LEFT of the view (metres). 0 = centred like before
+        private const float Sc01CardsLeftOffset = 0.85f;
+        // the SDS sheet is closed until the left controller X opens it. false = open at the start like before
+        private const bool Sc01SdsStartsHidden = true;
 
         private const string Sc01TexDir = ArtRoot + "/2D/Sc01Tex";
         // the four hero drums (and their pallets) sit this far to the right of the hall axis, like the reference
@@ -777,6 +786,23 @@ namespace ChemicalSafety.Editor
                 model.transform.localScale = Vector3.one * modelScale;
                 var tb = WorldBounds(model);
                 model.transform.position += root.position - new Vector3(tb.center.x, tb.min.y, tb.center.z);
+
+                // client: keep the rust, but the cart is YELLOW (the glb's own rusty-metal material, tinted)
+                var rustYellow = Sc01CartYellowRust(model);
+                if (rustYellow != null)
+                {
+                    foreach (var mr in model.GetComponentsInChildren<MeshRenderer>())
+                    {
+                        var ms = mr.sharedMaterials;
+                        for (var mi = 0; mi < ms.Length; mi++)
+                        {
+                            if (ms[mi] != null && ms[mi].name == "Painted metal with rust")
+                                ms[mi] = rustYellow;
+                        }
+
+                        mr.sharedMaterials = ms;
+                    }
+                }
             }
             else
             {
@@ -809,6 +835,40 @@ namespace ChemicalSafety.Editor
             loadDrum.SetActive(false);
             // visible from the start like in the reference render (the director rolls it to the correct drum)
             return root.gameObject;
+        }
+
+        // Copy of the trolley glb's "Painted metal with rust" material (same shader, rust texture / normal / roughness) with a yellow
+        // base colour factor, saved as an asset so the scene keeps it.
+        private static Material Sc01CartYellowRust(GameObject modelInstance)
+        {
+            Material src = null;
+            foreach (var r in modelInstance.GetComponentsInChildren<MeshRenderer>())
+            {
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (m != null && m.name == "Painted metal with rust")
+                        src = m;
+                }
+            }
+
+            if (src == null)
+                return null;
+            var path = GenDir + "/M_Sc01CartYellowRust.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(src);
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            else
+            {
+                mat.shader = src.shader;
+                mat.CopyPropertiesFromMaterial(src);
+            }
+
+            mat.SetColor("baseColorFactor", new Color(1f, 0.86f, 0.04f, 1f)); // yellow over the rust texture
+            EditorUtility.SetDirty(mat);
+            return mat;
         }
 
         // Two wooden pallets side by side, two drums each (drums stand at x -1.02, -0.34, 0.34, 1.02).
