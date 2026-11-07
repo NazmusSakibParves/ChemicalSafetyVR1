@@ -32,6 +32,7 @@ namespace ChemicalSafety.Presentable
         private TMP_Text _compatText;
         private Image _compatIcon;
         private Transform _gate;
+        private Vector3 _gateBase = Vector3.one;
         private Transform _arrowCanvas;
         private Vector3 _arrowBase;
 
@@ -57,6 +58,16 @@ namespace ChemicalSafety.Presentable
         private Image _maskPicture;
         private Image _speaker;
         private bool _speaking;
+        private bool _auto;
+        private GameObject _closeGo;
+        private GameObject _speakerGo;
+        [Tooltip("Toluene vapour wisps for the automatic demo (built by the scene builder, may be empty).")]
+        [SerializeField] private ParticleSystem vaporFx;
+
+        /// <summary>BACK was pressed on the gate in the automatic flow (review again).</summary>
+        public bool BackChosen { get; private set; }
+        public bool GateVisible => _gate != null && _gate.gameObject.activeSelf;
+        public bool AutoCardShown { get; private set; }
 
         public bool WorkflowStyle => _maskPicture != null;
         public Sprite CardPicture => _maskPicture != null ? _maskPicture.sprite : null;
@@ -158,12 +169,200 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < _seen.Length; i++)
                 _seen[i] = false;
             _on = true;
+            _auto = false;
+            BackChosen = false;
             _current = 0;
             HideCard();
             HideGate();
             PlaceArrow();
             SetPokes(true);
         }
+
+        // ------------------------------------------------------------------ automatic flow (controller ray: no arrow, no clicks)
+
+        /// <summary>Resets the review for the automatic flow: no arrow, no poke; <see cref="AutoInspect"/> shows each mask.</summary>
+        public void BeginAuto()
+        {
+            CaptureHomes();
+            NextChosen = false;
+            BackChosen = false;
+            Seen = 0;
+            for (var i = 0; i < _seen.Length; i++)
+                _seen[i] = false;
+            _on = false;
+            _auto = true;
+            _held = -1;
+            _busy = false;
+            HideCard();
+            HideGate();
+            if (arrow != null)
+                arrow.gameObject.SetActive(false);
+            SetPokes(false);
+        }
+
+        /// <summary>Mask indices as the learner sees them, left to right (the viewer's left is +X).</summary>
+        public int[] LeftToRight()
+        {
+            var order = new System.Collections.Generic.List<int>();
+            for (var i = 0; i < masks.Length; i++)
+                if (masks[i] != null)
+                    order.Add(i);
+            order.Sort((a, b) => _homePos[b].x.CompareTo(_homePos[a].x));
+            return order.ToArray();
+        }
+
+        /// <summary>
+        /// One mask by itself: it lifts to the hand, the card pops in (name, then compatible / not), the toluene vapour demo runs,
+        /// <paramref name="whileShown"/> runs (the voice-over and its minimum read time), then the card goes and the mask returns.
+        /// </summary>
+        public IEnumerator AutoInspect(int index, System.Func<IEnumerator> whileShown)
+        {
+            if (index < 0 || masks == null || index >= masks.Length || masks[index] == null)
+                yield break;
+            _held = index;
+            yield return HoldMotion(index);
+            yield return RevealCard(index);
+            AutoCardShown = true;
+            PlayVapor(index);
+            if (whileShown != null)
+                yield return whileShown();
+            StopVapor();
+            yield return HideCardAnimated();
+            AutoCardShown = false;
+            yield return PutBackMotion(index);
+            _held = -1;
+            _busy = false;
+            if (!_seen[index])
+            {
+                _seen[index] = true;
+                Seen++;
+            }
+        }
+
+        private Graphic[][] CardRows()
+        {
+            string[][] names = { new[] { "NameLabel", "NameValue" }, new[] { "CompatLabel", "CompatValue" } };
+            var rows = new Graphic[names.Length][];
+            for (var r = 0; r < names.Length; r++)
+            {
+                var list = new System.Collections.Generic.List<Graphic>();
+                foreach (var n in names[r])
+                {
+                    var t = _card.Find(n);
+                    var g = t != null ? t.GetComponent<Graphic>() : null;
+                    if (g != null)
+                        list.Add(g);
+                }
+
+                rows[r] = list.ToArray();
+            }
+
+            return rows;
+        }
+
+        private static void SetAlpha(Graphic[] gs, float a)
+        {
+            foreach (var g in gs)
+            {
+                var c = g.color;
+                c.a = a;
+                g.color = c;
+            }
+        }
+
+        private IEnumerator RevealCard(int index)
+        {
+            ShowCard(index);
+            if (_card == null)
+                yield break;
+            var rows = CardRows();
+            var baseScale = _card.localScale;
+            foreach (var row in rows)
+                SetAlpha(row, 0f);
+            _card.localScale = baseScale * 0.82f;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
+            for (var t = 0f; t < 0.32f; t += Time.deltaTime)
+            {
+                _card.localScale = baseScale * Mathf.Lerp(0.82f, 1f, PresentableFx.EaseOutBack(t / 0.32f));
+                yield return null;
+            }
+
+            _card.localScale = baseScale;
+            for (var r = 0; r < rows.Length; r++)
+            {
+                PresentableFx.Play(PresentableFx.Tick, 0.5f);
+                for (var t = 0f; t < 0.3f; t += Time.deltaTime)
+                {
+                    SetAlpha(rows[r], Mathf.Clamp01(t / 0.3f));
+                    yield return null;
+                }
+
+                SetAlpha(rows[r], 1f);
+                yield return PresentableFx.Wait(r == 0 ? 0.5f : 0.1f);
+            }
+        }
+
+        private IEnumerator HideCardAnimated()
+        {
+            if (_card == null)
+                yield break;
+            var rows = CardRows();
+            var baseScale = _card.localScale;
+            for (var t = 0f; t < 0.2f; t += Time.deltaTime)
+            {
+                var k = t / 0.2f;
+                _card.localScale = baseScale * Mathf.Lerp(1f, 0.9f, k);
+                foreach (var row in rows)
+                    SetAlpha(row, 1f - k);
+                yield return null;
+            }
+
+            HideCard();
+            _card.localScale = baseScale;
+            foreach (var row in rows)
+                SetAlpha(row, 1f);
+        }
+
+        // Toluene vapour drifts from the hall toward the learner's face. A compatible mask (organic vapour cartridge) stops it at the
+        // mask (soft green), any other lets it through (orange, it reaches the face).
+        // The user did not want the pink / orange puff at the held mask: off. true brings the demo back.
+        private const bool VaporDemo = false;
+
+        private void PlayVapor(int index)
+        {
+            if (!VaporDemo || vaporFx == null || masks[index] == null)
+                return;
+            var cam = Camera.main != null ? Camera.main.transform : null;
+            var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
+            var ok = Sc05Content.Compatible[index];
+            var at = masks[index].position + fwd * 0.55f + Vector3.up * 0.02f;
+            vaporFx.transform.SetPositionAndRotation(at, Quaternion.LookRotation(-fwd, Vector3.up));
+            var main = vaporFx.main;
+            const float speed = 0.28f;
+            main.startSpeed = speed;
+            main.startLifetime = ok ? 0.55f / speed : (0.55f + 0.5f) / speed;
+            main.startColor = ok ? new Color(0.62f, 0.95f, 0.78f, 0.32f) : new Color(1f, 0.82f, 0.55f, 0.34f);
+            vaporFx.Clear();
+            vaporFx.Play();
+        }
+
+        private void StopVapor()
+        {
+            if (vaporFx != null)
+                vaporFx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+
+        /// <summary>Opens the BACK / NEXT card at a given pose and scale (ray flow: beside the scene, not in front of the face).</summary>
+        public void ShowGateAt(Vector3 position, Quaternion rotation, float worldScale)
+        {
+            if (_gate == null)
+                return;
+            _gate.localScale = _gateBase * Mathf.Max(0.1f, worldScale);
+            _gate.SetPositionAndRotation(position, rotation);
+            _gate.gameObject.SetActive(true);
+        }
+
+        public void HideGatePublic() => HideGate();
 
         private void Update()
         {
@@ -191,6 +390,15 @@ namespace ChemicalSafety.Presentable
         }
 
         private IEnumerator Hold(int index)
+        {
+            yield return HoldMotion(index);
+            ShowCard(index);
+            _busy = false;
+            Opened?.Invoke(index);
+        }
+
+        // The mask leaves its hook for the hand (shared by the touch flow and the automatic flow).
+        private IEnumerator HoldMotion(int index)
         {
             _busy = true;
             _held = index;
@@ -223,9 +431,6 @@ namespace ChemicalSafety.Presentable
 
             mask.SetPositionAndRotation(dest, destRot);
             mask.localScale = _homeScale[index] * holdScale;
-            ShowCard(index);
-            _busy = false;
-            Opened?.Invoke(index);
         }
 
         public void CloseCard()
@@ -240,21 +445,7 @@ namespace ChemicalSafety.Presentable
             _busy = true;
             HideCard();
             Closed?.Invoke();
-            var mask = masks[index];
-            var from = mask.position;
-            var fromRot = mask.rotation;
-            var fromScale = mask.localScale;
-            for (var t = 0f; t < 0.4f; t += Time.deltaTime)
-            {
-                var k = Mathf.SmoothStep(0f, 1f, t / 0.4f);
-                mask.position = Vector3.Lerp(from, _homePos[index], k);
-                mask.rotation = Quaternion.Slerp(fromRot, _homeRot[index], k);
-                mask.localScale = Vector3.Lerp(fromScale, _homeScale[index], k);
-                yield return null;
-            }
-
-            mask.SetPositionAndRotation(_homePos[index], _homeRot[index]);
-            mask.localScale = _homeScale[index];
+            yield return PutBackMotion(index);
             _held = -1;
             _busy = false;
             if (!_seen[index])
@@ -274,6 +465,25 @@ namespace ChemicalSafety.Presentable
                 PlaceArrow();
                 SetPokes(true);
             }
+        }
+
+        private IEnumerator PutBackMotion(int index)
+        {
+            var mask = masks[index];
+            var from = mask.position;
+            var fromRot = mask.rotation;
+            var fromScale = mask.localScale;
+            for (var t = 0f; t < 0.4f; t += Time.deltaTime)
+            {
+                var k = Mathf.SmoothStep(0f, 1f, t / 0.4f);
+                mask.position = Vector3.Lerp(from, _homePos[index], k);
+                mask.rotation = Quaternion.Slerp(fromRot, _homeRot[index], k);
+                mask.localScale = Vector3.Lerp(fromScale, _homeScale[index], k);
+                yield return null;
+            }
+
+            mask.SetPositionAndRotation(_homePos[index], _homeRot[index]);
+            mask.localScale = _homeScale[index];
         }
 
         private int NextUnseen()
@@ -378,6 +588,10 @@ namespace ChemicalSafety.Presentable
                 _compatIcon.color = ok ? new Color(0.35f, 0.95f, 0.55f) : new Color(1f, 0.4f, 0.35f);
             }
 
+            if (_speakerGo != null)
+                _speakerGo.SetActive(!_auto);
+            if (_closeGo != null)
+                _closeGo.SetActive(!_auto);
             _card.gameObject.SetActive(true);
         }
 
@@ -395,6 +609,7 @@ namespace ChemicalSafety.Presentable
                 return;
             var cam = Camera.main != null ? Camera.main.transform : null;
             var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
+            _gate.localScale = _gateBase;
             _gate.position = (cam != null ? cam.position : Vector3.zero) + fwd * 0.5f;
             _gate.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             _gate.gameObject.SetActive(true);
@@ -409,6 +624,12 @@ namespace ChemicalSafety.Presentable
         private void OnBack()
         {
             HideGate();
+            if (_auto)
+            {
+                BackChosen = true; // the director plays the masks again
+                return;
+            }
+
             Begin();
         }
 
@@ -468,10 +689,10 @@ namespace ChemicalSafety.Presentable
             title.fontSizeMax = 32f;
             title.textWrappingMode = TextWrappingModes.NoWrap;
 
-            IconButton(canvas.transform, "SpeakerButton", art.iconSpeaker, new Vector2(0.775f, 0.825f), new Vector2(0.862f, 0.955f),
-                () => { if (_held >= 0) SpeakerClicked?.Invoke(_held); }, out _speaker);
-            IconButton(canvas.transform, "CloseButton", art.iconClose != null ? art.iconClose : art.cross,
-                new Vector2(0.872f, 0.825f), new Vector2(0.959f, 0.955f), CloseCard, out _);
+            _speakerGo = IconButton(canvas.transform, "SpeakerButton", art.iconSpeaker, new Vector2(0.775f, 0.825f), new Vector2(0.862f, 0.955f),
+                () => { if (_held >= 0) SpeakerClicked?.Invoke(_held); }, out _speaker).gameObject;
+            _closeGo = IconButton(canvas.transform, "CloseButton", art.iconClose != null ? art.iconClose : art.cross,
+                new Vector2(0.872f, 0.825f), new Vector2(0.959f, 0.955f), CloseCard, out _).gameObject;
 
             var pic = PresentableUi.Rect("MaskPicture", canvas.transform, new Vector2(0.05f, 0.14f), new Vector2(0.40f, 0.80f));
             _maskPicture = PresentableUi.Img(pic, art.maskIcons != null && art.maskIcons.Length > 0 ? art.maskIcons[0] : null,
@@ -492,6 +713,7 @@ namespace ChemicalSafety.Presentable
         {
             var canvas = PresentableUi.WorldCanvas("MaskGate", transform, new Vector2(1000f, 560f), 0.0005f, true, 31);
             _gate = canvas.transform;
+            _gateBase = _gate.localScale;
             var plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, art.holoPanel, Color.white);
             plate.type = Image.Type.Sliced;
             plate.raycastTarget = true;

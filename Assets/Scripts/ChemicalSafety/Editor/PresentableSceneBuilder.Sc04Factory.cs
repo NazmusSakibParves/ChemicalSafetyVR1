@@ -68,8 +68,12 @@ namespace ChemicalSafety.Editor
                     go.layer = solid;
             }
 
-            var floor = Box("Floor", room, new Vector3(cx, -0.05f, cz), new Vector3(w, 0.1f, d), floorMat);
-            floor.AddComponent<TeleportationArea>();
+            // light, worn concrete like the client's photo (the old dark floor texture read as black next to the windows)
+            var floorLight = Sc01Pbr("Sc04FacFloorLight", "Floor", new Color(0.86f, 0.87f, 0.85f), 0.35f, 0.9f);
+            TexBox("Floor", room, new Vector3(cx, -0.05f, cz), new Vector3(w, 0.1f, d), 0f, floorLight, 2.4f, true);
+            var floorSolid = room.Find("FloorSolid");
+            if (floorSolid != null)
+                floorSolid.gameObject.AddComponent<TeleportationArea>();
             Shell("Wall_Back", new Vector3(cx, h * 0.5f, Sc04HallBackZ), new Vector3(w, h, 0.12f), wallBack);
             Shell("Wall_Front", new Vector3(cx, h * 0.5f, Sc04HallFrontZ), new Vector3(w, h, 0.12f), wallBack);
             Shell("Wall_Left", new Vector3(x1, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSide);

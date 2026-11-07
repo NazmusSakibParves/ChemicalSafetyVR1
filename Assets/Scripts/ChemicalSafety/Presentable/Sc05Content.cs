@@ -29,12 +29,12 @@ namespace ChemicalSafety.Presentable
         public static string QuestionPrompt => Loc.T("SC05", "QuestionPrompt");
         public static string CorrectTitle => Loc.T("SC05", "CorrectTitle");
         public static string FinishLabel => Loc.T("SC05", "FinishLabel");
-        public const int CorrectIndex = 1;
+        public const int CorrectIndex = 2; // C: the half-face respirator (A surgical, B N95, D full-face particulate)
 
-        /// <summary>Mask order in the question and on the cards: N95, half-face, surgical, full-face.</summary>
+        /// <summary>Mask order on the rail and on the cards: surgical, N95, half-face, full-face (the options A, B, C, D).</summary>
         public static string[] MaskNames => Loc.A("SC05", "MaskNames");
 
-        public static readonly bool[] Compatible = { false, true, false, false };
+        public static readonly bool[] Compatible = { false, false, true, false };
 
         public static string Incompatible => Loc.T("SC05", "Incompatible");
         public static string CompatibleText => Loc.T("SC05", "CompatibleText");
@@ -46,5 +46,10 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionFeedback => Loc.A("SC05", "OptionFeedback");
 
         public static string[] OptionWrongTitle => Loc.A("SC05", "OptionWrongTitle");
+
+        // ray flow: inline reveal (tick / cross + a short reason under every option), as Scenarios 1-4
+        public static string TagCorrect => Loc.T("SC05", "TagCorrect");
+        public static string TagWrong => Loc.T("SC05", "TagWrong");
+        public static string[] OptionReasons => Loc.A("SC05", "OptionReasons");
     }
 }

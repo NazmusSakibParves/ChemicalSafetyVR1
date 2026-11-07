@@ -711,9 +711,11 @@ namespace ChemicalSafety.Editor
             art.iconNext = LoadSprite("2D/Sc05/Icon_Next");
             art.iconClose = LoadSprite("2D/Sc05/Icon_Close");
             art.iconSpeaker = LoadSprite("2D/Sc05/Icon_Speaker");
+            // rail order now: surgical, N95, half-face; the icon files keep their old numbers (0 N95, 1 half-face, 2 surgical)
+            var sc05IconFile = new[] { 2, 0, 1, 3 };
             art.maskIcons = new Sprite[4];
             for (var mi = 0; mi < 4; mi++)
-                art.maskIcons[mi] = LoadSprite("2D/Sc05/MaskIcon_" + mi);
+                art.maskIcons[mi] = LoadSprite("2D/Sc05/MaskIcon_" + sc05IconFile[mi]);
             art.iconTouch = LoadSprite("2D/Env/ICON_Arrow");
             art.voSalam = V("VO_AssalamuAlaikum_bn.mp3");
             art.voInstruction = V("VO_SC01_Instruction_bn.mp3");
@@ -796,9 +798,10 @@ namespace ChemicalSafety.Editor
             var sc05Vo = V("VO_SC05_Instruction_bn.mp3");
             if (sc05Vo != null)
                 art.voSc05Instruction = sc05Vo;
-            art.voSc05Mask = new AudioClip[4];
+            art.voSc05Mask = new AudioClip[4]; // same order: the clip files keep their old numbers (0 N95, 1 half-face, 2 surgical)
+            var sc05VoFile = new[] { 2, 0, 1, 3 };
             for (var mi = 0; mi < 4; mi++)
-                art.voSc05Mask[mi] = V("VO_Sc05Mask" + mi + "_bn.mp3");
+                art.voSc05Mask[mi] = V("VO_Sc05Mask" + sc05VoFile[mi] + "_bn.mp3");
             var sc05DoneBn = V("VO_Sc05Complete_bn.mp3");
             if (sc05DoneBn != null)
                 art.voSc05CompleteBn = sc05DoneBn;

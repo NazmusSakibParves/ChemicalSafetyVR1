@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in.",
-   "bn": "আপনি একজন ডাইং মেশিন অপারেটর। একটি কাপড়ের ব্যাচ টলুইন-ভিত্তিক দ্রাবক দিয়ে প্রক্রিয়া করতে হবে। আজ ভেতরে বাষ্পের মাত্রা বেশি। ভেতরে ঢোকার আগে সঠিক মাস্কটি পরুন।"
+   "en": "You are a storekeeper. In the factory store there are high levels of Toluene solvent vapors. Put on the right mask before you go in.",
+   "bn": "আপনি একজন স্টোরকিপার। ফ্যাক্টরী স্টোরে টলুইন সলভেন্টের বাষ্প উচ্চ মাত্রায় আছে। ভেতরে প্রবেশের আগে সঠিক মাস্ক পরে নিন।"
   },
   {
    "key": "CardTitle",
@@ -23,8 +23,8 @@
   },
   {
    "key": "GateTitle",
-   "en": "RESPIRATOR INSPECTION COMPLETE.",
-   "bn": "রেসপিরেটর পরিদর্শন সম্পন্ন।"
+   "en": "MASK INSPECTION COMPLETE.",
+   "bn": "মাস্ক পরিদর্শন সম্পন্ন।"
   },
   {
    "key": "GateQuestion",
@@ -43,8 +43,8 @@
   },
   {
    "key": "QuestionPrompt",
-   "en": "Which respirator is required for toluene?",
-   "bn": "টলুইনের জন্য কোন রেসপিরেটর প্রয়োজন?"
+   "en": "You are a storekeeper. In the factory store there are high levels of Toluene solvent vapors. Which mask will protect you?",
+   "bn": "আপনি একজন স্টোরকিপার। ফ্যাক্টরী স্টোরে অনেক টলুইন সলভেন্টের বাষ্প আছে। কোন ধরনের মাস্ক আপনাকে সুরক্ষা দেবে?"
   },
   {
    "key": "CorrectTitle",
@@ -65,67 +65,92 @@
    "key": "CompatibleText",
    "en": "Compatible with toluene solvent",
    "bn": "টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ"
+  },
+  {
+   "key": "TagCorrect",
+   "en": "CORRECT",
+   "bn": "সঠিক"
+  },
+  {
+   "key": "TagWrong",
+   "en": "WRONG",
+   "bn": "ভুল"
   }
  ],
  "arrays": [
   {
    "key": "MaskNames",
    "en": [
-    "Simple dust mask (N95)",
-    "Half-face respirator with organic vapour cartridge",
     "Surgical mask",
-    "Full-face respirator with particulate only filter"
+    "N95 particulate dust mask",
+    "Half-face respirator with organic vapor cartridges",
+    "Full-face respirator with particulate-only filter"
    ],
    "bn": [
-    "সাধারণ ডাস্ট মাস্ক (N95)",
-    "অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর",
     "সার্জিক্যাল মাস্ক",
+    "N95 ডাস্ট মাস্ক",
+    "অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর",
     "শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর"
    ]
   },
   {
    "key": "OptionLabels",
    "en": [
-    "Simple dust mask (N95)",
-    "Half-face respirator with organic vapor cartridge",
-    "Surgical mask",
-    "Full-face respirator with particulate-only filter"
+    "The blue surgical mask.",
+    "The white N95 particulate dust mask.",
+    "The half-face respirator with organic vapor cartridges.",
+    "The full-face respirator with a particulate-only filter."
    ],
    "bn": [
-    "সাধারণ ডাস্ট মাস্ক (N95)",
-    "অর্গানিক ভেপার কার্ট্রিজসহ হাফ-ফেস রেসপিরেটর",
-    "সার্জিক্যাল মাস্ক",
-    "শুধু পার্টিকুলেট ফিল্টারসহ ফুল-ফেস রেসপিরেটর"
+    "নীল সার্জিক্যাল মাস্ক।",
+    "সাদা N95 ডাস্ট মাস্ক।",
+    "অর্গানিক ভেপার কার্ট্রিজ লাগানো হাফ-ফেস রেসপিরেটর।",
+    "শুধু পার্টিকুলেট ফিল্টার লাগানো ফুল-ফেস রেসপিরেটর।"
    ]
   },
   {
    "key": "OptionFeedback",
    "en": [
-    "Organic vapor passes straight through.",
-    "SDS specifies organic vapour cartridge for toluene.",
-    "A surgical mask only stops droplets. Organic vapor passes straight through.",
-    "A particulate-only filter does not capture organic vapor. Toluene passes straight through."
+    "A surgical mask only stops droplets. Solvent vapor passes straight through.",
+    "An N95 stops particulates only. Organic vapor passes straight through.",
+    "SDS specifies an organic vapor cartridge for toluene. This is the correct protection level.",
+    "A particulate-only filter does not capture solvent vapor, even on a full-face respirator."
    ],
    "bn": [
-    "জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
-    "টলুইনের জন্য SDS-এ অর্গানিক ভেপার কার্ট্রিজ নির্দিষ্ট করা আছে।",
-    "সার্জিক্যাল মাস্ক শুধু ফোঁটা আটকায়। জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
-    "শুধু পার্টিকুলেট ফিল্টার জৈব বাষ্প আটকাতে পারে না। টলুইন সরাসরি ভেতর দিয়ে চলে যায়।"
+    "সার্জিক্যাল মাস্ক শুধু ফোঁটা আটকায়। দ্রাবকের বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
+    "N95 শুধু কণা আটকায়। জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
+    "টলুইনের জন্য SDS-এ অর্গানিক ভেপার কার্ট্রিজ নির্দিষ্ট করা আছে। এটাই সঠিক সুরক্ষার স্তর।",
+    "শুধু পার্টিকুলেট ফিল্টার ফুল-ফেস রেসপিরেটরেও দ্রাবকের বাষ্প আটকাতে পারে না।"
    ]
   },
   {
    "key": "OptionWrongTitle",
    "en": [
     "WRONG CHOICE.",
-    "",
     "WRONG CHOICE.",
+    "",
     "WRONG CHOICE."
    ],
    "bn": [
     "ভুল পছন্দ।",
-    "",
     "ভুল পছন্দ।",
+    "",
     "ভুল পছন্দ।"
+   ]
+  },
+  {
+   "key": "OptionReasons",
+   "en": [
+    "Designed for droplets, not vapors. No protection against solvent vapor.",
+    "Stops particulates only. Organic vapor passes straight through.",
+    "SDS specifies organic vapor cartridge for toluene. Correct protection level.",
+    "Particulate filter will not capture organic vapor."
+   ],
+   "bn": [
+    "ফোঁটার জন্য তৈরি, বাষ্পের জন্য নয়। দ্রাবকের বাষ্প থেকে কোনো সুরক্ষা নেই।",
+    "শুধু কণা আটকায়। জৈব বাষ্প সরাসরি ভেতর দিয়ে চলে যায়।",
+    "টলুইনের জন্য SDS-এ অর্গানিক ভেপার কার্ট্রিজ নির্দিষ্ট করা। সঠিক সুরক্ষার স্তর।",
+    "পার্টিকুলেট ফিল্টার জৈব বাষ্প আটকাতে পারে না।"
    ]
   }
  ],

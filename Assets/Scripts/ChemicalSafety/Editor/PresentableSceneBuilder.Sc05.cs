@@ -155,6 +155,10 @@ namespace ChemicalSafety.Editor
             room.SetParent(env, false);
             var solidLayer = SolidLayer;
             ConfigureSc05Textures();
+            var wh = Sc05UseWarehouse;            // the client's chemical-storage warehouse (false = the earlier dye hall)
+            var pox = wh ? ox - 1.2f : ox;        // x origin of the pillar with the mask rail
+            var dpx = wh ? pox - 1.45f : pox - 0.30f; // detector / SDS holder: on the right part of the pillar in the warehouse look (the rail is at the left)
+            ParticleSystem vaporFx = null;
 
             // dark, hazy factory air (reuses the room-mood component of Scenario 3 with its own values)
             var mood = env.gameObject.AddComponent<Sc03Mood>();
@@ -192,44 +196,48 @@ namespace ChemicalSafety.Editor
                     go.layer = solidLayer;
             }
 
-            var floor = Box("Floor", room, new Vector3(cx, -0.05f, cz), new Vector3(w, 0.1f, d), floorMat);
-            floor.AddComponent<TeleportationArea>();
-            Shell("Wall_Back", new Vector3(cx, hallH * 0.5f, hallL), new Vector3(w, hallH, 0.12f), wallBackMat);
-            Shell("Wall_Front", new Vector3(cx, hallH * 0.5f, hallF), new Vector3(w, hallH, 0.12f), wallBackMat);
-            Shell("Wall_Left", new Vector3(x1, hallH * 0.5f, cz), new Vector3(0.12f, hallH, d), wallSideMat);
-            Shell("Wall_Right", new Vector3(x0, hallH * 0.5f, cz), new Vector3(0.12f, hallH, d), wallSideMat);
-            Box("Ceiling", room, new Vector3(cx, hallH, cz), new Vector3(w, 0.1f, d), ceilMat, false);
+            if (!wh)
+            {
+                var floor = Box("Floor", room, new Vector3(cx, -0.05f, cz), new Vector3(w, 0.1f, d), floorMat);
+                floor.AddComponent<TeleportationArea>();
+                Shell("Wall_Back", new Vector3(cx, hallH * 0.5f, hallL), new Vector3(w, hallH, 0.12f), wallBackMat);
+                Shell("Wall_Front", new Vector3(cx, hallH * 0.5f, hallF), new Vector3(w, hallH, 0.12f), wallBackMat);
+                Shell("Wall_Left", new Vector3(x1, hallH * 0.5f, cz), new Vector3(0.12f, hallH, d), wallSideMat);
+                Shell("Wall_Right", new Vector3(x0, hallH * 0.5f, cz), new Vector3(0.12f, hallH, d), wallSideMat);
+                Box("Ceiling", room, new Vector3(cx, hallH, cz), new Vector3(w, 0.1f, d), ceilMat, false);
+            }
 
             // ---- the pillar the respirators hang on (workflow step01: right half of the first view)
             var pillarFront = 0.6f;
-            Shell("Pillar", new Vector3(ox - 0.9f, hallH * 0.5f, 0f), new Vector3(1.9f, hallH, 1.2f), pillarMat);
+            Shell("Pillar", new Vector3(pox - 0.9f, hallH * 0.5f, 0f), new Vector3(1.9f, hallH, 1.2f), pillarMat);
             var steel = Mat("Sc05Steel", new Color(0.42f, 0.44f, 0.46f), 0.4f, 0.25f);
             var rust = Mat("Sc05Rust", new Color(0.32f, 0.2f, 0.12f), 0.3f, 0.4f);
-            Cyl("PillarConduit", room, new Vector3(ox - 1.75f, 0f, pillarFront + 0.03f), hallH, 0.028f, steel);
-            Cyl("PillarConduit2", room, new Vector3(ox - 1.62f, 0f, pillarFront + 0.03f), hallH, 0.02f, steel);
-            Box("PillarBand", room, new Vector3(ox - 0.9f, 2.9f, pillarFront + 0.01f), new Vector3(1.92f, 0.1f, 0.03f), steel, false);
-            Box("PillarBandLow", room, new Vector3(ox - 0.9f, 0.18f, pillarFront + 0.01f), new Vector3(1.92f, 0.36f, 0.03f),
+            Cyl("PillarConduit", room, new Vector3(pox - 1.75f, 0f, pillarFront + 0.03f), hallH, 0.028f, steel);
+            Cyl("PillarConduit2", room, new Vector3(pox - 1.62f, 0f, pillarFront + 0.03f), hallH, 0.02f, steel);
+            Box("PillarBand", room, new Vector3(pox - 0.9f, 2.9f, pillarFront + 0.01f), new Vector3(1.92f, 0.1f, 0.03f), steel, false);
+            Box("PillarBandLow", room, new Vector3(pox - 0.9f, 0.18f, pillarFront + 0.01f), new Vector3(1.92f, 0.36f, 0.03f),
                 Mat("Sc05Skirt", new Color(0.12f, 0.12f, 0.13f), 0.2f, 0.1f), false);
 
             // Vapor Hazard sign (yellow, Bangla + English), left part of the pillar face
-            var signTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc05/VaporSign.png");
-            var signMat = Mat("Sc05Sign", Color.white, 0.35f, 0.05f, signTex, null, false, true);
-            QuadObj("VaporSign", room, new Vector3(ox - 0.30f, 2.08f, pillarFront + 0.012f), new Vector3(0f, 180f, 0f),
-                new Vector2(0.62f, 0.5f), signMat).GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            // warehouse look: the client's wide aged plate above the rail; the earlier look: the yellow plate beside the masks
+            var signTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + (wh ? "/2D/Sc05/VaporSignClient.png" : "/2D/Sc05/VaporSign.png"));
+            var signMat = Mat(wh ? "Sc05SignClient" : "Sc05Sign", Color.white, 0.35f, 0.05f, signTex, null, false, true);
+            QuadObj("VaporSign", room, wh ? new Vector3(pox - 0.57f, 2.62f, pillarFront + 0.012f) : new Vector3(dpx, 2.08f, pillarFront + 0.012f),
+                new Vector3(0f, 180f, 0f), wh ? new Vector2(1.2f, 0.6f) : new Vector2(0.62f, 0.5f), signMat).GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
 
             // gas detector, reads 85 and pulses red
             var detBody = Mat("Sc05DetectorBody", new Color(0.12f, 0.13f, 0.14f), 0.5f, 0.3f);
-            Box("DetectorBody", room, new Vector3(ox - 0.30f, 1.52f, pillarFront + 0.03f), new Vector3(0.17f, 0.29f, 0.06f), detBody, false);
+            Box("DetectorBody", room, new Vector3(dpx, 1.52f, pillarFront + 0.03f), new Vector3(0.17f, 0.29f, 0.06f), detBody, false);
             var detFace = Mat("Sc05DetectorFace", Color.white, 0f, 0f, Sc05Tex("Detector"), null, true, true);
-            QuadObj("DetectorFace", room, new Vector3(ox - 0.30f, 1.52f, pillarFront + 0.064f), new Vector3(0f, 180f, 0f),
+            QuadObj("DetectorFace", room, new Vector3(dpx, 1.52f, pillarFront + 0.064f), new Vector3(0f, 180f, 0f),
                 new Vector2(0.158f, 0.25f), detFace);
             var glowTex = art.radialGlow != null ? art.radialGlow.texture : null;
             var detGlowMat = MatAlpha("Sc05DetectorGlow", glowTex, new Color(1f, 0.15f, 0.1f, 0.3f), true);
-            var detGlow = QuadObj("DetectorGlow", room, new Vector3(ox - 0.30f, 1.57f, pillarFront + 0.075f), new Vector3(0f, 180f, 0f),
+            var detGlow = QuadObj("DetectorGlow", room, new Vector3(dpx, 1.57f, pillarFront + 0.075f), new Vector3(0f, 180f, 0f),
                 new Vector2(0.5f, 0.5f), detGlowMat).GetComponent<Renderer>();
             var detLightGo = new GameObject("DetectorLight");
             detLightGo.transform.SetParent(room, false);
-            detLightGo.transform.position = new Vector3(ox - 0.30f, 1.58f, pillarFront + 0.35f);
+            detLightGo.transform.position = new Vector3(dpx, 1.58f, pillarFront + 0.35f);
             var detLight = detLightGo.AddComponent<Light>();
             detLight.type = LightType.Point;
             detLight.color = new Color(1f, 0.15f, 0.1f);
@@ -240,7 +248,7 @@ namespace ChemicalSafety.Editor
             // a white fill in front of the pillar so the respirators read (the hall itself stays dark and hazy)
             var fillGo = new GameObject("PillarFill");
             fillGo.transform.SetParent(room, false);
-            fillGo.transform.position = new Vector3(ox - 0.3f, 2.3f, 1.6f);
+            fillGo.transform.position = new Vector3(dpx, 2.3f, 1.6f);
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Point;
             fill.color = new Color(0.95f, 0.97f, 1f);
@@ -250,12 +258,12 @@ namespace ChemicalSafety.Editor
 
             // OSHA SDS holder under it
             var holderMat = Mat("Sc05SdsHolder", Color.white, 0.35f, 0f, Sc05Tex("Label_Sds"), null, false, true);
-            QuadObj("SdsHolder", room, new Vector3(ox - 0.30f, 0.98f, pillarFront + 0.012f), new Vector3(0f, 180f, 0f),
+            QuadObj("SdsHolder", room, new Vector3(dpx, 0.98f, pillarFront + 0.012f), new Vector3(0f, 180f, 0f),
                 new Vector2(0.40f, 0.5f), holderMat);
 
             // ---- the hook rail with the four respirators (Masks.glb)
             var maskRoot = SpawnSc05("Masks.glb", room);
-            var maskNodes = new Transform[4];
+            var maskNodes = new Transform[4]; // rail order: surgical, N95, half-face, full-face (options A, B, C, D)
             if (maskRoot != null)
             {
                 maskRoot.name = "Respirators";
@@ -264,12 +272,12 @@ namespace ChemicalSafety.Editor
                 if (plane != null)
                     plane.gameObject.SetActive(false);
                 var rail = FindNode(maskRoot.transform, "Object_7");
-                var names = new[] { "Cylinder_Facemask_0", "Cylinder.002", "MedicalMask1:cord_MedicalMask1:medm_0", "Object_2" };
+                var names = new[] { "MedicalMask1:cord_MedicalMask1:medm_0", "Cylinder_Facemask_0", "Cylinder.002", "Object_2" };
                 for (var i = 0; i < names.Length; i++)
                     maskNodes[i] = FindNode(maskRoot.transform, names[i]);
                 // rail on the pillar face, centred left to right on the rail area (the masks hang in front of it)
                 var rb = rail != null ? BoundsOfTree(rail) : BoundsOfTree(maskRoot.transform);
-                maskRoot.transform.position += new Vector3((ox - 1.22f) - rb.center.x, 1.72f - rb.center.y, 0f);
+                maskRoot.transform.position += new Vector3(((wh ? pox - 0.57f : pox - 1.22f)) - rb.center.x, 1.72f - rb.center.y, 0f);
                 rb = rail != null ? BoundsOfTree(rail) : BoundsOfTree(maskRoot.transform);
                 maskRoot.transform.position += new Vector3(0f, 0f, pillarFront + 0.005f - rb.min.z);
                 // glTF import can mirror the model: the masks must hang on the player's side (+Z) of the rail
@@ -309,6 +317,41 @@ namespace ChemicalSafety.Editor
                 pso.ApplyModifiedPropertiesWithoutUndo();
             }
 
+            if (wh)
+            {
+                // the client's picture: a BLUE surgical mask and pink cartridges on the half-face respirator
+                var surgical = maskGroups[0] != null ? maskGroups[0].GetComponentInChildren<Renderer>(true) : null;
+                if (surgical != null)
+                {
+                    var sm = surgical.sharedMaterials;
+                    for (var k = 0; k < sm.Length; k++)
+                    {
+                        var c = new Material(sm[k]);
+                        c.SetColor("baseColorFactor", new Color(0.42f, 0.66f, 0.95f, 1f));
+                        sm[k] = c;
+                    }
+
+                    surgical.sharedMaterials = sm;
+                }
+
+                if (maskGroups[2] != null)
+                {
+                    var hb = BoundsOfTree(maskGroups[2]);
+                    var pink = Mat("Sc05Cartridge", new Color(0.86f, 0.18f, 0.6f), 0.55f, 0.1f);
+                    foreach (var sg in new[] { -1f, 1f })
+                    {
+                        var cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        cap.name = "PinkCartridge";
+                        Object.DestroyImmediate(cap.GetComponent<Collider>());
+                        cap.transform.SetParent(maskGroups[2], true);
+                        cap.transform.position = new Vector3(hb.center.x + sg * hb.size.x * 0.33f, hb.min.y + hb.size.y * 0.12f, hb.center.z + hb.size.z * 0.18f);
+                        cap.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                        cap.transform.localScale = new Vector3(hb.size.y * 0.27f, hb.size.x * 0.085f, hb.size.y * 0.27f);
+                        cap.GetComponent<MeshRenderer>().sharedMaterial = pink;
+                    }
+                }
+            }
+
             // ---- fire extinguisher at the pillar's right-front corner
             var ext = SpawnSc05("Extinguisher.glb", room);
             if (ext != null)
@@ -316,7 +359,14 @@ namespace ChemicalSafety.Editor
                 ext.name = "Extinguisher";
                 FitHeight(ext, 0.72f);
                 var eb = BoundsOfTree(ext.transform);
-                ext.transform.position += new Vector3((ox - 1.62f) - eb.center.x, 0.04f - eb.min.y, (pillarFront + 0.1f) - eb.center.z);
+                ext.transform.position += new Vector3((pox - 1.62f) - eb.center.x, 0.04f - eb.min.y, (pillarFront + 0.1f) - eb.center.z);
+            }
+
+            var roomAll = room;
+            if (wh)
+            {
+                room = new GameObject("OldDyeHallUnused").transform; // the earlier hall is still built, but off
+                room.SetParent(roomAll, false);
             }
 
             // ---- the factory: dye machines in a row down the hall (Factory.glb, half size), rotated to run away from the viewer
@@ -483,6 +533,13 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < 3; i++)
                 Disc("Puddle" + i, room, new Vector3(ox + 1.0f + i * 0.9f, 0.006f, -2.6f - i * 1.7f), 0.9f + i * 0.2f, 0.004f, puddle);
 
+            if (wh)
+            {
+                room.gameObject.SetActive(false);
+                room = roomAll;
+                BuildSc05Warehouse(room, ox, pox, art, fan, shake, sway, flicks, out vaporFx);
+            }
+
             // ---- life: fans, shaking panels, swaying cloth, flickering tubes, pulsing detector
             var fxGo = new GameObject("FactoryFx");
             fxGo.transform.SetParent(room, false);
@@ -535,12 +592,14 @@ namespace ChemicalSafety.Editor
             var iso = new SerializedObject(refs.masks);
             iso.FindProperty("art").objectReferenceValue = art;
             iso.FindProperty("arrow").objectReferenceValue = arrow.transform;
+            if (vaporFx != null)
+                iso.FindProperty("vaporFx").objectReferenceValue = vaporFx;
             var arr = iso.FindProperty("masks");
             arr.arraySize = 4;
             for (var i = 0; i < 4; i++)
                 arr.GetArrayElementAtIndex(i).objectReferenceValue = maskGroups[i];
             iso.ApplyModifiedPropertiesWithoutUndo();
-            refs.spawn = Marker("Spawn_SC05", room, new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), 180f);
+            refs.spawn = Marker("Spawn_SC05", room, wh ? new Vector3(ox - 0.23f, 0f, 3.6f) : new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), 180f);
             return refs;
         }
 
@@ -610,6 +669,21 @@ namespace ChemicalSafety.Editor
             r.shadowCastingMode = ShadowCastingMode.Off;
             r.receiveShadows = false;
             ps.Play();
+        }
+
+        private const string Sc05OnlyKey = "ChemSafetySc05Only";
+
+        [MenuItem("Chemical Safety/Presentable/Dev: start at Scenario 5")]
+        private static void ToggleSc05Only()
+        {
+            EditorPrefs.SetBool(Sc05OnlyKey, !EditorPrefs.GetBool(Sc05OnlyKey, false));
+        }
+
+        [MenuItem("Chemical Safety/Presentable/Dev: start at Scenario 5", true)]
+        private static bool ToggleSc05OnlyCheck()
+        {
+            Menu.SetChecked("Chemical Safety/Presentable/Dev: start at Scenario 5", EditorPrefs.GetBool(Sc05OnlyKey, false));
+            return true;
         }
     }
 }

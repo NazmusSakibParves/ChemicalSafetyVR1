@@ -253,6 +253,14 @@ namespace ChemicalSafety.Presentable
             yield return null;
 
 #if UNITY_EDITOR
+            // developer shortcut (menu Chemical Safety/Presentable/Dev: start at Scenario 5): skips straight to the dyeing hall
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false) && envSc05 != null)
+            {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                yield return RunScenario5();
+                yield break;
+            }
+
             // developer shortcut (menu Chemical Safety/Presentable/Dev: start at Scenario 6): skips straight to the lab
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
@@ -956,7 +964,7 @@ namespace ChemicalSafety.Presentable
         // SC05 starts only after the SC04 question's NEXT. Dyeing factory: pick the right respirator for toluene.
         private IEnumerator RunScenario5()
         {
-            PresentableInput.ActiveScenario = 5; // Scenario 5 and later: finger touch (the ray ends with Scenario 4)
+            PresentableInput.ActiveScenario = 5; // the controller ray (RayScenarios) or finger touch, by the input mode
             Stage("sc05");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -970,9 +978,42 @@ namespace ChemicalSafety.Presentable
                 sc05Ambience.Begin(); // machines run from the first second; the voice-over lowers them
             yield return fader.FadeTo(0f, 0.9f);
 
+            var ray5 = PresentableInput.RayActive;
             Stage("sc05Intro");
             _instructionClip = art.voSc05Instruction != null ? art.voSc05Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc05Content.InstructionEnglish, art.bnSc05InstructionPanel);
+            if (ray5)
+            {
+                // controller ray: head free, a SMALL glass card at the left / up of the view (clear of the rail and the masks),
+                // the voice reads it, then it goes by itself: no Continue click
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, sc05CardScale);
+                instructionPanel.SetGlass(sc04GlassCard);
+                BeginEyeInstruction();
+                Sc05AsideInstruction(sc05CardLeft, sc05CardUp);
+                yield return instructionPanel.Show();
+                instructionPanel.SetSpeaking(true);
+                yield return PlayVoice(_instructionClip);
+                instructionPanel.SetSpeaking(false);
+                yield return PresentableFx.Wait(0.8f);
+                yield return instructionPanel.Hide();
+                EndEyeInstruction();
+                instructionPanel.SetGlass(false);
+                instructionPanel.SetCompact(false);
+                yield return RunSc05RayFlow();
+                LockLocomotion(false);
+                mcqSc05.SetWorldScale(1f);
+                if (sc05Ambience != null)
+                    sc05Ambience.End();
+#if UNITY_EDITOR
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false))
+                    yield break;
+#endif
+                if (envSc06 != null)
+                    yield return RunScenario6();
+                yield break;
+            }
+
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -1053,14 +1094,84 @@ namespace ChemicalSafety.Presentable
             if (sc05Ambience != null)
                 sc05Ambience.End();
 
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false))
+                yield break;
+#endif
             // SC06 (chemistry lab) starts after the SC05 question's NEXT
             if (envSc06 != null)
                 yield return RunScenario6();
         }
 
+        // ------------------------------------------------------------------ Scenario 5 on the controller ray
+
+        [Header("Scenario 5 (ray)")]
+        [SerializeField] private float sc05CardScale = 0.8f;
+        [SerializeField] private float sc05CardLeft = 0.85f;
+        [SerializeField] private float sc05CardUp = 0.28f;
+        [SerializeField] private float sc05FirstMaskDelay = 3.5f;
+        [SerializeField] private float sc05MaskMinSeconds = 5f;
+        [SerializeField] private float sc05BetweenMasks = 0.6f;
+        [SerializeField] private float sc05PopupScale = 1.85f;
+
+        // The small instruction card: eye level in front, then to the left and up, turned to the learner.
+        private void Sc05AsideInstruction(float left, float up)
+        {
+            if (_cam == null)
+                return;
+            var t = instructionPanel.transform;
+            var right = Vector3.Cross(Vector3.up, Flat(_cam.forward));
+            t.position += -right * left + Vector3.up * up;
+            t.rotation = Quaternion.LookRotation(Flat(t.position - new Vector3(_cam.position.x, t.position.y, _cam.position.z)), Vector3.up);
+        }
+
+        private IEnumerator RunSc05RayFlow()
+        {
+            var again = true;
+            while (again)
+            {
+                Stage("sc05Explore");
+                masks.BeginAuto();
+                yield return PresentableFx.Wait(sc05FirstMaskDelay);
+                foreach (var i in masks.LeftToRight())
+                {
+                    var index = i;
+                    yield return masks.AutoInspect(index, () => Sc05MaskShown(index));
+                    yield return PresentableFx.Wait(sc05BetweenMasks);
+                }
+
+                Stage("sc05Gate");
+                yield return PresentableFx.Wait(0.4f);
+                // the rail is on the right of the view: cards go to the LEFT, above the table-free part of the scene
+                Sc04PopupPose(-0.8f, 0.15f, 1.6f, out var gatePos, out var gateRot);
+                masks.ShowGateAt(gatePos, gateRot, sc05PopupScale);
+                while (!masks.NextChosen && !masks.BackChosen)
+                    yield return null;
+                masks.HideGatePublic();
+                again = masks.BackChosen;
+            }
+
+            Stage("sc05Question");
+            Sc04PopupPose(-0.8f, 0.32f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc05.SetWorldScale(sc05PopupScale);
+            mcqSc05.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc05, BuildSc05Question(), false, 5);
+        }
+
+        // Voice-over of one mask (the minimum read time runs at the same time).
+        private IEnumerator Sc05MaskShown(int index)
+        {
+            var clip = art.voSc05Mask != null && index < art.voSc05Mask.Length ? art.voSc05Mask[index] : null;
+            var t0 = Time.time;
+            yield return PlayVoice(clip);
+            while (Time.time - t0 < sc05MaskMinSeconds)
+                yield return null;
+        }
+
         // SC06 starts after the SC05 question's NEXT. Chemistry lab: switch the fume hood on, lift the solvent, open the sash, pour.
         private IEnumerator RunScenario6()
         {
+            PresentableInput.ActiveScenario = 6; // finger touch again (the ray ends with Scenario 5)
             Stage("sc06");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -4195,6 +4306,8 @@ namespace ChemicalSafety.Presentable
 
         private static PresentableMcqPanel.Question BuildSc05Question()
         {
+            var ray = PresentableInput.RayActive;
+            var reasons = Sc05Content.OptionReasons;
             var options = new PresentableMcqPanel.Option[Sc05Content.OptionLabels.Length];
             for (var i = 0; i < options.Length; i++)
             {
@@ -4202,7 +4315,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc05Content.OptionLabels[i],
                     feedback = Sc05Content.OptionFeedback[i],
-                    wrongTitle = Sc05Content.OptionWrongTitle[i]
+                    wrongTitle = Sc05Content.OptionWrongTitle[i],
+                    reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty
                 };
             }
 
@@ -4214,7 +4328,11 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc05Content.CorrectTitle,
                 nextLabel = Sc05Content.FinishLabel,
                 options = options,
-                fancy = true
+                fancy = true,
+                // ray flow: as Scenarios 1-4 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = ray,
+                tagCorrect = Sc05Content.TagCorrect,
+                tagWrong = Sc05Content.TagWrong
             };
         }
 

@@ -139,8 +139,7 @@ CLIPS = {
     # Scenario 5
     "VO_SC05_Instruction_bn": (
         BN_VOICE,
-        "আপনি একজন ডাইং মেশিন অপারেটর। একটি কাপড়ের ব্যাচ টলুইন-ভিত্তিক দ্রাবক দিয়ে প্রক্রিয়া করতে হবে। "
-        "আজ ভেতরে বাষ্পের মাত্রা বেশি। ভেতরে ঢোকার আগে সঠিক মাস্কটি পরুন।",
+        "আপনি একজন স্টোরকিপার। ফ্যাক্টরী স্টোরে টলুইন সলভেন্টের বাষ্প উচ্চ মাত্রায় আছে। ভেতরে প্রবেশের আগে সঠিক মাস্ক পরে নিন।",
     ),
     # said when a respirator is picked up: what it is and whether it is compatible with toluene (same order as the cards)
     "VO_Sc05Mask0_bn": (BN_VOICE, "এটি সাধারণ ডাস্ট মাস্ক, এন নাইনটি ফাইভ। এটি টলুইন দ্রাবকের সাথে সামঞ্জস্যপূর্ণ নয়।"),
@@ -333,7 +332,7 @@ CLIPS_EN = {
     "VO_Sc04Glove1": "This is a thin blue nitrile glove. Against concentrated acid its rating is poor. Acid goes through in under thirty minutes.",
     "VO_Sc04Glove2": "This is a thick black neoprene glove. Against concentrated acid its rating is excellent. It holds for more than four hundred and eighty minutes.",
     "VO_Sc04Gate": gate_en("Glove inspection complete."),
-    "VO_SC05_Instruction": "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in.",
+    "VO_SC05_Instruction": "You are a storekeeper. In the factory store there are high levels of Toluene solvent vapors. Put on the right mask before you go in.",
     "VO_Sc05Mask0": "This is a simple dust mask, N95. It is incompatible with toluene solvent.",
     "VO_Sc05Mask1": "This is a half-face respirator with organic vapor cartridge. It is compatible with toluene solvent.",
     "VO_Sc05Mask2": "This is a surgical mask. It is incompatible with toluene solvent.",

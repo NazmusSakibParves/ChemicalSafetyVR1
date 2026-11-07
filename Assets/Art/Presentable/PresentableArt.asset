@@ -64,9 +64,9 @@ MonoBehaviour:
   iconClose: {fileID: 21300000, guid: 9dad42ade93ce2b4c9e9638de62c746e, type: 3}
   iconSpeaker: {fileID: 21300000, guid: deb164b1c8ab40b498850b6a4ab02da6, type: 3}
   maskIcons:
+  - {fileID: 21300000, guid: aa7e8168fb35f0d4889ae1a7197778fc, type: 3}
   - {fileID: 21300000, guid: e7023a931279be34eb6370b234a72ecc, type: 3}
   - {fileID: 21300000, guid: b106282e47eda1c47a3945d84fe785d7, type: 3}
-  - {fileID: 21300000, guid: aa7e8168fb35f0d4889ae1a7197778fc, type: 3}
   - {fileID: 21300000, guid: b165a70697429ce4195688ea4cdedb35, type: 3}
   bnSalam: {fileID: 21300000, guid: 9e2011f2a3e4a4b4f8acfc78a4a5d4f8, type: 3}
   bnWelcomeSub: {fileID: 21300000, guid: 6a4079b75df08264ab370789700935ba, type: 3}
@@ -154,9 +154,9 @@ MonoBehaviour:
   voSc04CompleteEn: {fileID: 8300000, guid: 2f7e70415a42adf4f8b8627bc4ccf778, type: 3}
   voSc05Instruction: {fileID: 8300000, guid: 8737509005987db499671174f710e66e, type: 3}
   voSc05Mask:
+  - {fileID: 8300000, guid: ea3c89eca3df75944998d5da0bdc3d62, type: 3}
   - {fileID: 8300000, guid: 1717855447edc1d49a2c1fe56b275150, type: 3}
   - {fileID: 8300000, guid: 1dee90e3baf00244eb3c635a99abb277, type: 3}
-  - {fileID: 8300000, guid: ea3c89eca3df75944998d5da0bdc3d62, type: 3}
   - {fileID: 8300000, guid: 42ead6ea71b67e6478808ab065aacf1c, type: 3}
   voSc05CompleteBn: {fileID: 8300000, guid: 93efddf033a82f946aa0a3fb8da440c9, type: 3}
   voSc05CompleteEn: {fileID: 8300000, guid: 641827a4b8f798a4785cc0dc2644acc5, type: 3}

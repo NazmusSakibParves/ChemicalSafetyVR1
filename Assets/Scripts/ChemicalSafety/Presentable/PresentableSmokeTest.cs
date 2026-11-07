@@ -70,8 +70,178 @@ namespace ChemicalSafety.Presentable
             yield return null;
         }
 
-        // Scenario 3 (controller ray): one stand, the scan and the report run by themselves, the question is answered once
-        // (EditorPref ChemSafetySc03Wrong = a wrong answer, otherwise the right one) and the protocol / NEXT are checked.
+        /// <summary>Dev start at Scenario 5: ray or finger path for SC05 only, then stop.</summary>
+        private IEnumerator Sc05Smoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc05Intro", 40f);
+            if (PresentableInput.AllowedIn(5))
+            {
+                yield return Sc05RaySmoke(voiceSrc);
+                yield break;
+            }
+
+            var amb = Get<Sc05Ambience>(_director, "sc05Ambience");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("40_sc05_instruction");
+            yield return ClickContinue(panel, 40f);
+            yield return WaitStage("sc05Explore", 20f);
+            var masks5 = Get<MaskInspect>(_director, "masks");
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("41_sc05_rail");
+            for (var k = 0; k < masks5.Count; k++)
+            {
+                var idx = masks5.CurrentIndex;
+                var pk = masks5.PokeOf(idx);
+                if (pk != null)
+                    Poke(pk);
+                var wm = 0f;
+                while (!masks5.Holding && wm < 3f)
+                {
+                    wm += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.7f);
+                Say("SC05 holding " + masks5.HeldIndex + ": card = [" + masks5.CardName + "] / [" + masks5.CardCompat + "]");
+                LayoutCheck("SC05 mask card " + idx, masks5.CardTransform);
+                yield return Shot("42_sc05_mask_" + idx);
+                Click(masks5.transform, "CloseButton");
+                var wb = 0f;
+                while (masks5.Holding && wb < 3f)
+                {
+                    wb += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            var gate5 = 0f;
+            var next5 = FindDeep(masks5.transform, "NextButton");
+            while ((next5 == null || !next5.gameObject.activeInHierarchy) && gate5 < 8f)
+            {
+                gate5 += Time.unscaledDeltaTime;
+                next5 = FindDeep(masks5.transform, "NextButton");
+                yield return null;
+            }
+
+            Say("SC05 masks seen = " + masks5.Seen + " / " + masks5.Count);
+            Click(masks5.transform, "NextButton");
+            yield return WaitStage("sc05Question", 20f);
+            var mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
+            var q5 = 0f;
+            while (!mcq5.IsOpen && q5 < 8f)
+            {
+                q5 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.4f);
+            LayoutCheck("SC05 MCQ", mcq5.transform);
+            Click(mcq5.transform, "Row2");
+            var heard5 = "";
+            var h5 = 0f;
+            while (h5 < 14f)
+            {
+                if (voiceSrc.clip != null && voiceSrc.clip.name.Contains("Sc05Complete"))
+                    heard5 = voiceSrc.clip.name;
+                h5 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("scenario 5 complete vo = " + (heard5.Length > 0 ? heard5 : "NOT HEARD"));
+            Click(mcq5.transform, "NextButton");
+        }
+
+        // Scenario 5 (controller ray): masks show by themselves, gate, inline-reveal question.
+        private IEnumerator Sc05RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC05 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
+            var masks = Get<MaskInspect>(_director, "masks");
+            var amb = Get<Sc05Ambience>(_director, "sc05Ambience");
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("40_sc05_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC05 small instruction card", ip.transform);
+            Say("SC05 machine sound on = " + amb.IsOn);
+            yield return WaitStage("sc05Explore", 60f);
+            yield return new WaitForSeconds(0.6f);
+            yield return Shot("41_sc05_rail");
+            for (var k = 0; k < masks.Count; k++)
+            {
+                var t0 = 0f;
+                while (!masks.AutoCardShown && t0 < 60f)
+                {
+                    t0 += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC05 ray: mask " + k + " card shown by itself = " + masks.AutoCardShown + " after " + t0.ToString("0.0") + " s");
+                if (!masks.AutoCardShown)
+                    Debug.LogError("[SMOKE] SC05 ray: mask " + k + " properties never showed up by themselves");
+                yield return new WaitForSeconds(1.6f);
+                Say("SC05 ray: holding " + masks.HeldIndex + ": card = [" + masks.CardName + "] / [" + masks.CardCompat + "], overlaps another mask = " +
+                    masks.HeldOverlapsOthers() + " (expected False)");
+                LayoutCheck("SC05 mask card " + k, masks.CardTransform);
+                yield return Shot("42_sc05_mask_" + k);
+                var t1 = 0f;
+                while (masks.AutoCardShown && t1 < 40f)
+                {
+                    t1 += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            var g = 0f;
+            while (!masks.GateVisible && g < 12f)
+            {
+                g += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.8f);
+            Say("SC05 ray: masks seen = " + masks.Seen + " / " + masks.Count + ", gate visible = " + masks.GateVisible);
+            LayoutCheck("SC05 gate card", masks.GateTransform);
+            yield return Shot("43_sc05_gate");
+            Click(masks.transform, "NextButton");
+            yield return WaitStage("sc05Question", 20f);
+            var mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
+            var q = 0f;
+            while (!mcq5.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("44_sc05_question");
+            LayoutCheck("SC05 MCQ", mcq5.transform);
+            var cur = mcq5.Current;
+            var wrong = false;
+#if UNITY_EDITOR
+            wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Wrong", false);
+#endif
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            Say("SC05 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq5.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("45_sc05_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq5.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC05 reveal: reasons shown = " + reasons + "/" + cur.options.Length + ", wrong popup open = " +
+                (FindDeep(mcq5.transform, "WrongPopup") != null && FindDeep(mcq5.transform, "WrongPopup").gameObject.activeInHierarchy));
+            LayoutCheck("SC05 MCQ reveal", mcq5.transform);
+            Click(mcq5.transform, "NextButton");
+        }
+
         private IEnumerator Sc04RaySmoke(GloveInspect gloves)
         {
             Say("SC04 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
@@ -2125,6 +2295,17 @@ namespace ChemicalSafety.Presentable
                 UnityEditor.EditorApplication.isPlaying = false;
                 yield break;
             }
+
+            // ChemSafetySc05Only: director starts at Scenario 5 (no login / SC01-04)
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false))
+            {
+                Say("SC05-only run (dev start)");
+                yield return Sc05Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
 #endif
             var login = FindFirstObjectByType<LoginScreen>();
             if (login != null)
@@ -3087,7 +3268,27 @@ namespace ChemicalSafety.Presentable
 
             // Scenario 5 (dyeing factory) follows the SC04 NEXT
             sc05Start:
+            PresentableMcqPanel mcq5 = null;
             yield return WaitStage("sc05Intro", 30f);
+            if (PresentableInput.AllowedIn(5))
+            {
+                // controller-ray flow: a small instruction card, the masks show by themselves, gate, inline-reveal question
+                yield return Sc05RaySmoke(voiceSrc);
+                mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
+#if UNITY_EDITOR
+                // EditorPref ChemSafetySc05Only: also stops here if the long chain somehow reaches SC05 with the pref set
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false))
+                {
+                    Say("SC05-only run (stop after Scenario 5)");
+                    yield return new WaitForSeconds(1f);
+                    Say("DONE runtime errors/exceptions = " + _errors);
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    yield break;
+                }
+#endif
+                goto sc06Start;
+            }
+
             var amb = Get<Sc05Ambience>(_director, "sc05Ambience");
             yield return new WaitForSeconds(2.5f);
             Say("SC05 machine sound on = " + amb.IsOn + ", voice playing = " + voiceSrc.isPlaying + ", target volume under the voice = " +
@@ -3179,7 +3380,7 @@ namespace ChemicalSafety.Presentable
             yield return Shot("43_sc05_gate");
             Click(masks5.transform, "NextButton");
             yield return WaitStage("sc05Question", 20f);
-            var mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
+            mcq5 = Get<PresentableMcqPanel>(_director, "mcqSc05");
             var q5 = 0f;
             while (!mcq5.IsOpen && q5 < 8f)
             {
@@ -3214,6 +3415,7 @@ namespace ChemicalSafety.Presentable
             Click(mcq5.transform, "NextButton");
 
             // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT
+            sc06Start:
             yield return Sc06Smoke(panel, voiceSrc, mcq5);
             yield return Sc07Smoke(panel, voiceSrc);
             yield return Sc08Smoke(panel, voiceSrc);
