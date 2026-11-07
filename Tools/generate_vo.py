@@ -124,8 +124,15 @@ CLIPS = {
     # Scenario 4
     "VO_SC04_Instruction_bn": (
         BN_VOICE,
-        "আপনি একজন ল্যাব টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড দিয়ে একটি ডাই নমুনা পরীক্ষার প্রস্তুতি নিচ্ছেন। "
-        "আগে সেফটি ডাটা শিট দেখুন। সঠিক গ্লাভস বেছে নিন।",
+        "আপনি ডাইং প্ল্যান্টের একজন টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড নিয়ে কাজ করতে যাচ্ছেন। "
+        "আগে সেফটি ডাটা শিট দেখুন। প্রতিটি গ্লাভস ও তার বৈশিষ্ট্য দেখুন, তারপর সঠিক গ্লাভস বেছে নিন।",
+    ),
+    "VO_Sc04Glove0_bn": (BN_VOICE, "এটা সাদা সুতির গ্লাভস। সুতিতে কোনো রাসায়নিক সুরক্ষা নেই। অ্যাসিড সাথে সাথে ভিজিয়ে ভেতরে চলে যায়।"),
+    "VO_Sc04Glove1_bn": (BN_VOICE, "এটা পাতলা নীল নাইট্রাইল গ্লাভস। ঘন অ্যাসিডের বিরুদ্ধে এর রেটিং দুর্বল। ত্রিশ মিনিটের কমেই অ্যাসিড ভেদ করে যায়।"),
+    "VO_Sc04Glove2_bn": (BN_VOICE, "এটা মোটা কালো নিওপ্রিন গ্লাভস। ঘন অ্যাসিডের বিরুদ্ধে এর রেটিং চমৎকার। চারশো আশি মিনিটের বেশি সময় টিকে থাকে।"),
+    "VO_Sc04Gate_bn": (
+        BN_VOICE,
+        "গ্লাভস পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
     "VO_Sc04Complete_bn": (BN_VOICE, complete_bn(4)),
     "VO_Sc04Complete_en": (EN_VOICE, complete_en(4)),
@@ -321,7 +328,11 @@ CLIPS_EN = {
     "VO_Sc03Touch": "Touch and hold the drum label with your finger to scan it.",
     "VO_Sc03Inspect": "The drum is organic peroxide. Crystals have formed on the drum and the label has expired.",
     "VO_Sc03Wrong": "Wrong decision. Crystallized organic peroxide can explode when it is opened or rubbed.",
-    "VO_SC04_Instruction": "You are a lab technician preparing to test a dye sample with concentrated HCl. Check the SDS first. Select the right gloves.",
+    "VO_SC04_Instruction": "You are a technician in the dyeing plant. You are about to handle concentrated Hydrochloric Acid. Check the SDS first. Watch each glove and its properties, then choose the right gloves.",
+    "VO_Sc04Glove0": "This is a white cotton glove. Cotton gives no chemical protection. Acid soaks through at once.",
+    "VO_Sc04Glove1": "This is a thin blue nitrile glove. Against concentrated acid its rating is poor. Acid goes through in under thirty minutes.",
+    "VO_Sc04Glove2": "This is a thick black neoprene glove. Against concentrated acid its rating is excellent. It holds for more than four hundred and eighty minutes.",
+    "VO_Sc04Gate": gate_en("Glove inspection complete."),
     "VO_SC05_Instruction": "You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in.",
     "VO_Sc05Mask0": "This is a simple dust mask, N95. It is incompatible with toluene solvent.",
     "VO_Sc05Mask1": "This is a half-face respirator with organic vapor cartridge. It is compatible with toluene solvent.",

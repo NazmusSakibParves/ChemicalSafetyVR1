@@ -72,6 +72,100 @@ namespace ChemicalSafety.Presentable
 
         // Scenario 3 (controller ray): one stand, the scan and the report run by themselves, the question is answered once
         // (EditorPref ChemSafetySc03Wrong = a wrong answer, otherwise the right one) and the protocol / NEXT are checked.
+        private IEnumerator Sc04RaySmoke(GloveInspect gloves)
+        {
+            Say("SC04 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
+            for (var g = 0; g < gloves.Count; g++)
+            {
+                var armed = gloves.ArrowOf(g) != null && gloves.ArrowOf(g).IsArmed;
+                if (armed)
+                    Debug.LogError("[SMOKE] SC04 ray: glove " + g + " has a floating arrow (the properties must start by themselves)");
+                var t0 = 0f;
+                while (!gloves.AutoCardShown && t0 < 60f)
+                {
+                    t0 += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("SC04 ray: glove " + g + " card shown by itself = " + gloves.AutoCardShown + " after " + t0.ToString("0.0") + " s");
+                if (!gloves.AutoCardShown)
+                    Debug.LogError("[SMOKE] SC04 ray: glove " + g + " properties never showed up by themselves");
+                yield return new WaitForSeconds(1.6f);
+                var hb = gloves.GloveBounds(g);
+                var upright = hb.size.y > hb.size.z;
+                Say("SC04 ray: held glove " + g + " upright = " + upright + " size " + hb.size.ToString("F2"));
+                if (!upright)
+                    Debug.LogError("[SMOKE] SC04 ray: held glove " + g + " is not upright");
+                var cardT = FindDeep(gloves.transform, "GloveCard");
+                if (cardT != null)
+                {
+                    LayoutCheck("SC04 glove card " + g, cardT);
+                    var cam = Camera.main.transform;
+                    var gap = Vector3.Distance(cardT.position, hb.center);
+                    Say("SC04 ray: card to glove centre distance = " + gap.ToString("0.00") + " m (wanted about 0.2 - 0.5)");
+                }
+
+                if (g == 2)
+                    yield return Shot("31b_sc04_glove_card");
+                var t1 = 0f;
+                while (gloves.AutoCardShown && t1 < 40f)
+                {
+                    t1 += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            yield return WaitStage("sc04Gate", 40f);
+            var gate4 = Get<Sc06Gate>(_director, "sc04Gate");
+            var gateWait = 0f;
+            while (!gate4.Visible && gateWait < 10f)
+            {
+                gateWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.8f);
+            Say("SC04 ray: gloves seen = " + gloves.Seen + " / 3, gate visible = " + gate4.Visible);
+            LayoutCheck("SC04 gate", gate4.Card);
+            yield return Shot("32_sc04_gate");
+            gate4.PressNext();
+            yield return WaitStage("sc04Question", 20f);
+            var mcq4 = Get<PresentableMcqPanel>(_director, "mcqSc04");
+            var q4 = 0f;
+            while (!mcq4.IsOpen && q4 < 8f)
+            {
+                q4 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("33_sc04_question");
+            LayoutCheck("SC04 MCQ", mcq4.transform);
+            var cur = mcq4.Current;
+            var wrong4 = false;
+#if UNITY_EDITOR
+            wrong4 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Wrong", false);
+#endif
+            var target = wrong4 ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            Say("SC04 answer = " + (wrong4 ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq4.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("34_sc04_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq4.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC04 reveal: reasons shown = " + reasons + "/" + cur.options.Length + ", wrong popup open = " +
+                (FindDeep(mcq4.transform, "WrongPopup") != null && FindDeep(mcq4.transform, "WrongPopup").gameObject.activeInHierarchy));
+            LayoutCheck("SC04 MCQ reveal", mcq4.transform);
+            Click(mcq4.transform, "NextButton");
+        }
+
         private IEnumerator Sc03RaySmoke(PresentableMcqPanel mcq3, Sc03Detonation det)
         {
             var sc03 = Get<Sc03Inspect>(_director, "sc03Inspect");
@@ -2874,6 +2968,24 @@ namespace ChemicalSafety.Presentable
             yield return Shot("31_sc04_sds_held");
             Say("SC04 SDS after X = " + clip4.IsVisible);
             clip4.Toggle();
+            if (PresentableInput.AllowedIn(4))
+            {
+                // controller-ray flow: no arrows, each glove is shown by itself, then the gate and the inline-reveal question
+                yield return Sc04RaySmoke(gloves);
+#if UNITY_EDITOR
+                // EditorPref ChemSafetySc04Only: stop after Scenario 4 (login + Scenarios 1 to 4)
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Only", false))
+                {
+                    Say("SC04-only run (login + Scenarios 1 to 4)");
+                    yield return new WaitForSeconds(1f);
+                    Say("DONE runtime errors/exceptions = " + _errors);
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    yield break;
+                }
+#endif
+                goto sc05Start;
+            }
+
             for (var g = 0; g < 3; g++)
             {
                 var covers = gloves.MeshWithinReach(g);
@@ -2974,6 +3086,7 @@ namespace ChemicalSafety.Presentable
             Click(mcq4.transform, "NextButton");
 
             // Scenario 5 (dyeing factory) follows the SC04 NEXT
+            sc05Start:
             yield return WaitStage("sc05Intro", 30f);
             var amb = Get<Sc05Ambience>(_director, "sc05Ambience");
             yield return new WaitForSeconds(2.5f);

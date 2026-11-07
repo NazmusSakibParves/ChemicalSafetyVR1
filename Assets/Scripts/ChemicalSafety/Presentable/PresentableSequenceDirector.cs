@@ -753,6 +753,16 @@ namespace ChemicalSafety.Presentable
             PlaceRig(spawnSc04.position, spawnSc04.forward);
             yield return fader.FadeTo(0f, 0.9f);
 
+            // controller ray (as Scenarios 1-3): head free, card world-fixed, no arrows, glove properties run by themselves
+            var ray4 = PresentableInput.RayActive;
+            if (ray4)
+            {
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, rayCardScale);
+                instructionPanel.SetGlass(sc04GlassCard);
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
+            }
+
             Stage("sc04Intro");
             _instructionClip = art.voSc04Instruction != null ? art.voSc04Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc04Content.InstructionEnglish, art.bnSc04InstructionPanel);
@@ -781,7 +791,15 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
+            if (ray4)
+                instructionPanel.SetGlass(false);
 
+            if (ray4 && gloves != null)
+            {
+                yield return RunSc04RayFlow();
+            }
+            else
+            {
             if (gloveBench != null && _cam != null)
                 gloveBench.SnapTo(_cam.position.y);
             if (gloves != null)
@@ -843,14 +861,102 @@ namespace ChemicalSafety.Presentable
             Stage("sc04Question");
             PlaceAtEyeLevel(mcqSc04.transform, panelDistance, false);
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
+            }
+
+            if (ray4)
+            {
+                LockLocomotion(false);
+                mcqSc04.SetWorldScale(1f);
+                instructionPanel.SetCompact(false);
+                instructionPanel.SetGlass(false);
+                subtitle.Dock(null, null, 1f);
+            }
 
             if (envSc05 != null)
                 yield return RunScenario5();
         }
 
+        // ------------------------------------------------------------------ Scenario 4 on the controller ray
+
+        [Header("Scenario 4 (ray)")]
+        [Tooltip("Glass instruction card like Scenario 1.")]
+        [SerializeField] private bool sc04GlassCard = true;
+        [SerializeField] private float sc04FirstGloveDelay = 3.5f;
+        [SerializeField] private float sc04GloveMinSeconds = 5f;
+        [SerializeField] private float sc04BetweenGloves = 0.6f;
+        [SerializeField] private float sc04PopupScale = 1.85f;
+
+        // Popups beside the table, high and to the right of the learner's view: gloves and bottle stay clear.
+        private void Sc04PopupPose(float sideways, float rise, float distance, out Vector3 position, out Quaternion rotation)
+        {
+            var cam = _cam != null ? _cam.position : rig.position;
+            var fwd = _cam != null ? Flat(_cam.forward) : Vector3.forward;
+            var right = Vector3.Cross(Vector3.up, fwd);
+            position = new Vector3(cam.x, Sc03ViewHeight() + rise, cam.z) + fwd * distance + right * sideways;
+            rotation = Quaternion.LookRotation(Flat(position - cam), Vector3.up);
+        }
+
+        private IEnumerator RunSc04RayFlow()
+        {
+            var again = true;
+            var first = true;
+            while (again)
+            {
+                Stage("sc04Explore");
+                if (gloveBench != null && _cam != null)
+                    gloveBench.SnapTo(_cam.position.y);
+                if (first)
+                    yield return Glide(gloves.StandInFront(), 0.7f);
+                first = false;
+                gloves.BeginAuto();
+                yield return PresentableFx.Wait(sc04FirstGloveDelay);
+                for (var i = 0; i < gloves.Count; i++)
+                {
+                    var index = i;
+                    yield return gloves.AutoInspect(index, () => Sc04GloveShown(index));
+                    yield return PresentableFx.Wait(sc04BetweenGloves);
+                }
+
+                Stage("sc04Gate");
+                yield return PresentableFx.Wait(0.4f);
+                Sc04PopupPose(0.78f, 0.15f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc04Gate.Back += OnBack;
+                sc04Gate.Next += OnNext;
+                sc04Gate.Show(gatePos, gateRot, sc04PopupScale);
+                StartCoroutine(PlayVoice(art.voSc04Gate));
+                while (choice == 0)
+                    yield return null;
+                sc04Gate.Back -= OnBack;
+                sc04Gate.Next -= OnNext;
+                StopVoice();
+                sc04Gate.Hide();
+                again = choice == 1;
+            }
+
+            Stage("sc04Question");
+            Sc04PopupPose(0.78f, 0.32f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc04.SetWorldScale(sc04PopupScale);
+            mcqSc04.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
+        }
+
+        // Voice-over of one glove (its minimum read time runs at the same time).
+        private IEnumerator Sc04GloveShown(int index)
+        {
+            var clip = art.voSc04Glove != null && index < art.voSc04Glove.Length ? art.voSc04Glove[index] : null;
+            var t0 = Time.time;
+            yield return PlayVoice(clip);
+            while (Time.time - t0 < sc04GloveMinSeconds)
+                yield return null;
+        }
+
         // SC05 starts only after the SC04 question's NEXT. Dyeing factory: pick the right respirator for toluene.
         private IEnumerator RunScenario5()
         {
+            PresentableInput.ActiveScenario = 5; // Scenario 5 and later: finger touch (the ray ends with Scenario 4)
             Stage("sc05");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -4114,6 +4220,8 @@ namespace ChemicalSafety.Presentable
 
         private static PresentableMcqPanel.Question BuildSc04Question()
         {
+            var ray = PresentableInput.RayActive;
+            var reasons = Sc04Content.OptionReasons;
             var options = new PresentableMcqPanel.Option[Sc04Content.OptionLabels.Length];
             for (var i = 0; i < options.Length; i++)
             {
@@ -4121,7 +4229,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc04Content.OptionLabels[i],
                     feedback = Sc04Content.OptionFeedback[i],
-                    wrongTitle = Sc04Content.OptionWrongTitle[i]
+                    wrongTitle = Sc04Content.OptionWrongTitle[i],
+                    reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty
                 };
             }
 
@@ -4133,7 +4242,11 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc04Content.CorrectTitle,
                 nextLabel = Sc04Content.FinishLabel,
                 options = options,
-                fancy = true
+                fancy = true,
+                // ray flow: as Scenarios 1-3 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = ray,
+                tagCorrect = Sc04Content.TagCorrect,
+                tagWrong = Sc04Content.TagWrong
             };
         }
 

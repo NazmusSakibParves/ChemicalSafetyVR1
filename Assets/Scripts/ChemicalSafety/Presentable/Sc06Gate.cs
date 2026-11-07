@@ -23,6 +23,7 @@ namespace ChemicalSafety.Presentable
         private Transform _card;
         private CanvasGroup _group;
         private Coroutine _fade;
+        private Vector3 _baseScale = Vector3.one;
 
         public bool Visible => _card != null && _card.gameObject.activeSelf;
         public Transform Card => _card;
@@ -59,8 +60,24 @@ namespace ChemicalSafety.Presentable
             var fwd = cam != null ? cam.forward : Vector3.forward;
             fwd.y = 0f;
             fwd = fwd.sqrMagnitude < 0.001f ? Vector3.forward : fwd.normalized;
+            _card.localScale = _baseScale;
             var pos = (cam != null ? cam.position : Vector3.zero) + fwd * 0.55f + Vector3.down * 0.02f;
             _card.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, Vector3.up));
+            _card.gameObject.SetActive(true);
+            if (_fade != null)
+                StopCoroutine(_fade);
+            _fade = StartCoroutine(PopIn());
+        }
+
+        /// <summary>Opens the card at a given pose and scale (ray flow: beside the scene, not in front of the face).</summary>
+        public void Show(Vector3 position, Quaternion rotation, float worldScale)
+        {
+            if (_card == null)
+                Build();
+            if (_card == null)
+                return;
+            _card.localScale = _baseScale * Mathf.Max(0.1f, worldScale);
+            _card.SetPositionAndRotation(position, rotation);
             _card.gameObject.SetActive(true);
             if (_fade != null)
                 StopCoroutine(_fade);
@@ -103,6 +120,7 @@ namespace ChemicalSafety.Presentable
                 return;
             var canvas = PresentableUi.WorldCanvas("Sc06Gate", transform, new Vector2(900f, 640f), 0.00056f, true, 31);
             _card = canvas.transform;
+            _baseScale = _card.localScale;
             _group = canvas.gameObject.GetComponent<CanvasGroup>();
             if (_group == null)
                 _group = canvas.gameObject.AddComponent<CanvasGroup>();

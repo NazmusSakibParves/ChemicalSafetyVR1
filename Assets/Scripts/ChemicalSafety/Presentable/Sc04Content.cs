@@ -32,5 +32,13 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionFeedback => Loc.A("SC04", "OptionFeedback");
 
         public static string[] OptionWrongTitle => Loc.A("SC04", "OptionWrongTitle");
+
+        // ray flow: inline reveal (tick / cross + a short reason under every option), as Scenarios 1-3
+        public static string TagCorrect => Loc.T("SC04", "TagCorrect");
+        public static string TagWrong => Loc.T("SC04", "TagWrong");
+        public static string[] OptionReasons => Loc.A("SC04", "OptionReasons");
+
+        /// <summary>What the voice says while each glove's properties are shown (subtitle text).</summary>
+        public static string[] GloveVoice => Loc.A("SC04", "GloveVoice");
     }
 }

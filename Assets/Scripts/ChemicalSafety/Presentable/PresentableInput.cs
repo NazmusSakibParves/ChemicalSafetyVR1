@@ -19,7 +19,7 @@ namespace ChemicalSafety.Presentable
         public const InputMode BuildDefault = InputMode.ControllerRay;
 
         /// <summary>Scenarios (1-based) in which the ray may be active. Everything else stays finger touch.</summary>
-        private static readonly int[] RayScenarios = { 1, 2, 3 };
+        private static readonly int[] RayScenarios = { 1, 2, 3, 4 };
 
         public const string PrefKey = "ChemSafetyInputMode";
 

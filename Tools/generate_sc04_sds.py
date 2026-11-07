@@ -24,7 +24,7 @@ def sds():
     head = ImageFont.truetype(FONTB, 28)
     body = ImageFont.truetype(FONT, 26)
     d.text((150, 180), "SAFETY DATA SHEET", font=title, fill=(20, 24, 28, 255))
-    d.text((150, 245), "Hydrochloric acid, concentrated", font=sub, fill=(40, 70, 110, 255))
+    d.text((150, 245), "Hydrochloric acid, concentrated (HCl)", font=sub, fill=(40, 70, 110, 255))
     d.rectangle((150, 292, 874, 298), fill=(180, 40, 40, 255))
     y = 320
     d.text((150, y), "APPLICABLE SDS SECTIONS", font=head, fill=(20, 24, 28, 255))
@@ -44,16 +44,16 @@ def sds():
         ("Material", "Rating", "Time", True),
         ("Neoprene", "Excellent", ">480 min", False),
         ("Butyl rubber", "Excellent", ">480 min", False),
+        ("PVC", "Good", ">240 min", False),
         ("Nitrile", "Poor", "<30 min", False),
-        ("PVC", "Poor", "<10 min", False),
-        ("Latex", "Poor", "<30 min", False),
+        ("Latex", "Poor", "<10 min", False),
         ("Cotton / leather", "None", "Immediate", False),
     )
     for mat, rating, time, header in rows:
         if header:
             d.rectangle((150, y, 874, y + 40), fill=(230, 232, 236, 255))
         color = (20, 24, 28, 255) if header or rating == "Excellent" else (160, 32, 32, 255)
-        if rating == "Excellent":
+        if rating in ("Excellent", "Good"):
             color = (16, 110, 48, 255)
         face = head if header else body
         d.text((170, y + 6), mat, font=face, fill=(20, 24, 28, 255) if header else color)

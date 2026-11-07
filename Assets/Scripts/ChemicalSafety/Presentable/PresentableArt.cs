@@ -166,6 +166,9 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc03CompleteBn;
         public AudioClip voSc03CompleteEn;
         public AudioClip voSc04Instruction;
+        [Tooltip("Bangla voice while each glove's properties show (cotton, nitrile, neoprene) and on the inspection-complete card.")]
+        public AudioClip[] voSc04Glove = new AudioClip[3];
+        public AudioClip voSc04Gate;
         public AudioClip voSc04CompleteBn;
         public AudioClip voSc04CompleteEn;
         public AudioClip voSc05Instruction;

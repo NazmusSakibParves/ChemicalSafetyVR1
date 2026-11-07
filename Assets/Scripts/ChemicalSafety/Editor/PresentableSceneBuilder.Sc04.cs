@@ -39,7 +39,15 @@ namespace ChemicalSafety.Editor
             var wallSide = Sc04Pbr("Sc04WallPbrD", "Tile", Color.white, new Vector2(5.7f, 2.75f), 0.9f, 0.5f);
             var ceilMat = Sc04Pbr("Sc04CeilPbr2", "Ceiling", Color.white, new Vector2(5.85f, 6f), 1f, 0.7f, false);
             // lit (not unlit) so the cloth shades and the gloves sit on it instead of floating over a flat white card
-            var cloth = Mat("Sc04ClothLit", new Color(0.9f, 0.9f, 0.88f), 0.04f, 0f);
+            var cloth = Mat("Sc04ClothLit", Sc04UseFactory ? new Color(0.54f, 0.54f, 0.56f) : new Color(0.9f, 0.9f, 0.88f), 0.06f, 0f);
+            if (Sc04UseFactory)
+            {
+                // an earlier try put the photo's cloth on it: the saved material still has that texture, so clear it
+                cloth.SetTexture("_BaseMap", null);
+                cloth.mainTexture = null;
+                cloth.SetColor("_BaseColor", new Color(0.54f, 0.54f, 0.56f));
+                EditorUtility.SetDirty(cloth);
+            }
             var lampMat = Mat("Sc04Lamp", new Color(0.92f, 0.94f, 0.93f), 0f, 0f, null, new Color(0.35f, 0.38f, 0.36f), true);
 
             void Shell(string name, Vector3 pos, Vector3 size, Material mat)
@@ -51,18 +59,26 @@ namespace ChemicalSafety.Editor
 
             // A tighter room (7 m wide) so the benches, hood, fridge and eyewash fill the view like the designer's lab.
             var cx = ox + 0.47f;
-            var floor = Box("Floor", room, new Vector3(cx, -0.05f, 0.2f), new Vector3(7f, 0.1f, 7.2f), floorMat);
-            floor.AddComponent<TeleportationArea>();
-            Shell("Wall_Back", new Vector3(cx, 1.6f, -3.2f), new Vector3(7f, 3.3f, 0.12f), wallMat);
-            Shell("Wall_Front", new Vector3(cx, 1.6f, 3.6f), new Vector3(7f, 3.3f, 0.12f), wallMat);
-            Shell("Wall_Left", new Vector3(ox + 3.94f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
-            Shell("Wall_Right", new Vector3(ox - 3.0f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
-            Shell("Ceiling", new Vector3(cx, 3.22f, 0.2f), new Vector3(7f, 0.08f, 7.2f), ceilMat);
-            Box("LampA", room, new Vector3(ox + 2.9f, 3.14f, 0.45f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
-            Box("LampB", room, new Vector3(ox + 2.9f, 3.14f, -1.05f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
-            LabLight(room, new Vector3(ox + 0.4f, 2.9f, 0.9f), 1.15f);
-            LabLight(room, new Vector3(ox - 0.8f, 2.9f, -1.1f), 0.9f);
-            LabLight(room, new Vector3(ox + 2.4f, 2.7f, -0.2f), 0.65f);
+            if (Sc04UseFactory)
+            {
+                BuildSc04FactoryShell(room, ox, art, solid);
+            }
+            else
+            {
+                var floor = Box("Floor", room, new Vector3(cx, -0.05f, 0.2f), new Vector3(7f, 0.1f, 7.2f), floorMat);
+                floor.AddComponent<TeleportationArea>();
+                Shell("Wall_Back", new Vector3(cx, 1.6f, -3.2f), new Vector3(7f, 3.3f, 0.12f), wallMat);
+                Shell("Wall_Front", new Vector3(cx, 1.6f, 3.6f), new Vector3(7f, 3.3f, 0.12f), wallMat);
+                Shell("Wall_Left", new Vector3(ox + 3.94f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
+                Shell("Wall_Right", new Vector3(ox - 3.0f, 1.6f, 0.2f), new Vector3(0.12f, 3.3f, 6.8f), wallSide);
+                Shell("Ceiling", new Vector3(cx, 3.22f, 0.2f), new Vector3(7f, 0.08f, 7.2f), ceilMat);
+                Box("LampA", room, new Vector3(ox + 2.9f, 3.14f, 0.45f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
+                Box("LampB", room, new Vector3(ox + 2.9f, 3.14f, -1.05f), new Vector3(1.6f, 0.04f, 0.18f), lampMat, false);
+                LabLight(room, new Vector3(ox + 0.4f, 2.9f, 0.9f), 1.15f);
+                LabLight(room, new Vector3(ox - 0.8f, 2.9f, -1.1f), 0.9f);
+                LabLight(room, new Vector3(ox + 2.4f, 2.7f, -0.2f), 0.65f);
+
+            }
 
             // Viewer's left (+X) is the return bench against the tiled wall. The near bench
             // meets it and holds the gloves. The player stands at +Z looking toward -Z.
@@ -106,115 +122,133 @@ namespace ChemicalSafety.Editor
             var benchGo = new GameObject("BenchRoot");
             var bench = benchGo.transform;
             bench.SetParent(room, false);
-            Sc04SolidTable(bench, sideBox, true, steelMat);
             var lMin = gloveBox.min.x;
             var lMax = sideBox.max.x;
-            Sc04SolidTable(bench, new Bounds(new Vector3((lMin + lMax) * 0.5f, tableTop * 0.5f, gloveBox.center.z),
-                new Vector3(lMax - lMin, tableTop, gloveBox.size.z)), false, steelMat);
+            var facTable = new Bounds();
+            if (Sc04UseFactory)
+            {
+                // factory: ONE wide steel table (client photo), deeper toward the machines so the acid jug fits behind the gloves
+                const float extraDepth = 0.5f;
+                var tMinZ = gloveBox.min.z - extraDepth;
+                facTable = new Bounds(new Vector3((lMin + lMax) * 0.5f, tableTop * 0.5f, (tMinZ + gloveBox.max.z) * 0.5f),
+                    new Vector3(lMax - lMin, tableTop, gloveBox.max.z - tMinZ));
+                Sc04SolidTable(bench, facTable, false, Sc04BrightSteel(facTable.size)); // the earlier lab bench steel, kept light so it never reads black
+            }
+            else
+            {
+                Sc04SolidTable(bench, sideBox, true, steelMat);
+                Sc04SolidTable(bench, new Bounds(new Vector3((lMin + lMax) * 0.5f, tableTop * 0.5f, gloveBox.center.z),
+                    new Vector3(lMax - lMin, tableTop, gloveBox.size.z)), false, steelMat);
+            }
 
             var clothAt = new Vector3(gloveBox.center.x - 0.05f, gloveTop + 0.008f, gloveBox.center.z);
             Box("Cloth", bench, clothAt, new Vector3(1.55f, 0.008f, 0.82f), cloth, false);
 
-            var sideItemsFrom = room.childCount; // everything from here to the fume hood stands on the return bench
-            // Near (+Z, toward the player) to far (-Z): water beaker, two corked flasks, then the tray.
-            var benchX = sideBox.center.x;
-            var zNear = sideBox.max.z - 0.22f;
-            var beakerA = PlacePiece("chemistry_glassware.glb", "lab_beaker_a", room,
-                new Vector3(benchX - 0.08f, sideTop, zNear), 0f, 0.12f, sideTop);
-            var beakerB = PlacePiece("chemistry_glassware.glb", "lab_beaker_b", room,
-                new Vector3(benchX + 0.12f, sideTop, zNear - 0.06f), 20f, 0.09f, sideTop);
-            UseGlass(beakerA);
-            UseGlass(beakerB);
-            var flaskA = PlacePiece("chemistry_glassware.glb", "lab_erlenmeyer_a_0", room,
-                new Vector3(benchX - 0.08f, sideTop, zNear - 0.28f), 18f, 0.2f, sideTop);
-            var flaskB = PlacePiece("chemistry_glassware.glb", "lab_erlenmeyer_a_0.001", room,
-                new Vector3(benchX + 0.1f, sideTop, zNear - 0.42f), -12f, 0.18f, sideTop);
-            UseGlass(flaskA);
-            UseGlass(flaskB);
-            Cork(room, flaskA);
-            Cork(room, flaskB);
-
-            var trayAt = new Vector3(benchX, 0f, zNear - 0.72f);
-            var tray = SpawnSc04("tray.glb", room, trayAt, 8f, 0.36f);
-            var trayTop = sideTop + 0.04f;
-            if (tray != null)
+            if (!Sc04UseFactory)
             {
-                SitOn(tray, sideTop);
-                var tb = WorldBounds(tray);
-                trayTop = tb.max.y;
-                trayAt = tb.center;
-            }
+                var sideItemsFrom = room.childCount; // everything from here to the fume hood stands on the return bench
+                // Near (+Z, toward the player) to far (-Z): water beaker, two corked flasks, then the tray.
+                var benchX = sideBox.center.x;
+                var zNear = sideBox.max.z - 0.22f;
+                var beakerA = PlacePiece("chemistry_glassware.glb", "lab_beaker_a", room,
+                    new Vector3(benchX - 0.08f, sideTop, zNear), 0f, 0.12f, sideTop);
+                var beakerB = PlacePiece("chemistry_glassware.glb", "lab_beaker_b", room,
+                    new Vector3(benchX + 0.12f, sideTop, zNear - 0.06f), 20f, 0.09f, sideTop);
+                UseGlass(beakerA);
+                UseGlass(beakerB);
+                var flaskA = PlacePiece("chemistry_glassware.glb", "lab_erlenmeyer_a_0", room,
+                    new Vector3(benchX - 0.08f, sideTop, zNear - 0.28f), 18f, 0.2f, sideTop);
+                var flaskB = PlacePiece("chemistry_glassware.glb", "lab_erlenmeyer_a_0.001", room,
+                    new Vector3(benchX + 0.1f, sideTop, zNear - 0.42f), -12f, 0.18f, sideTop);
+                UseGlass(flaskA);
+                UseGlass(flaskB);
+                Cork(room, flaskA);
+                Cork(room, flaskB);
 
-            var bottle = PlacePiece("chemistry_glassware.glb", "Glass jar", room, trayAt, 0f, 0.28f, trayTop);
-            if (bottle != null)
-            {
-                bottle.name = "HclBottle";
-                DressJar(bottle);
-                var bb = WorldBounds(bottle);
-                var labelTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/BottleLabel.png");
-                var label = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                label.name = "BottleLabel";
-                Object.DestroyImmediate(label.GetComponent<Collider>());
-                label.transform.SetParent(room, true);
-                label.transform.position = bb.center + Vector3.forward * (bb.extents.z + 0.006f);
-                label.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up); // Quad shows its face toward -Z, so turn it to face the player (+Z)
-                label.transform.localScale = new Vector3(Mathf.Max(0.1f, bb.size.x * 0.82f),
-                    Mathf.Max(0.12f, bb.size.y * 0.5f), 1f);
-                label.GetComponent<MeshRenderer>().sharedMaterial =
-                    Mat("Sc04BottleLabel", Color.white, 0.12f, 0f, labelTex, null, true);
-            }
+                var trayAt = new Vector3(benchX, 0f, zNear - 0.72f);
+                var tray = SpawnSc04("tray.glb", room, trayAt, 8f, 0.36f);
+                var trayTop = sideTop + 0.04f;
+                if (tray != null)
+                {
+                    SitOn(tray, sideTop);
+                    var tb = WorldBounds(tray);
+                    trayTop = tb.max.y;
+                    trayAt = tb.center;
+                }
 
-            var jarB = PlacePiece("chemistry_glassware.glb", "jar.001", room,
-                new Vector3(benchX + 0.16f, sideTop, zNear - 0.58f), 30f, 0.14f, sideTop);
-            UseGlass(jarB);
-            var cylA = PlacePiece("chemistry_glassware.glb", "lab_cylinder_a", room,
-                new Vector3(benchX - 0.14f, sideTop, zNear - 0.95f), 0f, 0.2f, sideTop);
-            var cylB = PlacePiece("chemistry_glassware.glb", "lab_cylinder_b", room,
-                new Vector3(benchX, sideTop, zNear - 0.98f), 8f, 0.16f, sideTop);
-            var cylC = PlacePiece("chemistry_glassware.glb", "lab_cylinder_c", room,
-                new Vector3(benchX + 0.14f, sideTop, zNear - 0.92f), -10f, 0.13f, sideTop);
-            UseGlass(cylA);
-            UseGlass(cylB);
-            UseGlass(cylC);
+                var bottle = PlacePiece("chemistry_glassware.glb", "Glass jar", room, trayAt, 0f, 0.28f, trayTop);
+                if (bottle != null)
+                {
+                    bottle.name = "HclBottle";
+                    DressJar(bottle);
+                    var bb = WorldBounds(bottle);
+                    var labelTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/BottleLabel.png");
+                    var label = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    label.name = "BottleLabel";
+                    Object.DestroyImmediate(label.GetComponent<Collider>());
+                    label.transform.SetParent(room, true);
+                    label.transform.position = bb.center + Vector3.forward * (bb.extents.z + 0.006f);
+                    label.transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up); // Quad shows its face toward -Z, so turn it to face the player (+Z)
+                    label.transform.localScale = new Vector3(Mathf.Max(0.1f, bb.size.x * 0.82f),
+                        Mathf.Max(0.12f, bb.size.y * 0.5f), 1f);
+                    label.GetComponent<MeshRenderer>().sharedMaterial =
+                        Mat("Sc04BottleLabel", Color.white, 0.12f, 0f, labelTex, null, true);
+                }
 
-            PipetteRack(room, new Vector3(benchX, sideTop, zNear - 1.22f), sideTop);
-            Hotplate(room, new Vector3(benchX, sideTop, zNear - 1.5f), sideTop);
-            var sideItemsTo = room.childCount;
-            for (var ci = sideItemsTo - 1; ci >= sideItemsFrom; ci--)
-                room.GetChild(ci).SetParent(bench, true);
+                var jarB = PlacePiece("chemistry_glassware.glb", "jar.001", room,
+                    new Vector3(benchX + 0.16f, sideTop, zNear - 0.58f), 30f, 0.14f, sideTop);
+                UseGlass(jarB);
+                var cylA = PlacePiece("chemistry_glassware.glb", "lab_cylinder_a", room,
+                    new Vector3(benchX - 0.14f, sideTop, zNear - 0.95f), 0f, 0.2f, sideTop);
+                var cylB = PlacePiece("chemistry_glassware.glb", "lab_cylinder_b", room,
+                    new Vector3(benchX, sideTop, zNear - 0.98f), 8f, 0.16f, sideTop);
+                var cylC = PlacePiece("chemistry_glassware.glb", "lab_cylinder_c", room,
+                    new Vector3(benchX + 0.14f, sideTop, zNear - 0.92f), -10f, 0.13f, sideTop);
+                UseGlass(cylA);
+                UseGlass(cylB);
+                UseGlass(cylC);
 
-            var lampA = room.Find("LampA");
-            var lampB = room.Find("LampB");
-            if (lampA != null)
-                lampA.position = new Vector3(benchX - 0.05f, 3.14f, sideBox.center.z + 0.35f);
-            if (lampB != null)
-                lampB.position = new Vector3(benchX - 0.05f, 3.14f, sideBox.center.z - 0.85f);
+                PipetteRack(room, new Vector3(benchX, sideTop, zNear - 1.22f), sideTop);
+                Hotplate(room, new Vector3(benchX, sideTop, zNear - 1.5f), sideTop);
+                var sideItemsTo = room.childCount;
+                for (var ci = sideItemsTo - 1; ci >= sideItemsFrom; ci--)
+                    room.GetChild(ci).SetParent(bench, true);
 
-            // Glass faces local X. Yaw 90 turns it toward the player. The hood closes the far
-            // corner of the left bench, back against the rear wall.
-            var hood = SpawnSc04("fume_cupboards.glb", room, new Vector3(benchX, 0f, sideBox.min.z), 90f, 1.6f);
-            if (hood != null)
-            {
-                FitHeight(hood, 2.05f);
-                CapHorizontal(hood, 1.7f);
-                SitOn(hood, 0f);
-                var hb = WorldBounds(hood);
-                hood.transform.position += new Vector3((ox + 3.55f) - hb.center.x, 0f, -2.88f - hb.min.z);
-                DressHood(hood);
-                hb = WorldBounds(hood);
-                Box("HoodMouth", room,
-                    new Vector3(hb.center.x, hb.center.y + 0.08f, hb.max.z - 0.06f),
-                    new Vector3(Mathf.Min(1.15f, hb.size.x * 0.62f), Mathf.Min(1.2f, hb.size.y * 0.48f), 0.04f),
-                    Mat("Sc04HoodMouth", new Color(0.16f, 0.18f, 0.2f), 0.12f, 0.04f), false);
-                var shelf = sideTop;
-                UseGlass(PlacePiece("chemistry_glassware.glb", "Glass jar", room,
-                    new Vector3(hb.center.x - 0.12f, 0f, hb.center.z), 12f, 0.12f, shelf));
-                UseGlass(PlacePiece("chemistry_glassware.glb", "jar.001", room,
-                    new Vector3(hb.center.x + 0.1f, 0f, hb.center.z - 0.06f), -18f, 0.1f, shelf));
+                var lampA = room.Find("LampA");
+                var lampB = room.Find("LampB");
+                if (lampA != null)
+                    lampA.position = new Vector3(benchX - 0.05f, 3.14f, sideBox.center.z + 0.35f);
+                if (lampB != null)
+                    lampB.position = new Vector3(benchX - 0.05f, 3.14f, sideBox.center.z - 0.85f);
+
+                // Glass faces local X. Yaw 90 turns it toward the player. The hood closes the far
+                // corner of the left bench, back against the rear wall.
+                var hood = SpawnSc04("fume_cupboards.glb", room, new Vector3(benchX, 0f, sideBox.min.z), 90f, 1.6f);
+                if (hood != null)
+                {
+                    FitHeight(hood, 2.05f);
+                    CapHorizontal(hood, 1.7f);
+                    SitOn(hood, 0f);
+                    var hb = WorldBounds(hood);
+                    hood.transform.position += new Vector3((ox + 3.55f) - hb.center.x, 0f, -2.88f - hb.min.z);
+                    DressHood(hood);
+                    hb = WorldBounds(hood);
+                    Box("HoodMouth", room,
+                        new Vector3(hb.center.x, hb.center.y + 0.08f, hb.max.z - 0.06f),
+                        new Vector3(Mathf.Min(1.15f, hb.size.x * 0.62f), Mathf.Min(1.2f, hb.size.y * 0.48f), 0.04f),
+                        Mat("Sc04HoodMouth", new Color(0.16f, 0.18f, 0.2f), 0.12f, 0.04f), false);
+                    var shelf = sideTop;
+                    UseGlass(PlacePiece("chemistry_glassware.glb", "Glass jar", room,
+                        new Vector3(hb.center.x - 0.12f, 0f, hb.center.z), 12f, 0.12f, shelf));
+                    UseGlass(PlacePiece("chemistry_glassware.glb", "jar.001", room,
+                        new Vector3(hb.center.x + 0.1f, 0f, hb.center.z - 0.06f), -18f, 0.1f, shelf));
+                }
+
             }
 
             // On the back wall, screen facing into the room so 25°C is readable from the bench.
-            BuildAc(room, new Vector3(ox - 0.4f, 2.15f, -2.96f));
+            if (!Sc04UseFactory)
+                BuildAc(room, new Vector3(ox - 0.4f, 2.15f, -2.96f));
 
             var glovesModel = SpawnSc04("gloves1.glb", room, clothAt + new Vector3(0f, 0.02f, 0f), 0f, 0.72f);
             if (glovesModel != null)
@@ -235,8 +269,15 @@ namespace ChemicalSafety.Editor
                 SitOn(glovesModel, gloveTop + 0.004f);
             }
 
-            DressLab(room, bench, ox, gloveTop, gloveBox, sideTop, sideBox);
-            DressLabDetails(room, ox, sideBox, gloveBox);
+            if (Sc04UseFactory)
+            {
+                BuildSc04FactoryProps(bench, tableTop, facTable, clothAt);
+            }
+            else
+            {
+                DressLab(room, bench, ox, gloveTop, gloveBox, sideTop, sideBox);
+                DressLabDetails(room, ox, sideBox, gloveBox);
+            }
             Transform[] gloveGroups = null;
             if (glovesModel != null)
                 // rest height = cloth top (gloveTop + 0.012) + 8 mm: a glove that sank into the cloth looked like it came out from under it
@@ -1039,12 +1080,20 @@ namespace ChemicalSafety.Editor
         // Viewer's left to right: white cotton, blue nitrile, large black neoprene.
         private static void PaintGlove(Transform[] parts, int group)
         {
-            var mats = new[]
-            {
-                Mat("Sc04GloveWhite", new Color(0.97f, 0.97f, 0.98f), 0.08f, 0f),
-                Mat("Sc04GloveBlue", new Color(0.30f, 0.62f, 0.95f), 0.4f, 0.02f),
-                Mat("Sc04GloveBlack", new Color(0.05f, 0.05f, 0.06f), 0.55f, 0.06f)
-            };
+            var mats = Sc04UseFactory
+                ? new[]
+                {
+                    // the client's photo: off-white knitted cotton, deep glossy blue nitrile, black rubber
+                    Mat("Sc04FacGloveCotton", new Color(0.84f, 0.82f, 0.77f), 0.05f, 0f),
+                    Mat("Sc04FacGloveNitrile", new Color(0.07f, 0.26f, 0.95f), 0.72f, 0.02f),
+                    Mat("Sc04FacGloveRubber", new Color(0.035f, 0.035f, 0.04f), 0.5f, 0.05f)
+                }
+                : new[]
+                {
+                    Mat("Sc04GloveWhite", new Color(0.97f, 0.97f, 0.98f), 0.08f, 0f),
+                    Mat("Sc04GloveBlue", new Color(0.30f, 0.62f, 0.95f), 0.4f, 0.02f),
+                    Mat("Sc04GloveBlack", new Color(0.05f, 0.05f, 0.06f), 0.55f, 0.06f)
+                };
             var mat = mats[Mathf.Clamp(group, 0, 2)];
             var grow = group == 2 ? 1.25f : 1f;
             // grow the pair as one piece (positions scale about the group centre too), so the two gloves of the pair keep their

@@ -27,6 +27,8 @@ namespace ChemicalSafety.Presentable
         private bool _on;
         private Transform _card;
         private TMP_Text[] _values;
+        private Graphic[][] _rowParts;
+        private GameObject _closeButton;
 
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
@@ -158,6 +160,14 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Hold(int index)
         {
+            yield return HoldMotion(index);
+            ShowCard(index);
+            _busy = false;
+        }
+
+        // The glove leaves the cloth for the hand point (shared by the touch flow and the automatic flow).
+        private IEnumerator HoldMotion(int index)
+        {
             _busy = true;
             _held = index;
             SetPokes(false);
@@ -180,8 +190,6 @@ namespace ChemicalSafety.Presentable
             }
 
             glove.SetPositionAndRotation(dest, destRot);
-            ShowCard(index);
-            _busy = false;
         }
 
         public void CloseCard()
@@ -195,6 +203,26 @@ namespace ChemicalSafety.Presentable
         {
             _busy = true;
             HideCard();
+            yield return PutBackMotion(index);
+            _held = -1;
+            _busy = false;
+            MarkSeen(index);
+            if (Seen >= gloves.Length)
+            {
+                _on = false;
+                DisarmArrows();
+                AllSeen = true;
+            }
+            else
+            {
+                _current = NextUnseen();
+                PlaceArrow();
+                SetPokes(true);
+            }
+        }
+
+        private IEnumerator PutBackMotion(int index)
+        {
             var glove = gloves[index];
             var from = glove.position;
             var fromRot = glove.rotation;
@@ -208,25 +236,131 @@ namespace ChemicalSafety.Presentable
 
             glove.localPosition = _homeLocal[index];
             glove.localRotation = _homeLocalRot[index];
-            _held = -1;
-            _busy = false;
+        }
+
+        private void MarkSeen(int index)
+        {
             if (!_seen[index])
             {
                 _seen[index] = true;
                 Seen++;
             }
+        }
 
+        // ------------------------------------------------------------------ automatic flow (controller ray: no arrows, no clicks)
+
+        /// <summary>Resets the review for the automatic flow: no arrow, no poke; <see cref="AutoInspect"/> shows each glove.</summary>
+        public void BeginAuto()
+        {
+            CaptureHomes();
+            AllSeen = false;
+            Seen = 0;
+            for (var i = 0; i < _seen.Length; i++)
+                _seen[i] = false;
+            _on = false;
+            _held = -1;
+            _busy = false;
+            HideCard();
+            DisarmArrows();
+            SetPokes(false);
+        }
+
+        public int Count => gloves != null ? gloves.Length : 0;
+
+        /// <summary>True while the card of an automatic inspection is fully shown (tests).</summary>
+        public bool AutoCardShown { get; private set; }
+
+        /// <summary>
+        /// One glove, by itself: it lifts to the hand, the properties card pops in and its three rows appear one after the other
+        /// (icon pop, fade), <paramref name="whileShown"/> runs (the voice-over and its minimum read time), then the card goes and
+        /// the glove goes back to the cloth.
+        /// </summary>
+        public IEnumerator AutoInspect(int index, System.Func<IEnumerator> whileShown)
+        {
+            if (index < 0 || gloves == null || index >= gloves.Length || gloves[index] == null)
+                yield break;
+            _held = index;
+            yield return HoldMotion(index);
+            yield return RevealCard(index);
+            AutoCardShown = true;
+            if (whileShown != null)
+                yield return whileShown();
+            yield return HideCardAnimated();
+            AutoCardShown = false;
+            yield return PutBackMotion(index);
+            _held = -1;
+            _busy = false;
+            MarkSeen(index);
             if (Seen >= gloves.Length)
-            {
-                _on = false;
-                DisarmArrows();
                 AllSeen = true;
-            }
-            else
+        }
+
+        // pop + rows one by one
+        private IEnumerator RevealCard(int index)
+        {
+            ShowCard(index);
+            if (_card == null || _rowParts == null)
+                yield break;
+            var baseScale = _card.localScale;
+            for (var r = 0; r < _rowParts.Length; r++)
+                SetRowAlpha(r, 0f);
+            _card.localScale = baseScale * 0.82f;
+            PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
+            for (var t = 0f; t < 0.32f; t += Time.deltaTime)
             {
-                _current = NextUnseen();
-                PlaceArrow();
-                SetPokes(true);
+                _card.localScale = baseScale * Mathf.Lerp(0.82f, 1f, PresentableFx.EaseOutBack(t / 0.32f));
+                yield return null;
+            }
+
+            _card.localScale = baseScale;
+            for (var r = 0; r < _rowParts.Length; r++)
+            {
+                PresentableFx.Play(PresentableFx.Tick, 0.5f);
+                for (var t = 0f; t < 0.3f; t += Time.deltaTime)
+                {
+                    var k = Mathf.Clamp01(t / 0.3f);
+                    SetRowAlpha(r, k);
+                    if (_rowParts[r].Length > 0 && _rowParts[r][0] != null)
+                        _rowParts[r][0].rectTransform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, PresentableFx.EaseOutBack(k));
+                    yield return null;
+                }
+
+                SetRowAlpha(r, 1f);
+                if (_rowParts[r].Length > 0 && _rowParts[r][0] != null)
+                    _rowParts[r][0].rectTransform.localScale = Vector3.one;
+                yield return PresentableFx.Wait(0.25f);
+            }
+        }
+
+        private IEnumerator HideCardAnimated()
+        {
+            if (_card == null)
+                yield break;
+            var baseScale = _card.localScale;
+            for (var t = 0f; t < 0.2f; t += Time.deltaTime)
+            {
+                var k = t / 0.2f;
+                _card.localScale = baseScale * Mathf.Lerp(1f, 0.9f, k);
+                for (var r = 0; r < _rowParts.Length; r++)
+                    SetRowAlpha(r, 1f - k);
+                yield return null;
+            }
+
+            HideCard();
+            _card.localScale = baseScale;
+            for (var r = 0; r < _rowParts.Length; r++)
+                SetRowAlpha(r, 1f);
+        }
+
+        private void SetRowAlpha(int row, float a)
+        {
+            foreach (var g in _rowParts[row])
+            {
+                if (g == null)
+                    continue;
+                var c = g.color;
+                c.a = a;
+                g.color = c;
             }
         }
 
@@ -286,11 +420,15 @@ namespace ChemicalSafety.Presentable
             var right = Vector3.Cross(Vector3.up, fwd);
             // eye level (head height, yaw only: works seated or standing), to the right of the glove in the hand with a gap
             var head = cam != null ? cam.position : Vector3.zero;
-            _card.position = head + fwd * 0.6f + right * 0.27f + Vector3.down * 0.02f;
+            // the automatic flow sets the card a little higher and further right so the acid jug behind the gloves stays visible
+            var auto = !_on;
+            _card.position = head + fwd * 0.6f + right * (auto ? 0.33f : 0.27f) + Vector3.up * (auto ? 0.05f : -0.02f);
             _card.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             var lines = new[] { Sc04Content.Materials, Sc04Content.Ratings, Sc04Content.Times };
             for (var i = 0; i < _values.Length && i < lines.Length; i++)
                 _values[i].text = index >= 0 && index < lines[i].Length ? lines[i][index] : "";
+            if (_closeButton != null)
+                _closeButton.SetActive(_on);
             _card.gameObject.SetActive(true);
         }
 
@@ -328,6 +466,7 @@ namespace ChemicalSafety.Presentable
             var lift = closeRt.gameObject.AddComponent<HoverLift>();
             lift.Init(closeRt);
             close.onClick.AddListener(lift.Press);
+            _closeButton = closeRt.gameObject;
 
             if (art.gloveCardGlove != null)
                 PresentableUi.Img(PresentableUi.Rect("GlovePicture", canvas.transform, new Vector2(0.05f, 0.10f), new Vector2(0.31f, 0.78f)),
@@ -335,6 +474,7 @@ namespace ChemicalSafety.Presentable
 
             var icons = new[] { art.gloveCardMaterial, art.gloveCardRating, art.gloveCardTime };
             _values = new TMP_Text[3];
+            _rowParts = new Graphic[3][];
             var rows = new[] { Sc04Content.Materials, Sc04Content.Ratings, Sc04Content.Times };
             const float rowH = 0.235f;
             for (var i = 0; i < 3; i++)
@@ -342,8 +482,9 @@ namespace ChemicalSafety.Presentable
                 var y1 = 0.80f - i * rowH;
                 var y0 = y1 - (rowH - 0.02f);
                 var mid = y0 + (y1 - y0) * 0.5f;
+                Image iconImg = null;
                 if (icons[i] != null)
-                    PresentableUi.Img(PresentableUi.Rect("Icon" + i, canvas.transform, new Vector2(0.34f, y0 + 0.01f), new Vector2(0.45f, y1 - 0.01f)),
+                    iconImg = PresentableUi.Img(PresentableUi.Rect("Icon" + i, canvas.transform, new Vector2(0.34f, y0 + 0.01f), new Vector2(0.45f, y1 - 0.01f)),
                         icons[i], Color.white, preserveAspect: true);
                 var label = PresentableUi.Text("Label" + i, canvas.transform, new Vector2(0.48f, mid), new Vector2(0.96f, y1),
                     Sc04Content.RowLabels[i] + ":", 26f, HoloWhite, TextAlignmentOptions.BottomLeft, true, art.englishFont);
@@ -358,6 +499,7 @@ namespace ChemicalSafety.Presentable
                 _values[i].fontSizeMax = 30f;
                 _values[i].textWrappingMode = TextWrappingModes.NoWrap;
                 _values[i].overflowMode = TextOverflowModes.Ellipsis;
+                _rowParts[i] = new Graphic[] { iconImg, label, _values[i] };
             }
 
             PresentableUi.AlwaysOnTop(canvas);

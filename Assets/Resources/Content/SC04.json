@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "You are a lab technician preparing to test a dye sample with concentrated HCl. Check the SDS first. Select the right gloves.",
-   "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড দিয়ে একটি ডাই নমুনা পরীক্ষার প্রস্তুতি নিচ্ছেন। আগে সেফটি ডাটা শিট দেখুন। সঠিক গ্লাভস বেছে নিন।"
+   "en": "You are a technician in the dyeing plant. You are about to handle concentrated Hydrochloric Acid (HCl). Check the SDS first. Watch each glove and its properties, then choose the right gloves.",
+   "bn": "আপনি ডাইং প্ল্যান্টের একজন টেকনিশিয়ান। ঘন হাইড্রোক্লোরিক অ্যাসিড (HCl) নিয়ে কাজ করতে যাচ্ছেন। আগে সেফটি ডাটা শিট দেখুন। প্রতিটি গ্লাভস ও তার বৈশিষ্ট্য দেখুন, তারপর সঠিক গ্লাভস বেছে নিন।"
   },
   {
    "key": "QuestionHeader",
@@ -13,8 +13,8 @@
   },
   {
    "key": "QuestionPrompt",
-   "en": "You are about to handle concentrated Hydrochloric Acid (HCl). Select the correct glove type based on safety guidelines.",
-   "bn": "আপনি ঘন হাইড্রোক্লোরিক অ্যাসিড (HCl) নিয়ে কাজ করতে যাচ্ছেন। নিরাপত্তা নির্দেশিকা অনুযায়ী সঠিক ধরনের গ্লাভস বেছে নিন।"
+   "en": "You are a factory worker. You need to pour the Concentrated Hydrochloric Acid. Which gloves must you wear?",
+   "bn": "আপনি একজন কারখানা শ্রমিক। আপনাকে ঘন হাইড্রোক্লোরিক অ্যাসিড ঢালতে হবে। কোন গ্লাভস পরবেন?"
   },
   {
    "key": "CorrectTitle",
@@ -45,6 +45,16 @@
    "key": "GateBody",
    "en": "Press NEXT to proceed or BACK to review again.",
    "bn": "এগিয়ে যেতে নেক্সট চাপুন, আবার দেখতে ব্যাক চাপুন।"
+  },
+  {
+   "key": "TagCorrect",
+   "en": "CORRECT",
+   "bn": "সঠিক"
+  },
+  {
+   "key": "TagWrong",
+   "en": "WRONG",
+   "bn": "ভুল"
   }
  ],
  "arrays": [
@@ -101,29 +111,46 @@
    ]
   },
   {
-   "key": "OptionLabels",
+   "key": "GloveVoice",
    "en": [
-    "Standard cotton work gloves\n<size=70%>Poor chemical barrier and permeates instantly</size>",
-    "Thin nitrile disposable gloves\n<size=70%>Thin nitrile disposable rubber gloves</size>",
-    "Thick Neoprene/Butyl rubber gloves"
+    "This is a white cotton glove. Cotton gives no chemical protection. Acid soaks through at once.",
+    "This is a thin blue nitrile glove. Against concentrated acid its rating is poor. Acid goes through in under thirty minutes.",
+    "This is a thick black neoprene glove. Against concentrated acid its rating is excellent. It holds for more than four hundred and eighty minutes."
    ],
    "bn": [
-    "সাধারণ সুতির কাজের গ্লাভস\n<size=70%>রাসায়নিক প্রতিরোধ দুর্বল, মুহূর্তেই ভেদ করে</size>",
-    "পাতলা নাইট্রাইল ডিসপোজেবল গ্লাভস\n<size=70%>পাতলা নাইট্রাইল ডিসপোজেবল রাবারের গ্লাভস</size>",
-    "মোটা নিওপ্রিন/বিউটাইল রাবারের গ্লাভস"
+    "এটা সাদা সুতির গ্লাভস। সুতিতে কোনো রাসায়নিক সুরক্ষা নেই। অ্যাসিড সাথে সাথে ভিজিয়ে ভেতরে চলে যায়।",
+    "এটা পাতলা নীল নাইট্রাইল গ্লাভস। ঘন অ্যাসিডের বিরুদ্ধে এর রেটিং দুর্বল। ত্রিশ মিনিটের কমেই অ্যাসিড ভেদ করে যায়।",
+    "এটা মোটা কালো নিওপ্রিন গ্লাভস। ঘন অ্যাসিডের বিরুদ্ধে এর রেটিং চমৎকার। চারশো আশি মিনিটের বেশি সময় টিকে থাকে।"
+   ]
+  },
+  {
+   "key": "OptionLabels",
+   "en": [
+    "The white cotton knitted gloves.",
+    "The thin blue disposable nitrile gloves.",
+    "The thick black Neoprene/Butyl rubber gloves.",
+    "Bare hands, as long as you pour very carefully."
+   ],
+   "bn": [
+    "সাদা সুতির গ্লাভস।",
+    "পাতলা নীল রঙের একবার ব্যবহারযোগ্য নাইট্রাইল গ্লাভস।",
+    "মোটা কালো নিওপ্রিন বা বিউটাইল রাবারের গ্লাভস।",
+    "খালি হাতেই ঢালব, তবে খুব সাবধানে।"
    ]
   },
   {
    "key": "OptionFeedback",
    "en": [
-    "You selected cotton work gloves. Cotton has no chemical barrier. Acid soaks through immediately.",
-    "Thin nitrile is a poor barrier to concentrated HCl. It is not the glove this SDS specifies.",
-    "Thick Neoprene/Butyl gloves are impermeable to concentrated HCl. Prevents rapid permeation and degradation. Matches highest mineral acid resistance ratings."
+    "You selected cotton gloves. Cotton has no chemical barrier. Concentrated acid soaks through immediately.",
+    "Thin nitrile is a poor barrier to concentrated acid. It is not the glove this SDS specifies.",
+    "Thick Neoprene/Butyl gloves resist concentrated acid for more than 480 minutes. This is the glove the SDS specifies.",
+    "Bare hands have no protection at all. Concentrated acid burns the skin on contact, however carefully you pour."
    ],
    "bn": [
-    "আপনি সুতির কাজের গ্লাভস বেছেছেন। সুতিতে কোনো রাসায়নিক প্রতিরোধ নেই। অ্যাসিড সাথে সাথে ভিজিয়ে ভেতরে চলে যায়।",
-    "ঘন HCl-এর বিরুদ্ধে পাতলা নাইট্রাইল দুর্বল প্রতিরোধক। এই SDS-এ এই গ্লাভস নির্দিষ্ট করা নেই।",
-    "মোটা নিওপ্রিন/বিউটাইল গ্লাভস ঘন HCl-এর জন্য অভেদ্য। দ্রুত ভেদন ও ক্ষয় রোধ করে। খনিজ অ্যাসিড প্রতিরোধের সর্বোচ্চ রেটিংয়ের সাথে মেলে।"
+    "আপনি সুতির গ্লাভস বেছেছেন। সুতিতে কোনো রাসায়নিক প্রতিরোধ নেই। ঘন অ্যাসিড সাথে সাথে ভিজিয়ে ভেতরে চলে যায়।",
+    "ঘন অ্যাসিডের বিরুদ্ধে পাতলা নাইট্রাইল দুর্বল প্রতিরোধক। এই SDS-এ এই গ্লাভস নির্দিষ্ট করা নেই।",
+    "মোটা নিওপ্রিন/বিউটাইল গ্লাভস ঘন অ্যাসিড ৪৮০ মিনিটের বেশি ঠেকিয়ে রাখে। SDS-এ এই গ্লাভসই নির্দিষ্ট করা আছে।",
+    "খালি হাতে কোনো সুরক্ষাই নেই। যত সাবধানেই ঢালুন, ঘন অ্যাসিড ত্বকে লাগলেই পুড়িয়ে দেয়।"
    ]
   },
   {
@@ -131,12 +158,29 @@
    "en": [
     "WRONG SELECTION!",
     "WRONG SELECTION!",
-    ""
+    "",
+    "WRONG SELECTION!"
    ],
    "bn": [
     "ভুল নির্বাচন!",
     "ভুল নির্বাচন!",
-    ""
+    "",
+    "ভুল নির্বাচন!"
+   ]
+  },
+  {
+   "key": "OptionReasons",
+   "en": [
+    "Cotton gives zero chemical protection. The acid soaks through instantly.",
+    "Thin nitrile is poor against concentrated acid. It fails in under 30 minutes.",
+    "The SDS specifies Neoprene/Butyl. Excellent resistance, over 480 minutes.",
+    "Bare skin has no protection. The acid burns on contact, however careful you are."
+   ],
+   "bn": [
+    "সুতিতে কোনো রাসায়নিক সুরক্ষা নেই। অ্যাসিড সাথে সাথে ভেতরে চলে যায়।",
+    "ঘন অ্যাসিডের বিরুদ্ধে পাতলা নাইট্রাইল দুর্বল। ৩০ মিনিটের কমেই ব্যর্থ হয়।",
+    "SDS-এ নিওপ্রিন/বিউটাইল নির্দিষ্ট করা। চমৎকার প্রতিরোধ, ৪৮০ মিনিটের বেশি।",
+    "খালি ত্বকে কোনো সুরক্ষা নেই। যত সাবধানেই হোন, অ্যাসিড লাগলেই পোড়ায়।"
    ]
   }
  ],
