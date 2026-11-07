@@ -1882,9 +1882,13 @@ namespace ChemicalSafety.Presentable
             return new Vector3(b.center.x, b.max.y, b.center.z);
         }
 
+        // true when the learner's answer to the current callout question was right: only then does the chemical go to its compartment
+        private bool _sc02AnswerCorrect;
+
         private IEnumerator Sc02Chemical(int chem, int n, bool last)
         {
             Stage("sc02Callout" + (n + 1));
+            _sc02AnswerCorrect = false;
             var model = inspect.ModelOf(chem);
             var s = sc02CalloutScale;
             var icon = art.sc02ChemIcons != null && chem < art.sc02ChemIcons.Length ? art.sc02ChemIcons[chem] : null;
@@ -1915,7 +1919,10 @@ namespace ChemicalSafety.Presentable
                 yield return _sc02Callout.Close();
                 _sc02Callout.Follower = null;
                 mcqSc02.SetEmbedded(false);
-                yield return Sc02PlaceChemical(chem); // the chemical goes to its compartment
+                // client: a RIGHT answer sends the chemical to its compartment; a wrong answer is only told it is wrong and the
+                // chemical stays where it is (it is never moved to the correct place for the learner)
+                if (_sc02AnswerCorrect)
+                    yield return Sc02PlaceChemical(chem);
             }
             else
             {
@@ -1970,8 +1977,9 @@ namespace ChemicalSafety.Presentable
             {
                 SessionResults.RecordTry(((char)('A' + index)).ToString(), correct);
                 StopVoice();
-                if (last)
-                    StartCoroutine(Sc02PlaceChemical(chem)); // question 6: the chemical moves while the reasons are read, NEXT follows
+                _sc02AnswerCorrect = correct;
+                if (last && correct)
+                    StartCoroutine(Sc02PlaceChemical(chem)); // question 6, right answer: the chemical moves while the reasons are read, NEXT follows
             }
 
             void OnPopupShown(bool correct)

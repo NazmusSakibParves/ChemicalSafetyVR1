@@ -43,6 +43,11 @@ namespace ChemicalSafety.Presentable
         private Image _icon;
         private RectTransform _iconRt;
         private RectTransform _tail;
+        private RectTransform _stem;
+        private Image _stemImg;
+        private RectTransform _headRt;
+        private Image _headGlow;
+        private Image _headCore;
         private TextMeshProUGUI _chip;
         private TextMeshProUGUI _title;
         private readonly TextMeshProUGUI[] _lines = new TextMeshProUGUI[3];
@@ -129,6 +134,15 @@ namespace ChemicalSafety.Presentable
                 new Vector2(-W * 0.5f - 90f, -H * 0.5f - 80f + BodyLift), new Vector2(W * 0.5f + 90f, H * 0.5f + 80f + BodyLift));
             _halo1 = Box("Halo1", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f),
                 new Vector2(-W * 0.5f - 44f, -H * 0.5f - 38f + BodyLift), new Vector2(W * 0.5f + 44f, H * 0.5f + 38f + BodyLift));
+
+            // leader from the tail down to the container's HEAD, ending in a glowing ring on the container (client: it must read at
+            // once as THIS container's callout). Drawn first so the tail and the card sit over it; sized and placed in Open().
+            _stem = PresentableUi.Centered("Stem", root, new Vector2(0f, -480f), new Vector2(16f, 120f));
+            _stemImg = PresentableUi.Img(_stem, _art.roundedSolid, new Color(Cyan.r, Cyan.g, Cyan.b, 0.95f), sliced: true);
+            _headRt = PresentableUi.Centered("Head", root, new Vector2(0f, -550f), new Vector2(170f, 170f));
+            _headGlow = PresentableUi.Img(_headRt, _art.radialGlow, new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f));
+            _headCore = PresentableUi.Img(PresentableUi.Centered("Core", _headRt, Vector2.zero, new Vector2(38f, 38f)), _art.roundedSolid,
+                new Color(0.9f, 1f, 1f, 1f), sliced: true);
 
             // tail: a diamond with a thin light stem down to the container
             _tail = PresentableUi.Centered("Tail", root, new Vector2(0f, BodyLift - H * 0.5f - 18f), new Vector2(70f, 70f));
@@ -269,13 +283,20 @@ namespace ChemicalSafety.Presentable
             if (_cam == null && Camera.main != null)
                 _cam = Camera.main.transform;
             // canvas centre: the tail tip a hand's breadth above the container
-            _basePos = new Vector3(center.x, anchorTop.y + (0.08f + TailTip * Mpp) * _scale, center.z);
+            _basePos = new Vector3(center.x, anchorTop.y + (0.05f + TailTip * Mpp) * _scale, center.z);
             _bubble.position = _basePos;
             Face();
             // the tail points down at the container even when the callout is clamped to the middle of the view
             var offset = Vector3.Dot(anchorTop - _basePos, _bubble.right);
             _tailPx = Mathf.Clamp(offset / (Mpp * _scale), -W * 0.5f + 220f, W * 0.5f - 220f);
             _tail.anchoredPosition = new Vector2(_tailPx, BodyLift - H * 0.5f - 18f);
+            // the stem runs from the tip of the tail down to the container's head, where the ring glows
+            var tipPx = BodyLift - H * 0.5f - 18f - 49f;
+            var headPx = -(_basePos.y - anchorTop.y) / (Mpp * _scale);
+            var stemTop = tipPx + 14f;
+            _stem.anchoredPosition = new Vector2(_tailPx, (stemTop + headPx) * 0.5f);
+            _stem.sizeDelta = new Vector2(16f, Mathf.Max(24f, stemTop - headPx));
+            _headRt.anchoredPosition = new Vector2(_tailPx, headPx);
 
             IsOpen = true;
             _content.alpha = 0f;
@@ -380,7 +401,11 @@ namespace ChemicalSafety.Presentable
                 _beam.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f + 0.10f * breathe);
                 _bloom.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.08f + 0.05f * breathe);
                 _halo1.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.10f + 0.07f * breathe);
+                _stemImg.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.75f + 0.2f * breathe);
+                _headGlow.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.65f + 0.3f * breathe);
             }
+
+            _headRt.localScale = Vector3.one * (1f + 0.18f * breathe);
 
             var sp = Mathf.PingPong(_t * 0.28f, 1f);
             _partDot.rectTransform.anchoredPosition = new Vector2(PartX, Mathf.Lerp(-H * 0.42f, H * 0.42f, sp));
@@ -394,6 +419,8 @@ namespace ChemicalSafety.Presentable
             if (_built)
             {
                 _border.color = Cyan;
+                _stemImg.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.95f);
+                _headGlow.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f);
                 _partCore.color = new Color(0.85f, 1f, 1f, 0.95f);
                 _partGlow.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.30f);
                 _halo1.color = new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f);
@@ -431,6 +458,8 @@ namespace ChemicalSafety.Presentable
                 _halo1.color = new Color(_main.r, _main.g, _main.b, appear * (0.60f + 0.22f * breathe));
                 _halo2.color = new Color(_main.r, _main.g, _main.b, appear * (0.16f + 0.10f * breathe));
                 _bloom.color = new Color(_main.r, _main.g, _main.b, appear * (0.20f + 0.12f * breathe));
+                _stemImg.color = Color.Lerp(new Color(Cyan.r, Cyan.g, Cyan.b, 0.95f), new Color(_main.r, _main.g, _main.b, 0.95f), appear);
+                _headGlow.color = Color.Lerp(new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f), new Color(_main.r, _main.g, _main.b, 0.95f), appear);
                 _partCore.color = Color.Lerp(new Color(0.85f, 1f, 1f, 0.95f), _light, appear);
                 _partGlow.color = new Color(_main.r, _main.g, _main.b, 0.30f + 0.25f * appear);
                 _stageGlow.color = new Color(_main.r, _main.g, _main.b, 0.45f + 0.2f * breathe);
