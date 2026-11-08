@@ -85,6 +85,8 @@ namespace ChemicalSafety.Editor
             var env6 = new GameObject("Environment_SC06").transform;
             var sc6 = BuildSc06Room(env6, art);
             Sc06BakeProbe(env, env6);
+            // Scenario 8 (controller ray) plays in this room: its own pieces are added while the room is on (bounds need active renderers)
+            var sc8r = Sc08UseFactory ? Sc08BuildRayStation(env6.Find("Room"), sc6, art) : null;
             env6.gameObject.SetActive(false);
             var env7 = new GameObject("Environment_SC07").transform;
             var sc7 = BuildSc07Room(env7, art);
@@ -299,6 +301,12 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc06Ambience").objectReferenceValue = sc6.ambience;
             so.FindProperty("sc06Auto").objectReferenceValue = sc6.auto;
             so.FindProperty("sc06Fan").objectReferenceValue = sc6.fan;
+            if (sc8r != null)
+            {
+                so.FindProperty("sc08Dilute").objectReferenceValue = sc8r.dilute;
+                so.FindProperty("sc08PpeRay").objectReferenceValue = sc8r.ppe;
+                so.FindProperty("sc08GateRay").objectReferenceValue = sc8r.gate;
+            }
             so.FindProperty("envSc07").objectReferenceValue = env7.gameObject;
             so.FindProperty("spawnSc07").objectReferenceValue = sc7.spawn;
             so.FindProperty("sc07PillarStand").objectReferenceValue = sc7.standB;
@@ -850,6 +858,10 @@ namespace ChemicalSafety.Editor
             art.voSc08HoodWarn = Keep("VO_Sc08HoodWarn_bn.mp3", art.voSc08HoodWarn);
             art.voSc08Mix = Keep("VO_Sc08Mix_bn.mp3", art.voSc08Mix);
             art.voSc08Gate = Keep("VO_Sc08Gate_bn.mp3", art.voSc08Gate);
+            art.voSc08AutoPpe = V("VO_Sc08AutoPpe_bn.mp3");
+            art.voSc08AutoWater = V("VO_Sc08AutoWater_bn.mp3");
+            art.voSc08AutoAcid = V("VO_Sc08AutoAcid_bn.mp3");
+            art.voSc08GatePrev = V("VO_Sc08GatePrev_bn.mp3");
             art.voSc08CompleteBn = Keep("VO_Sc08Complete_bn.mp3", art.voSc08CompleteBn);
             art.voSc08CompleteEn = Keep("VO_Sc08Complete_en.mp3", art.voSc08CompleteEn);
             art.voSc09Instruction = Keep("VO_SC09_Instruction_bn.mp3", art.voSc09Instruction);

@@ -1608,10 +1608,212 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(0f, 0.45f);
         }
 
+        // ------------------------------------------------------------------ Scenario 8 on the controller ray (in the Scenario 6 factory room)
+
+        [Header("Scenario 8 (ray)")]
+        [SerializeField] private Sc08AutoDilute sc08Dilute;
+        [SerializeField] private Sc08Ppe sc08PpeRay;
+        [SerializeField] private Sc06Gate sc08GateRay;
+        [SerializeField] private float sc08AutoDelay = 2f;
+        [Tooltip("On = the learner is carried by a slow smooth glide (no black screen) in front of the fume hood for the pour, and back afterwards. Off = stays at the start spot.")]
+        [SerializeField] private bool sc08MoveToHood = true;
+        [SerializeField] private float sc08GlideSeconds = 4.5f;
+
+        // The instruction card sits where Scenario 6's does (small, aside, the room stays free). 2 s after it the PPE station on the left
+        // wall hands out the four items one by one (check marks), then the hood and the fan go on (as in Scenario 6), the containers go
+        // into the hood, the water goes into the empty jar first, the acid follows slowly while the glass rod stirs. "PREVIEW" replays it.
+        private IEnumerator RunSc08RayFlow()
+        {
+            var again = true;
+            while (again)
+            {
+                Stage("sc08Auto");
+                lab.ResetLab();
+                lab.SetVaporOn(false);
+                sc06Auto.ResetAll();
+                sc08Dilute.ResetAll();
+                sc08Dilute.SetRodVisible(true);
+                if (sc06Fan != null)
+                    sc06Fan.ResetFan();
+                sc08PpeRay.ResetAll();
+                yield return PresentableFx.Wait(sc08AutoDelay);
+
+                Stage("sc08Ppe");
+                var ppeVoice = StartCoroutine(PlayVoice(art.voSc08AutoPpe));
+                yield return sc08PpeRay.AutoRun(0.8f);
+                yield return ppeVoice;
+                yield return PresentableFx.Wait(0.6f);
+                sc08PpeRay.End();
+                yield return PresentableFx.Wait(0.5f);
+
+                Stage("sc08Hood");
+                lab.Toggle(0);
+                yield return PlayVoice(art.voSc06AutoHood);
+                yield return PresentableFx.Wait(0.5f);
+                Stage("sc08Fan");
+                lab.Toggle(1);
+                yield return PlayVoice(art.voSc06AutoFan);
+                yield return PresentableFx.Wait(0.8f);
+                lab.OpenSash();
+                yield return PresentableFx.Wait(0.2f);
+                while (lab.SashMoving || !lab.SashOpen)
+                    yield return null;
+
+                // guided move (a slow glide, no black screen, no walking): after the carrying the learner is taken in front of the fume hood
+                Stage("sc08Move");
+                StartCoroutine(PlayVoice(art.voSc06AutoMove));
+                sc08Dilute.StartPlay(sc08MoveToHood);
+                if (sc08MoveToHood)
+                {
+                    // the three containers go into the hood from here; then the learner glides in front of the hood for the pour
+                    while (!sc08Dilute.Carried)
+                        yield return null;
+                    Stage("sc08GlideIn");
+                    yield return Glide(sc06HoodStand.position, sc08GlideSeconds);
+                    yield return PresentableFx.Wait(0.4f);
+                    sc08Dilute.ContinuePour();
+                }
+
+                var waterVoice = false;
+                var acidVoice = false;
+                while (!sc08Dilute.Finished)
+                {
+                    if (!waterVoice && sc08Dilute.Step >= 4)
+                    {
+                        waterVoice = true;
+                        Stage("sc08Water");
+                        StartCoroutine(PlayVoice(art.voSc08AutoWater));
+                    }
+
+                    if (!acidVoice && sc08Dilute.Step >= 6)
+                    {
+                        acidVoice = true;
+                        Stage("sc08Acid");
+                        StartCoroutine(PlayVoice(art.voSc08AutoAcid));
+                    }
+
+                    yield return null;
+                }
+
+                yield return PresentableFx.Wait(1.2f);
+                StopVoice();
+                subtitle.Hide();
+                lab.CloseSash();
+                yield return PresentableFx.Wait(0.8f);
+                // the hood is closed: back in front of the table (the start spot) where the cards open
+                if (sc08MoveToHood)
+                {
+                    Stage("sc08GlideOut");
+                    yield return Glide(sc06TableStand.position, sc08GlideSeconds);
+                    yield return PresentableFx.Wait(0.3f);
+                }
+
+                Stage("sc08Gate");
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = PREVIEW, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc08GateRay.Back += OnBack;
+                sc08GateRay.Next += OnNext;
+                sc08GateRay.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc08GatePrev));
+                while (choice == 0)
+                    yield return null;
+                sc08GateRay.Back -= OnBack;
+                sc08GateRay.Next -= OnNext;
+                sc08GateRay.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc08Question");
+            Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc08.SetWorldScale(sc06PopupScale);
+            mcqSc08.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc08, BuildSc08Question(), false, 8);
+        }
+
+        private IEnumerator RunScenario8Ray()
+        {
+            Stage("sc08");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc07, envSc08 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc07Ambience != null)
+                sc07Ambience.End();
+            envSc06.SetActive(true); // the same factory room as Scenario 6
+            clipboard.SetSheet(art.sdsSc08);
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            lab.SetVaporOn(false);
+            sc06Auto.ResetAll();
+            sc08Dilute.ResetAll();
+            sc08Dilute.SetRodVisible(true);
+            sc08PpeRay.SetStationVisible(true);
+            sc08PpeRay.ResetAll();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            PlaceRig(spawnSc06.position, spawnSc06.forward);
+            sc06Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc08Intro");
+            _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc08Content.InstructionEnglish, art.bnSc08InstructionPanel);
+            LockLocomotion(true); // the head is free, the body stays: no walking about in VR
+            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc06CardRight, sc06CardUp); // same place as Scenario 6: the hood and the table stay free
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return PresentableFx.Wait(0.8f);
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            yield return RunSc08RayFlow();
+
+            LockLocomotion(false);
+            mcqSc08.SetWorldScale(1f);
+            // leave the shared room as Scenario 6 expects it
+            sc08Dilute.ResetAll();
+            sc08Dilute.SetRodVisible(false);
+            sc08PpeRay.ResetAll();
+            sc08PpeRay.SetStationVisible(false);
+            lab.ResetLab();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            if (sc06Ambience != null)
+                sc06Ambience.End();
+            Stage("sc08Done");
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false))
+                yield break;
+#endif
+            if (envSc09 != null)
+                yield return RunScenario9();
+        }
+
         // SC08: acid dilution. Instruction card, PPE donning station (four items), fume hood on, carry the tray to the hood,
         // open the sash, add the acid to the water slowly while stirring, "practice complete" card, the MCQ.
         private IEnumerator RunScenario8()
         {
+            if (PresentableInput.AllowedIn(8) && sc08Dilute != null && sc08PpeRay != null && sc08GateRay != null)
+            {
+                PresentableInput.ActiveScenario = 8; // controller ray, in the Scenario 6 factory room
+                yield return RunScenario8Ray();
+                yield break;
+            }
+
+            PresentableInput.ActiveScenario = 0; // the old lab (Sc08UseFactory = false) is finger touch
             Stage("sc08");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -4366,7 +4568,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc08Content.OptionLabels[i],
                     feedback = Sc08Content.OptionFeedback[i],
-                    wrongTitle = Sc08Content.OptionWrongTitle[i]
+                    wrongTitle = Sc08Content.OptionWrongTitle[i],
+                    reason = Sc08Content.OptionReasons != null && i < Sc08Content.OptionReasons.Length ? Sc08Content.OptionReasons[i] : string.Empty
                 };
             }
 
@@ -4378,7 +4581,11 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc08Content.CorrectTitle,
                 nextLabel = Sc08Content.FinishLabel,
                 options = options,
-                fancy = true
+                fancy = true,
+                // ray flow: as Scenarios 1-7 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc08Content.TagCorrect,
+                tagWrong = Sc08Content.TagWrong
             };
         }
 

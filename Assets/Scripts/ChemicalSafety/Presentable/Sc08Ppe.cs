@@ -17,6 +17,14 @@ namespace ChemicalSafety.Presentable
         [Tooltip("One root per PPE item (order = Sc08Content.PpeNames), each with a trigger collider and a PokeTarget.")]
         [SerializeField] private Transform[] items = new Transform[4];
         [SerializeField] private Transform arrow;
+        [Header("Controller-ray flow (Scenario 8 in the factory room)")]
+        [Tooltip("When set the PPE SELECTION PANEL opens here (facing the head) instead of beside the hand.")]
+        [SerializeField] private Transform panelAnchor;
+        [SerializeField] private float panelScale = 1f;
+        [SerializeField] private float autoPickGap = 0.7f;
+        [Tooltip("The whole station (board, items). In the shared factory room it is hidden except in Scenario 8.")]
+        [SerializeField] private GameObject stationRoot;
+        private float _panelBaseScale = 1f;
 
         private readonly bool[] _taken = new bool[4];
         private Vector3[] _homePos;
@@ -120,6 +128,37 @@ namespace ChemicalSafety.Presentable
             ShowPanel();
             PlaceArrow();
             SetPokes();
+        }
+
+        /// <summary>
+        /// Controller-ray flow: no poke. The panel opens, then the four items are taken one after another by themselves
+        /// (arrow on the item, it comes to the user, is put on, its check box gets a check mark). Ends with <see cref="AllDone"/>.
+        /// </summary>
+        public IEnumerator AutoRun(float firstDelay)
+        {
+            ResetAll();
+            _on = false;
+            ShowPanel();
+            yield return PresentableFx.Wait(firstDelay);
+            for (var i = 0; i < items.Length; i++)
+            {
+                _current = i;
+                PlaceArrow();
+                yield return PresentableFx.Wait(autoPickGap);
+                yield return Take(i);
+                yield return PresentableFx.Wait(0.35f);
+            }
+
+            AllDone = true;
+            if (arrow != null)
+                arrow.gameObject.SetActive(false);
+        }
+
+        /// <summary>Shows or hides the whole board (Scenario 6 shares the room and must not see it).</summary>
+        public void SetStationVisible(bool on)
+        {
+            if (stationRoot != null)
+                stationRoot.SetActive(on);
         }
 
         public void End()
@@ -262,6 +301,7 @@ namespace ChemicalSafety.Presentable
             var plate = art.holoPanel != null ? art.holoPanel : art.frameWide;
             var canvas = PresentableUi.WorldCanvas("PpePanel", transform, new Vector2(760f, 620f), 0.00062f, false, 30);
             _panel = canvas.transform;
+            _panelBaseScale = _panel.localScale.x;
             var bg = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, plate, Color.white);
             if (art.holoPanel != null)
                 bg.type = Image.Type.Sliced;
@@ -307,9 +347,20 @@ namespace ChemicalSafety.Presentable
             var fwd = cam != null ? Flat(cam.forward) : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, fwd);
             var head = cam != null ? cam.position : Vector3.zero;
-            // eye level, right of the board's line of sight, within finger reach but never in front of the items
-            _panel.position = head + fwd * 0.55f + right * 0.66f + Vector3.up * 0.0f;
-            _panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            if (panelAnchor != null)
+            {
+                // ray flow: a big card beside the board, turned toward the head
+                var toward = Flat(panelAnchor.position - head);
+                _panel.position = panelAnchor.position;
+                _panel.rotation = Quaternion.LookRotation(toward, Vector3.up);
+                _panel.localScale = Vector3.one * (_panelBaseScale * panelScale);
+            }
+            else
+            {
+                // eye level, right of the board's line of sight, within finger reach but never in front of the items
+                _panel.position = head + fwd * 0.55f + right * 0.66f + Vector3.up * 0.0f;
+                _panel.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            }
             RefreshPanel();
             _panel.gameObject.SetActive(true);
         }

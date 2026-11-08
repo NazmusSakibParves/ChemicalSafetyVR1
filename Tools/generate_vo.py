@@ -223,6 +223,14 @@ CLIPS = {
     ),
     "VO_Sc08Complete_bn": (BN_VOICE, complete_bn(8)),
     "VO_Sc08Complete_en": (EN_VOICE, complete_en(8)),
+    # Scenario 8 on the controller ray (automatic flow in the Scenario 6 factory room)
+    "VO_Sc08AutoPpe_bn": (BN_VOICE, "প্রথমে বাম দেয়ালের স্টেশন থেকে গগলস, রেসপিরেটর, গ্লাভস আর অ্যাপ্রন, সুরক্ষা সরঞ্জামগুলো একটি একটি করে নেওয়া হচ্ছে।"),
+    "VO_Sc08AutoWater_bn": (BN_VOICE, "প্রথমে খালি পাত্রে পানি ঢালা হচ্ছে।"),
+    "VO_Sc08AutoAcid_bn": (BN_VOICE, "এবার পানির মধ্যে ধীরে ধীরে অ্যাসিড ঢালা হচ্ছে, আর কাচের দণ্ড দিয়ে নাড়া হচ্ছে। সবসময় পানিতে অ্যাসিড ঢালতে হয়, অ্যাসিডে পানি নয়।"),
+    "VO_Sc08GatePrev_bn": (
+        BN_VOICE,
+        "অ্যাসিড পাতলা করার অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+    ),
     # Scenario 9 (chemical splash on the face: broken flask, SDS, safety shower / eye wash). Nothing follows it: custom ending.
     "VO_SC09_Instruction_bn": (
         BN_VOICE,
@@ -374,6 +382,10 @@ CLIPS_EN = {
     "VO_Sc08HoodWarn": "Switch on the fume hood first.",
     "VO_Sc08Mix": "Touch the water beaker: add the acid slowly and stir.",
     "VO_Sc08Gate": gate_en("Dilution practice complete."),
+    "VO_Sc08AutoPpe": "First, the protective equipment is taken from the station on the left wall, one by one: goggles, respirator, gloves and apron.",
+    "VO_Sc08AutoWater": "First, the water is poured into the empty container.",
+    "VO_Sc08AutoAcid": "Now the acid is added slowly to the water, and the glass rod keeps stirring. Always add acid to water, never water to acid.",
+    "VO_Sc08GatePrev": "Dilution practice complete. If you are ready for the questions, click the Next button. To watch the whole animation again, click the Preview button.",
     "VO_SC09_Instruction": "You are a lab technician. Pour the chemical from the sample flask into the next flask. If something goes wrong, follow the safety procedure at once.",
     "VO_Sc09Flask": "Touch the purple sample flask to lift it and pour.",
     "VO_Sc09Spill": "The flask slipped from your hand and broke. A harmful chemical has splashed onto your face and eyes. You must respond immediately.",

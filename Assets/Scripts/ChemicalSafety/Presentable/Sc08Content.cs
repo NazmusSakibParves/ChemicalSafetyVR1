@@ -33,13 +33,19 @@ namespace ChemicalSafety.Presentable
         public static string CorrectTitle => Loc.T("SC08", "CorrectTitle");
         public static string CorrectBody => Loc.T("SC08", "CorrectBody");
         public static string FinishLabel => Loc.T("SC08", "FinishLabel");
-        public const int CorrectIndex = 1;
+        public const int CorrectIndex = 2;
 
         public static string[] OptionLabels => Loc.A("SC08", "OptionLabels");
 
         public static string[] OptionFeedback => Loc.A("SC08", "OptionFeedback");
 
         public static string[] OptionWrongTitle => Loc.A("SC08", "OptionWrongTitle");
+
+        // controller-ray flow (as Scenarios 1-7): tick / cross, a reason under every option, PREVIEW card text
+        public static string TagCorrect => Loc.T("SC08", "TagCorrect");
+        public static string TagWrong => Loc.T("SC08", "TagWrong");
+        public static string[] OptionReasons => Loc.A("SC08", "OptionReasons");
+        public static string GateBodyPrev => Loc.T("SC08", "GateBodyPrev");
 
         public static string ModuleComplete => Loc.T("SC08", "ModuleComplete");
     }

@@ -1290,8 +1290,179 @@ namespace ChemicalSafety.Presentable
         // The fingertip must rest on a panel instead of sinking into it, and still press the button.
         // Scenario 8: instruction, PPE station (four items by real fingertip), fume hood switch, tray, sash, mix (acid into water, stirring),
         // the gate (BACK once, then NEXT), the MCQ (wrong, then right), completion voice.
+        // Scenario 8 (controller ray, in the Scenario 6 factory room): PPE station ticks by itself, hood, fan, containers, water first,
+        // glass rod, acid slowly; PREVIEW replays it; NEXT opens the inline-reveal question with the client's four options.
+        private IEnumerator Sc08RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC08 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive + ", scenario = " + PresentableInput.ActiveScenario);
+            var lab = Get<Sc06Lab>(_director, "lab");
+            var fan = Get<Sc06ExhaustFan>(_director, "sc06Fan");
+            var dil = Get<Sc08AutoDilute>(_director, "sc08Dilute");
+            var ppe = Get<Sc08Ppe>(_director, "sc08PpeRay");
+            var gate = Get<Sc06Gate>(_director, "sc08GateRay");
+            var mcq8 = Get<PresentableMcqPanel>(_director, "mcqSc08");
+            yield return WaitStage("sc08Intro", 80f);
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("90_sc08_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC08 small instruction card", ip.transform);
+            yield return WaitStage("sc08Auto", 60f);
+            yield return WaitStage("sc08Ppe", 30f);
+            var order = "";
+            var lastTaken = 0;
+            var t0 = 0f;
+            while (!ppe.AllDone && t0 < 90f)
+            {
+                t0 += Time.unscaledDeltaTime;
+                if (ppe.Taken != lastTaken)
+                {
+                    lastTaken = ppe.Taken;
+                    order += lastTaken + "(checks:";
+                    for (var i = 0; i < ppe.Count; i++)
+                        order += ppe.CheckVisible(i) ? "1" : "0";
+                    order += ") ";
+                    if (lastTaken == 2)
+                    {
+                        yield return Shot("91_sc08_ppe_half");
+                        // the head turns left to the board on the left wall (a screenshot only; the rig is turned back afterwards)
+                        var camT = Camera.main.transform;
+                        var rigT = camT.parent != null ? camT.parent : camT;
+                        rigT.RotateAround(camT.position, Vector3.up, -70f);
+                        yield return new WaitForSeconds(0.6f);
+                        yield return Shot("91b_sc08_ppe_board");
+                        rigT.RotateAround(camT.position, Vector3.up, 70f);
+                    }
+                }
+
+                yield return null;
+            }
+
+            Say("SC08 PPE: taken one by one = " + order.Trim() + ", all done = " + ppe.AllDone + ", panel open = " + ppe.PanelOpen);
+            if (!ppe.AllDone)
+                Debug.LogError("[SMOKE] SC08: the PPE items were not all taken automatically");
+            yield return WaitStage("sc08Hood", 30f);
+            yield return new WaitForSeconds(1.4f);
+            Say("SC08 auto: hood on = " + lab.HoodOn + " (expected True)");
+            yield return WaitStage("sc08Fan", 30f);
+            yield return new WaitForSeconds(3.2f);
+            Say("SC08 auto: fan on = " + lab.LevOn + ", fan speed = " + (fan != null ? fan.Speed01.ToString("0.00") : "n/a") + " (expected > 0)");
+            if (fan == null || fan.Speed01 < 0.05f)
+                Debug.LogError("[SMOKE] SC08: the exhaust fan did not start turning");
+            yield return WaitStage("sc08Move", 40f);
+            var steps = "";
+            var last = -1;
+            var t = 0f;
+            var shotWater = false;
+            var shotAcid = false;
+            var levelAfterWater = -1f;
+            while (!dil.Finished && t < 120f)
+            {
+                t += Time.unscaledDeltaTime;
+                if (dil.Step != last)
+                {
+                    last = dil.Step;
+                    steps += last + " ";
+                    if (last == 5)
+                        levelAfterWater = dil.Level;
+                }
+
+                if (!shotWater && dil.Step == 4)
+                {
+                    shotWater = true;
+                    yield return new WaitForSeconds(2.0f);
+                    yield return Shot("92_sc08_water");
+                    Say("SC08 pour view: head z = " + Camera.main.transform.position.z.ToString("0.00") + " (expected well behind the table, near the hood, z < 0)");
+                }
+
+                if (!shotAcid && dil.Step == 6)
+                {
+                    shotAcid = true;
+                    yield return new WaitForSeconds(3.0f);
+                    yield return Shot("93_sc08_acid_stir");
+                    Say("SC08 stirring = " + dil.Stirring + " (expected True), rod active = " + (dil.Rod != null && dil.Rod.gameObject.activeInHierarchy));
+                }
+
+                yield return null;
+            }
+
+            Say("SC08 auto: steps seen in order = [" + steps.Trim() + "] (expected 1 2 3 4 5 6), water level before the acid = " + levelAfterWater.ToString("0.00") +
+                " (expected ~0.55), finished = " + dil.Finished + ", final level = " + dil.Level.ToString("0.00") + ", closest two containers = " +
+                dil.MinSeparation.ToString("0.00") + " m (must be >= 0.3)");
+            if (dil.MinSeparation < 0.3f)
+                Debug.LogError("[SMOKE] SC08: two containers came closer than 0.3 m");
+            if (!dil.Finished)
+                Debug.LogError("[SMOKE] SC08: the automatic dilution never finished");
+            var g = 0f;
+            while (!gate.Visible && g < 20f)
+            {
+                g += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.0f);
+            Say("SC08 gate view: head z = " + Camera.main.transform.position.z.ToString("0.00") + " (expected back at the start spot, about 3.0)");
+            LayoutCheck("SC08 gate card", gate.Card);
+            var label = FindDeep(gate.Card, "BackButton");
+            var lab8 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
+            Say("SC08 gate: left button text = [" + (lab8 != null ? lab8.text : "?") + "] (expected PREVIEW), visible = " + gate.Visible);
+            yield return Shot("94_sc08_gate");
+            Click(gate.Card, "BackButton");
+            yield return new WaitForSeconds(2.0f);
+            Say("SC08 preview: back at the start, hood on = " + lab.HoodOn + " (expected False), jar level = " + dil.Level.ToString("0.00") + " (expected 0)");
+            yield return WaitStage("sc08Gate", 220f);
+            var g2 = 0f;
+            while (!gate.Visible && g2 < 20f)
+            {
+                g2 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.8f);
+            Click(gate.Card, "NextButton");
+            yield return WaitStage("sc08Question", 20f);
+            var q = 0f;
+            while (!mcq8.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("95_sc08_question");
+            LayoutCheck("SC08 MCQ", mcq8.transform);
+            var cur = mcq8.Current;
+            Say("SC08 question: options = " + cur.options.Length + ", correct index = " + cur.correctIndex + " (expected 2), inline reveal = " + cur.inlineReveal);
+            var wrong = false;
+#if UNITY_EDITOR
+            wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Wrong", false);
+#endif
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var row = FindDeep(mcq8.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("96_sc08_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq8.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC08 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC08 MCQ reveal", mcq8.transform);
+            Click(mcq8.transform, "NextButton");
+        }
+
         private IEnumerator Sc08Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
+            if (PresentableInput.AllowedIn(8) && Get<Sc08AutoDilute>(_director, "sc08Dilute") != null)
+            {
+                yield return Sc08RaySmoke(voiceSrc);
+                yield break;
+            }
+
             yield return WaitStage("sc08Intro", 40f);
             var lab = Get<Sc06Lab>(_director, "sc08Lab");
             var mix = Get<Sc08Mix>(_director, "sc08Mix");

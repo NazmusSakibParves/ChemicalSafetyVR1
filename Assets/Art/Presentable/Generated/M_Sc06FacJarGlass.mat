@@ -25,13 +25,13 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Clear: 0.28
-    - _Edge: 1
+    - _Clear: 0.12
+    - _Edge: 0.9
     - _Gloss: 160
     - _Power: 2.6
     - _Reflect: 1.5
     - _Spec: 1.6
     m_Colors:
-    - _Tint: {r: 0.84, g: 0.9, b: 0.95, a: 1}
+    - _Tint: {r: 0.88, g: 0.94, b: 0.97, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

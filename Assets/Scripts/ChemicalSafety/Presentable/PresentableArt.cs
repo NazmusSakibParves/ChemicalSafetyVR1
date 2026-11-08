@@ -221,6 +221,10 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc08HoodWarn;
         public AudioClip voSc08Mix;
         public AudioClip voSc08Gate;
+        public AudioClip voSc08AutoPpe;
+        public AudioClip voSc08AutoWater;
+        public AudioClip voSc08AutoAcid;
+        public AudioClip voSc08GatePrev;
         public AudioClip voSc08CompleteBn;
         public AudioClip voSc08CompleteEn;
         public Sprite sdsSc09;

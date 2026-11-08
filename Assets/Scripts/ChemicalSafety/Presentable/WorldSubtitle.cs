@@ -66,7 +66,7 @@ namespace ChemicalSafety.Presentable
         public void Show(Sprite bangla, string english, float seconds = 0f)
         {
             if (HiddenInScenarios1And2 && (PresentableInput.ActiveScenario == 1 || PresentableInput.ActiveScenario == 2 || PresentableInput.ActiveScenario == 3 ||
-                                          ((PresentableInput.ActiveScenario == 4 || PresentableInput.ActiveScenario == 5) && PresentableInput.RayActive)))
+                                          ((PresentableInput.ActiveScenario == 4 || PresentableInput.ActiveScenario == 5 || PresentableInput.ActiveScenario == 8) && PresentableInput.RayActive)))
             {
                 StartFade(0f, 0.01f, 0f);
                 return;

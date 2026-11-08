@@ -26,6 +26,42 @@ namespace ChemicalSafety.Editor
             "Sc06Lab", "Sc06Ambience", "Sc06GateHost", "LevNozzle", "Sc06ReflectionProbe", "PosterSds", "SdsPocket"
         };
 
+        // Crisp small text: uncompressed on every platform, 2048 max, strong anisotropic filtering.
+        private static void Sc06SharpTexture(string path)
+        {
+            var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (imp == null)
+                return;
+            var changed = false;
+            if (imp.anisoLevel < 16)
+            {
+                imp.anisoLevel = 16;
+                changed = true;
+            }
+
+            if (imp.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                imp.textureCompression = TextureImporterCompression.Uncompressed;
+                changed = true;
+            }
+
+            foreach (var platform in new[] { "Android", "Standalone" })
+            {
+                var ps = imp.GetPlatformTextureSettings(platform);
+                if (!ps.overridden || ps.format != TextureImporterFormat.RGBA32 || ps.maxTextureSize < 2048)
+                {
+                    ps.overridden = true;
+                    ps.format = TextureImporterFormat.RGBA32;
+                    ps.maxTextureSize = 2048;
+                    imp.SetPlatformTextureSettings(ps);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                imp.SaveAndReimport();
+        }
+
         private static Texture2D Sc06FacTex(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc06/" + n + ".png");
 
         private static GameObject Sc06HCyl(string name, Transform parent, Vector3 centre, float length, float radius, Material mat, bool alongX)
@@ -238,14 +274,31 @@ namespace ChemicalSafety.Editor
             var steel = Mat("Sc06FacSteelPaint", new Color(0.70f, 0.72f, 0.74f), 0.5f, 0.3f);
             var darkSteel = Mat("Sc06FacDarkSteel", new Color(0.26f, 0.28f, 0.30f), 0.4f, 0.3f);
             var posterTex = Sc06FacTex("HierarchyPoster");
-            Box("PosterBack", room, new Vector3(ox + 1.95f, 1.72f, zBack + 0.012f), new Vector3(1.62f, 1.22f, 0.02f), Mat("Sc06FacPosterBack", new Color(0.93f, 0.92f, 0.88f), 0.2f, 0f), false);
+            Sc06SharpTexture(ArtRoot + "/2D/Sc06/HierarchyPoster.png"); // no compression blur, high anisotropy: the small print stays readable
+            // the hierarchy-of-controls poster, large (2.5 m wide) and lit by its own spot so it reads from the learner's spot
+            const float posterX = ox + 2.1f;
+            const float posterY = 1.85f;
+            const float posterW = 2.46f;
+            var posterH = posterW * 618f / 960f;
+            Box("PosterBack", room, new Vector3(posterX, posterY, zBack + 0.012f), new Vector3(posterW + 0.1f, posterH + 0.1f, 0.02f), Mat("Sc06FacPosterBack", new Color(1f, 1f, 1f), 0.2f, 0f), false);
             if (posterTex != null)
-                QuadObj("PosterHierarchy", room, new Vector3(ox + 1.95f, 1.72f, zBack + 0.024f), new Vector3(0f, 180f, 0f), new Vector2(1.56f, 1.0f),
-                    MatAlpha("Sc06FacPoster", posterTex, Color.white, false));
-            Box("PosterFrameT", room, new Vector3(ox + 1.95f, 2.34f, zBack + 0.02f), new Vector3(1.66f, 0.03f, 0.03f), darkSteel, false);
-            Box("PosterFrameB", room, new Vector3(ox + 1.95f, 1.10f, zBack + 0.02f), new Vector3(1.66f, 0.03f, 0.03f), darkSteel, false);
-            Box("PosterFrameL", room, new Vector3(ox + 1.95f + 0.82f, 1.72f, zBack + 0.02f), new Vector3(0.03f, 1.25f, 0.03f), darkSteel, false);
-            Box("PosterFrameR", room, new Vector3(ox + 1.95f - 0.82f, 1.72f, zBack + 0.02f), new Vector3(0.03f, 1.25f, 0.03f), darkSteel, false);
+                QuadObj("PosterHierarchy", room, new Vector3(posterX, posterY, zBack + 0.024f), new Vector3(0f, 180f, 0f), new Vector2(posterW, posterH),
+                    MatAlpha("Sc06FacPoster", posterTex, new Color(1.18f, 1.18f, 1.18f, 1f), false));
+            Box("PosterFrameT", room, new Vector3(posterX, posterY + posterH * 0.5f + 0.05f, zBack + 0.02f), new Vector3(posterW + 0.14f, 0.04f, 0.03f), darkSteel, false);
+            Box("PosterFrameB", room, new Vector3(posterX, posterY - posterH * 0.5f - 0.05f, zBack + 0.02f), new Vector3(posterW + 0.14f, 0.04f, 0.03f), darkSteel, false);
+            Box("PosterFrameL", room, new Vector3(posterX + posterW * 0.5f + 0.05f, posterY, zBack + 0.02f), new Vector3(0.04f, posterH + 0.14f, 0.03f), darkSteel, false);
+            Box("PosterFrameR", room, new Vector3(posterX - posterW * 0.5f - 0.05f, posterY, zBack + 0.02f), new Vector3(0.04f, posterH + 0.14f, 0.03f), darkSteel, false);
+            var posterLightGo = new GameObject("PosterSpot");
+            posterLightGo.transform.SetParent(room, false);
+            posterLightGo.transform.position = new Vector3(posterX, 2.95f, zBack + 1.7f);
+            posterLightGo.transform.rotation = Quaternion.LookRotation(new Vector3(posterX, posterY, zBack) - posterLightGo.transform.position, Vector3.up);
+            var posterLight = posterLightGo.AddComponent<Light>();
+            posterLight.type = LightType.Spot;
+            posterLight.spotAngle = 75f;
+            posterLight.range = 5.5f;
+            posterLight.intensity = 11f;
+            posterLight.color = new Color(1f, 0.99f, 0.96f);
+            posterLight.shadows = LightShadows.None;
 
             // spiral duct column (rings) beside the poster and the short duct from the hood to the ceiling
             var ductMat = Mat("Sc06FacDuct", new Color(0.66f, 0.68f, 0.70f), 0.55f, 0.55f);
@@ -622,6 +675,36 @@ namespace ChemicalSafety.Editor
             return mesh;
         }
 
+        // Vertices of the body in a band: the BACK (min z), like Sc06FrontZ for the other face.
+        private static float Sc06BackZ(Transform root, float y, float halfBand, float cx, float halfW, float fallback)
+        {
+            var best = float.MaxValue;
+            foreach (var mf in root.GetComponentsInChildren<MeshFilter>(false))
+            {
+                if (!Sc06BodyVertex(mf))
+                    continue;
+                var m = mf.transform.localToWorldMatrix;
+                foreach (var v in mf.sharedMesh.vertices)
+                {
+                    var w = m.MultiplyPoint3x4(v);
+                    if (Mathf.Abs(w.y - y) < halfBand && Mathf.Abs(w.x - cx) < halfW && w.z < best)
+                        best = w.z;
+                }
+            }
+
+            return best < float.MaxValue ? best : fallback;
+        }
+
+        // Label paper that shows on ONE side only (no mirrored text seen through the plastic from behind).
+        private static Material Sc06LabelPaperOneSided(string name, Texture2D tex)
+        {
+            var m = Mat(name, Color.white, 0.25f, 0f, tex);
+            m.SetFloat("_Cull", 2f);
+            m.renderQueue = 3100;
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
         // Label paper: opaque, both sides, drawn after the see-through plastic so the plastic cannot wash the text out.
         private static Material Sc06LabelPaper(string name, Texture2D tex)
         {
@@ -638,15 +721,36 @@ namespace ChemicalSafety.Editor
             var root = new GameObject("MixtureJar").transform;
             root.SetParent(parent, true);
             root.position = floorPos;
+            // rounded foot, gentle flare, a thick moulded wall
             var prof = new[]
             {
-                new Vector2(0f, 0f), new Vector2(0.080f, 0f), new Vector2(0.092f, 0.012f), new Vector2(0.097f, 0.15f), new Vector2(0.104f, 0.30f)
+                new Vector2(0f, 0f), new Vector2(0.062f, 0f), new Vector2(0.079f, 0.004f), new Vector2(0.088f, 0.014f), new Vector2(0.093f, 0.04f),
+                new Vector2(0.096f, 0.15f), new Vector2(0.100f, 0.27f), new Vector2(0.103f, 0.292f), new Vector2(0.1035f, 0.300f)
             };
-            var mesh = Sc06Lathe("Sc06MixCup", prof, 0.0045f, 40, true);
+            var mesh = Sc06Lathe("Sc06MixCupReal", prof, 0.0034f, 48, true);
             var body = new GameObject("CupBody");
             body.transform.SetParent(root, false);
             body.AddComponent<MeshFilter>().sharedMesh = mesh;
             body.AddComponent<MeshRenderer>();
+
+            List<Vector3> Ring(float radius, float y)
+            {
+                var pts = new List<Vector3>();
+                for (var k = 0; k <= 48; k++)
+                {
+                    var a = k / 48f * Mathf.PI * 2f;
+                    pts.Add(new Vector3(Mathf.Cos(a) * radius, y, Mathf.Sin(a) * radius));
+                }
+
+                return pts;
+            }
+
+            // the rolled rim and three moulded ribs (they catch the light like real PET)
+            Sc08Part("CupRim", root, Sc08SweepTube("Sc08CupRim", Ring(0.1045f, 0.2985f), 0.0038f, 8), null, Vector3.zero);
+            var ribY = new[] { 0.070f, 0.095f, 0.120f };
+            var ribR = new[] { 0.0944f, 0.0952f, 0.0959f };
+            for (var k = 0; k < 3; k++)
+                Sc08Part("CupRib" + k, root, Sc08SweepTube("Sc08CupRib" + k, Ring(ribR[k], ribY[k]), 0.0016f, 6), null, Vector3.zero);
             return root;
         }
 
@@ -703,8 +807,7 @@ namespace ChemicalSafety.Editor
                 water = Fallback("WaterJug", waterPos, 0.42f, 0.1f);
 
             // the jar's glass: lit glass with bright edges (the glb's own shader reads as a flat white blob)
-            var jarGlassLit = Mat("Sc06FacJarPlastic", new Color(0.86f, 0.91f, 0.95f, 0.34f), 0.85f, 0f); // clear plastic like the picture
-            MakeTransparent(jarGlassLit);
+            var jarGlassLit = Sc06GlassMat("Sc06FacJarGlass", new Color(0.88f, 0.94f, 0.97f), 0.12f, 0.9f); // clear PET: fresnel edges, reflections
             foreach (var r in jar.GetComponentsInChildren<Renderer>(true))
             {
                 var sm = r.sharedMaterials;
@@ -727,13 +830,13 @@ namespace ChemicalSafety.Editor
             var labelTex = Sc06FacTex("Label_MixtureJar");
             if (labelTex != null)
             {
-                var bandY = jb.min.y + jarH * 0.5f;
+                var bandY = jb.min.y + jarH * 0.34f; // low on the jar (like the picture): the liquid and the rod stay visible above the label
                 var radius = Sc06BandRadius(jar, bandY, jarH * 0.15f, jar.position.x, jar.position.z);
                 radius = radius > 0.02f ? radius : jarR;
                 var lblGo = new GameObject("MixtureLabel");
                 lblGo.transform.SetParent(jar, true);
                 lblGo.transform.position = new Vector3(jar.position.x, bandY, jar.position.z);
-                lblGo.AddComponent<MeshFilter>().sharedMesh = Sc06CurvedLabel(radius + 0.003f, jarH * 0.7f, 130f);
+                lblGo.AddComponent<MeshFilter>().sharedMesh = Sc06CurvedLabel(radius + 0.003f, jarH * 0.46f, 120f);
                 var lmr = lblGo.AddComponent<MeshRenderer>();
                 lmr.sharedMaterial = Sc06LabelPaper("Sc06LabelMixture", labelTex);
                 lmr.shadowCastingMode = ShadowCastingMode.Off;
@@ -820,9 +923,15 @@ namespace ChemicalSafety.Editor
                 var wy = wbb.min.y + wbb.size.y * 0.42f;
                 var wz = Sc06FrontZ(water, wy, wl * 0.5f, wbb.center.x, wl * 0.5f, wbb.max.z);
                 var wq = QuadObj("WaterLabel", room, new Vector3(wbb.center.x, wy, wz + 0.0022f), new Vector3(0f, 180f, 0f),
-                    new Vector2(wl, wl * 0.62f), Sc06LabelPaper("Sc06LabelWater", wLabelTex));
+                    new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
                 wq.transform.SetParent(water, true);
                 Object.DestroyImmediate(wq.GetComponent<Collider>());
+                // the same label on the back face: when the jug turns its neck toward the jar to pour, this one faces the learner
+                var wzb = Sc06BackZ(water, wy, wl * 0.5f, wbb.center.x, wl * 0.5f, wbb.min.z);
+                var wqb = QuadObj("WaterLabelBack", room, new Vector3(wbb.center.x, wy, wzb - 0.0022f), Vector3.zero,
+                    new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
+                wqb.transform.SetParent(water, true);
+                Object.DestroyImmediate(wqb.GetComponent<Collider>());
             }
 
             // blue caps (come off during the pour) and the spouts (the cap end of each can)

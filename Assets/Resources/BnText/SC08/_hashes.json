@@ -1,0 +1,22 @@
+{
+ "InstructionEnglish": "d07a23f33e333a74e85439722e57440d4fd61d13",
+ "PpeHint": "a6bcdd0be18135f28aa98f4a24b2d1db4caf269e",
+ "HoodHint": "e35518c24b27b81769dd849f555064cb405c62ce",
+ "TrayHint": "f5669ad8ee7b4d28f177c7deb6835476019c9264",
+ "SashHint": "f7090a0ed465c5dadb7fb047f2f230ab2a284bd6",
+ "HoodWarn": "e921880f0b0af5c8afd1c1a83005c9b017736b72",
+ "MixHint": "e7da8dd7150888e7488d95353749e01e2a01f7df",
+ "PanelTitle": "3cacf214a66d377d133d7bb53d045aaaa1bd3d9e",
+ "GateTitle": "340528580837b8d05cd7ce264612731e2a88c9c4",
+ "GateQuestion": "52a1f32274d67439d6000f87e5e380615e6b51c2",
+ "GateBody": "49a299afd3b5c2a51b89e8df3f66e82fd3d168b7",
+ "QuestionHeader": "4663b86c1d90917e1c9818de53f4ee09491f61fd",
+ "QuestionPrompt": "b4ae2459e98da640c5560a402bf6b814381e0f3b",
+ "CorrectTitle": "216c5e5d484fc7325b9ae5b23fd1e24b1c90e895",
+ "CorrectBody": "fa8dafbb4d3f113c8afb90a12140aaa6b35a778e",
+ "FinishLabel": "27784e6e8a5bca44bf1013ff8f7078619cbbebf4",
+ "ModuleComplete": "53e6e7dd0dd7258bcd66e63fd86e7f956adf0564",
+ "TagCorrect": "0a020e7e67569e3f38b29bf6d0245609750e3653",
+ "TagWrong": "0ed843e543d5ccf8be4d9be6797deb0ec7cd1188",
+ "GateBodyPrev": "838141631835905c5c3a22f0ed2dc5c9083b6485"
+}
