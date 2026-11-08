@@ -29,7 +29,7 @@ namespace ChemicalSafety.Presentable
         public static string CorrectTitle => Loc.T("SC06", "CorrectTitle");
         public static string CorrectBody => Loc.T("SC06", "CorrectBody");
         public static string FinishLabel => Loc.T("SC06", "FinishLabel");
-        public const int CorrectIndex = 2;
+        public const int CorrectIndex = 1;
 
         public static string[] OptionLabels => Loc.A("SC06", "OptionLabels");
 
@@ -38,5 +38,14 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionFeedback => Loc.A("SC06", "OptionFeedback");
 
         public static string[] OptionWrongTitle => Loc.A("SC06", "OptionWrongTitle");
+
+        // ray flow (Scenarios 1-5 style): a reason under every option, CORRECT / WRONG tags, and the automatic demonstration captions
+        public static string TagCorrect => Loc.T("SC06", "TagCorrect");
+        public static string TagWrong => Loc.T("SC06", "TagWrong");
+        public static string[] OptionReasons => Loc.A("SC06", "OptionReasons");
+        public static string AutoHood => Loc.T("SC06", "AutoHood");
+        public static string AutoFan => Loc.T("SC06", "AutoFan");
+        public static string AutoMove => Loc.T("SC06", "AutoMove");
+        public static string AutoPour => Loc.T("SC06", "AutoPour");
     }
 }

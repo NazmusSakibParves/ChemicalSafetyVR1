@@ -1,33 +1,178 @@
 {
   "scenario": "SC06",
   "strings": [
-    { "key": "InstructionEnglish", "en": "You are a Mixing Operator. You need to pour a volatile solvent, but because the container is open, vapors are spreading into the air. Take the right Engineering Control before pouring.", "bn": "আপনি একজন মিক্সিং অপারেটর। আপনাকে একটি উদ্বায়ী দ্রাবক ঢালতে হবে, কিন্তু পাত্রটি খোলা থাকায় বাষ্প বাতাসে ছড়িয়ে পড়ছে। ঢালার আগে সঠিক ইঞ্জিনিয়ারিং কন্ট্রোল নিন।" },
-    { "key": "HoodHint", "en": "Switch on the Fume Hood at the control panel.", "bn": "কন্ট্রোল প্যানেলে ফিউম হুডের সুইচটি চালু করুন।" },
-    { "key": "HoodOnHint", "en": "The fume hood is running. Go to the table and close the solvent container.", "bn": "ফিউম হুড চালু হয়েছে। এবার টেবিলে গিয়ে দ্রাবকের বোতলের মুখ বন্ধ করুন।" },
-    { "key": "CapHint", "en": "Touch the cap to close the container.", "bn": "ঢাকনাটি ছুঁয়ে বোতলের মুখ বন্ধ করুন।" },
-    { "key": "JugHint", "en": "Touch the Volatile Solvent container to pick it up.", "bn": "উদ্বায়ী দ্রাবকের পাত্রটি আঙুল দিয়ে ছুঁয়ে তুলুন।" },
-    { "key": "SashHint", "en": "Touch the glass door of the fume hood to open it.", "bn": "ফিউম হুডের কাচের দরজা ছুঁয়ে খুলুন।" },
-    { "key": "HoodWarn", "en": "Switch on the fume hood first.", "bn": "আগে ফিউম হুড চালু করুন।" },
-    { "key": "PourHint", "en": "Touch the glass jar to pour the solvent slowly.", "bn": "কাচের জারটি ছুঁয়ে ধীরে ধীরে দ্রাবক ঢালুন।" },
-    { "key": "GateTitle", "en": "Inspection Completed", "bn": "পরিদর্শন সম্পন্ন" },
-    { "key": "GateQuestion", "en": "Are you ready for the multiple choice questions?", "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের জন্য প্রস্তুত?" },
-    { "key": "GateBody", "en": "To proceed click next button or to review again press back button.", "bn": "এগিয়ে যেতে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।" },
-    { "key": "QuestionHeader", "en": "Engineering Control Hierarchy", "bn": "ইঞ্জিনিয়ারিং কন্ট্রোলের স্তরক্রম" },
-    { "key": "QuestionPrompt", "en": "What is the correct engineering control to capture vapors when pouring a volatile solvent?", "bn": "উদ্বায়ী দ্রাবক ঢালার সময় বাষ্প ধরার সঠিক ইঞ্জিনিয়ারিং কন্ট্রোল কোনটি?" },
-    { "key": "CorrectTitle", "en": "RIGHT ACTION", "bn": "সঠিক পদক্ষেপ" },
-    { "key": "CorrectBody", "en": "Switching on the hood first, then working inside is correct.", "bn": "আগে হুড চালু করে তারপর ভেতরে কাজ করা সঠিক।" },
-    { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" }
+    {
+      "key": "InstructionEnglish",
+      "en": "You are a Mixing Operator. You need to pour a volatile solvent, but because the container is open, vapors are spreading into the air. Take the right Engineering Control before pouring.",
+      "bn": "আপনি একজন মিক্সিং অপারেটর। আপনাকে একটি উদ্বায়ী দ্রাবক ঢালতে হবে, কিন্তু পাত্রটি খোলা থাকায় বাষ্প বাতাসে ছড়িয়ে পড়ছে। ঢালার আগে সঠিক ইঞ্জিনিয়ারিং কন্ট্রোল নিন।"
+    },
+    {
+      "key": "HoodHint",
+      "en": "Switch on the Fume Hood at the control panel.",
+      "bn": "কন্ট্রোল প্যানেলে ফিউম হুডের সুইচটি চালু করুন।"
+    },
+    {
+      "key": "HoodOnHint",
+      "en": "The fume hood is running. Go to the table and close the solvent container.",
+      "bn": "ফিউম হুড চালু হয়েছে। এবার টেবিলে গিয়ে দ্রাবকের বোতলের মুখ বন্ধ করুন।"
+    },
+    {
+      "key": "CapHint",
+      "en": "Touch the cap to close the container.",
+      "bn": "ঢাকনাটি ছুঁয়ে বোতলের মুখ বন্ধ করুন।"
+    },
+    {
+      "key": "JugHint",
+      "en": "Touch the Volatile Solvent container to pick it up.",
+      "bn": "উদ্বায়ী দ্রাবকের পাত্রটি আঙুল দিয়ে ছুঁয়ে তুলুন।"
+    },
+    {
+      "key": "SashHint",
+      "en": "Touch the glass door of the fume hood to open it.",
+      "bn": "ফিউম হুডের কাচের দরজা ছুঁয়ে খুলুন।"
+    },
+    {
+      "key": "HoodWarn",
+      "en": "Switch on the fume hood first.",
+      "bn": "আগে ফিউম হুড চালু করুন।"
+    },
+    {
+      "key": "PourHint",
+      "en": "Touch the glass jar to pour the solvent slowly.",
+      "bn": "কাচের জারটি ছুঁয়ে ধীরে ধীরে দ্রাবক ঢালুন।"
+    },
+    {
+      "key": "GateTitle",
+      "en": "Inspection Completed",
+      "bn": "পরিদর্শন সম্পন্ন"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice questions?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "To proceed click next button or to watch the whole animation again click the preview button.",
+      "bn": "এগিয়ে যেতে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।"
+    },
+    {
+      "key": "QuestionHeader",
+      "en": "Engineering Control Hierarchy",
+      "bn": "ইঞ্জিনিয়ারিং কন্ট্রোলের স্তরক্রম"
+    },
+    {
+      "key": "QuestionPrompt",
+      "en": "Before pouring this volatile solvent, what is the best controlling method?",
+      "bn": "দ্রুত বাষ্প হয়ে যায় এরকম সলভেন্ট ঢালার আগে কোন নিরাপত্তা ব্যবস্থা ব্যবহার করা সবচেয়ে ভালো?"
+    },
+    {
+      "key": "CorrectTitle",
+      "en": "RIGHT ACTION",
+      "bn": "সঠিক পদক্ষেপ"
+    },
+    {
+      "key": "CorrectBody",
+      "en": "Moving the work under the running fume / LEV hood is correct.",
+      "bn": "চালু ফিউম / LEV হুডের নিচে কাজটি করা সঠিক।"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "TagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "TagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
+    },
+    {
+      "key": "AutoHood",
+      "en": "The fume hood is on. The green light is blinking, so the hood is running.",
+      "bn": "ফিউম হুড চালু হয়েছে। সবুজ বাতি জ্বলছে, মানে হুড কাজ করছে।"
+    },
+    {
+      "key": "AutoFan",
+      "en": "Now the exhaust fan is switched on. The fan spins and pulls the vapour out of the room.",
+      "bn": "এবার এক্সজস্ট ফ্যান চালু হলো। ফ্যান ঘুরে ঘরের বাষ্প বাইরে টেনে নিচ্ছে।"
+    },
+    {
+      "key": "AutoMove",
+      "en": "The water jug, the acid can and the empty container are moved inside the hood.",
+      "bn": "পানির জগ, অ্যাসিডের ক্যান আর খালি পাত্রটি ফিউম হুডের ভেতরে নেওয়া হচ্ছে।"
+    },
+    {
+      "key": "AutoPour",
+      "en": "Inside the hood, the sulfuric acid is poured slowly into the empty container. The hood pulls the vapour away.",
+      "bn": "ফিউম হুডের ভেতরে খালি পাত্রে ধীরে ধীরে সালফিউরিক অ্যাসিড ঢালা হচ্ছে। বাষ্প সরাসরি হুড টেনে নিচ্ছে।"
+    }
   ],
   "arrays": [
-    { "key": "OptionLabels",
-      "en": ["Pour the solvent outside the fume hood on the open workbench.", "Put the bottle inside the fume hood but leave the hood switched off.", "Switch on the fume hood first, then bring the bottle inside to pour.", "Do not use the fume hood; just open a nearby window."],
-      "bn": ["ফিউম হুডের বাইরে খোলা ওয়ার্কবেঞ্চে দ্রাবক ঢালুন।", "বোতল ফিউম হুডের ভেতরে রাখুন, কিন্তু হুড বন্ধ রাখুন।", "আগে ফিউম হুড চালু করুন, তারপর বোতল ভেতরে এনে ঢালুন।", "ফিউম হুড ব্যবহার করবেন না; শুধু কাছের একটি জানালা খুলে দিন।"] },
-    { "key": "OptionFeedback",
-      "en": ["Pouring on the open bench releases the vapors straight into your breathing zone.", "A hood that is switched off pulls no air, so the vapors escape into the room.", "Switching on the hood first, then working inside is correct.", "Passive ventilation is unreliable and offers no capture at the source."],
-      "bn": ["খোলা বেঞ্চে ঢাললে বাষ্প সরাসরি আপনার শ্বাস নেওয়ার এলাকায় ছড়িয়ে পড়ে।", "বন্ধ হুড বাতাস টানে না, তাই বাষ্প ঘরে ছড়িয়ে পড়ে।", "আগে হুড চালু করে তারপর ভেতরে কাজ করা সঠিক।", "প্রাকৃতিক বাতাস চলাচল নির্ভরযোগ্য নয় এবং উৎসেই বাষ্প ধরতে পারে না।"] },
-    { "key": "OptionWrongTitle",
-      "en": ["WRONG ACTION", "WRONG ACTION", "", "WRONG ACTION"],
-      "bn": ["ভুল পদক্ষেপ", "ভুল পদক্ষেপ", "", "ভুল পদক্ষেপ"] }
+    {
+      "key": "OptionLabels",
+      "en": [
+        "Pour it quickly on the open bench to finish faster.",
+        "Move the operation under the Local Exhaust Ventilation (FUME / LEV) hood and turn it on.",
+        "We will use a different safe chemical instead of this one.",
+        "Open a nearby window."
+      ],
+      "bn": [
+        "তাড়াতাড়ি কাজ শেষ করতে খোলা টেবিলে দ্রুত ঢালব।",
+        "কাজটি FUME / LEV হুডের নিচে করব এবং বাষ্প টেনে নেওয়ার ব্যবস্থা চালু করব।",
+        "এই ক্যামিকেলের পরিবর্তে অন্য নিরাপদ ক্যামিকেল ব্যবহার করব।",
+        "পাশের জানালা খুলে দেব।"
+      ]
+    },
+    {
+      "key": "OptionFeedback",
+      "en": [
+        "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor.",
+        "Working under the running fume / LEV hood captures the vapor at the source.",
+        "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor.",
+        "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor."
+      ],
+      "bn": [
+        "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।",
+        "চালু ফিউম / LEV হুডের নিচে কাজ করলে বাষ্প উৎসেই ধরা পড়ে।",
+        "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।",
+        "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।"
+      ]
+    },
+    {
+      "key": "OptionWrongTitle",
+      "en": [
+        "WRONG ACTION",
+        "",
+        "WRONG ACTION",
+        "WRONG ACTION"
+      ],
+      "bn": [
+        "ভুল পদক্ষেপ",
+        "",
+        "ভুল পদক্ষেপ",
+        "ভুল পদক্ষেপ"
+      ]
+    },
+    {
+      "key": "OptionReasons",
+      "en": [
+        "Pouring fast on an open bench releases the vapor straight into your breathing zone.",
+        "The hood captures the vapor at the source and pulls it away from you: the highest-level engineering control.",
+        "Not an option for this task: the solvent vapor still has to be controlled at the source.",
+        "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor."
+      ],
+      "bn": [
+        "দ্রুত খোলা টেবিলে ঢাললে বাষ্প সরাসরি আপনার শ্বাস নেওয়ার জায়গায় ছড়িয়ে পড়ে।",
+        "হুড উৎসেই বাষ্প ধরে আপনার কাছ থেকে টেনে নেয়: এটাই সবচেয়ে উঁচু স্তরের ইঞ্জিনিয়ারিং কন্ট্রোল।",
+        "এই কাজে এটা সম্ভব নয়: দ্রাবকের বাষ্প তবুও উৎসেই নিয়ন্ত্রণ করতে হবে।",
+        "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।"
+      ]
+    }
   ],
   "questions": []
 }

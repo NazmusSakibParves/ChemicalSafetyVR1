@@ -170,6 +170,10 @@ MonoBehaviour:
   voSc06Sash: {fileID: 8300000, guid: cab8d5bd01a620143b4b42983e494165, type: 3}
   voSc06Pour: {fileID: 8300000, guid: 9541e28c43c9fbc46ba9304cda82f625, type: 3}
   voSc06Gate: {fileID: 8300000, guid: 9f745d9660e451f498ef4f264e60776c, type: 3}
+  voSc06AutoHood: {fileID: 8300000, guid: a1a8a41a0f161344a95c416f78e15875, type: 3}
+  voSc06AutoFan: {fileID: 8300000, guid: 0be5b99bfb186f447ade5f3a6fa4c1c8, type: 3}
+  voSc06AutoMove: {fileID: 8300000, guid: a6394ecd99041be4aa6eca2c2d0e4d03, type: 3}
+  voSc06AutoPour: {fileID: 8300000, guid: 64d6764f40e2e5d49818e91a802969aa, type: 3}
   voSc06CompleteBn: {fileID: 8300000, guid: de5f04f3298020a498b3debc409b9ea9, type: 3}
   voSc06CompleteEn: {fileID: 8300000, guid: 348981037c2b60246bc060c755537d2f, type: 3}
   sdsSc07: {fileID: 21300000, guid: b2d678c67547ee24bb94c3eddef57647, type: 3}

@@ -297,6 +297,8 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc06Jug").objectReferenceValue = sc6.jug;
             so.FindProperty("mcqSc06").objectReferenceValue = mcq6;
             so.FindProperty("sc06Ambience").objectReferenceValue = sc6.ambience;
+            so.FindProperty("sc06Auto").objectReferenceValue = sc6.auto;
+            so.FindProperty("sc06Fan").objectReferenceValue = sc6.fan;
             so.FindProperty("envSc07").objectReferenceValue = env7.gameObject;
             so.FindProperty("spawnSc07").objectReferenceValue = sc7.spawn;
             so.FindProperty("sc07PillarStand").objectReferenceValue = sc7.standB;
@@ -824,6 +826,10 @@ namespace ChemicalSafety.Editor
             art.voSc06Sash = Keep("VO_Sc06Sash_bn.mp3", art.voSc06Sash);
             art.voSc06Pour = Keep("VO_Sc06Pour_bn.mp3", art.voSc06Pour);
             art.voSc06Gate = Keep("VO_Sc06Gate_bn.mp3", art.voSc06Gate);
+            art.voSc06AutoHood = V("VO_Sc06AutoHood_bn.mp3");
+            art.voSc06AutoFan = V("VO_Sc06AutoFan_bn.mp3");
+            art.voSc06AutoMove = V("VO_Sc06AutoMove_bn.mp3");
+            art.voSc06AutoPour = V("VO_Sc06AutoPour_bn.mp3");
             art.voSc06CompleteBn = Keep("VO_Sc06Complete_bn.mp3", art.voSc06CompleteBn);
             art.voSc06CompleteEn = Keep("VO_Sc06Complete_en.mp3", art.voSc06CompleteEn);
             art.voSc07Instruction = Keep("VO_SC07_Instruction_bn.mp3", art.voSc07Instruction);

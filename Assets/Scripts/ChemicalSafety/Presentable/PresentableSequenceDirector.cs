@@ -1170,6 +1170,93 @@ namespace ChemicalSafety.Presentable
                 yield return null;
         }
 
+        // ------------------------------------------------------------------ Scenario 6 on the controller ray
+
+        [Header("Scenario 6 (ray)")]
+        [SerializeField] private Sc06AutoPour sc06Auto;
+        [SerializeField] private Sc06ExhaustFan sc06Fan;
+        [SerializeField] private float sc06CardScale = 0.8f;
+        [SerializeField] private float sc06CardRight = 0.85f;
+        [SerializeField] private float sc06CardUp = 0.28f;
+        [SerializeField] private float sc06PopupScale = 1.85f;
+        [SerializeField] private float sc06AutoDelay = 3f;
+
+        // Automatic demonstration 3 s after the instruction: hood on (green lamp), exhaust fan on (fan spins), the sash opens, the three
+        // containers go into the hood one after another and the jar is filled. "PREVIEW" on the gate card plays it all again.
+        private IEnumerator RunSc06RayFlow()
+        {
+            var again = true;
+            while (again)
+            {
+                Stage("sc06Auto");
+                lab.ResetLab();
+                lab.SetVaporOn(false);
+                sc06Auto.ResetAll();
+                if (sc06Fan != null)
+                    sc06Fan.ResetFan();
+                yield return PresentableFx.Wait(sc06AutoDelay);
+
+                Stage("sc06Hood");
+                lab.Toggle(0);
+                yield return PlayVoice(art.voSc06AutoHood);
+                yield return PresentableFx.Wait(0.5f);
+                Stage("sc06Fan");
+                lab.Toggle(1);
+                yield return PlayVoice(art.voSc06AutoFan);
+                yield return PresentableFx.Wait(0.8f);
+                lab.OpenSash();
+                yield return PresentableFx.Wait(0.2f);
+                while (lab.SashMoving || !lab.SashOpen)
+                    yield return null;
+
+                Stage("sc06Move");
+                StartCoroutine(PlayVoice(art.voSc06AutoMove));
+                sc06Auto.StartPlay();
+                var pourVoice = false;
+                while (!sc06Auto.Finished)
+                {
+                    if (!pourVoice && sc06Auto.Step >= 4)
+                    {
+                        pourVoice = true;
+                        Stage("sc06Pour");
+                        StartCoroutine(PlayVoice(art.voSc06AutoPour));
+                    }
+
+                    yield return null;
+                }
+
+                yield return PresentableFx.Wait(1.2f);
+                StopVoice();
+                subtitle.Hide();
+                lab.CloseSash();
+                yield return PresentableFx.Wait(0.8f);
+
+                Stage("sc06Gate");
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = PREVIEW, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc06Gate.Back += OnBack;
+                sc06Gate.Next += OnNext;
+                sc06Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc06Gate));
+                while (choice == 0)
+                    yield return null;
+                sc06Gate.Back -= OnBack;
+                sc06Gate.Next -= OnNext;
+                sc06Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc06Question");
+            Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc06.SetWorldScale(sc06PopupScale);
+            mcqSc06.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc06, BuildSc06Question(), false, 6);
+        }
+
         // SC06 starts after the SC05 question's NEXT. Chemistry lab: switch the fume hood on, lift the solvent, open the sash, pour.
         private IEnumerator RunScenario6()
         {
@@ -1187,6 +1274,14 @@ namespace ChemicalSafety.Presentable
             clipboard.SetVisible(false);
             lab.ResetLab();
             sc06Jug.ReturnHome();
+            if (sc06Auto != null)
+            {
+                lab.SetVaporOn(false); // the old solvent jug is not in the factory room
+                sc06Auto.ResetAll();
+                if (sc06Fan != null)
+                    sc06Fan.ResetFan();
+            }
+
             PlaceRig(spawnSc06.position, spawnSc06.forward);
             sc06Ambience.Begin();
             yield return fader.FadeTo(0f, 0.9f);
@@ -1194,6 +1289,38 @@ namespace ChemicalSafety.Presentable
             Stage("sc06Intro");
             _instructionClip = art.voSc06Instruction != null ? art.voSc06Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc06Content.InstructionEnglish, art.bnSc06InstructionPanel);
+            if (PresentableInput.RayActive && sc06Auto != null)
+            {
+                // controller ray: head free, a SMALL glass card on the RIGHT, the voice reads it, then it goes by itself (no Continue click)
+                LockLocomotion(true);
+                instructionPanel.SetCompact(true, sc06CardScale);
+                instructionPanel.SetGlass(sc04GlassCard);
+                BeginEyeInstruction();
+                Sc05AsideInstruction(sc06CardRight, sc06CardUp); // to the LEFT: the hood stays free
+                yield return instructionPanel.Show();
+                instructionPanel.SetSpeaking(true);
+                yield return PlayVoice(_instructionClip);
+                instructionPanel.SetSpeaking(false);
+                yield return PresentableFx.Wait(0.8f);
+                yield return instructionPanel.Hide();
+                EndEyeInstruction();
+                instructionPanel.SetGlass(false);
+                instructionPanel.SetCompact(false);
+                yield return RunSc06RayFlow();
+                LockLocomotion(false);
+                mcqSc06.SetWorldScale(1f);
+                Stage("sc06Done");
+                if (sc06Ambience != null)
+                    sc06Ambience.End();
+#if UNITY_EDITOR
+                if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false))
+                    yield break;
+#endif
+                if (envSc07 != null)
+                    yield return RunScenario7();
+                yield break;
+            }
+
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -4283,6 +4410,8 @@ namespace ChemicalSafety.Presentable
 
         private static PresentableMcqPanel.Question BuildSc06Question()
         {
+            var ray = PresentableInput.RayActive;
+            var reasons = Sc06Content.OptionReasons;
             var options = new PresentableMcqPanel.Option[Sc06Content.OptionLabels.Length];
             for (var i = 0; i < options.Length; i++)
             {
@@ -4290,7 +4419,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc06Content.OptionLabels[i],
                     feedback = Sc06Content.OptionFeedback[i],
-                    wrongTitle = Sc06Content.OptionWrongTitle[i]
+                    wrongTitle = Sc06Content.OptionWrongTitle[i],
+                    reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty
                 };
             }
 
@@ -4302,7 +4432,11 @@ namespace ChemicalSafety.Presentable
                 correctTitle = Sc06Content.CorrectTitle,
                 nextLabel = Sc06Content.FinishLabel,
                 options = options,
-                fancy = true // shared wow look: SC01–SC10
+                fancy = true, // shared wow look: SC01-SC10
+                // ray flow: as Scenarios 1-5 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = ray,
+                tagCorrect = Sc06Content.TagCorrect,
+                tagWrong = Sc06Content.TagWrong
             };
         }
 

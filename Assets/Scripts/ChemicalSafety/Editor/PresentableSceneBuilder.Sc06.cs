@@ -30,6 +30,9 @@ namespace ChemicalSafety.Editor
             public Sc06Pour pour;
             public Sc06Gate gate;
             public Sc06Ambience ambience;
+            public Sc06AutoPour auto;
+            public Sc06ExhaustFan fan;
+            public Sc06SwitchBlink blink;
         }
 
         private const float Sc06Ox = 200f;
@@ -788,6 +791,13 @@ namespace ChemicalSafety.Editor
             gateGo.transform.SetParent(room, false);
             refs.gate = gateGo.AddComponent<Sc06Gate>();
             SetRef(refs.gate, "art", art);
+            if (Sc06UseFactory)
+            {
+                var gso = new SerializedObject(refs.gate);
+                gso.FindProperty("backText").stringValue = "PREVIEW";
+                gso.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             refs.pour = labGo.AddComponent<Sc06Pour>();
             var pso = new SerializedObject(refs.pour);
             pso.FindProperty("lab").objectReferenceValue = refs.lab;
@@ -806,6 +816,8 @@ namespace ChemicalSafety.Editor
             refs.benchStand = Marker("Stand_SC06_Bench", room, new Vector3(ox + tableX - 0.45f, 0f, 0.42f), 180f);
             refs.panelStand = Marker("Stand_SC06_Panel", room, new Vector3(ox - 2.15f, 0f, -1.3f), 180f);
             refs.hoodStand = Marker("Stand_SC06_Hood", room, new Vector3(ox - 1.2f, 0f, -1.3f), 180f);
+            if (Sc06UseFactory)
+                Sc06ApplyFactory(room, refs, art, hoodCentreX, surfaceY, sashZ, interiorBack, hoodFrontZ);
             return refs;
         }
 

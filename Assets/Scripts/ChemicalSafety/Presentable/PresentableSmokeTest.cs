@@ -242,6 +242,135 @@ namespace ChemicalSafety.Presentable
             Click(mcq5.transform, "NextButton");
         }
 
+        // Scenario 6 (controller ray): automatic demonstration (hood, fan, containers, pour), PREVIEW replays it, NEXT opens the inline-reveal question.
+        private IEnumerator Sc06RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC06 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
+            var lab = Get<Sc06Lab>(_director, "lab");
+            var auto = Get<Sc06AutoPour>(_director, "sc06Auto");
+            var fan = Get<Sc06ExhaustFan>(_director, "sc06Fan");
+            var gate = Get<Sc06Gate>(_director, "sc06Gate");
+            var mcq6 = Get<PresentableMcqPanel>(_director, "mcqSc06");
+            yield return WaitStage("sc06Intro", 60f);
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("60_sc06_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC06 small instruction card", ip.transform);
+            yield return WaitStage("sc06Auto", 60f);
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("61_sc06_room");
+            yield return WaitStage("sc06Hood", 30f);
+            yield return new WaitForSeconds(1.4f);
+            Say("SC06 auto: hood on = " + lab.HoodOn + " (expected True), fan on = " + lab.LevOn + " (expected False yet)");
+            yield return Shot("62_sc06_hood_on");
+            yield return WaitStage("sc06Fan", 30f);
+            yield return new WaitForSeconds(3.2f);
+            Say("SC06 auto: fan on = " + lab.LevOn + ", fan speed = " + (fan != null ? fan.Speed01.ToString("0.00") : "n/a") + " (expected > 0)");
+            if (fan == null || fan.Speed01 < 0.05f)
+                Debug.LogError("[SMOKE] SC06: the exhaust fan did not start turning");
+            yield return Shot("63_sc06_fan_on");
+            yield return WaitStage("sc06Move", 40f);
+            var steps = "";
+            var last = -1;
+            var t = 0f;
+            var shotMove = false;
+            var shotPour = false;
+            while (!auto.Finished && t < 90f)
+            {
+                t += Time.unscaledDeltaTime;
+                if (auto.Step != last)
+                {
+                    last = auto.Step;
+                    steps += last + " ";
+                }
+
+                if (!shotMove && auto.Step == 2)
+                {
+                    shotMove = true;
+                    yield return new WaitForSeconds(1.0f);
+                    yield return Shot("64_sc06_carry");
+                }
+
+                if (!shotPour && auto.Step == 4)
+                {
+                    shotPour = true;
+                    yield return new WaitForSeconds(2.2f);
+                    yield return Shot("65_sc06_pour");
+                    Say("SC06 auto: jar level while pouring acid = " + auto.Level.ToString("0.00"));
+                }
+
+                yield return null;
+            }
+
+            Say("SC06 auto: steps seen in order = [" + steps.Trim() + "] (expected 1 2 3 4), finished = " + auto.Finished + ", jar level = " + auto.Level.ToString("0.00") +
+                ", closest two containers in the hood = " + auto.MinSeparation.ToString("0.00") + " m (must be >= 0.3)");
+            if (auto.MinSeparation < 0.3f)
+                Debug.LogError("[SMOKE] SC06: two containers came closer than 0.3 m (they would overlap)");
+            if (!auto.Finished)
+                Debug.LogError("[SMOKE] SC06: the automatic demonstration never finished");
+            var g = 0f;
+            while (!gate.Visible && g < 20f)
+            {
+                g += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.0f);
+            LayoutCheck("SC06 gate card", gate.Card);
+            var label = FindDeep(gate.Card, "BackButton");
+            var lab6 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
+            Say("SC06 gate: left button text = [" + (lab6 != null ? lab6.text : "?") + "] (expected PREVIEW), visible = " + gate.Visible);
+            yield return Shot("66_sc06_gate");
+            // PREVIEW: the whole animation plays again from the start
+            Click(gate.Card, "BackButton");
+            yield return new WaitForSeconds(2.0f);
+            Say("SC06 preview: stage back at the start of the animation, hood on = " + lab.HoodOn + " (expected False right after the reset), jar level = " + auto.Level.ToString("0.00") + " (expected 0)");
+            yield return WaitStage("sc06Gate", 160f);
+            var g2 = 0f;
+            while (!gate.Visible && g2 < 20f)
+            {
+                g2 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.8f);
+            Click(gate.Card, "NextButton");
+            yield return WaitStage("sc06Question", 20f);
+            var q = 0f;
+            while (!mcq6.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("67_sc06_question");
+            LayoutCheck("SC06 MCQ", mcq6.transform);
+            var cur = mcq6.Current;
+            var wrong = false;
+#if UNITY_EDITOR
+            wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Wrong", false);
+#endif
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            Say("SC06 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq6.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("68_sc06_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq6.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC06 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC06 MCQ reveal", mcq6.transform);
+            Click(mcq6.transform, "NextButton");
+        }
+
         private IEnumerator Sc04RaySmoke(GloveInspect gloves)
         {
             Say("SC04 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
@@ -2290,6 +2419,17 @@ namespace ChemicalSafety.Presentable
             {
                 Say("SC07-only run (dev start)");
                 yield return Sc07Smoke(panel, voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
+            // ChemSafetySc06Only: director starts at Scenario 6 (controller ray when the input mode allows it)
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && PresentableInput.AllowedIn(6))
+            {
+                Say("SC06-only run (dev start)");
+                yield return Sc06RaySmoke(voiceSrc);
                 yield return new WaitForSeconds(1f);
                 Say("DONE runtime errors/exceptions = " + _errors);
                 UnityEditor.EditorApplication.isPlaying = false;

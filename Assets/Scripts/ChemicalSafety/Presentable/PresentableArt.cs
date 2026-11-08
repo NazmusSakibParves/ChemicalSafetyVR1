@@ -186,6 +186,10 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc06Sash;
         public AudioClip voSc06Pour;
         public AudioClip voSc06Gate;
+        public AudioClip voSc06AutoHood;
+        public AudioClip voSc06AutoFan;
+        public AudioClip voSc06AutoMove;
+        public AudioClip voSc06AutoPour;
         public AudioClip voSc06CompleteBn;
         public AudioClip voSc06CompleteEn;
         [Header("Scenario 7")]

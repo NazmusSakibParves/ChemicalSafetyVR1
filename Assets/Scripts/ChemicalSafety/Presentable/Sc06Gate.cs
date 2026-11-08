@@ -17,6 +17,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private string titleText;
         [SerializeField] private string questionText;
         [SerializeField] private string bodyText;
+        [Tooltip("Label of the left button; empty = BACK (Scenario 6 on the ray uses PREVIEW: it replays the whole animation).")]
+        [SerializeField] private string backText;
 
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
@@ -144,7 +146,7 @@ namespace ChemicalSafety.Presentable
             hint.enableAutoSizing = true;
             hint.fontSizeMin = 24f;
             hint.fontSizeMax = 38f;
-            HoloButton("BackButton", canvas.transform, new Vector2(0.07f, 0.045f), new Vector2(0.47f, 0.235f), "BACK", art.iconBack, true,
+            HoloButton("BackButton", canvas.transform, new Vector2(0.07f, 0.045f), new Vector2(0.47f, 0.235f), string.IsNullOrEmpty(backText) ? "BACK" : backText, art.iconBack, true,
                 () => Back?.Invoke(), art.gateButton != null ? art.gateButton : art.holoButton);
             HoloButton("NextButton", canvas.transform, new Vector2(0.53f, 0.045f), new Vector2(0.93f, 0.235f), "NEXT", art.iconNext, false,
                 () => Next?.Invoke(),
