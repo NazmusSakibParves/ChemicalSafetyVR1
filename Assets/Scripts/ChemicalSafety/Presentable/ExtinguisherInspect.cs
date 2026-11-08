@@ -37,6 +37,7 @@ namespace ChemicalSafety.Presentable
         private Image _speaker;
         private Transform _arrowCanvas;
         private bool _speaking;
+        private bool _auto;
 
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
@@ -113,6 +114,7 @@ namespace ChemicalSafety.Presentable
         {
             RestoreAll();
             CaptureHomes();
+            _auto = false;
             AllSeen = false;
             Seen = 0;
             for (var i = 0; i < _seen.Length; i++)
@@ -122,6 +124,43 @@ namespace ChemicalSafety.Presentable
             HideCard();
             PlaceArrow();
             SetPokes(true);
+        }
+
+        /// <summary>Controller-ray flow: no arrow and no poking; the director lifts the extinguishers one by one (<see cref="AutoHold"/> / <see cref="AutoRelease"/>).</summary>
+        public void BeginAuto()
+        {
+            Begin();
+            _auto = true;
+            _on = false;
+            if (arrow != null)
+                arrow.gameObject.SetActive(false);
+            SetPokes(false);
+        }
+
+        /// <summary>Extinguisher indices as the player sees them, left to right (the viewer's left is +X on the wall).</summary>
+        public int[] LeftToRight()
+        {
+            var order = new System.Collections.Generic.List<int>();
+            for (var i = 0; i < items.Length; i++)
+                if (items[i] != null)
+                    order.Add(i);
+            order.Sort((a, b) => _homePos[b].x.CompareTo(_homePos[a].x));
+            return order.ToArray();
+        }
+
+        public IEnumerator AutoHold(int index)
+        {
+            while (_busy)
+                yield return null;
+            yield return Hold(index);
+        }
+
+        public IEnumerator AutoRelease()
+        {
+            while (_busy)
+                yield return null;
+            if (_held >= 0)
+                yield return PutBack(_held);
         }
 
         /// <summary>Hides arrow and card and makes nothing pokeable (used when the hero takes the extinguisher).</summary>
@@ -245,7 +284,7 @@ namespace ChemicalSafety.Presentable
                     arrow.gameObject.SetActive(false);
                 AllSeen = true;
             }
-            else
+            else if (!_auto)
             {
                 _current = NextUnseen();
                 PlaceArrow();

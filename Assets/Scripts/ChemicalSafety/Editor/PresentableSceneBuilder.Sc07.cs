@@ -204,7 +204,7 @@ namespace ChemicalSafety.Editor
             Box("PartitionSkirt", room, new Vector3((partX0 + x1) * 0.5f, 0.12f, wallFace + 0.01f), new Vector3(x1 - partX0, 0.24f, 0.03f), skirt, false);
 
             // concrete pillar with the extinguishers (workflow step 04): x ox+0.2..ox+2.2, front face z = -1.8
-            var pillarCx = ox + 1.2f;
+            var pillarCx = Sc07UseFactory ? ox - 3.4f : ox + 1.2f; // factory hall: the extinguisher pillar is nearer the viewer, to the right (like the client picture)
             Shell("Pillar", new Vector3(pillarCx, hallH * 0.5f, (wallFace + pillarFace) * 0.5f), new Vector3(2.0f, hallH, pillarFace - wallFace), pillarMat);
             Box("PillarFooting", room, new Vector3(pillarCx, 0.1f, pillarFace + 0.02f), new Vector3(2.06f, 0.2f, 0.06f), skirt, false);
             var steel = Mat("Sc07Steel", new Color(0.42f, 0.44f, 0.46f), 0.4f, 0.25f);
@@ -247,7 +247,9 @@ namespace ChemicalSafety.Editor
                 nodes.Sort((a, b) => a.GetComponent<Renderer>().bounds.center.z.CompareTo(b.GetComponent<Renderer>().bounds.center.z));
                 var names = new[] { "Water", "CO2", "ABC" };
                 // from the player's left (+X) to the right (-X): Water, CO2, ABC
-                var xs = new[] { pillarCx + 0.58f, pillarCx, pillarCx - 0.58f };
+                var xs = Sc07UseFactory
+                    ? new[] { pillarCx + 0.58f, pillarCx - 0.58f, pillarCx }   // factory hall left to right: Silver (Water), Cream (Foam = the ABC model), Red (CO2 model)
+                    : new[] { pillarCx + 0.58f, pillarCx, pillarCx - 0.58f };
                 for (var i = 0; i < 3 && i < nodes.Count; i++)
                 {
                     var n = nodes[i];
@@ -288,7 +290,7 @@ namespace ChemicalSafety.Editor
             }
 
             // ---- the burning cabinet: ElectricPanel.glb, hazard stripes, signs, the red beacon above it
-            var cabX = ox - 1.65f;
+            var cabX = Sc07UseFactory ? ox + 2.6f : ox - 1.65f; // factory hall: the burning cabinet on the left pillar
             var cabFrontZ = wallFace + 0.9f;
             var panel = SpawnSc07("ElectricPanel.glb", room);
             var panelMat = Mat("Sc07PanelGrey", new Color(0.50f, 0.52f, 0.52f), 0.35f, 0.25f);
@@ -733,7 +735,7 @@ namespace ChemicalSafety.Editor
 
             refs.fireAt = Marker("FireAt", room, new Vector3(cabX, 0.05f, cabFrontZ + 0.35f), 0f);
             // ---- fire, sound
-            refs.fire = Sc07BuildFire(room, new Vector3(cabX, 0.05f, cabFrontZ + 0.35f), cabFrontZ, 2.0f, art);
+            refs.fire = Sc07BuildFire(room, new Vector3(cabX, 0.05f, cabFrontZ + 0.35f), cabFrontZ, Sc07UseFactory ? 0.9f : 2.0f, art);
             var ambGo = new GameObject("Sc07Ambience");
             ambGo.transform.SetParent(room, false);
             refs.ambience = ambGo.AddComponent<Sc07Ambience>();
@@ -822,6 +824,8 @@ namespace ChemicalSafety.Editor
             // the question: from here the three extinguishers and the cabinet sit left of the MCQ, the hall, boilers and the FIRE EXIT right of it
             refs.standQ = Marker("Stand_SC07_Question", room, new Vector3(ox - 1.0f, 0f, 5.2f), 198f);
             refs.heroWait = Marker("Sc07HeroWait", room, new Vector3(ox - 7.6f, 0f, 1.2f), 0f); // in the lane, right of the MCQ as seen from the question stand
+            if (Sc07UseFactory)
+                Sc07ApplyFactory(room, refs, art, pillarCx, cabX, cabFrontZ);
             return refs;
         }
 

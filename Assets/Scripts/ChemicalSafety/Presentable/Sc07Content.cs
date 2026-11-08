@@ -14,7 +14,7 @@ namespace ChemicalSafety.Presentable
         public static string NameLabel => Loc.T("SC07", "NameLabel");
         public static string UseLabel => Loc.T("SC07", "UseLabel");
 
-        // Order = the order on the pillar from the player's left: Water, CO2, ABC dry powder.
+        // Index order = the extinguisher models: 0 silver Water, 1 red CO2 / ABC, 2 cream Foam (on the pillar from the player's left: 0, 2, 1).
         public static string[] CardTitles => Loc.A("SC07", "CardTitles");
 
         public static string[] Names => Loc.A("SC07", "Names");
@@ -22,7 +22,7 @@ namespace ChemicalSafety.Presentable
         public static string[] EffectiveOn => Loc.A("SC07", "EffectiveOn");
 
         // Which class badge shows on the card (Water has none: it must never be used on B or C fires).
-        public static readonly bool[] ShowBcBadge = { false, true, true };
+        public static readonly bool[] ShowBcBadge = { false, true, false };
 
         public static string GateTitle => Loc.T("SC07", "GateTitle");
         public static string GateQuestion => Loc.T("SC07", "GateQuestion");
@@ -32,13 +32,17 @@ namespace ChemicalSafety.Presentable
         public static string QuestionPrompt => Loc.T("SC07", "QuestionPrompt");
         public static string CorrectTitle => Loc.T("SC07", "CorrectTitle");
         public static string WrongTitle => Loc.T("SC07", "WrongTitle");
+        public static string TagCorrect => Loc.T("SC07", "TagCorrect");
+        public static string TagWrong => Loc.T("SC07", "TagWrong");
         public static string FinishLabel => Loc.T("SC07", "FinishLabel");
-        public const int CorrectIndex = 1;
+        public const int CorrectIndex = 2; // C: the red CO2 / ABC dry chemical extinguisher
         public static string ModuleComplete => Loc.T("SC07", "ModuleComplete");
 
         public static string[] OptionLabels => Loc.A("SC07", "OptionLabels");
 
         public static string[] OptionFeedback => Loc.A("SC07", "OptionFeedback");
+
+        public static string[] OptionReasons => Loc.A("SC07", "OptionReasons");
 
         public static string[] OptionWrongTitle => Loc.A("SC07", "OptionWrongTitle");
     }

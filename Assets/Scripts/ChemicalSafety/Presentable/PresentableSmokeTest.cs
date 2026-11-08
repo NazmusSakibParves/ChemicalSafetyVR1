@@ -1281,6 +1281,193 @@ namespace ChemicalSafety.Presentable
             Click(mcq7.transform, "NextButton");
         }
 
+        // Scenario 7 on the controller ray: small side card + Continue, the fire event, the player is walked to the pillar, the SDS shows 2 s and
+        // hides, the three extinguishers come one by one, the gate (BACK = SDS and all three again, then NEXT), the MCQ with tick / cross and a
+        // reason under every option, the hero puts the fire out on a right answer (EditorPref ChemSafetySc07Wrong = answer wrong: no animation).
+        private IEnumerator Sc07RaySmoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            Say("SC07 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
+            var ext = Get<ExtinguisherInspect>(_director, "extinguishers");
+            var gate = Get<Sc06Gate>(_director, "sc07Gate");
+            var mcq7 = Get<PresentableMcqPanel>(_director, "mcqSc07");
+            var fire = Get<Sc07Fire>(_director, "sc07Fire");
+            var crowd = Get<Sc07Crowd>(_director, "sc07Crowd");
+            var clip7 = Get<SdsClipboardController>(_director, "clipboard");
+            yield return WaitStage("sc07Intro", 60f);
+            yield return new WaitForSeconds(2.5f);
+            Say("SC07 before the event: fire intensity = " + fire.Intensity.ToString("0.00") + " (expected 0), hero active = " + crowd.Hero.gameObject.activeSelf + " (expected False)");
+            yield return Shot("60_sc07_instruction");
+            LayoutCheck("SC07 small instruction card", panel.transform);
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var wc = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && wc < 40f)
+            {
+                wc += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.4f);
+            Click(panel.transform, "ContinueButton");
+            yield return WaitStage("sc07Event", 20f);
+            var shots = 0;
+            var te = 0f;
+            while (_director.CurrentStage == "sc07Event" && te < 90f)
+            {
+                te += Time.unscaledDeltaTime;
+                if (te > 4f * (shots + 1) && shots < 6)
+                {
+                    shots++;
+                    yield return Shot("61_sc07_event_" + shots);
+                    Say("SC07 event t=" + te.ToString("0.0") + " fire = " + fire.Intensity.ToString("0.00"));
+                }
+
+                yield return null;
+            }
+
+            Say("SC07 event over after " + te.ToString("0.0") + " s, fire = " + fire.Intensity.ToString("0.00") + " (expected 1), hero active = " + crowd.Hero.gameObject.activeSelf +
+                " (expected True), fire exit door open = " + crowd.FleeDoorOpen + " (expected True)");
+            var sw = Camera.main.transform.position;
+            yield return WaitStage("sc07Walk", 20f);
+            yield return WaitStage("sc07Sds", 30f);
+            var moved = Vector3.Distance(sw, Camera.main.transform.position);
+            Say("SC07 auto walk to the extinguisher pillar: moved " + moved.ToString("0.0") + " m (expected > 2)");
+            if (moved < 2f)
+                Debug.LogError("[SMOKE] SC07: the player was not walked to the extinguisher pillar");
+            yield return new WaitForSeconds(0.7f);
+            Say("SC07 SDS shown by itself = " + clip7.IsVisible + " (expected True)");
+            yield return Shot("64_sc07_sds");
+            yield return new WaitForSeconds(2.2f);
+            Say("SC07 SDS hid by itself after about 2 s = " + (!clip7.IsVisible) + " (expected True)");
+            if (clip7.IsVisible)
+                Debug.LogError("[SMOKE] SC07: the SDS did not hide by itself");
+            yield return WaitStage("sc07Explore", 20f);
+            for (var round = 0; round < 2; round++)
+            {
+                var order = "";
+                var lastHeld = -2;
+                var tt = 0f;
+                var cardShots = 0;
+                while (_director.CurrentStage != "sc07Gate" && tt < 120f)
+                {
+                    tt += Time.unscaledDeltaTime;
+                    if (ext.Holding && ext.HeldIndex != lastHeld)
+                    {
+                        lastHeld = ext.HeldIndex;
+                        order += lastHeld + " ";
+                        yield return new WaitForSeconds(1.0f);
+                        Say("SC07 extinguisher " + lastHeld + " came by itself, card = '" + ext.CardTitle + "' / '" + ext.CardName + "' / '" + ext.CardUse + "', badge = " + ext.BadgeVisible);
+                        if (ext.CardTransform != null)
+                            LayoutCheck("SC07 card " + lastHeld, ext.CardTransform);
+                        if (round == 0 && cardShots < 3)
+                        {
+                            cardShots++;
+                            yield return Shot("66_sc07_card_" + lastHeld);
+                        }
+                    }
+
+                    if (!ext.Holding)
+                        lastHeld = -2;
+                    yield return null;
+                }
+
+                Say("SC07 round " + round + ": extinguishers in the order they came = [" + order.Trim() + "] (expected 3 of them, left to right), seen = " + ext.Seen);
+                var wg = 0f;
+                while (!gate.Visible && wg < 10f)
+                {
+                    wg += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(1.0f);
+                if (round == 0)
+                {
+                    LayoutCheck("SC07 gate", gate.Card);
+                    yield return Shot("69_sc07_gate");
+                    Click(gate.transform, "BackButton");
+                    yield return WaitStage("sc07Sds", 15f);
+                    Say("SC07 BACK: the SDS shows again from the start of the inspection");
+                    yield return WaitStage("sc07Explore", 20f);
+                }
+                else
+                {
+                    Click(gate.transform, "NextButton");
+                }
+            }
+
+            yield return WaitStage("sc07Question", 20f);
+            var q = 0f;
+            while (!mcq7.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            var camM = Camera.main.transform;
+            var toPanel = mcq7.transform.position - camM.position;
+            var flatFwd = Vector3.ProjectOnPlane(camM.forward, Vector3.up).normalized;
+            Say("SC07 MCQ placement: distance ahead = " + Vector3.Dot(toPanel, flatFwd).ToString("0.00") + " m, sideways = " + Vector3.Dot(toPanel, Vector3.Cross(Vector3.up, flatFwd)).ToString("0.00") +
+                " m, height above the eyes = " + toPanel.y.ToString("0.00") + " m");
+            yield return Shot("70_sc07_question");
+            LayoutCheck("SC07 MCQ", mcq7.transform);
+            var cur = mcq7.Current;
+            var wrong = false;
+#if UNITY_EDITOR
+            wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Wrong", false);
+#endif
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            Say("SC07 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal + " fancy = " + mcq7.Fancy);
+            var row = FindDeep(mcq7.transform, "Row" + (target + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            if (!wrong)
+            {
+                yield return WaitStage("sc07Extinguish", 30f);
+                var tx = 0f;
+                var sh = 0;
+                var minFire = 1f;
+                while (_director.CurrentStage == "sc07Extinguish" && tx < 70f)
+                {
+                    tx += Time.unscaledDeltaTime;
+                    minFire = Mathf.Min(minFire, fire.Intensity);
+                    if (tx > 3f * (sh + 1) && sh < 8)
+                    {
+                        sh++;
+                        yield return Shot("73_sc07_hero_" + sh);
+                        Say("SC07 extinguishing t=" + tx.ToString("0.0") + " fire = " + fire.Intensity.ToString("0.00") + " hero holds extinguisher = " + crowd.HeroHoldsExtinguisher);
+                    }
+
+                    yield return null;
+                }
+
+                Say("SC07 fire out = " + (fire.Intensity < 0.05f) + " (expected True), lowest intensity = " + minFire.ToString("0.00"));
+            }
+            else
+            {
+                Say("SC07 wrong answer: the hero animation is not played (stage = " + _director.CurrentStage + ")");
+                if (_director.CurrentStage == "sc07Extinguish")
+                    Debug.LogError("[SMOKE] SC07: the extinguish animation played after a wrong answer");
+            }
+
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("72_sc07_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq7.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            Say("SC07 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC07 MCQ reveal", mcq7.transform);
+            Click(mcq7.transform, "NextButton");
+        }
+
+        private IEnumerator Sc07Dispatch(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            if (PresentableInput.AllowedIn(7) && Get<ExtinguisherInspect>(_director, "extinguishers") != null)
+                yield return Sc07RaySmoke(panel, voiceSrc);
+            else
+                yield return Sc07Smoke(panel, voiceSrc);
+        }
+
         private static void Poke(PokeTarget p)
         {
             typeof(PokeTarget).GetMethod("Fire", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -2589,7 +2776,7 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Only", false))
             {
                 Say("SC07-only run (dev start)");
-                yield return Sc07Smoke(panel, voiceSrc);
+                yield return Sc07Dispatch(panel, voiceSrc);
                 yield return new WaitForSeconds(1f);
                 Say("DONE runtime errors/exceptions = " + _errors);
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -3728,7 +3915,7 @@ namespace ChemicalSafety.Presentable
             // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT
             sc06Start:
             yield return Sc06Smoke(panel, voiceSrc, mcq5);
-            yield return Sc07Smoke(panel, voiceSrc);
+            yield return Sc07Dispatch(panel, voiceSrc);
             yield return Sc08Smoke(panel, voiceSrc);
             yield return Sc09Smoke(panel, voiceSrc);
             yield return Sc10Smoke(panel, voiceSrc);

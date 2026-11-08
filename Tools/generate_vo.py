@@ -184,18 +184,18 @@ CLIPS = {
     # Scenario 7 (factory fire, choose the extinguisher). শঠিক in the instruction like VO_SC06_Instruction_bn.
     "VO_SC07_Instruction_bn": (
         BN_VOICE,
-        "আপনি একজন মেশিন অপারেটর। বৈদ্যুতিক প্যানেলের পাশে রাখা একটি দাহ্য দ্রাবকের পাত্র অতিরিক্ত গরম হয়ে আগুন ধরে গেছে। "
-        "আগুন ছোট এবং নিয়ন্ত্রণে আছে। শঠিক ফায়ার এক্সটিংগুইশারটি নিন।",
+        "আপনি একজন কারখানা শ্রমিক। কাজ চলাকালীন আপনার ফ্লোরে বৈদ্যুতিক যন্ত্রপাতি ও দাহ্য সলভেন্টে আগুন লেগেছে! "
+        "আগুন এখনো ছড়িয়ে পড়েনি এবং নিয়ন্ত্রণের মধ্যে আছে। শঠিক ফায়ার এক্সটিংগুইশারটি বেছে নিন।",
     ),
     "VO_Sc07Ext0_bn": (
         BN_VOICE,
         "এটি ওয়াটার এক্সটিংগুইশার। এটি কাঠ, কাগজ ও কাপড়ের মতো সাধারণ দাহ্য পদার্থের আগুনে কার্যকর। "
         "বৈদ্যুতিক আগুন বা দাহ্য তরলের আগুনে এটি কখনো ব্যবহার করবেন না।",
     ),
-    "VO_Sc07Ext1_bn": (BN_VOICE, "এটি কার্বন ডাই-অক্সাইড এক্সটিংগুইশার। এটি দাহ্য তরল এবং বৈদ্যুতিক আগুনে কার্যকর।"),
+    "VO_Sc07Ext1_bn": (BN_VOICE, "এটি লাল রঙের কার্বন ডাই-অক্সাইড বা এবিসি ড্রাই কেমিক্যাল এক্সটিংগুইশার। এটি দাহ্য তরল এবং বৈদ্যুতিক আগুনে কার্যকর।"),
     "VO_Sc07Ext2_bn": (
         BN_VOICE,
-        "এটি এবিসি ড্রাই পাউডার এক্সটিংগুইশার। এটি সাধারণ দাহ্য পদার্থ, দাহ্য তরল এবং বৈদ্যুতিক আগুনে কার্যকর।",
+        "এটি ক্রিম রঙের ফোম এক্সটিংগুইশার। এটি দাহ্য তরলের আগুনে কার্যকর, কিন্তু ভেজা অবস্থায় বিদ্যুৎ পরিবহন করে, তাই বৈদ্যুতিক প্যানেলে ব্যবহার করা যাবে না।",
     ),
     "VO_Sc07Gate_bn": (
         BN_VOICE,
@@ -367,10 +367,10 @@ CLIPS_EN = {
     "VO_Sc06AutoFan": "Now the exhaust fan is switched on. The fan spins and pulls the vapour out of the room.",
     "VO_Sc06AutoMove": "The water jug, the acid can and the empty container are moved inside the hood.",
     "VO_Sc06AutoPour": "Inside the hood, the sulfuric acid is poured slowly into the empty container. The hood pulls the vapour away.",
-    "VO_SC07_Instruction": "You are a machine operator. A flammable solvent container near the electrical panel has overheated and ignited. The fire is small and contained. Grab the right extinguisher.",
-    "VO_Sc07Ext0": "This is a water extinguisher. It is effective on fires of ordinary combustibles such as wood, paper and cloth. Never use it on electrical fires or flammable liquid fires.",
-    "VO_Sc07Ext1": "This is a carbon dioxide extinguisher. It is effective on flammable liquid and electrical fires.",
-    "VO_Sc07Ext2": "This is an ABC dry powder extinguisher. It is effective on ordinary combustibles, flammable liquid and electrical fires.",
+    "VO_SC07_Instruction": "You are a factory worker. During work, a fire has broken out on your floor involving electrical equipment and flammable solvents! The fire has not yet spread and is still under control. Choose the correct fire extinguisher.",
+    "VO_Sc07Ext0": "This is the silver water extinguisher. It is effective on fires of ordinary combustibles such as wood, paper and cloth. Never use it on electrical fires or flammable liquid fires.",
+    "VO_Sc07Ext1": "This is the red carbon dioxide or ABC dry chemical extinguisher. It is effective on flammable liquid and electrical fires.",
+    "VO_Sc07Ext2": "This is the cream foam extinguisher. It is effective on flammable liquid fires, but it is conductive when wet, so it is not for electrical panels.",
     "VO_Sc07Gate": gate_en("Extinguisher inspection complete."),
     "VO_Sc07Hero": "The fire is out. Using the carbon dioxide extinguisher prevented a major accident.",
     "VO_SC08_Instruction": "You are a lab technician. A batch of dye requires dilute sulfuric acid. Dilute the acid carefully with water.",

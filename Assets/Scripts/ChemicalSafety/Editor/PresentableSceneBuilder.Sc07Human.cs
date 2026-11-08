@@ -195,7 +195,31 @@ namespace ChemicalSafety.Editor
                 var verts = m0.vertices;
                 mesh.vertices = verts;
                 mesh.uv = m0.uv;
-                mesh.triangles = m0.triangles;
+                if (part == "Uniform")
+                {
+                    // two sub-meshes by height: shirt (above the waist) and trousers, so a worker can wear two colours
+                    var all = m0.triangles;
+                    var upper = new List<int>();
+                    var lower = new List<int>();
+                    var waist = jp["Hips"].y + 0.02f; // lower split line: no jagged shirt / trouser edge
+                    for (var k = 0; k + 2 < all.Length; k += 3)
+                    {
+                        var cy = (verts[all[k]].y + verts[all[k + 1]].y + verts[all[k + 2]].y) / 3f;
+                        var dst = cy > waist ? upper : lower;
+                        dst.Add(all[k]);
+                        dst.Add(all[k + 1]);
+                        dst.Add(all[k + 2]);
+                    }
+
+                    mesh.subMeshCount = 2;
+                    mesh.SetTriangles(upper, 0);
+                    mesh.SetTriangles(lower, 1);
+                }
+                else
+                {
+                    mesh.triangles = m0.triangles;
+                }
+
                 mesh.RecalculateNormals();
                 mesh.boneWeights = Sc07Weights(verts, part, jp);
                 mesh.bindposes = bind;
@@ -212,12 +236,74 @@ namespace ChemicalSafety.Editor
                 smr.updateWhenOffscreen = false;
                 smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 smr.receiveShadows = false;
+                if (part == "Head")
+                    Sc07MakeCapShell(lod, mesh, boneArr, bind, order, root.transform, bones["Hips"]);
             }
 
             var prefabPath = Sc07GenDir + "/Worker_" + lod + ".prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // A thin shell cut from the head mesh (everything above the hairline, offset a little along the normals): the cloth cap /
+        // short hair of a garment worker, shaped exactly like the head. Used by the garment workers only (Sc07Dress).
+        private static void Sc07MakeCapShell(string lod, Mesh head, Transform[] boneArr, Matrix4x4[] bind, List<string> order, Transform root, Transform rootBone)
+        {
+            var hv = head.vertices;
+            var hn = head.normals;
+            var ht = head.triangles;
+            var map = new Dictionary<int, int>();
+            var nv = new List<Vector3>();
+            var nt = new List<int>();
+            for (var k = 0; k + 2 < ht.Length; k += 3)
+            {
+                var cy = (hv[ht[k]].y + hv[ht[k + 1]].y + hv[ht[k + 2]].y) / 3f;
+                var cz = (hv[ht[k]].z + hv[ht[k + 1]].z + hv[ht[k + 2]].z) / 3f;
+                var take = cy > 3.44f || (cy > 3.33f && cz < 0.03f); // above the forehead; lower at the sides and the back (ears stay free)
+                if (!take)
+                    continue;
+                for (var q = 0; q < 3; q++)
+                {
+                    var idx = ht[k + q];
+                    if (!map.TryGetValue(idx, out var ni))
+                    {
+                        ni = nv.Count;
+                        map[idx] = ni;
+                        var off = 0.016f + Mathf.Clamp01((hv[idx].y - 3.40f) / 0.22f) * 0.014f;
+                        nv.Add(hv[idx] + hn[idx] * off);
+                    }
+
+                    nt.Add(ni);
+                }
+            }
+
+            if (nv.Count == 0)
+                return;
+            var m = new Mesh { name = "Sc07Worker_" + lod + "_Cap" };
+            m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            m.SetVertices(nv);
+            m.SetTriangles(nt, 0);
+            m.RecalculateNormals();
+            var headIx = order.IndexOf("Head");
+            var bw = new BoneWeight[nv.Count];
+            for (var i = 0; i < bw.Length; i++)
+                bw[i] = new BoneWeight { boneIndex0 = headIx, weight0 = 1f };
+            m.boneWeights = bw;
+            m.bindposes = bind;
+            m.bounds = head.bounds;
+            var path = Sc07GenDir + "/Mesh_Worker_" + lod + "_Cap.asset";
+            AssetDatabase.CreateAsset(m, path);
+            var go = new GameObject("Cap");
+            go.transform.SetParent(root, false);
+            var smr = go.AddComponent<SkinnedMeshRenderer>();
+            smr.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            smr.bones = boneArr;
+            smr.rootBone = rootBone;
+            smr.localBounds = m.bounds;
+            smr.updateWhenOffscreen = false;
+            smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            smr.receiveShadows = false;
         }
 
         private sealed class Sc07Person
@@ -230,16 +316,21 @@ namespace ChemicalSafety.Editor
             public Color overall = new Color(0.42f, 0.46f, 0.50f);   // everybody wears the same grey-blue coveralls
             public Color helmet = new Color(1f, 0.74f, 0.04f);       // and a yellow helmet
             public Color boots = new Color(0.12f, 0.10f, 0.08f);
+            public bool helmetOn = true;                              // garment workers (P1-P4) wear no helmet
+            public bool garment;                                      // own shirt colour instead of the grey-blue coveralls
+            public Color shirt;
+            public Color hair = new Color(0.06f, 0.05f, 0.045f);
+            public Color pants = new Color(0.16f, 0.18f, 0.24f);
         }
 
         // 0 = clean shaven, 1 = moustache, 2 = moustache and short beard
         private static readonly Sc07Person[] Sc07People =
         {
             new Sc07Person { name = "Hero", skin = new Color(0.96f, 0.82f, 0.70f), height = 1.80f, girth = 1.00f, facial = 0 },
-            new Sc07Person { name = "P1", skin = new Color(0.52f, 0.35f, 0.25f), height = 1.74f, girth = 0.96f, facial = 0 },
-            new Sc07Person { name = "P2", skin = new Color(0.80f, 0.60f, 0.44f), height = 1.68f, girth = 1.08f, facial = 0 },
-            new Sc07Person { name = "P3", skin = new Color(1f, 0.89f, 0.80f), height = 1.86f, girth = 0.94f, facial = 0 },
-            new Sc07Person { name = "P4", skin = new Color(0.64f, 0.43f, 0.31f), height = 1.64f, girth = 1.04f, facial = 0 },
+            new Sc07Person { name = "P1", skin = new Color(0.52f, 0.35f, 0.25f), height = 1.74f, girth = 0.96f, facial = 0, garment = true, shirt = new Color(0.96f, 0.62f, 0.64f), pants = new Color(0.14f, 0.16f, 0.24f) },
+            new Sc07Person { name = "P2", skin = new Color(0.80f, 0.60f, 0.44f), height = 1.68f, girth = 1.08f, facial = 0, garment = true, shirt = new Color(0.64f, 0.80f, 0.96f), pants = new Color(0.45f, 0.40f, 0.30f) },
+            new Sc07Person { name = "P3", skin = new Color(1f, 0.89f, 0.80f), height = 1.86f, girth = 0.94f, facial = 0, garment = true, shirt = new Color(0.98f, 0.92f, 0.60f), pants = new Color(0.07f, 0.10f, 0.20f), hair = new Color(0.28f, 0.2f, 0.12f) },
+            new Sc07Person { name = "P4", skin = new Color(0.64f, 0.43f, 0.31f), height = 1.64f, girth = 1.04f, facial = 0, garment = true, shirt = new Color(0.64f, 0.88f, 0.70f), pants = new Color(0.12f, 0.20f, 0.34f) },
         };
 
         private static Texture2D Sc07WorkerTex(string n) => Sc07Tex(n);
@@ -255,10 +346,27 @@ namespace ChemicalSafety.Editor
                 {
                     case "Head": smr.sharedMaterial = M("Head", p.skin, Sc07WorkerTex("Worker_Head"), false, 0.3f); break;
                     case "Arms": smr.sharedMaterial = M("Arms", p.skin, Sc07WorkerTex("Worker_Arms"), false, 0.3f); break;
-                    case "Uniform": smr.sharedMaterial = M("Uniform", new Color(0.52f, 0.58f, 0.64f), Sc07WorkerTex("Worker_Uniform"), false, 0.2f); break;
-                    case "Collar": smr.sharedMaterial = M("Collar", new Color(0.50f, 0.53f, 0.57f), null, false, 0.2f); break;
+                    case "Uniform":
+                        if (p.garment)
+                            smr.sharedMaterials = new[] { M("Shirt", p.shirt, null, false, 0.12f), M("Shirt", p.shirt, null, false, 0.12f) }; // one light colour, shirt and trousers (client)
+                        else
+                        {
+                            var coverall = M("Uniform", new Color(0.52f, 0.58f, 0.64f), Sc07WorkerTex("Worker_Uniform"), false, 0.2f);
+                            smr.sharedMaterials = new[] { coverall, coverall };
+                        }
+
+                        break;
+                    case "Collar": smr.sharedMaterial = M("Collar", p.garment ? p.shirt : new Color(0.50f, 0.53f, 0.57f), null, false, 0.2f); break;
                     case "Boots": smr.sharedMaterial = M("Boots", new Color(0.8f, 0.8f, 0.8f), Sc07WorkerTex("Worker_Boot"), false, 0.35f); break;
-                    case "Helmet": smr.sharedMaterial = M("Helmet", p.helmet, null, false, 0.6f); break;
+                    case "Helmet":
+                        if (p.helmetOn)
+                            smr.sharedMaterial = M("Helmet", p.helmet, null, false, 0.6f);
+                        else
+                            smr.gameObject.SetActive(false); // garment workers wear no helmet at all
+                        break;
+                    case "Cap":
+                        smr.gameObject.SetActive(false); // the cap shell is not used: everybody wears the model's yellow helmet (client)
+                        break;
                     case "Eyes": smr.sharedMaterial = M("Eyes", Color.white, Sc07WorkerTex("Worker_Eye"), false, 0.8f); break;
                     case "Lashes": smr.sharedMaterial = M("Lashes", Color.white, Sc07WorkerTex("Worker_Lash"), true); break;
                 }

@@ -1401,11 +1401,72 @@ namespace ChemicalSafety.Presentable
                 yield return RunScenario7();
         }
 
+        [Header("SC07 (ray)")]
+        [SerializeField] private float sc07PopupScale = 1.75f;
+        [SerializeField] private float sc07GateScale = 1.7f;
+        [SerializeField] private float sc07SdsSeconds = 2f;
+        [SerializeField] private float sc07ExtMinSeconds = 3.2f;
+
+        // Controller-ray flow of SC07: SDS 2 s then hidden, the three extinguishers one by one with their voice (no clicks), the
+        // "inspection complete" card (BACK = SDS and all three again, NEXT = the MCQ).
+        private IEnumerator Sc07RayInspect()
+        {
+            var again = true;
+            while (again)
+            {
+                Stage("sc07Sds");
+                clipboard.SetVisible(true);
+                yield return PresentableFx.Wait(sc07SdsSeconds);
+                clipboard.SetVisible(false);
+                yield return PresentableFx.Wait(0.6f);
+
+                Stage("sc07Explore");
+                extinguishers.BeginAuto();
+                foreach (var i in extinguishers.LeftToRight())
+                {
+                    yield return extinguishers.AutoHold(i);
+                    var t0 = Time.time;
+                    extinguishers.SetSpeaking(true);
+                    yield return PlayVoice(art.voSc07Ext != null && i < art.voSc07Ext.Length ? art.voSc07Ext[i] : null);
+                    extinguishers.SetSpeaking(false);
+                    while (Time.time - t0 < sc07ExtMinSeconds)
+                        yield return null;
+                    yield return extinguishers.AutoRelease();
+                    yield return PresentableFx.Wait(0.35f);
+                }
+
+                extinguishers.Stop();
+                Stage("sc07Gate");
+                yield return PresentableFx.Wait(0.35f);
+                // the plain wall above the extinguishers (the client's arrow): the card floats there, the extinguishers stay free
+                Sc04PopupPose(0f, 0.40f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc07Gate.Back += OnBack;
+                sc07Gate.Next += OnNext;
+                sc07Gate.Show(gatePos, gateRot, sc07GateScale);
+                StartCoroutine(PlayVoice(art.voSc07Gate));
+                while (choice == 0)
+                    yield return null;
+                sc07Gate.Back -= OnBack;
+                sc07Gate.Next -= OnNext;
+                sc07Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+        }
+
         // SC07: factory fire. Instruction card, the fire starts and the workers flee, SDS, inspect the three extinguishers,
         // "inspection complete" card, the MCQ; the right answer makes the hero put the fire out.
         private IEnumerator RunScenario7()
         {
             Stage("sc07");
+            PresentableInput.ActiveScenario = 7; // the controller ray (RayScenarios) or finger touch, by the input mode
+            var ray7 = PresentableInput.RayActive && sc07Crowd != null && extinguishers != null;
+            if (ray7)
+                LockLocomotion(true); // no walking / turning / teleport from the very start of the scenario: the head is free, the body stays
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
             foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06 })
@@ -1427,7 +1488,16 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc07Instruction != null ? art.voSc07Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc07Content.InstructionEnglish, art.bnSc07InstructionPanel);
             instructionPanel.SetContinueCentered(true);
+            if (ray7)
+            {
+                // controller ray: head free, a SMALL glass card to one side (the hall stays visible)
+                instructionPanel.SetCompact(true, sc06CardScale);
+                instructionPanel.SetGlass(sc04GlassCard);
+            }
+
             BeginEyeInstruction();
+            if (ray7)
+                Sc05AsideInstruction(sc06CardRight, sc06CardUp);
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
@@ -1451,6 +1521,11 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
+            if (ray7)
+            {
+                instructionPanel.SetGlass(false);
+                instructionPanel.SetCompact(false);
+            }
 
             // the fire starts, the alarm rings, the workers see it and run; the hero stays
             Stage("sc07Event");
@@ -1459,98 +1534,109 @@ namespace ChemicalSafety.Presentable
             else
                 yield return PresentableFx.Wait(3f);
 
-            // the safety data sheet comes up in the left hand (X shows and hides it any time)
-            Stage("sc07Sds");
-            clipboard.SetVisible(true);
-            var sdsWait = 0f;
-            while (clipboard.IsVisible && sdsWait < 9f)
+            if (ray7)
             {
-                sdsWait += Time.unscaledDeltaTime;
-                yield return null;
+                // no clicks: the player is walked to the extinguisher pillar, the SDS shows for 2 s and hides, the extinguishers come one by one
+                Stage("sc07Walk");
+                if (sc07PillarStand != null)
+                    yield return Glide(sc07PillarStand.position, 1.8f);
+                yield return Sc07RayInspect();
             }
-
-            clipboard.SetVisible(false);
-
-            // to the pillar: the arrow ticks over the extinguishers one by one
-            yield return fader.FadeTo(1f, 0.3f);
-            if (sc07PillarStand != null)
-                PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
-            yield return fader.FadeTo(0f, 0.4f);
-
-            Stage("sc07Explore");
-            var again7 = true;
-            Coroutine extVoice = null;
-
-            IEnumerator SayExt(int index)
+            else
             {
-                extinguishers.SetSpeaking(true);
-                yield return PlayVoice(art.voSc07Ext != null && index < art.voSc07Ext.Length ? art.voSc07Ext[index] : null);
-                extinguishers.SetSpeaking(false);
-                extVoice = null;
-            }
-
-            void OnExtOpened(int index)
-            {
-                StopVoice();
-                if (extVoice != null)
-                    StopCoroutine(extVoice);
-                extVoice = null;
-                extinguishers.SetSpeaking(false);
-                if (art.voSc07Ext != null && index >= 0 && index < art.voSc07Ext.Length && art.voSc07Ext[index] != null)
-                    extVoice = StartCoroutine(SayExt(index));
-            }
-
-            void OnExtClosed()
-            {
-                if (extVoice != null)
-                    StopCoroutine(extVoice);
-                extVoice = null;
-                StopVoice();
-                extinguishers.SetSpeaking(false);
-            }
-
-            if (extinguishers != null)
-            {
-                extinguishers.Opened += OnExtOpened;
-                extinguishers.Closed += OnExtClosed;
-                extinguishers.SpeakerClicked += OnExtOpened;
-                extinguishers.Begin();
-                while (again7)
+                // the safety data sheet comes up in the left hand (X shows and hides it any time)
+                Stage("sc07Sds");
+                clipboard.SetVisible(true);
+                var sdsWait = 0f;
+                while (clipboard.IsVisible && sdsWait < 9f)
                 {
-                    while (!extinguishers.AllSeen)
-                        yield return null;
-                    Stage("sc07Gate");
-                    yield return PresentableFx.Wait(0.35f);
-                    var choice7 = 0; // 1 = BACK, 2 = NEXT
-                    void OnBack7() => choice7 = 1;
-                    void OnNext7() => choice7 = 2;
-                    sc07Gate.Back += OnBack7;
-                    sc07Gate.Next += OnNext7;
-                    sc07Gate.Show();
-                    StartCoroutine(PlayVoice(art.voSc07Gate));
-                    while (choice7 == 0)
-                        yield return null;
-                    sc07Gate.Back -= OnBack7;
-                    sc07Gate.Next -= OnNext7;
-                    sc07Gate.Hide();
-                    StopAllVoiceCoroutines();
-                    StopVoice();
-                    if (choice7 == 1)
-                    {
-                        extinguishers.Begin();
-                        Stage("sc07Explore");
-                    }
-                    else
-                    {
-                        again7 = false;
-                    }
+                    sdsWait += Time.unscaledDeltaTime;
+                    yield return null;
                 }
 
-                extinguishers.Opened -= OnExtOpened;
-                extinguishers.Closed -= OnExtClosed;
-                extinguishers.SpeakerClicked -= OnExtOpened;
-                OnExtClosed();
-                extinguishers.Stop();
+                clipboard.SetVisible(false);
+
+                // to the pillar: the arrow ticks over the extinguishers one by one
+                yield return fader.FadeTo(1f, 0.3f);
+                if (sc07PillarStand != null)
+                    PlaceRig(sc07PillarStand.position, sc07PillarStand.forward);
+                yield return fader.FadeTo(0f, 0.4f);
+
+                Stage("sc07Explore");
+                var again7 = true;
+                Coroutine extVoice = null;
+
+                IEnumerator SayExt(int index)
+                {
+                    extinguishers.SetSpeaking(true);
+                    yield return PlayVoice(art.voSc07Ext != null && index < art.voSc07Ext.Length ? art.voSc07Ext[index] : null);
+                    extinguishers.SetSpeaking(false);
+                    extVoice = null;
+                }
+
+                void OnExtOpened(int index)
+                {
+                    StopVoice();
+                    if (extVoice != null)
+                        StopCoroutine(extVoice);
+                    extVoice = null;
+                    extinguishers.SetSpeaking(false);
+                    if (art.voSc07Ext != null && index >= 0 && index < art.voSc07Ext.Length && art.voSc07Ext[index] != null)
+                        extVoice = StartCoroutine(SayExt(index));
+                }
+
+                void OnExtClosed()
+                {
+                    if (extVoice != null)
+                        StopCoroutine(extVoice);
+                    extVoice = null;
+                    StopVoice();
+                    extinguishers.SetSpeaking(false);
+                }
+
+                if (extinguishers != null)
+                {
+                    extinguishers.Opened += OnExtOpened;
+                    extinguishers.Closed += OnExtClosed;
+                    extinguishers.SpeakerClicked += OnExtOpened;
+                    extinguishers.Begin();
+                    while (again7)
+                    {
+                        while (!extinguishers.AllSeen)
+                            yield return null;
+                        Stage("sc07Gate");
+                        yield return PresentableFx.Wait(0.35f);
+                        var choice7 = 0; // 1 = BACK, 2 = NEXT
+                        void OnBack7() => choice7 = 1;
+                        void OnNext7() => choice7 = 2;
+                        sc07Gate.Back += OnBack7;
+                        sc07Gate.Next += OnNext7;
+                        sc07Gate.Show();
+                        StartCoroutine(PlayVoice(art.voSc07Gate));
+                        while (choice7 == 0)
+                            yield return null;
+                        sc07Gate.Back -= OnBack7;
+                        sc07Gate.Next -= OnNext7;
+                        sc07Gate.Hide();
+                        StopAllVoiceCoroutines();
+                        StopVoice();
+                        if (choice7 == 1)
+                        {
+                            extinguishers.Begin();
+                            Stage("sc07Explore");
+                        }
+                        else
+                        {
+                            again7 = false;
+                        }
+                    }
+
+                    extinguishers.Opened -= OnExtOpened;
+                    extinguishers.Closed -= OnExtClosed;
+                    extinguishers.SpeakerClicked -= OnExtOpened;
+                    OnExtClosed();
+                    extinguishers.Stop();
+                }
             }
 
             // to a vantage point from where the three extinguishers and the whole hall can be seen next to the MCQ
@@ -1562,11 +1648,29 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(0f, 0.4f);
             Stage("sc07Question");
             // straight ahead at eye level, 0.7 m: a slightly extended arm reaches it, it is not at the eyes (the right / wrong cards share the canvas)
-            PlaceAtEyeLevel(mcqSc07.transform, 0.7f, false);
+            if (ray7)
+            {
+                // centred in the aisle: the burning pillar stays left, the extinguishers right, nothing important is covered
+                Sc04PopupPose(0f, 0.05f, 2.0f, out var mcq7Pos, out var mcq7Rot);
+                mcqSc07.SetWorldScale(sc07PopupScale);
+                mcqSc07.transform.SetPositionAndRotation(mcq7Pos, mcq7Rot);
+            }
+            else
+            {
+                PlaceAtEyeLevel(mcqSc07.transform, 0.7f, false);
+            }
+
             var q7 = BuildSc07Question();
             _sc07WinDone = false;
             q7.holdCorrect = () => !_sc07WinDone; // the right-answer card opens only after the fire is out
+            q7.holdNext = () => !_sc07WinDone;   // ray flow (inline reveal): NEXT shows only after the fire is out
             yield return RunQuestion(mcqSc07, q7, false, 7);
+            if (ray7)
+            {
+                LockLocomotion(false);
+                mcqSc07.SetWorldScale(1f);
+            }
+
             if (sc07Ambience != null)
                 sc07Ambience.End();
             Stage("sc07Done");
@@ -3518,6 +3622,10 @@ namespace ChemicalSafety.Presentable
         private IEnumerator AnswerVoice(bool correct, int scenario)
         {
             yield return PresentableFx.Wait(0.25f);
+            // Scenario 7, right answer: no "success" / NEXT voice until the hero has put the fire out (the fire-out line plays by itself)
+            if (scenario == 7 && correct)
+                while (!_sc07WinDone)
+                    yield return null;
             StopVoice();
             subtitle.Hide();
             var wrongClip = scenario == 3 && art.voSc03Wrong != null ? art.voSc03Wrong : art.voWrong;
@@ -4598,7 +4706,8 @@ namespace ChemicalSafety.Presentable
                 {
                     label = Sc07Content.OptionLabels[i],
                     feedback = Sc07Content.OptionFeedback[i],
-                    wrongTitle = Sc07Content.OptionWrongTitle[i]
+                    wrongTitle = Sc07Content.OptionWrongTitle[i],
+                    reason = Sc07Content.OptionReasons != null && i < Sc07Content.OptionReasons.Length ? Sc07Content.OptionReasons[i] : string.Empty
                 };
             }
 
@@ -4611,7 +4720,11 @@ namespace ChemicalSafety.Presentable
                 wrongTitle = Sc07Content.WrongTitle,
                 nextLabel = Sc07Content.FinishLabel,
                 options = options,
-                fancy = true
+                fancy = true,
+                // ray flow: as Scenarios 1-6 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc07Content.TagCorrect,
+                tagWrong = Sc07Content.TagWrong
             };
         }
 
