@@ -78,6 +78,9 @@ namespace ChemicalSafety.Editor
                      })
                 so.FindProperty(name).objectReferenceValue = so6.FindProperty(name).objectReferenceValue;
             so.FindProperty("liquidFullHeight").floatValue = so6.FindProperty("liquidFullHeight").floatValue;
+            var jarT = (Transform)so6.FindProperty("jar").objectReferenceValue;
+            var topT = jarT != null ? Sc06FindUnder(jarT, "JarLiquidTop") : null;
+            so.FindProperty("liquidTop").objectReferenceValue = topT != null ? topT.GetComponent<Renderer>() : null;
             so.FindProperty("rod").objectReferenceValue = rod;
             so.FindProperty("rodShaft").objectReferenceValue = shaft.transform;
             so.FindProperty("rodHome").objectReferenceValue = rodHome;

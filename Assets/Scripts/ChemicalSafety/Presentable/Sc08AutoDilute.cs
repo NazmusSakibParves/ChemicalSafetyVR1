@@ -37,8 +37,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform liquid;
         [SerializeField] private float liquidFullHeight = 0.2f;
         [SerializeField] private Renderer liquidRenderer;
-        [SerializeField] private Color waterColor = new Color(0.55f, 0.80f, 0.98f, 0.55f);
-        [SerializeField] private Color mixColor = new Color(0.90f, 0.93f, 0.84f, 0.5f);
+        [SerializeField] private Renderer liquidTop;
+        [SerializeField] private Color waterColor = new Color(0.38f, 0.70f, 1.00f, 0.72f);
+        [SerializeField] private Color mixColor = new Color(0.80f, 0.92f, 0.74f, 0.68f);
         [SerializeField] private Color waterStreamColor = new Color(0.62f, 0.84f, 1f, 0.78f);
         [SerializeField] private Color acidStreamColor = new Color(0.95f, 0.93f, 0.78f, 0.8f);
         [SerializeField] private Transform stream;
@@ -71,6 +72,7 @@ namespace ChemicalSafety.Presentable
         private Vector3 _liquidBaseScale = Vector3.one;
         private float _level;
         private MaterialPropertyBlock _liquidBlock;
+        private MaterialPropertyBlock _topBlock;
         private MaterialPropertyBlock _streamBlock;
         private bool _stirring;
         private float _stirPhase;
@@ -118,8 +120,15 @@ namespace ChemicalSafety.Presentable
             _acidCap = MakeCap(acidCap);
             _waterCap = MakeCap(waterCap);
             if (liquid != null)
+            {
                 _liquidBaseScale = liquid.localScale;
+                // Scenario 6's component may already have squashed the shared liquid to "empty" (Y near 0) before this one woke up:
+                // the real full-size scale of the pivot is 1
+                if (_liquidBaseScale.y < 0.5f)
+                    _liquidBaseScale = Vector3.one;
+            }
             _liquidBlock = new MaterialPropertyBlock();
+            _topBlock = new MaterialPropertyBlock();
             _streamBlock = new MaterialPropertyBlock();
 
             // how deep the jar is (mouth to floor): the rod tip stops just above the floor
@@ -183,6 +192,8 @@ namespace ChemicalSafety.Presentable
                 streamRenderer.SetPropertyBlock(null); // the stream colour is Scenario 6's again
             if (liquidRenderer != null)
                 liquidRenderer.SetPropertyBlock(null);
+            if (liquidTop != null)
+                liquidTop.SetPropertyBlock(null);
             if (fumes != null)
             {
                 var em = fumes.emission;
@@ -533,8 +544,16 @@ namespace ChemicalSafety.Presentable
             if (liquidRenderer != null)
             {
                 _liquidBlock ??= new MaterialPropertyBlock();
-                _liquidBlock.SetColor("_BaseColor", Color.Lerp(waterColor, mixColor, Mathf.Clamp01(mix)));
+                var c = Color.Lerp(waterColor, mixColor, Mathf.Clamp01(mix));
+                _liquidBlock.SetColor("_BaseColor", c);
                 liquidRenderer.SetPropertyBlock(_liquidBlock);
+                if (liquidTop != null)
+                {
+                    // the surface: the same hue, lighter and a little more solid, so the rising level reads from above
+                    _topBlock ??= new MaterialPropertyBlock();
+                    _topBlock.SetColor("_BaseColor", new Color(Mathf.Lerp(c.r, 1f, 0.45f), Mathf.Lerp(c.g, 1f, 0.45f), Mathf.Lerp(c.b, 1f, 0.45f), 0.85f));
+                    liquidTop.SetPropertyBlock(_topBlock);
+                }
             }
 
             if (splash != null)

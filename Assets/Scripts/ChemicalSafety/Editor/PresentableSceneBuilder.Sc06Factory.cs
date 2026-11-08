@@ -830,13 +830,13 @@ namespace ChemicalSafety.Editor
             var labelTex = Sc06FacTex("Label_MixtureJar");
             if (labelTex != null)
             {
-                var bandY = jb.min.y + jarH * 0.34f; // low on the jar (like the picture): the liquid and the rod stay visible above the label
+                var bandY = jb.min.y + jarH * 0.27f; // low on the jar (like the picture): the liquid and the rod stay visible above the label
                 var radius = Sc06BandRadius(jar, bandY, jarH * 0.15f, jar.position.x, jar.position.z);
                 radius = radius > 0.02f ? radius : jarR;
                 var lblGo = new GameObject("MixtureLabel");
                 lblGo.transform.SetParent(jar, true);
                 lblGo.transform.position = new Vector3(jar.position.x, bandY, jar.position.z);
-                lblGo.AddComponent<MeshFilter>().sharedMesh = Sc06CurvedLabel(radius + 0.003f, jarH * 0.46f, 120f);
+                lblGo.AddComponent<MeshFilter>().sharedMesh = Sc06CurvedLabel(radius + 0.003f, jarH * 0.38f, 120f);
                 var lmr = lblGo.AddComponent<MeshRenderer>();
                 lmr.sharedMaterial = Sc06LabelPaper("Sc06LabelMixture", labelTex);
                 lmr.shadowCastingMode = ShadowCastingMode.Off;
@@ -958,6 +958,11 @@ namespace ChemicalSafety.Editor
             var fullH = jarH * 0.78f;
             var liquidCyl = Cyl("JarLiquid06", jar, liquidPivot.position, fullH, jarR * 0.8f, liquidMat);
             liquidCyl.transform.SetParent(liquidPivot, true);
+            // the surface of the liquid: a thin bright disc at the top of the liquid cylinder (it rides up while the jar fills and
+            // shows from above through the open mouth and the glass)
+            var liquidTopMat = MatAlpha("Sc06FacLiquidTop", null, new Color(0.96f, 0.98f, 0.92f, 0.8f), false);
+            var liquidTop = Cyl("JarLiquidTop", jar, liquidPivot.position + Vector3.up * (fullH - 0.003f), 0.004f, jarR * 0.805f, liquidTopMat);
+            liquidTop.transform.SetParent(liquidPivot, true);
             var mouth = new GameObject("JarMouth").transform;
             mouth.SetParent(jar, true);
             mouth.position = new Vector3(jar.position.x, jb.max.y, jar.position.z);
