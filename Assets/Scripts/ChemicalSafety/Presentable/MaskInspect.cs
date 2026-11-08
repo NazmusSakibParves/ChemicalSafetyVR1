@@ -116,6 +116,20 @@ namespace ChemicalSafety.Presentable
             return Vector3.Distance(col.ClosestPoint(b.center), b.center) <= 0.07f;
         }
 
+        /// <summary>World centre of a mask hanging on the rail (tests: are all four inside the learner's view at the start).</summary>
+        public Vector3 RestCentre(int index)
+        {
+            if (masks == null || index < 0 || index >= masks.Length || masks[index] == null)
+                return transform.position;
+            var rs = masks[index].GetComponentsInChildren<Renderer>(false);
+            if (rs.Length == 0)
+                return masks[index].position;
+            var b = rs[0].bounds;
+            foreach (var r in rs)
+                b.Encapsulate(r.bounds);
+            return b.center;
+        }
+
         /// <summary>Floor point in front of the rail (+Z, the side the player faces from).</summary>
         public Vector3 StandInFront()
         {

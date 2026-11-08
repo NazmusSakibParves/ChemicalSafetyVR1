@@ -248,7 +248,7 @@ namespace ChemicalSafety.Editor
                 var sup = (GameObject)PrefabUtility.InstantiatePrefab(supPrefab);
                 sup.name = "LabSupervisor";
                 sup.transform.SetParent(room, true);
-                sup.transform.position = ScP(0.25f, 0f, 3.75f);
+                sup.transform.position = ScP(-0.35f, 0f, 3.2f); // clear of the table's left end (r 0.3) and ahead of its front edge
                 var toSpawn = ScP(0.6f, 0f, 2.3f) - sup.transform.position;
                 toSpawn.y = 0f;
                 sup.transform.rotation = Quaternion.LookRotation(toSpawn.normalized, Vector3.up);
@@ -266,9 +266,9 @@ namespace ChemicalSafety.Editor
             }
 
             // ---------------------------------------------------------------- markers + runner
-            var supStart = Marker("SupervisorStart", room, ScP(0.5f, 0f, 9.5f), 0f);
-            var supStand = Marker("SupervisorStand", room, ScP(0.25f, 0f, 3.75f), 0f);
-            var supSide = Marker("SupervisorSide", room, ScP(-0.55f, 0f, 3.8f), 0f); // just left of the question panel (which sits a little right of the player), in view
+            var supStart = Marker("SupervisorStart", room, ScP(-0.35f, 0f, 9.5f), 0f);
+            var supStand = Marker("SupervisorStand", room, ScP(-0.35f, 0f, 3.2f), 0f);
+            var supSide = Marker("SupervisorSide", room, ScP(-1.1f, 0f, 3.6f), 0f); // just left of the question panel (which sits a little right of the player), in view
             refs.spawn = Marker("Spawn_SCCHECK", room, ScP(0.6f, 0f, 2.3f), 180f);
             refs.stand = Marker("Stand_SCCHECK", room, ScP(0.6f, 0f, 2.3f), 180f);
             var host = new GameObject("ScCheckHost");

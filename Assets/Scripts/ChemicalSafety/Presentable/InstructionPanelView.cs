@@ -26,6 +26,8 @@ namespace ChemicalSafety.Presentable
         private Image _glassImg;
         private Image _glassBack;
         private Image _pillBack;
+        private bool _clear;
+        private const float ClearBackAlpha = 0.90f;
 
         [Tooltip("Glass card: opacity of the dark backing behind the translucent glass (0 = the old see-through card, 1 = solid). Higher = the words and the box stay clear over any scene, also for weak eyes.")]
         [SerializeField, Range(0f, 1f)] private float glassBackAlpha = 0.62f;
@@ -163,6 +165,12 @@ namespace ChemicalSafety.Presentable
         {
             Build();
             on &= art != null && art.glassPanel != null && art.glassButton != null;
+            if (!on && _clear)
+            {
+                _clear = false;
+                ApplyBacking();
+            }
+
             if (_glass == on)
                 return;
             _glass = on;
@@ -197,6 +205,30 @@ namespace ChemicalSafety.Presentable
         }
 
         public void SetSpeaking(bool speaking) => _speaking = speaking;
+
+        /// <summary>
+        /// Clear look of the glass card (Scenarios 6, 8, 9: it sits over a bright poster): the dark backing is almost solid (0.90) and the words one
+        /// size larger (48). Reset by SetGlass(false).
+        /// </summary>
+        public void SetClearLook(bool on)
+        {
+            Build();
+            if (_clear == on)
+                return;
+            _clear = on;
+            ApplyBacking();
+            if (_glass)
+                Reflow();
+        }
+
+        private void ApplyBacking()
+        {
+            var a = _clear ? ClearBackAlpha : glassBackAlpha;
+            if (_glassBack != null)
+                _glassBack.color = new Color(0.02f, 0.08f, 0.11f, a);
+            if (_pillBack != null)
+                _pillBack.color = new Color(0.02f, 0.08f, 0.11f, a);
+        }
 
         /// <summary>Continue stays centred under the words on every scenario.</summary>
         public void SetContinueCentered(bool centered)
@@ -365,7 +397,7 @@ namespace ChemicalSafety.Presentable
             const float cardW = 1100f;
             const float textW = 940f;
             _english.enableAutoSizing = false;
-            _english.fontSize = 44f;
+            _english.fontSize = _clear ? 48f : 44f;
             _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
             var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
             _english.gameObject.SetActive(!useBn);

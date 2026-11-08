@@ -176,8 +176,23 @@ namespace ChemicalSafety.Presentable
             if (ip != null)
                 LayoutCheck("SC05 small instruction card", ip.transform);
             Say("SC05 machine sound on = " + amb.IsOn);
+            yield return RayIntroContinue("SC05");
             yield return WaitStage("sc05Explore", 60f);
             yield return new WaitForSeconds(0.6f);
+            // the four masks must all be inside the learner's view at the start (client Quest recording: masks 2-4 were out of the view)
+            var camS = Camera.main.transform;
+            var flatFwd = new Vector3(camS.forward.x, 0f, camS.forward.z).normalized;
+            for (var mk = 0; mk < masks.Count; mk++)
+            {
+                var to = masks.RestCentre(mk) - camS.position;
+                var flatTo = new Vector3(to.x, 0f, to.z).normalized;
+                var yawOff = Vector3.SignedAngle(flatFwd, flatTo, Vector3.up); // + = to the right
+                var pitchOff = Mathf.Atan2(to.y, new Vector3(to.x, 0f, to.z).magnitude) * Mathf.Rad2Deg;
+                Say("SC05 view: mask " + mk + " is " + yawOff.ToString("0") + " deg to the right, " + pitchOff.ToString("0") + " deg up from the view axis (inside +-32 / +-25 wanted)");
+                if (Mathf.Abs(yawOff) > 32f || Mathf.Abs(pitchOff) > 25f)
+                    Debug.LogError("[SMOKE] SC05: mask " + mk + " is not inside the start view");
+            }
+
             yield return Shot("41_sc05_rail");
             for (var k = 0; k < masks.Count; k++)
             {
@@ -268,6 +283,7 @@ namespace ChemicalSafety.Presentable
             var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
             if (ip != null)
                 LayoutCheck("SC06 small instruction card", ip.transform);
+            yield return RayIntroContinue("SC06");
             yield return WaitStage("sc06Auto", 60f);
             yield return new WaitForSeconds(0.8f);
             yield return Shot("61_sc06_room");
@@ -309,6 +325,10 @@ namespace ChemicalSafety.Presentable
                     yield return new WaitForSeconds(2.2f);
                     yield return Shot("65_sc06_pour");
                     Say("SC06 auto: jar level while pouring acid = " + auto.Level.ToString("0.00"));
+                    var hz = Camera.main.transform.position.z;
+                    Say("SC06 pour view: head z = " + hz.ToString("0.00") + " (expected well behind the table, in front of the hood, z < 0)");
+                    if (hz >= 0f)
+                        Debug.LogError("[SMOKE] SC06: the learner was not guided in front of the fume hood for the pour");
                 }
 
                 yield return null;
@@ -328,6 +348,10 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return new WaitForSeconds(1.0f);
+            var gz = Camera.main.transform.position.z;
+            Say("SC06 gate view: head z = " + gz.ToString("0.00") + " (expected back at the start spot, about 3.0)");
+            if (gz < 2f)
+                Debug.LogError("[SMOKE] SC06: the learner was not brought back to the table before the gate card");
             LayoutCheck("SC06 gate card", gate.Card);
             var label = FindDeep(gate.Card, "BackButton");
             var lab6 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
@@ -1577,6 +1601,7 @@ namespace ChemicalSafety.Presentable
             var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
             if (ip != null)
                 LayoutCheck("SC08 small instruction card", ip.transform);
+            yield return RayIntroContinue("SC08");
             yield return WaitStage("sc08Auto", 60f);
             yield return WaitStage("sc08Ppe", 30f);
             var order = "";
@@ -1951,6 +1976,7 @@ namespace ChemicalSafety.Presentable
             var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
             if (ip != null)
                 LayoutCheck("SC09 small instruction card", ip.transform);
+            yield return RayIntroContinue("SC09");
             yield return WaitStage("sc09Move", 60f);
             yield return WaitStage("sc09Auto", 30f);
             Say("SC09 at the table: head = " + Camera.main.transform.position.ToString("F2") + " (expected z about 1.5)");
@@ -2866,6 +2892,34 @@ namespace ChemicalSafety.Presentable
             Say("scenario 12 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("141_sc12_correct");
             Click(assess.transform, "NextButton");
+        }
+
+        // The ray intros of Scenarios 5, 6, 8 and 9: the card must show a Continue button after its voice and must NOT hide by itself; the test clicks it.
+        private IEnumerator RayIntroContinue(string tag)
+        {
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip == null)
+            {
+                Debug.LogError("[SMOKE] " + tag + ": no instruction panel found");
+                yield break;
+            }
+
+            var cont = FindDeep(ip.transform, "ContinueButton");
+            var w = 0f;
+            while ((cont == null || !cont.gameObject.activeInHierarchy) && w < 60f)
+            {
+                w += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            var shown = cont != null && cont.gameObject.activeInHierarchy;
+            Say(tag + " intro: Continue visible after the voice = " + shown + " after " + w.ToString("0.0") + " s (expected True)");
+            if (!shown)
+                Debug.LogError("[SMOKE] " + tag + ": the instruction card has no Continue button after its voice");
+            yield return new WaitForSeconds(1.2f);
+            Say(tag + " intro: card still on screen = " + (ip.gameObject.activeInHierarchy && _director.CurrentStage.EndsWith("Intro")) + " (expected True: it does not hide by itself)");
+            yield return Shot(tag.ToLower() + "_intro_continue");
+            Click(ip.transform, "ContinueButton");
         }
 
         private IEnumerator ClickContinue(InstructionPanelView panel, float timeout)

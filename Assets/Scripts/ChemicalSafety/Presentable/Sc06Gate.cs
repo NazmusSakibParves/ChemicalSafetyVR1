@@ -126,8 +126,17 @@ namespace ChemicalSafety.Presentable
             _group = canvas.gameObject.GetComponent<CanvasGroup>();
             if (_group == null)
                 _group = canvas.gameObject.AddComponent<CanvasGroup>();
+            // a dark backing behind the translucent panel: the words stay readable over any scene (client: hard to read, too transparent)
+            // the panel sprite is itself see-through (low alpha), so its own shape is stacked a few times to get a nearly solid dark plate
+            for (var layer = 0; layer < 4; layer++)
+            {
+                var backing = PresentableUi.Img("FrameBack" + layer, canvas.transform, Vector2.zero, Vector2.one,
+                    art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(0.02f, 0.08f, 0.11f, 1f));
+                backing.type = Image.Type.Sliced;
+            }
+
             var plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one,
-                art.gatePanel != null ? art.gatePanel : art.holoPanel, Color.white);
+                art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(1f, 1f, 1f, 0.55f));
             plate.type = Image.Type.Sliced;
             plate.raycastTarget = true;
             var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.09f, 0.70f), new Vector2(0.90f, 0.90f),
@@ -158,6 +167,8 @@ namespace ChemicalSafety.Presentable
         private void HoloButton(string name, Transform parent, Vector2 min, Vector2 max, string label, Sprite icon, bool iconFirst,
             UnityEngine.Events.UnityAction action, Sprite background)
         {
+            var backRt = PresentableUi.Rect(name + "Back", parent, min, max);
+            PresentableUi.Img(backRt, background, new Color(0.02f, 0.08f, 0.11f, 0.85f), sliced: true);
             var rt = PresentableUi.Rect(name, parent, min, max);
             var img = PresentableUi.Img(rt, background, Color.white, sliced: true, raycast: true);
             img.type = Image.Type.Sliced;

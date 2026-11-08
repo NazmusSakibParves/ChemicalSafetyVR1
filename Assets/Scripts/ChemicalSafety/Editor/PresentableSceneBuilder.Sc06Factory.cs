@@ -280,10 +280,11 @@ namespace ChemicalSafety.Editor
             const float posterY = 1.85f;
             const float posterW = 2.46f;
             var posterH = posterW * 618f / 960f;
-            Box("PosterBack", room, new Vector3(posterX, posterY, zBack + 0.012f), new Vector3(posterW + 0.1f, posterH + 0.1f, 0.02f), Mat("Sc06FacPosterBack", new Color(1f, 1f, 1f), 0.2f, 0f), false);
+            // client (VR): the white poster glared and made the instruction box unreadable: an aged, dimmer sheet and a soft spot (still readable)
+            Box("PosterBack", room, new Vector3(posterX, posterY, zBack + 0.012f), new Vector3(posterW + 0.1f, posterH + 0.1f, 0.02f), Mat("Sc06FacPosterBack", new Color(0.62f, 0.62f, 0.58f), 0.2f, 0f), false);
             if (posterTex != null)
                 QuadObj("PosterHierarchy", room, new Vector3(posterX, posterY, zBack + 0.024f), new Vector3(0f, 180f, 0f), new Vector2(posterW, posterH),
-                    MatAlpha("Sc06FacPoster", posterTex, new Color(1.18f, 1.18f, 1.18f, 1f), false));
+                    MatAlpha("Sc06FacPoster", posterTex, new Color(0.66f, 0.66f, 0.64f, 1f), false));
             Box("PosterFrameT", room, new Vector3(posterX, posterY + posterH * 0.5f + 0.05f, zBack + 0.02f), new Vector3(posterW + 0.14f, 0.04f, 0.03f), darkSteel, false);
             Box("PosterFrameB", room, new Vector3(posterX, posterY - posterH * 0.5f - 0.05f, zBack + 0.02f), new Vector3(posterW + 0.14f, 0.04f, 0.03f), darkSteel, false);
             Box("PosterFrameL", room, new Vector3(posterX + posterW * 0.5f + 0.05f, posterY, zBack + 0.02f), new Vector3(0.04f, posterH + 0.14f, 0.03f), darkSteel, false);
@@ -296,7 +297,7 @@ namespace ChemicalSafety.Editor
             posterLight.type = LightType.Spot;
             posterLight.spotAngle = 75f;
             posterLight.range = 5.5f;
-            posterLight.intensity = 11f;
+            posterLight.intensity = 4f;
             posterLight.color = new Color(1f, 0.99f, 0.96f);
             posterLight.shadows = LightShadows.None;
 

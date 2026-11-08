@@ -1048,7 +1048,7 @@ namespace ChemicalSafety.Presentable
                 instructionPanel.SetSpeaking(true);
                 yield return PlayVoice(_instructionClip);
                 instructionPanel.SetSpeaking(false);
-                yield return PresentableFx.Wait(0.8f);
+                yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
                 yield return instructionPanel.Hide();
                 EndEyeInstruction();
                 instructionPanel.SetGlass(false);
@@ -1159,7 +1159,7 @@ namespace ChemicalSafety.Presentable
         // ------------------------------------------------------------------ Scenario 5 on the controller ray
 
         [Header("Scenario 5 (ray)")]
-        [SerializeField] private float sc05CardScale = 0.8f;
+        [SerializeField] private float sc05CardScale = 0.9f;
         [SerializeField] private float sc05CardLeft = 0.85f;
         [SerializeField] private float sc05CardUp = 0.28f;
         [SerializeField] private float sc05FirstMaskDelay = 3.5f;
@@ -1228,11 +1228,18 @@ namespace ChemicalSafety.Presentable
         [Header("Scenario 6 (ray)")]
         [SerializeField] private Sc06AutoPour sc06Auto;
         [SerializeField] private Sc06ExhaustFan sc06Fan;
-        [SerializeField] private float sc06CardScale = 0.8f;
+        [SerializeField] private float sc06CardScale = 0.9f;
         [SerializeField] private float sc06CardRight = 0.85f;
         [SerializeField] private float sc06CardUp = 0.28f;
         [SerializeField] private float sc06PopupScale = 1.85f;
+        [Header("Scenarios 6, 8, 9: the card sits over the bright hierarchy poster, so it is bigger, lower and has the clear look")]
+        [SerializeField] private float sc689CardScale = 1.0f;
+        [SerializeField] private float sc689CardRight = 0.9f;
+        [SerializeField] private float sc689CardUp = -0.18f;
         [SerializeField] private float sc06AutoDelay = 3f;
+        [Tooltip("On = after the containers stand in the hood the learner is carried by a slow glide in front of the fume hood for the pour, and back to the table afterwards (as in Scenario 8). Off = stays at the start spot.")]
+        [SerializeField] private bool sc06MoveToHood = true;
+        [SerializeField] private float sc06GlideSeconds = 4.5f;
 
         // Automatic demonstration 3 s after the instruction: hood on (green lamp), exhaust fan on (fan spins), the sash opens, the three
         // containers go into the hood one after another and the jar is filled. "PREVIEW" on the gate card plays it all again.
@@ -1264,7 +1271,18 @@ namespace ChemicalSafety.Presentable
 
                 Stage("sc06Move");
                 StartCoroutine(PlayVoice(art.voSc06AutoMove));
-                sc06Auto.StartPlay();
+                sc06Auto.StartPlay(sc06MoveToHood);
+                if (sc06MoveToHood)
+                {
+                    // the three containers go into the hood from here; then the learner glides in front of the hood for the pour
+                    while (!sc06Auto.Carried)
+                        yield return null;
+                    Stage("sc06GlideIn");
+                    yield return Glide(sc06HoodStand.position, sc06GlideSeconds);
+                    yield return PresentableFx.Wait(0.4f);
+                    sc06Auto.ContinuePour();
+                }
+
                 var pourVoice = false;
                 while (!sc06Auto.Finished)
                 {
@@ -1283,6 +1301,13 @@ namespace ChemicalSafety.Presentable
                 subtitle.Hide();
                 lab.CloseSash();
                 yield return PresentableFx.Wait(0.8f);
+                if (sc06MoveToHood)
+                {
+                    // the hood is closed: back in front of the table (the start spot) where the card opens
+                    Stage("sc06GlideOut");
+                    yield return Glide(sc06TableStand.position, sc06GlideSeconds);
+                    yield return PresentableFx.Wait(0.3f);
+                }
 
                 Stage("sc06Gate");
                 Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
@@ -1346,15 +1371,16 @@ namespace ChemicalSafety.Presentable
             {
                 // controller ray: head free, a SMALL glass card on the RIGHT, the voice reads it, then it goes by itself (no Continue click)
                 LockLocomotion(true);
-                instructionPanel.SetCompact(true, sc06CardScale);
+                instructionPanel.SetCompact(true, sc689CardScale);
                 instructionPanel.SetGlass(sc04GlassCard);
+                instructionPanel.SetClearLook(true); // over the bright poster: nearly solid backing, words one size larger
                 BeginEyeInstruction();
-                Sc05AsideInstruction(sc06CardRight, sc06CardUp); // to the LEFT: the hood stays free
+                Sc05AsideInstruction(sc689CardRight, sc689CardUp); // to the LEFT and lower: the hood stays free, clear of the poster
                 yield return instructionPanel.Show();
                 instructionPanel.SetSpeaking(true);
                 yield return PlayVoice(_instructionClip);
                 instructionPanel.SetSpeaking(false);
-                yield return PresentableFx.Wait(0.8f);
+                yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
                 yield return instructionPanel.Hide();
                 EndEyeInstruction();
                 instructionPanel.SetGlass(false);
@@ -1921,16 +1947,17 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc08Content.InstructionEnglish, art.bnSc08InstructionPanel);
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
-            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetCompact(true, sc689CardScale);
             instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
             BeginEyeInstruction();
-            Sc05AsideInstruction(sc06CardRight, sc06CardUp); // same place as Scenario 6: the hood and the table stay free
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp); // same place as Scenario 6: the hood and the table stay free
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
             yield return PlayVoice(_instructionClip);
             instructionPanel.SetSpeaking(false);
-            yield return PresentableFx.Wait(0.8f);
+            yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
             yield return instructionPanel.Hide();
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
@@ -2197,16 +2224,17 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc09RayInstruction != null ? art.voSc09RayInstruction : art.voInstruction;
             instructionPanel.SetContent(Sc09Content.RayInstruction, art.bnSc09RayInstructionPanel);
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
-            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetCompact(true, sc689CardScale);
             instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
             BeginEyeInstruction();
-            Sc05AsideInstruction(sc06CardRight, sc06CardUp); // small, to the left: the table stays free
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp); // to the left and lower: the table stays free
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
             yield return PlayVoice(_instructionClip);
             instructionPanel.SetSpeaking(false);
-            yield return PresentableFx.Wait(0.8f);
+            yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
             yield return instructionPanel.Hide();
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
@@ -2232,6 +2260,26 @@ namespace ChemicalSafety.Presentable
             Stage("sc09Done");
             if (envSc10 != null)
                 yield return RunScenario10();
+        }
+
+        // The ray intros of Scenarios 5, 6, 8 and 9: after the voice a Continue button appears (as in Scenarios 1-4 and 7) and the game play
+        // starts only when the learner clicks it (client: the card must not hide by itself). The speaker replays the instruction.
+        private IEnumerator RayInstructionContinue()
+        {
+            _continuePressed = false;
+            instructionPanel.SpeakerClicked += OnSpeakerClicked;
+            instructionPanel.Continue += OnContinueClicked;
+            yield return instructionPanel.ShowContinue();
+            instructionPanel.SetSpeaking(true);
+            StartCoroutine(PlayVoice(art.voContinueHint));
+            while (!_continuePressed)
+                yield return null;
+            instructionPanel.SpeakerClicked -= OnSpeakerClicked;
+            instructionPanel.Continue -= OnContinueClicked;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            instructionPanel.SetSpeaking(false);
+            subtitle.Hide();
         }
 
         private IEnumerator RunSc09RayFlow()
@@ -2326,10 +2374,11 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Sc09RayCard(string english, Sprite bangla, AudioClip clip)
         {
             instructionPanel.SetContent(english, bangla);
-            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetCompact(true, sc689CardScale);
             instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
             BeginEyeInstruction();
-            Sc05AsideInstruction(sc06CardRight, sc06CardUp);
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp);
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();

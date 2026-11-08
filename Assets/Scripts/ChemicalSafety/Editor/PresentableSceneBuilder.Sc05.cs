@@ -599,7 +599,9 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < 4; i++)
                 arr.GetArrayElementAtIndex(i).objectReferenceValue = maskGroups[i];
             iso.ApplyModifiedPropertiesWithoutUndo();
-            refs.spawn = Marker("Spawn_SC05", room, wh ? new Vector3(ox - 0.22f, 0f, 3.6f) : new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), 180f);
+            // warehouse: a little further back and the start view turned 14 degrees to the RIGHT (toward the pillar): the client's Quest recording showed the
+            // view starting too far left, with only one and a half of the four masks inside it. Now all four masks and the VAPOR HAZARD plate are in the view.
+            refs.spawn = Marker("Spawn_SC05", room, wh ? new Vector3(ox - 0.22f, 0f, 3.8f) : new Vector3(ox - 1.0f, 0f, pillarFront + 1.35f), wh ? 194f : 180f);
             return refs;
         }
 

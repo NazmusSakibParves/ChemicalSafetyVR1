@@ -58,6 +58,9 @@ namespace ChemicalSafety.Presentable
         /// <summary>1 carry the empty jar, 2 carry the water jug (not opened), 3 carry the acid can, 4 open the acid can and pour it into the jar.</summary>
         public int Step { get; private set; }
         public bool Finished { get; private set; }
+        /// <summary>True once the three containers stand in the hood; with waitBeforePour the pour waits there until <see cref="ContinuePour"/>.</summary>
+        public bool Carried { get; private set; }
+        private bool _pourGo = true;
         public Transform Jar => jar;
         public Transform Water => water;
         public Transform Acid => acid;
@@ -104,6 +107,8 @@ namespace ChemicalSafety.Presentable
             StopAllCoroutines();
             Running = false;
             Finished = false;
+            Carried = false;
+            _pourGo = true;
             Step = 0;
             for (var i = 0; i < 3; i++)
             {
@@ -127,13 +132,21 @@ namespace ChemicalSafety.Presentable
         }
 
         /// <summary>Starts the demonstration on this component (ResetAll stops it); poll Finished.</summary>
-        public void StartPlay()
+        /// <param name="waitBeforePour">true = stop after the carrying (Carried = true) and go on only after ContinuePour() (the learner is guided to the hood first).</param>
+        public void StartPlay(bool waitBeforePour = false)
         {
             Capture();
             Running = true;
             Finished = false;
+            Carried = false;
+            _pourGo = !waitBeforePour;
             Step = 0;
             StartCoroutine(Play());
+        }
+
+        public void ContinuePour()
+        {
+            _pourGo = true;
         }
 
         private IEnumerator Play()
@@ -150,6 +163,9 @@ namespace ChemicalSafety.Presentable
             Step = 3;
             yield return Carry(acid, acidSlot, 0.2f);
             yield return PresentableFx.Wait(settleSeconds);
+            Carried = true;
+            while (!_pourGo)
+                yield return null;
             Step = 4;
             yield return Pour(acid, acidSpout, acidSlot, jarSlot, 0f, 0.8f, true);
             yield return PresentableFx.Wait(0.8f);
