@@ -168,6 +168,15 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc06Gate sc09Gate;
         [SerializeField] private Sc06Ambience sc09Ambience;
         [SerializeField] private PresentableMcqPanel mcqSc09;
+        [Header("SC09 (controller ray, in the Scenario 6/8 factory room)")]
+        [SerializeField] private Sc09AutoSplash sc09Auto;
+        [SerializeField] private Sc09Shower sc09ShowerRay;
+        [SerializeField] private Sc09Visor sc09VisorRay;
+        [SerializeField] private Sc06Gate sc09GateRay;
+        [SerializeField] private Transform sc09NearStand;
+        [SerializeField] private Transform sc09ShowerStandRay;
+        [SerializeField] private GameObject sc09ShowerMount;
+        [SerializeField] private float sc09GlideSeconds = 4.0f;
 
         [Header("SC10")]
         [SerializeField] private GameObject envSc10;
@@ -253,6 +262,18 @@ namespace ChemicalSafety.Presentable
             yield return null;
 
 #if UNITY_EDITOR
+            // developer shortcut (EditorPref ChemSafetySc04Dev, set it from code / the console): starts at Scenario 4 and stops after it
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Dev", false) && envSc04 != null)
+            {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                // a different head height for the test (1.6 + offset): seated 1.1-1.3 m, standing 1.7 m
+                if (rig != null)
+                    rig.position += Vector3.up * UnityEditor.EditorPrefs.GetFloat("ChemSafetySc04HeadDy", 0f);
+                PresentableInput.ActiveScenario = 4; // as the real flow does before Scenario 4: controller ray (or finger touch, by the input mode)
+                yield return RunScenario4();
+                yield break;
+            }
+
             // developer shortcut (menu Chemical Safety/Presentable/Dev: start at Scenario 5): skips straight to the dyeing hall
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false) && envSc05 != null)
             {
@@ -766,9 +787,9 @@ namespace ChemicalSafety.Presentable
             if (ray4)
             {
                 LockLocomotion(true);
-                instructionPanel.SetCompact(true, rayCardScale);
+                instructionPanel.SetCompact(true, sc06CardScale);
                 instructionPanel.SetGlass(sc04GlassCard);
-                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), sc06CardScale);
             }
 
             Stage("sc04Intro");
@@ -776,6 +797,12 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContent(Sc04Content.InstructionEnglish, art.bnSc04InstructionPanel);
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
+            if (ray4)
+            {
+                Sc05AsideInstruction(sc06CardRight, sc06CardUp); // small, to the left and up: the table and the bottle stay free
+                Sc04KeepAboveTable(instructionPanel.transform, instructionPanel.BottomExtentMeters, 0.30f);
+            }
+
             yield return instructionPanel.Show();
             instructionPanel.SetSpeaking(true);
             subtitle.Hide();
@@ -880,6 +907,10 @@ namespace ChemicalSafety.Presentable
                 subtitle.Dock(null, null, 1f);
             }
 
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Dev", false))
+                yield break;
+#endif
             if (envSc05 != null)
                 yield return RunScenario5();
         }
@@ -904,6 +935,19 @@ namespace ChemicalSafety.Presentable
             rotation = Quaternion.LookRotation(Flat(position - cam), Vector3.up);
         }
 
+        private float Sc04TableTop() => gloveBench != null ? gloveBench.TopY : 0.9f;
+
+        // A card is lifted when its lowest point (the Continue button hangs below the centre by bottomExtent) would come closer than
+        // minClearance to the table top: the table must never cut through a card, whatever the learner's eye height.
+        private void Sc04KeepAboveTable(Transform card, float bottomExtent, float minClearance)
+        {
+            if (card == null)
+                return;
+            var need = Sc04TableTop() + minClearance + bottomExtent;
+            if (card.position.y < need)
+                card.position += Vector3.up * (need - card.position.y);
+        }
+
         private IEnumerator RunSc04RayFlow()
         {
             var again = true;
@@ -913,8 +957,15 @@ namespace ChemicalSafety.Presentable
                 Stage("sc04Explore");
                 if (gloveBench != null && _cam != null)
                     gloveBench.SnapTo(_cam.position.y);
-                if (first)
-                    yield return Glide(gloves.StandInFront(), 0.7f);
+                if (first && _cam != null)
+                {
+                    // the learner already starts at the glove stand (fixed bench, no forced motion); glide only if a long way off
+                    var stand = gloves.StandInFront();
+                    var off = new Vector2(_cam.position.x - stand.x, _cam.position.z - stand.z).magnitude;
+                    if (off > 0.6f)
+                        yield return Glide(stand, 0.7f);
+                }
+
                 first = false;
                 gloves.BeginAuto();
                 yield return PresentableFx.Wait(sc04FirstGloveDelay);
@@ -928,6 +979,7 @@ namespace ChemicalSafety.Presentable
                 Stage("sc04Gate");
                 yield return PresentableFx.Wait(0.4f);
                 Sc04PopupPose(0.78f, 0.15f, 1.6f, out var gatePos, out var gateRot);
+                gatePos.y = Mathf.Max(gatePos.y, Sc04TableTop() + 0.55f);
                 var choice = 0; // 1 = BACK, 2 = NEXT
                 void OnBack() => choice = 1;
                 void OnNext() => choice = 2;
@@ -946,6 +998,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc04Question");
             Sc04PopupPose(0.78f, 0.32f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqPos.y = Mathf.Max(mcqPos.y, Sc04TableTop() + 0.95f);
             mcqSc04.SetWorldScale(sc04PopupScale);
             mcqSc04.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
@@ -2099,6 +2152,253 @@ namespace ChemicalSafety.Presentable
             Stage("sc08MixDone");
         }
 
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC09 on the controller ray: the factory room of Scenario 6 and 8. Compact instruction card, the learner is taken in front of the
+        // table, the acid can slips while pouring into the empty jar (the jar breaks, acid on the face), a voiced card, the SDS (opens, hides
+        // 2 s after its voice), the learner is turned round to the RIGHT to the emergency shower behind (pushed automatically, water, drain),
+        // back to the table (can, broken jar and acid on the table and the floor), the gate card (PREVIEW replays), the question.
+        // ------------------------------------------------------------------------------------------------------------------------
+        private IEnumerator RunScenario9Ray()
+        {
+            Stage("sc09");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc07, envSc08, envSc09 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc07Ambience != null)
+                sc07Ambience.End();
+            envSc06.SetActive(true); // the same factory room as Scenario 6 and 8
+            clipboard.SetSheet(art.sdsSc09);
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            lab.SetVaporOn(false);
+            sc06Auto.ResetAll();
+            if (sc08Dilute != null)
+            {
+                sc08Dilute.ResetAll();
+                sc08Dilute.SetRodVisible(false);
+            }
+
+            if (sc08PpeRay != null)
+                sc08PpeRay.SetStationVisible(false);
+            sc09Auto.ResetAll();
+            sc09VisorRay.Hide();
+            if (sc09ShowerMount != null)
+                sc09ShowerMount.SetActive(true); // the shower only exists in Scenario 9
+            sc09ShowerRay.ResetAll();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            PlaceRig(spawnSc06.position, spawnSc06.forward);
+            sc06Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc09Intro");
+            _instructionClip = art.voSc09RayInstruction != null ? art.voSc09RayInstruction : art.voInstruction;
+            instructionPanel.SetContent(Sc09Content.RayInstruction, art.bnSc09RayInstructionPanel);
+            LockLocomotion(true); // the head is free, the body stays: no walking about in VR
+            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc06CardRight, sc06CardUp); // small, to the left: the table stays free
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return PresentableFx.Wait(0.8f);
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            yield return RunSc09RayFlow();
+
+            LockLocomotion(false);
+            mcqSc09.SetWorldScale(1f);
+            // leave the shared room as Scenario 6 and 8 expect it
+            sc09Auto.ResetAll();
+            sc09ShowerRay.StopWater();
+            sc09ShowerRay.ResetAll();
+            sc09VisorRay.Hide();
+            if (sc09ShowerMount != null)
+                sc09ShowerMount.SetActive(false);
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            if (sc06Ambience != null)
+                sc06Ambience.End();
+            Stage("sc09Done");
+            if (envSc10 != null)
+                yield return RunScenario10();
+        }
+
+        private IEnumerator RunSc09RayFlow()
+        {
+            // guided move (a slow glide, no black screen): the learner is taken in front of the table
+            Stage("sc09Move");
+            yield return Glide(sc09NearStand.position, sc09GlideSeconds);
+            yield return PresentableFx.Wait(0.5f);
+
+            var again = true;
+            while (again)
+            {
+                Stage("sc09Auto");
+                sc09Auto.ResetAll();
+                sc09ShowerRay.ResetAll();
+                sc09VisorRay.Hide();
+                clipboard.SetVisible(false);
+                yield return PresentableFx.Wait(1.0f);
+
+                Stage("sc09Pour");
+                sc09Auto.StartPlay();
+                while (!sc09Auto.Splashed)
+                    yield return null;
+
+                // the voiced "INSTRUCTIONS" card hides by itself when its voice ends
+                Stage("sc09Spill");
+                yield return PresentableFx.Wait(0.9f);
+                yield return Sc09RayCard(Sc09Content.RaySpill, art.bnSc09RaySpill, art.voSc09RaySpill);
+
+                // the safety data sheet opens with its voice and hides 2 s after it
+                Stage("sc09Sds");
+                clipboard.SetVisible(true);
+                yield return PlayVoice(art.voSc09Sds);
+                yield return PresentableFx.Wait(2f);
+                clipboard.SetVisible(false);
+                while (!sc09Auto.Finished)
+                    yield return null;
+
+                // turned round to the right, to the emergency shower behind the table
+                Stage("sc09Walk");
+                var walkVoice = StartCoroutine(PlayVoice(art.voSc09RayWalk));
+                yield return GlideTurn(sc09ShowerStandRay.position, sc09ShowerStandRay.forward, sc09GlideSeconds, 1f);
+                yield return walkVoice;
+                yield return PresentableFx.Wait(0.4f);
+
+                Stage("sc09Wash");
+                var pushVoice = StartCoroutine(PlayVoice(art.voSc09RayPush));
+                sc09ShowerRay.Push(); // the plate is pressed by itself
+                yield return pushVoice;
+                StartCoroutine(PlayVoice(art.voSc09Flush));
+                yield return sc09ShowerRay.RunWash();
+                Stage("sc09WashDone");
+                yield return PresentableFx.Wait(0.8f);
+                sc09ShowerRay.StopWater();
+                sc09ShowerRay.HideHolo();
+                StopVoice();
+
+                // back to the table: the acid can, the broken jar and the acid on the table and the floor
+                Stage("sc09Back");
+                var backVoice = StartCoroutine(PlayVoice(art.voSc09RayBack));
+                yield return GlideTurn(sc09NearStand.position, sc09NearStand.forward, sc09GlideSeconds, -1f);
+                yield return backVoice;
+                yield return PresentableFx.Wait(1.2f);
+
+                Stage("sc09Gate");
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = PREVIEW, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc09GateRay.Back += OnBack;
+                sc09GateRay.Next += OnNext;
+                sc09GateRay.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc09RayGate));
+                while (choice == 0)
+                    yield return null;
+                sc09GateRay.Back -= OnBack;
+                sc09GateRay.Next -= OnNext;
+                sc09GateRay.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc09Question");
+            Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc09.SetWorldScale(sc06PopupScale);
+            mcqSc09.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc09, BuildSc09RayQuestion(), false, 9);
+        }
+
+        // A small instruction card at the left (as the first card): it shows, its voice plays, it hides by itself.
+        private IEnumerator Sc09RayCard(string english, Sprite bangla, AudioClip clip)
+        {
+            instructionPanel.SetContent(english, bangla);
+            instructionPanel.SetCompact(true, sc06CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc06CardRight, sc06CardUp);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            _instructionClip = clip;
+            yield return PlayVoice(clip);
+            instructionPanel.SetSpeaking(false);
+            yield return PresentableFx.Wait(0.6f);
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+        }
+
+        // Glide to a floor spot while turning round the head to the stand's direction (direction +1 = turn RIGHT, -1 = turn LEFT).
+        private IEnumerator GlideTurn(Vector3 floorTarget, Vector3 targetForward, float duration, float direction)
+        {
+            if (rig == null || _cam == null)
+                yield break;
+            var startHead = new Vector3(_cam.position.x, rig.position.y, _cam.position.z);
+            var target = new Vector3(floorTarget.x, rig.position.y, floorTarget.z);
+            var startYaw = Mathf.Atan2(_cam.forward.x, _cam.forward.z) * Mathf.Rad2Deg;
+            var endYaw = Mathf.Atan2(targetForward.x, targetForward.z) * Mathf.Rad2Deg;
+            var total = Mathf.Repeat((endYaw - startYaw) * direction, 360f) * direction;
+            var lastOffset = Vector3.zero;
+            var lastAngle = 0f;
+            yield return PresentableFx.Tween(duration, t =>
+            {
+                var angle = total * t;
+                rig.RotateAround(_cam.position, Vector3.up, angle - lastAngle);
+                lastAngle = angle;
+                var offset = (target - startHead) * t;
+                rig.position += offset - lastOffset;
+                lastOffset = offset;
+                Physics.SyncTransforms();
+            });
+            PlaceRig(floorTarget, targetForward); // exact final spot and direction
+        }
+
+        private static PresentableMcqPanel.Question BuildSc09RayQuestion()
+        {
+            var labels = Sc09Content.RayOptionLabels;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = Sc09Content.RayOptionFeedback[i],
+                    wrongTitle = Sc09Content.RayOptionWrongTitle[i],
+                    reason = Sc09Content.RayOptionReasons != null && i < Sc09Content.RayOptionReasons.Length ? Sc09Content.RayOptionReasons[i] : string.Empty
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc09Content.RayQuestionHeader,
+                prompt = Sc09Content.RayQuestionPrompt,
+                correctIndex = Sc09Content.RayCorrectIndex,
+                correctTitle = Sc09Content.RayCorrectTitle,
+                nextLabel = Sc09Content.FinishLabel,
+                options = options,
+                fancy = true,
+                // ray flow: as Scenarios 1-8 - tick / cross, a reason under every option, NEXT (no retry)
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc09Content.TagCorrect,
+                tagWrong = Sc09Content.TagWrong
+            };
+        }
+
         // SC09: chemical splash. Pour the purple sample, the flask slips and breaks, the liquid lands on the face shield, read the SDS,
         // walk to the safety shower, push it, wash the shield clean; gate card; MCQ.
         private IEnumerator Sc09Card(string english, Sprite bangla, AudioClip clip)
@@ -2133,6 +2433,14 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator RunScenario9()
         {
+            if (PresentableInput.AllowedIn(9) && sc09Auto != null && sc09ShowerRay != null && sc09GateRay != null && sc09NearStand != null &&
+                sc09ShowerStandRay != null && envSc06 != null)
+            {
+                PresentableInput.ActiveScenario = 9; // controller ray, in the Scenario 6/8 factory room (finger touch: set the input mode / RayScenarios)
+                yield return RunScenario9Ray();
+                yield break;
+            }
+
             Stage("sc09");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -3585,7 +3893,7 @@ namespace ChemicalSafety.Presentable
             {
                 if (_answerVoice != null)
                     StopCoroutine(_answerVoice);
-                _answerVoice = StartCoroutine(AnswerVoice(correct, scenario));
+                _answerVoice = StartCoroutine(AnswerVoice(correct, scenario, q.inlineReveal));
             }
 
             void OnNext() => _nextPressed = true;
@@ -3619,7 +3927,7 @@ namespace ChemicalSafety.Presentable
         }
 
         // No subtitle here: the always-on-top bar would cover the correct / wrong card, which already shows the text.
-        private IEnumerator AnswerVoice(bool correct, int scenario)
+        private IEnumerator AnswerVoice(bool correct, int scenario, bool inlineReveal = false)
         {
             yield return PresentableFx.Wait(0.25f);
             // Scenario 7, right answer: no "success" / NEXT voice until the hero has put the fire out (the fire-out line plays by itself)
@@ -3650,6 +3958,13 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc03WrongNextBn : art.voSc03WrongNextEn);
                 else
                     yield return PlayVoice(Loc.IsBangla ? art.voSc03CompleteBn : art.voSc03CompleteEn);
+                yield break;
+            }
+
+            // Scenario 4-9 on the ray: the answer is shown with its reasons and the scenario goes on (no retry), as in Scenario 1-3
+            if (!correct && inlineReveal && scenario >= 4 && art.voWrongNextBn != null && scenario < art.voWrongNextBn.Length && art.voWrongNextBn[scenario] != null)
+            {
+                yield return PlayVoice(art.voWrongNextBn[scenario]);
                 yield break;
             }
 

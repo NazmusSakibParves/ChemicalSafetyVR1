@@ -80,6 +80,22 @@ namespace ChemicalSafety.Presentable
                 : new Bounds(transform.position, Vector3.zero);
         }
 
+        /// <summary>Length (z) of each piece of a glove pair, to check that the two gloves of a pair have the same size (tests).</summary>
+        public float[] PieceLengths(int index)
+        {
+            var follow = index >= 0 && gloves != null && index < gloves.Length && gloves[index] != null ? gloves[index].GetComponent<GloveParts>() : null;
+            if (follow == null || follow.Parts == null)
+                return new float[0];
+            var lens = new float[follow.Parts.Length];
+            for (var i = 0; i < lens.Length; i++)
+            {
+                var r = follow.Parts[i] != null ? follow.Parts[i].GetComponent<Renderer>() : null;
+                lens[i] = r != null ? r.bounds.size.z : 0f;
+            }
+
+            return lens;
+        }
+
         /// <summary>Floor point just in front of the gloves (+Z, the side the player faces from).</summary>
         public Vector3 StandInFront()
         {
@@ -152,10 +168,28 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(Hold(index));
         }
 
+        // Automatic flow (controller ray): the glove and its properties card are shown SIDE BY SIDE, at the same eye height, in the same
+        // vertical plane (parallel, both facing the learner), about 1 m away: both are inside about +-21 degrees of the view axis, so the
+        // learner reads glove + properties without turning the head. Yaw only from the head (works seated or standing).
+        [Header("Automatic flow: glove + card side by side")]
+        [SerializeField] private float pairDistance = 0.95f;
+        [SerializeField] private float pairGloveSide = 0.22f;
+        [SerializeField] private float pairCardSide = 0.18f;
+        [SerializeField] private float pairCardScale = 0.82f;
+        [SerializeField] private float pairHeight = 0.06f;
+
+        private Vector3 _cardBaseScale = Vector3.one;
+
+        /// <summary>The distance in metres at which the automatic flow holds the glove and the card (tests).</summary>
+        public float PairDistance => pairDistance;
+
         private Vector3 HandPoint(Transform cam, Vector3 fwd, Vector3 right)
         {
+            var head = cam != null ? cam.position : Vector3.zero;
+            if (!_on)
+                return head + fwd * pairDistance - right * pairGloveSide + Vector3.up * pairHeight;
             // centred a little below eye level so the upright glove spans the view
-            return (cam != null ? cam.position : Vector3.zero) + fwd * 0.5f - right * 0.23f + Vector3.down * 0.12f;
+            return head + fwd * 0.5f - right * 0.23f + Vector3.down * 0.12f;
         }
 
         private IEnumerator Hold(int index)
@@ -422,7 +456,10 @@ namespace ChemicalSafety.Presentable
             var head = cam != null ? cam.position : Vector3.zero;
             // the automatic flow sets the card a little higher and further right so the acid jug behind the gloves stays visible
             var auto = !_on;
-            _card.position = head + fwd * 0.6f + right * (auto ? 0.33f : 0.27f) + Vector3.up * (auto ? 0.05f : -0.02f);
+            _card.localScale = auto ? _cardBaseScale * pairCardScale : _cardBaseScale;
+            _card.position = auto
+                ? head + fwd * pairDistance + right * pairCardSide + Vector3.up * pairHeight
+                : head + fwd * 0.6f + right * 0.27f + Vector3.up * -0.02f;
             _card.rotation = Quaternion.LookRotation(fwd, Vector3.up);
             var lines = new[] { Sc04Content.Materials, Sc04Content.Ratings, Sc04Content.Times };
             for (var i = 0; i < _values.Length && i < lines.Length; i++)
@@ -503,6 +540,7 @@ namespace ChemicalSafety.Presentable
             }
 
             PresentableUi.AlwaysOnTop(canvas);
+            _cardBaseScale = _card.localScale;
             _card.gameObject.SetActive(false);
         }
 

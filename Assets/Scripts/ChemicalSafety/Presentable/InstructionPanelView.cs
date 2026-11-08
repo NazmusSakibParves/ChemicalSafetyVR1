@@ -24,6 +24,11 @@ namespace ChemicalSafety.Presentable
         private TextMeshProUGUI _title;
         private Image _frameImg;
         private Image _glassImg;
+        private Image _glassBack;
+        private Image _pillBack;
+
+        [Tooltip("Glass card: opacity of the dark backing behind the translucent glass (0 = the old see-through card, 1 = solid). Higher = the words and the box stay clear over any scene, also for weak eyes.")]
+        [SerializeField, Range(0f, 1f)] private float glassBackAlpha = 0.62f;
         private Image _pill;
         private RectTransform _pillRt;
         private TextMeshProUGUI _contLabel;
@@ -64,6 +69,10 @@ namespace ChemicalSafety.Presentable
             _frameImg = PresentableUi.Img(_frameRt, art.popupFrame, Color.white);
 
             // Scenario 1 glass card (client reference): translucent teal glass with a glowing aqua border, off until SetGlass(true)
+            // a dark backing under the glass keeps the words and the card clear over a bright or busy scene (client: too transparent)
+            var backRt = PresentableUi.Rect("GlassBack", root, Vector2.zero, Vector2.one);
+            _glassBack = PresentableUi.Img(backRt, art.glassPanel, new Color(0.02f, 0.08f, 0.11f, glassBackAlpha), sliced: true);
+            _glassBack.gameObject.SetActive(false);
             var glassRt = PresentableUi.Rect("Glass", root, Vector2.zero, Vector2.one);
             _glassImg = PresentableUi.Img(glassRt, art.glassPanel, Color.white, sliced: true);
             _glassImg.gameObject.SetActive(false);
@@ -107,6 +116,9 @@ namespace ChemicalSafety.Presentable
             _continue.gameObject.AddComponent<CanvasGroup>();
             var contHit = PresentableUi.Img(PresentableUi.Rect("Hit", _continue, Vector2.zero, Vector2.one), null,
                 new Color(1f, 1f, 1f, 0.02f), raycast: true);
+            var pillBackRt = PresentableUi.Rect("PillBack", _continue, Vector2.zero, Vector2.one);
+            _pillBack = PresentableUi.Img(pillBackRt, art.glassButton, new Color(0.02f, 0.08f, 0.11f, glassBackAlpha), sliced: true);
+            _pillBack.gameObject.SetActive(false);
             _pillRt = PresentableUi.Rect("Pill", _continue, Vector2.zero, Vector2.one, new Vector2(-80f, -52f), new Vector2(80f, 52f));
             _pill = PresentableUi.Img(_pillRt, art.button, Color.white);
             _contLabel = PresentableUi.Text("Label", _continue, Vector2.zero, Vector2.one, "Continue", 46f, Color.white,
@@ -156,8 +168,10 @@ namespace ChemicalSafety.Presentable
             _glass = on;
             _frameImg.gameObject.SetActive(!on);
             _glassImg.gameObject.SetActive(on);
+            _glassBack.gameObject.SetActive(on);
+            _pillBack.gameObject.SetActive(on);
             _title.color = on ? new Color(0.72f, 0.96f, 1f) : Color.white;
-            _title.fontSize = on ? 46f : 40f;
+            _title.fontSize = on ? 52f : 40f;
             _title.characterSpacing = on ? 6f : 0f;
             _divHeader.gameObject.SetActive(on);
             _divFooter.gameObject.SetActive(on);
@@ -168,7 +182,7 @@ namespace ChemicalSafety.Presentable
             _pill.type = on ? Image.Type.Sliced : Image.Type.Simple;
             _pillRt.offsetMin = on ? Vector2.zero : new Vector2(-80f, -52f);
             _pillRt.offsetMax = on ? Vector2.zero : new Vector2(80f, 52f);
-            _contLabel.fontSize = on ? 40f : 46f;
+            _contLabel.fontSize = on ? 44f : 46f;
             Reflow();
         }
 
@@ -347,10 +361,11 @@ namespace ChemicalSafety.Presentable
         // Glass card: title centred at the top, speaker in the top right corner, the words centred below, Continue under the card.
         private void ReflowGlass()
         {
-            const float cardW = 1000f;
-            const float textW = 840f;
+            // (client: the box a little bigger and the words one size larger: card 1000 -> 1100, words 840 -> 940 wide, 40 -> 44 pt)
+            const float cardW = 1100f;
+            const float textW = 940f;
             _english.enableAutoSizing = false;
-            _english.fontSize = 40f;
+            _english.fontSize = 44f;
             _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
             var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
             _english.gameObject.SetActive(!useBn);
@@ -375,10 +390,10 @@ namespace ChemicalSafety.Presentable
             var h = Mathf.Max(430f, bodyTop + bodyPad + body + bodyPad + footBand);
             _canvasRt.sizeDelta = new Vector2(cardW, h);
 
-            Band(_titleRt, padTop, titleH, 640f);
-            Band(_cap, 3f, 26f, 380f);
-            Band(_divHeader, headerLineY, lineH, 880f);
-            Band(_divFooter, h - footBand + 6f, lineH, 880f);
+            Band(_titleRt, padTop, titleH, 720f);
+            Band(_cap, 3f, 26f, 420f);
+            Band(_divHeader, headerLineY, lineH, 980f);
+            Band(_divFooter, h - footBand + 6f, lineH, 980f);
             var speakerZ = _speaker.localPosition.z;
             _speaker.anchorMin = _speaker.anchorMax = new Vector2(1f, 1f);
             _speaker.pivot = new Vector2(1f, 1f);

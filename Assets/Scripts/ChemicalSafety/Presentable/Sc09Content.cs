@@ -38,6 +38,21 @@ namespace ChemicalSafety.Presentable
 
         public static string[] OptionWrongTitle => Loc.A("SC09", "OptionWrongTitle");
 
+        // controller-ray flow (in the Scenario 6/8 factory room): the client's question and options, tick / cross with a reason under every option
+        public static string RayInstruction => Loc.T("SC09", "RayInstruction");
+        public static string RaySpill => Loc.T("SC09", "RaySpill");
+        public static string RayGateBodyPrev => Loc.T("SC09", "RayGateBodyPrev");
+        public static string RayQuestionHeader => Loc.T("SC09", "RayQuestionHeader");
+        public static string RayQuestionPrompt => Loc.T("SC09", "RayQuestionPrompt");
+        public static string RayCorrectTitle => Loc.T("SC09", "RayCorrectTitle");
+        public static string TagCorrect => Loc.T("SC09", "TagCorrect");
+        public static string TagWrong => Loc.T("SC09", "TagWrong");
+        public const int RayCorrectIndex = 2;
+        public static string[] RayOptionLabels => Loc.A("SC09", "RayOptionLabels");
+        public static string[] RayOptionFeedback => Loc.A("SC09", "RayOptionFeedback");
+        public static string[] RayOptionReasons => Loc.A("SC09", "RayOptionReasons");
+        public static string[] RayOptionWrongTitle => Loc.A("SC09", "RayOptionWrongTitle");
+
         public static string ModuleComplete => Loc.T("SC09", "ModuleComplete");
     }
 }

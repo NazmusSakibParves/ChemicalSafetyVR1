@@ -61,6 +61,7 @@ namespace ChemicalSafety.Presentable
             public Transform parent;
             public Vector3 localPos;
             public Quaternion localRot;
+            public Vector3 localScale = Vector3.one; // the cap is re-parented with world scale kept: restore its own local scale or it comes back too big
         }
 
         private Cap _acidCap;
@@ -103,7 +104,7 @@ namespace ChemicalSafety.Presentable
         {
             if (go == null)
                 return null;
-            return new Cap { go = go, parent = go.transform.parent, localPos = go.transform.localPosition, localRot = go.transform.localRotation };
+            return new Cap { go = go, parent = go.transform.parent, localPos = go.transform.localPosition, localRot = go.transform.localRotation, localScale = go.transform.localScale };
         }
 
         private void Capture()
@@ -512,6 +513,7 @@ namespace ChemicalSafety.Presentable
             t.SetParent(cap.parent, false);
             t.localPosition = cap.localPos;
             t.localRotation = cap.localRot;
+            t.localScale = cap.localScale;
         }
 
         private static void RestoreCap(Cap cap)
@@ -523,6 +525,7 @@ namespace ChemicalSafety.Presentable
                 cap.go.transform.SetParent(cap.parent, false);
                 cap.go.transform.localPosition = cap.localPos;
                 cap.go.transform.localRotation = cap.localRot;
+                cap.go.transform.localScale = cap.localScale;
             }
 
             cap.go.SetActive(true);

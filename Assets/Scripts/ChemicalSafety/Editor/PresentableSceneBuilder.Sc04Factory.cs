@@ -19,8 +19,25 @@ namespace ChemicalSafety.Editor
         // ------------------------------------------------------------------ the one switch for the Scenario 4 look
         private static readonly bool Sc04UseFactory = true;
 
-        // The photo of the hall and machines behind the table (ON again: the client wants to see this version in VR first). false = the yard of real 3D machines (Sc04MachineYard).
-        private static readonly bool Sc04UsePhotoBackdrop = true;
+        // The photo of the hall and machines behind the table. OFF by default (2026-11-09, Quest feedback: the flat photo on a cylinder swims, is blurry and
+        // double-images against the real hall). false = the yard of real 3D machines (Sc04MachineYard). true = the photo dome of before.
+        private static readonly bool Sc04UsePhotoBackdrop = false;
+
+        // The HCl bottle: true = the client's clear 5 litre jug model (Jar1.glb, as the water jug of Scenario 6) with the HCl label, real size.
+        // false = the procedural lathe jug of before (scaled 1.7).
+        private static readonly bool Sc04UseClientBottle = true;
+
+        // true = the bench keeps one natural height (no following of the head: no drifting world). false = Sc04BenchHeight follows the head as before.
+        private static readonly bool Sc04FixedBench = true;
+
+        // true = white plaster walls with years of soot, smudges and drips (client); false = the grey concrete of before
+        private static readonly bool Sc04OldWhiteWalls = true;
+
+        // false = no steam and no dust motes in the hall (client: no smoke in the room, calm picture for the eyes)
+        private static readonly bool Sc04Atmosphere = false;
+
+        // soft, calm light for the headset: few real lights, windows not brighter than 1.0, no flicker (one-line switch back)
+        private static readonly bool Sc04SoftLight = true;
 
         private const float Sc04HallBackZ = -16f;
         private const float Sc04HallFrontZ = 3.6f;
@@ -74,10 +91,26 @@ namespace ChemicalSafety.Editor
             var floorSolid = room.Find("FloorSolid");
             if (floorSolid != null)
                 floorSolid.gameObject.AddComponent<TeleportationArea>();
-            Shell("Wall_Back", new Vector3(cx, h * 0.5f, Sc04HallBackZ), new Vector3(w, h, 0.12f), wallBack);
-            Shell("Wall_Front", new Vector3(cx, h * 0.5f, Sc04HallFrontZ), new Vector3(w, h, 0.12f), wallBack);
-            Shell("Wall_Left", new Vector3(x1, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSide);
-            Shell("Wall_Right", new Vector3(x0, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSide);
+            if (Sc04OldWhiteWalls)
+            {
+                // white plaster (the Scenario 6 / 8 / 9 factory plaster), dirt and soot added below
+                var plaster = Sc01Pbr("Sc04FacPlasterWhite", "Wall", new Color(1.5f, 1.5f, 1.46f), 0.12f, 1f);
+                TexBox("Wall_Back", room, new Vector3(cx, h * 0.5f, Sc04HallBackZ), new Vector3(w, h, 0.12f), 0f, plaster, 2.4f, true);
+                TexBox("Wall_Front", room, new Vector3(cx, h * 0.5f, Sc04HallFrontZ), new Vector3(w, h, 0.12f), 0f, plaster, 2.4f, true);
+                TexBox("Wall_Left", room, new Vector3(x1, h * 0.5f, cz), new Vector3(0.12f, h, d), 0f, plaster, 2.4f, true);
+                TexBox("Wall_Right", room, new Vector3(x0, h * 0.5f, cz), new Vector3(0.12f, h, d), 0f, plaster, 2.4f, true);
+                pillarMat = plaster;
+            }
+            else
+            {
+                Shell("Wall_Back", new Vector3(cx, h * 0.5f, Sc04HallBackZ), new Vector3(w, h, 0.12f), wallBack);
+                Shell("Wall_Front", new Vector3(cx, h * 0.5f, Sc04HallFrontZ), new Vector3(w, h, 0.12f), wallBack);
+                Shell("Wall_Left", new Vector3(x1, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSide);
+                Shell("Wall_Right", new Vector3(x0, h * 0.5f, cz), new Vector3(0.12f, h, d), wallSide);
+            }
+
+            if (Sc04OldWhiteWalls)
+                Sc04WallGrime(room, x0, x1, cz, h, d);
             Box("Ceiling", room, new Vector3(cx, h, cz), new Vector3(w, 0.1f, d), ceilMat, false);
 
             var steel = Mat("Sc04FacSteel", new Color(0.42f, 0.44f, 0.46f), 0.4f, 0.25f);
@@ -86,7 +119,7 @@ namespace ChemicalSafety.Editor
             var dark = Mat("Sc04FacDark", new Color(0.12f, 0.12f, 0.13f), 0.2f, 0.1f);
 
             // ---- right wall: plastered pillars with barred windows between them (daylight comes in from the right)
-            var glassGlow = Mat("Sc04FacWindow", new Color(0.88f, 0.94f, 1f), 0f, 0f, null, new Color(1.25f, 1.32f, 1.4f), true);
+            var glassGlow = Mat("Sc04FacWindow", new Color(0.88f, 0.94f, 1f), 0f, 0f, null, new Color(0.92f, 0.97f, 1.0f), true); // <= 1.0: soft daylight, no blown-out panes
             var frameMat = Mat("Sc04FacWinFrame", new Color(0.32f, 0.33f, 0.32f), 0.3f, 0.3f);
             var pillarZ = new[] { 0.25f, -3.6f, -7.6f, -11.6f };
             foreach (var pz in pillarZ)
@@ -108,15 +141,22 @@ namespace ChemicalSafety.Editor
                 for (var b = 0; b <= 4; b++)
                     Box("WinBarH", room, new Vector3(wx + 0.04f, 1.15f + b * 0.575f, zc), new Vector3(0.03f, 0.03f, bay - 0.5f), frameMat, false);
                 // low wall under the sill, stained
-                var shaft = new GameObject("WindowLight");
-                shaft.transform.SetParent(room, false);
-                shaft.transform.position = new Vector3(x0 + 1.4f, 2.6f, zc);
-                var l = shaft.AddComponent<Light>();
-                l.type = LightType.Point;
-                l.color = new Color(0.85f, 0.92f, 1f);
-                l.range = 6.5f;
-                l.intensity = 2.2f;
-                l.shadows = LightShadows.None;
+                if (!Sc04SoftLight)
+                {
+                    var shaft = new GameObject("WindowLight");
+                    shaft.transform.SetParent(room, false);
+                    shaft.transform.position = new Vector3(x0 + 1.4f, 2.6f, zc);
+                    var l = shaft.AddComponent<Light>();
+                    l.type = LightType.Point;
+                    l.color = new Color(0.85f, 0.92f, 1f);
+                    l.range = 6.5f;
+                    l.intensity = 2.2f;
+                    l.shadows = LightShadows.None;
+                }
+
+                // soft light: only the first two bays throw a sun patch (table and floor), the third bay stays emissive glass only
+                if (Sc04SoftLight && i > 1)
+                    continue;
                 // sun through the barred window: a spot with a pane-grid cookie lands on the table and the floor
                 var sun = new GameObject("SunPatch");
                 sun.transform.SetParent(room, false);
@@ -128,7 +168,7 @@ namespace ChemicalSafety.Editor
                 sl.color = new Color(1f, 0.93f, 0.78f);
                 sl.spotAngle = i == 0 ? 34f : 50f;
                 sl.range = 9f;
-                sl.intensity = i == 0 ? 9f : 5f;
+                sl.intensity = Sc04SoftLight ? (i == 0 ? 5.5f : 3.2f) : (i == 0 ? 9f : 5f);
                 sl.shadows = LightShadows.None;
                 sl.cookie = Sc04WindowCookie();
             }
@@ -180,6 +220,9 @@ namespace ChemicalSafety.Editor
                 Box("TubeHousing" + i, room, p + Vector3.up * 0.04f, new Vector3(0.14f, 0.05f, 1.3f), housing, false);
                 Box("Tube" + i + "a", room, p - new Vector3(0.035f, 0f, 0f), new Vector3(0.035f, 0.035f, 1.2f), tubeMat, false);
                 Box("Tube" + i + "b", room, p + new Vector3(0.035f, 0f, 0f), new Vector3(0.035f, 0.035f, 1.2f), tubeMat, false);
+                // soft light: only the two tubes over the learner and the table are real lights (the far tubes are glowing geometry)
+                if (Sc04SoftLight && i > 1)
+                    continue;
                 var lightGo = new GameObject("TubeLight" + i);
                 lightGo.transform.SetParent(room, false);
                 lightGo.transform.position = p + Vector3.down * 0.5f;
@@ -187,7 +230,7 @@ namespace ChemicalSafety.Editor
                 l.type = LightType.Point;
                 l.color = new Color(0.94f, 0.96f, 0.92f);
                 l.range = 8.5f;
-                l.intensity = i < 2 ? 3.0f : 2.4f;
+                l.intensity = Sc04SoftLight ? 3.4f : (i < 2 ? 3.0f : 2.4f);
                 l.shadows = LightShadows.None;
             }
 
@@ -206,16 +249,19 @@ namespace ChemicalSafety.Editor
 
             // ---- life in the air: dust motes drifting in the window light, steam wisps rising in front of the machines of the photo
             var glowTex = art != null && art.radialGlow != null ? art.radialGlow.texture : null;
-            var dustMat = ParticleMat("Sc04Dust", glowTex, true);
-            BuildDust(room, new Vector3(ox - 0.3f, 2.1f, -0.4f), new Vector3(6.4f, 3.2f, 5.5f), dustMat);
-            var wisp = ParticleMat("Sc05SteamWisp", Sc05Tex("Steam_Wisp"), false);
-            Steam(room, "FrontSteamL", new Vector3(ox + 2.0f, 0.3f, -0.6f), 1.1f, 2.4f, 0.12f, wisp, 0.14f, 6f);
-            Steam(room, "FrontSteamR", new Vector3(ox - 1.8f, 0.3f, -0.8f), 1.1f, 2.4f, 0.12f, wisp, 0.12f, 6f);
+            if (Sc04Atmosphere)
+            {
+                var dustMat = ParticleMat("Sc04Dust", glowTex, true);
+                BuildDust(room, new Vector3(ox - 0.3f, 2.1f, -0.4f), new Vector3(6.4f, 3.2f, 5.5f), dustMat);
+                var wisp = ParticleMat("Sc05SteamWisp", Sc05Tex("Steam_Wisp"), false);
+                Steam(room, "FrontSteamL", new Vector3(ox + 2.0f, 0.3f, -0.6f), 1.1f, 2.4f, 0.12f, wisp, 0.14f, 6f);
+                Steam(room, "FrontSteamR", new Vector3(ox - 1.8f, 0.3f, -0.8f), 1.1f, 2.4f, 0.12f, wisp, 0.12f, 6f);
 
-            // ---- a bit of steam from the machines, drums at the left wall
-            var steamMat = ParticleMat("Sc05SteamPuff", Sc05Tex("Steam_Puff"), false);
-            Steam(room, "Steam0", new Vector3(ox + 3.0f, 1.9f, -4.0f), 0.7f, 3f, 0.35f, steamMat, 0.3f);
-            Steam(room, "Steam1", new Vector3(ox + 3.0f, 1.9f, -9.0f), 0.7f, 3f, 0.35f, steamMat, 0.3f);
+                // ---- a bit of steam from the machines, drums at the left wall
+                var steamMat = ParticleMat("Sc05SteamPuff", Sc05Tex("Steam_Puff"), false);
+                Steam(room, "Steam0", new Vector3(ox + 3.0f, 1.9f, -4.0f), 0.7f, 3f, 0.35f, steamMat, 0.3f);
+                Steam(room, "Steam1", new Vector3(ox + 3.0f, 1.9f, -9.0f), 0.7f, 3f, 0.35f, steamMat, 0.3f);
+            }
             var barrelBlue = Mat("Sc04FacBarrelBlue", new Color(0.12f, 0.24f, 0.45f), 0.4f, 0.3f);
             var barrelGrey = Mat("Sc04FacBarrelGrey", new Color(0.35f, 0.37f, 0.38f), 0.35f, 0.4f);
             for (var i = 0; i < 4; i++)
@@ -259,7 +305,7 @@ namespace ChemicalSafety.Editor
         {
             var m = Sc04Pbr("Sc04TableSteelBright", "Steel", new Color(0.76f, 0.78f, 0.82f), new Vector2(Mathf.Max(1f, tableSize.x / 1.3f), Mathf.Max(1f, tableSize.z / 0.9f)),
                 1f, 0.5f, false);
-            m.SetFloat("_Smoothness", 0.6f);
+            m.SetFloat("_Smoothness", Sc04SoftLight ? 0.42f : 0.6f);
             m.SetFloat("_Metallic", 0.22f);
             EditorUtility.SetDirty(m);
             return m;
@@ -431,6 +477,9 @@ namespace ChemicalSafety.Editor
                 }
             }
 
+            var pressRoot = yard.Find("HydroPressLine");
+            if (pressRoot != null)
+                Sc04MuteGltf(pressRoot.gameObject);
             // 2a. textile calenders (like the photo) on the right of the aisle, panels toward the aisle
             Sc04Calender(yard, "CalenderA", new Vector3(ox - 1.75f, 0f, -4.6f), 3.0f, 1.15f, 2.05f, 1f, false);
             Sc04Calender(yard, "CalenderB", new Vector3(ox - 1.75f, 0f, -8.0f), 3.0f, 1.15f, 1.9f, 1f, true);
@@ -443,8 +492,8 @@ namespace ChemicalSafety.Editor
                 dye.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
                 var fb = BoundsOfTree(dye.transform);
                 dye.transform.position = new Vector3(ox + 1.7f, -fb.min.y, -0.2f);
-                var vat = Mat("Sc04YardVat", new Color(0.52f, 0.56f, 0.57f), 0.35f, 0f);
-                var panel = Mat("Sc04YardPanel", new Color(0.36f, 0.48f, 0.58f), 0.3f, 0f);
+                var vat = Mat("Sc04YardVat", new Color(0.30f, 0.31f, 0.31f), 0.3f, 0.2f);
+                var panel = Mat("Sc04YardPanel", new Color(0.26f, 0.28f, 0.30f), 0.3f, 0.2f);
                 foreach (var r in dye.GetComponentsInChildren<Renderer>(true))
                 {
                     var b = r.bounds;
@@ -482,14 +531,152 @@ namespace ChemicalSafety.Editor
                 }
 
                 Sc04NoColliders(dye);
+                Sc04MuteGltf(dye);
             }
 
             // 3. Scenario 12 polished vessel with its pipe stand, far end of the right side (kept small: the models are hall sized)
             var tank = Sc12Part("Sc12Plant.glb", "TankBig", yard);
             tank.name = "Vessel";
             Sc04NoColliders(tank);
+            Sc04MuteGltf(tank);
             Sc04PlaceOnFloor(tank, ox - 1.6f, -14.2f, 90f, 2.0f);
             Debug.Log("[SC04] vessel size " + BoundsOfTree(tank.transform).size.ToString("F2"));
+        }
+
+        // The glb machines carry bright painted colours (cyan, green, pink, blue). The client's photo shows dark, dull, dirty machines: every
+        // strongly coloured paint is replaced by a muted charcoal of the same hue family; neutral steel and plastic keep their own material.
+        private static void Sc04MuteGltf(GameObject root)
+        {
+            var cache = new Dictionary<Material, Material>();
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var ms = r.sharedMaterials;
+                var changed = false;
+                for (var k = 0; k < ms.Length; k++)
+                {
+                    var m = ms[k];
+                    if (m == null || m.shader == null || m.shader.name.StartsWith("Universal"))
+                        continue;
+                    if (!cache.TryGetValue(m, out var rep))
+                    {
+                        rep = Sc04MutedFor(m);
+                        cache[m] = rep;
+                    }
+
+                    if (rep != null)
+                    {
+                        ms[k] = rep;
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                    r.sharedMaterials = ms;
+            }
+        }
+
+        private static Material Sc04MutedFor(Material m)
+        {
+            var c = m.HasProperty("baseColorFactor") ? m.GetColor("baseColorFactor") : Color.white;
+            var tex = m.HasProperty("baseColorTexture") ? m.GetTexture("baseColorTexture") as Texture2D : null;
+            if (tex != null)
+                c *= Sc04AverageColor(tex);
+            Color.RGBToHSV(c, out var h, out var sat, out var v);
+            if (sat < 0.28f)
+                return null; // already neutral metal / plastic
+            var name = "Sc04Muted_" + m.name.Replace(" ", "").Replace(".", "");
+            if ((h < 0.03f || h > 0.97f) && v > 0.4f)
+                return Mat(name, new Color(0.40f, 0.13f, 0.10f), 0.35f, 0.1f); // a dull red part (button, valve)
+            if (h > 0.08f && h < 0.18f)
+                return Mat(name, new Color(0.62f, 0.50f, 0.12f), 0.3f, 0.05f); // dirty yellow
+            return Mat(name, Color.HSVToRGB(h, 0.12f, Mathf.Clamp(v * 0.55f, 0.16f, 0.32f)), 0.35f, 0.45f);
+        }
+
+        private static Color Sc04AverageColor(Texture2D tex)
+        {
+            var rt = RenderTexture.GetTemporary(8, 8, 0);
+            Graphics.Blit(tex, rt);
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var t2 = new Texture2D(8, 8, TextureFormat.RGBA32, false);
+            t2.ReadPixels(new Rect(0, 0, 8, 8), 0, 0);
+            t2.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            var sum = Color.black;
+            var px = t2.GetPixels();
+            foreach (var p in px)
+                sum += p;
+            Object.DestroyImmediate(t2);
+            return sum / px.Length;
+        }
+
+        // Years of dirt on the white plaster: soot at the ceiling, smudges, long drips, a few broken patches showing brick, oil blots on the floor.
+        private static void Sc04WallGrime(Transform room, float x0, float x1, float cz, float h, float d)
+        {
+            var rs = new System.Random(41);
+            float R() => (float)rs.NextDouble();
+            var zBack = Sc04HallBackZ;
+            var zFront = Sc04HallFrontZ;
+
+            void Quad(string name, Vector3 pos, Vector3 euler, Vector2 size, Material mat)
+            {
+                var q = QuadObj(name, room, pos, euler, size, mat);
+                Object.DestroyImmediate(q.GetComponent<Collider>());
+            }
+
+            var blot = Sc03Tex("Stain_Blot");
+            var drip = Sc03Tex("Grime_Drip");
+            var smudge = blot != null ? MatAlpha("Sc04WallSmudge", blot, new Color(0.30f, 0.26f, 0.21f, 0.30f), false) : null;
+            var dripMat = drip != null ? MatAlpha("Sc04WallDrip", drip, new Color(0.26f, 0.22f, 0.17f, 0.45f), false) : null;
+            var soot = MatAlpha("Sc04WallSoot", Sc06Tex("Fx_AOStrip"), new Color(0.04f, 0.035f, 0.03f, 0.55f), false);
+
+            // soot band along the top of the side and back walls (and the bottom edge)
+            Quad("SootLeftTop", new Vector3(x1 - 0.064f, h - 0.45f, cz), new Vector3(0f, 90f, 0f), new Vector2(d, 0.9f), soot);
+            Quad("SootRightTop", new Vector3(x0 + 0.064f, h - 0.45f, cz), new Vector3(0f, -90f, 0f), new Vector2(d, 0.9f), soot);
+            Quad("SootBackTop", new Vector3((x0 + x1) * 0.5f, h - 0.45f, zBack + 0.064f), new Vector3(0f, 180f, 0f), new Vector2(x1 - x0, 0.9f), soot);
+            Quad("SootLeftLow", new Vector3(x1 - 0.064f, 0.3f, cz), new Vector3(0f, 90f, 180f), new Vector2(d, 0.6f), soot);
+            Quad("SootRightLow", new Vector3(x0 + 0.064f, 0.3f, cz), new Vector3(0f, -90f, 180f), new Vector2(d, 0.6f), soot);
+
+            for (var i = 0; i < 46; i++)
+            {
+                var y = 0.4f + R() * (h - 0.6f);
+                var sz = 0.8f + R() * 1.6f;
+                var z = zBack + 0.8f + R() * (zFront - zBack - 1.6f);
+                var rot = R() * 360f;
+                if (smudge == null)
+                    break;
+                if (i % 2 == 0)
+                    Quad("GrimeL" + i, new Vector3(x1 - 0.07f, y, z), new Vector3(0f, 90f, rot), Vector2.one * sz, smudge);
+                else
+                    Quad("GrimeR" + i, new Vector3(x0 + 0.068f, y, z), new Vector3(0f, -90f, rot), Vector2.one * sz, smudge);
+            }
+
+            for (var i = 0; i < 12 && smudge != null; i++)
+                Quad("GrimeB" + i, new Vector3(x0 + 0.8f + R() * (x1 - x0 - 1.6f), 0.5f + R() * (h - 0.8f), zBack + 0.068f), new Vector3(0f, 180f, R() * 360f),
+                    Vector2.one * (0.9f + R() * 1.4f), smudge);
+            for (var i = 0; i < 16 && dripMat != null; i++)
+            {
+                var z = zBack + 1f + R() * (zFront - zBack - 2f);
+                Quad("DripL" + i, new Vector3(x1 - 0.066f, 2.0f, z), new Vector3(0f, 90f, 0f), new Vector2(1.3f, 2.2f + R() * 0.8f), dripMat);
+                Quad("DripR" + i, new Vector3(x0 + 0.066f, 2.0f, zBack + 1f + R() * (zFront - zBack - 2f)), new Vector3(0f, -90f, 0f), new Vector2(1.3f, 2.2f + R() * 0.8f), dripMat);
+            }
+
+            // a few broken plaster patches showing old brick
+            var brickTex = Sc06FacTex("Wall_BrickPatch");
+            if (brickTex != null)
+            {
+                var brick = Mat("Sc04BrickPatch", Color.white, 0.15f, 0f, brickTex, null, false, true);
+                Quad("BrickL0", new Vector3(x1 - 0.07f, 1.5f, zBack + 9.5f), new Vector3(0f, 90f, 0f), new Vector2(0.9f, 1.15f), brick);
+                Quad("BrickL1", new Vector3(x1 - 0.07f, 0.55f, zBack + 12.5f), new Vector3(0f, 90f, 0f), new Vector2(0.5f, 0.62f), brick);
+                Quad("BrickB0", new Vector3(x1 - 1.2f, 1.6f, zBack + 0.068f), new Vector3(0f, 180f, 0f), new Vector2(0.9f, 1.15f), brick);
+            }
+
+            // oil and rust blots on the floor
+            var oil = MatAlpha("Sc04FloorOil", EnvTex("STAIN_Oil"), new Color(0.10f, 0.08f, 0.06f, 0.40f), false);
+            for (var i = 0; i < 40; i++)
+                Quad("FloorBlot" + i, new Vector3(x0 + 0.5f + R() * (x1 - x0 - 1f), 0.012f + i * 0.0003f, zBack + 1f + R() * (zFront - zBack - 2f)),
+                    new Vector3(90f, R() * 360f, 0f), Vector2.one * (0.7f + R() * 1.6f), oil);
         }
 
         private static Texture Sc04WindowCookie()
@@ -537,18 +724,19 @@ namespace ChemicalSafety.Editor
         {
             var root = new GameObject(name).transform;
             root.SetParent(parent, false);
-            var green = Mat("Sc04MachGreen", new Color(0.20f, 0.42f, 0.31f), 0.5f, 0.2f);
-            var greenDark = Mat("Sc04MachGreenDark", new Color(0.13f, 0.28f, 0.21f), 0.45f, 0.2f);
-            var darkGrey = Mat("Sc04MachGrey", new Color(0.24f, 0.26f, 0.28f), 0.45f, 0.5f);
+            // client photo: the machines are dark charcoal steel with only dull, dirty green / blue accents (no bright teal or green)
+            var green = Mat("Sc04MachGreen", new Color(0.22f, 0.25f, 0.22f), 0.35f, 0.2f);
+            var greenDark = Mat("Sc04MachGreenDark", new Color(0.14f, 0.16f, 0.14f), 0.3f, 0.2f);
+            var darkGrey = Mat("Sc04MachGrey", new Color(0.21f, 0.22f, 0.23f), 0.35f, 0.5f);
             var steelR = Sc04Pbr("Sc04MachRollerPbr", "Steel", new Color(0.86f, 0.88f, 0.9f), new Vector2(4f, 1.2f), 1f, 0.5f);
             var cloth = Mat("Sc04MachCloth", new Color(0.80f, 0.74f, 0.60f), 0.08f, 0f);
-            var blue = Mat("Sc04MachBlue", new Color(0.10f, 0.30f, 0.62f), 0.6f, 0.35f);
-            var panelMat = Mat("Sc04MachPanel", new Color(0.58f, 0.60f, 0.58f), 0.4f, 0.3f);
-            var yellow = Mat("Sc04MachYellow", new Color(0.92f, 0.72f, 0.1f), 0.3f, 0f);
+            var blue = Mat("Sc04MachBlue", new Color(0.13f, 0.17f, 0.26f), 0.4f, 0.3f);
+            var panelMat = Mat("Sc04MachPanel", new Color(0.36f, 0.37f, 0.37f), 0.3f, 0.3f);
+            var yellow = Mat("Sc04MachYellow", new Color(0.78f, 0.60f, 0.10f), 0.25f, 0f);
             var black = Mat("Sc04MachBlack", new Color(0.05f, 0.05f, 0.06f), 0.3f, 0.1f);
             var redLamp = Mat("Sc04MachRed", new Color(1f, 0.15f, 0.1f), 0.2f, 0f, null, new Color(2f, 0.2f, 0.1f), false);
             var greenLamp = Mat("Sc04MachLampGreen", new Color(0.2f, 1f, 0.3f), 0.2f, 0f, null, new Color(0.3f, 2f, 0.4f), false);
-            var screen = Mat("Sc04MachScreen", new Color(0.2f, 0.6f, 1f), 0.2f, 0f, null, new Color(0.3f, 1.1f, 2f), true);
+            var screen = Mat("Sc04MachScreen", new Color(0.2f, 0.45f, 0.6f), 0.2f, 0f, null, new Color(0.15f, 0.45f, 0.6f), true);
             var x = floorCentre.x;
             var z = floorCentre.z;
             var fr = 0.18f;
@@ -980,13 +1168,25 @@ namespace ChemicalSafety.Editor
             var tray = new GameObject("AcidTray").transform;
             tray.SetParent(bench, false);
             tray.position = new Vector3(cx, tableTop, cz);
-            const float tw = 0.46f, td = 0.32f, th = 0.07f, tt = 0.006f;
+            var tw = Sc04UseClientBottle ? 0.30f : 0.46f;
+            var td = Sc04UseClientBottle ? 0.22f : 0.32f;
+            var th = Sc04UseClientBottle ? 0.045f : 0.07f;
+            const float tt = 0.006f;
             Box("TrayBase", tray, new Vector3(cx, tableTop + tt * 0.5f, cz), new Vector3(tw, tt, td), glass, false);
             Box("TrayWallF", tray, new Vector3(cx, tableTop + th * 0.5f, cz + td * 0.5f), new Vector3(tw, th, tt), glass, false);
             Box("TrayWallB", tray, new Vector3(cx, tableTop + th * 0.5f, cz - td * 0.5f), new Vector3(tw, th, tt), glass, false);
             Box("TrayWallL", tray, new Vector3(cx + tw * 0.5f, tableTop + th * 0.5f, cz), new Vector3(tt, th, td), glass, false);
             Box("TrayWallR", tray, new Vector3(cx - tw * 0.5f, tableTop + th * 0.5f, cz), new Vector3(tt, th, td), glass, false);
-            tray.localScale = Vector3.one * 1.7f;
+            tray.localScale = Vector3.one * (Sc04UseClientBottle ? 1f : 1.7f);
+            var trayTop = tableTop + tt;
+            if (Sc04UseClientBottle && Sc04UseDesignerTray && Sc04DesignerTray(bench, tableTop, cx, cz, out var floorY))
+            {
+                Object.DestroyImmediate(tray.gameObject); // the procedural clear box tray is not needed
+                trayTop = floorY;
+            }
+
+            if (Sc04UseClientBottle && Sc04ClientBottle(bench, trayTop, cx, cz))
+                return;
 
             // the 5 litre jug: a lathe-turned crystal-clear body (rounded square section, soft shoulders, neck), clear water inside,
             // ribbed blue cap with a moulded handle, label that follows the curved front (+Z, toward the learner)
@@ -1018,6 +1218,250 @@ namespace ChemicalSafety.Editor
             var labelMat = Mat("Sc04BottleLabelUnlit", new Color(0.97f, 0.97f, 0.98f), 0f, 0f, labelTex, null, true, true);
             Sc04JugLabel(jug, new Vector3(cx, baseY, cz), hw, 0.05f, 0.195f, labelMat);
             jug.localScale = Vector3.one * 1.7f; // reads big from the stand, as in the client's photo
+        }
+
+        // The HCl bottle: the client's own clear plastic jug (Jar1.glb, the water jug of Scenario 6: visible clear body, blue cap fixed to it),
+        // real 5 litre size (about 0.36 m tall), pale clear liquid, the HCl label on the front. Returns false when the model is missing
+        // (the old procedural jug is built then).
+        private const float Sc04BottleHeight = 0.36f;
+
+        // The designer's tray (Scene04 workflow / 3D / tray.glb = Assets/Art/Presentable/3D/Sc04/tray.glb) under the bottle. Its own material is kept.
+        private static readonly bool Sc04UseDesignerTray = true;
+
+        private static bool Sc04DesignerTray(Transform bench, float tableTop, float cx, float cz, out float floorY)
+        {
+            floorY = tableTop + 0.006f;
+            var go = SpawnSc04("tray.glb", bench, new Vector3(cx, tableTop, cz), 90f, 0.46f); // long side along X, about 0.46 m
+            if (go == null)
+                return false;
+            go.name = "AcidTray";
+            Sc04NoColliders(go);
+            var b = BoundsOfTree(go.transform);
+            go.transform.position += new Vector3(cx - b.center.x, tableTop + 0.001f - b.min.y, cz - b.center.z);
+            b = BoundsOfTree(go.transform);
+            // the inside floor of the tray is a few mm above its lowest point (the foot): the bottle stands on it
+            floorY = b.min.y + 0.012f;
+            Debug.Log("[SC04] designer tray size " + b.size.ToString("F2") + ", bottle stands at y " + floorY.ToString("F3"));
+            return true;
+        }
+
+        private static Texture2D Sc04LabelTexture()
+        {
+            var path = ArtRoot + "/2D/Sc04/BottleLabelHcl.png";
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti != null && (!ti.alphaIsTransparency || ti.wrapMode != TextureWrapMode.Clamp || !ti.mipmapEnabled || ti.maxTextureSize != 1024))
+            {
+                ti.alphaIsTransparency = true;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.mipmapEnabled = true;
+                ti.anisoLevel = 8;
+                ti.maxTextureSize = 1024;
+                ti.textureCompression = TextureImporterCompression.CompressedHQ;
+                ti.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        // A sticker that follows the bottle: a grid of vertices, each one on the real surface of the body (ray from the front against the mesh).
+        private static void Sc04ConformLabel(Transform root, Transform parent, Texture2D tex)
+        {
+            var wb = Sc06Bounds(root);
+            var lw = Mathf.Min(0.15f, wb.size.x * 0.62f);
+            var lh = lw * tex.height / tex.width;
+            var cy = wb.min.y + wb.size.y * 0.42f;
+            var cx = wb.center.x;
+            const int cols = 20;
+            const int rows = 10;
+            var added = new List<MeshCollider>();
+            foreach (var mf in root.GetComponentsInChildren<MeshFilter>(false))
+            {
+                if (!Sc06BodyVertex(mf) || mf.GetComponent<MeshCollider>() != null)
+                    continue;
+                var mc = mf.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+                added.Add(mc);
+            }
+
+            Physics.SyncTransforms();
+            var verts = new Vector3[(cols + 1) * (rows + 1)];
+            var norms = new Vector3[verts.Length];
+            var uvs = new Vector2[verts.Length];
+            var hits = 0;
+            for (var j = 0; j <= rows; j++)
+            {
+                var y = cy - lh * 0.5f + lh * j / rows;
+                for (var i = 0; i <= cols; i++)
+                {
+                    var x = cx - lw * 0.5f + lw * i / cols; // x grows with i; the picture's left is +X, so u falls with i
+                    var p = new Vector3(x, y, wb.max.z);
+                    var n = Vector3.forward;
+                    var all = Physics.RaycastAll(new Vector3(x, y, wb.max.z + 0.2f), Vector3.back, 0.6f);
+                    var best = float.MaxValue;
+                    foreach (var h in all)
+                    {
+                        var mc = h.collider as MeshCollider;
+                        if (mc != null && added.Contains(mc) && h.distance < best)
+                        {
+                            best = h.distance;
+                            p = h.point;
+                            n = h.normal;
+                        }
+                    }
+
+                    if (best < float.MaxValue)
+                        hits++;
+                    var idx = j * (cols + 1) + i;
+                    verts[idx] = p + n * 0.0009f;
+                    norms[idx] = n;
+                    uvs[idx] = new Vector2(1f - i / (float)cols, j / (float)rows);
+                }
+            }
+
+            foreach (var mc in added)
+                Object.DestroyImmediate(mc);
+            var tris = new List<int>();
+            for (var j = 0; j < rows; j++)
+            {
+                for (var i = 0; i < cols; i++)
+                {
+                    var v00 = j * (cols + 1) + i;
+                    var v10 = v00 + 1;
+                    var v01 = v00 + (cols + 1);
+                    var v11 = v01 + 1;
+                    tris.AddRange(new[] { v00, v10, v01, v01, v10, v11 });
+                }
+            }
+
+            var mesh = new Mesh { name = "Sc04HclLabelMesh" };
+            mesh.SetVertices(verts);
+            mesh.SetNormals(norms);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            var mat = Mat("Sc04HclLabelPaper", Color.white, 0.25f, 0f, tex, null, false, true);
+            mat.SetFloat("_Cull", 2f);
+            var go = new GameObject("HclLabel");
+            go.transform.SetParent(parent, true);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            Debug.Log("[SC04] HCl label: " + hits + " of " + verts.Length + " vertices lie on the bottle surface, size " + lw.ToString("0.000") + " x " + lh.ToString("0.000"));
+        }
+
+        // The designer's HCl bottle (Downloads / Hydrochloric Acid.glb = Assets/Art/Presentable/3D/Sc04/HydrochloricAcid.glb): a real 5 litre bottle with
+        // its own wrapped label (Hydrochloric Acid, HCl, three GHS pictograms), clear plastic body and water. Used as it is (true), or the Jar1 jug
+        // with the sticker below (false).
+        private static readonly bool Sc04UseHclModel = true;
+
+        private static bool Sc04HclModel(Transform bench, float baseY, float cx, float cz)
+        {
+            // instantiated as it is: the model stands up through the -90 degree turn of its own node (SpawnRaw would reset that turn and lay it down)
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/Sc04/HydrochloricAcid.glb");
+            if (asset == null)
+                return false;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            go.transform.SetParent(bench, false);
+            go.name = "AcidBottle";
+            Sc04NoColliders(go);
+            // turn the printed label toward the learner (+Z): the label is the sub-mesh with the glb material "Logo"
+            var b = BoundsOfTree(go.transform);
+            var has = false;
+            var labelAt = Vector3.zero;
+            foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                if (mr != null && mf.sharedMesh != null && Sc06SubBounds(mf, mr, "Logo", out var lb))
+                {
+                    labelAt = lb.center;
+                    has = true;
+                }
+            }
+
+            if (has)
+            {
+                var dir = new Vector3(labelAt.x - b.center.x, 0f, labelAt.z - b.center.z);
+                if (dir.sqrMagnitude > 1e-6f)
+                    go.transform.RotateAround(b.center, Vector3.up, Vector3.SignedAngle(dir, Vector3.forward, Vector3.up));
+            }
+
+            b = BoundsOfTree(go.transform);
+            if (b.size.y > 0.01f && Mathf.Abs(b.size.y - Sc04BottleHeight) > 0.05f)
+                go.transform.localScale *= Sc04BottleHeight / b.size.y; // (the model is already about real size)
+            b = BoundsOfTree(go.transform);
+            go.transform.position += new Vector3(cx - b.center.x, baseY - b.min.y, cz - b.center.z);
+            // the model's plastic shell is almost invisible (very low alpha), so the shoulders and neck vanish and the blue cap seems to float:
+            // the shell gets the project's clear-plastic glass (visible fresnel rim); label, cap and water keep the model's own materials
+            var shell = Sc06GlassMat("Sc04HclShell", new Color(0.86f, 0.93f, 0.97f), 0.16f, 0.85f);
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                var ms = r.sharedMaterials;
+                var changed = false;
+                for (var k = 0; k < ms.Length; k++)
+                {
+                    if (ms[k] != null && ms[k].name == "Bottle.001")
+                    {
+                        ms[k] = shell;
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                    r.sharedMaterials = ms;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            Debug.Log("[SC04] designer HCl bottle size " + BoundsOfTree(go.transform).size.ToString("F2") + ", label found = " + has);
+            return true;
+        }
+
+        private static bool Sc04ClientBottle(Transform bench, float baseY, float cx, float cz)
+        {
+            if (Sc04UseHclModel && Sc04HclModel(bench, baseY, cx, cz))
+                return true;
+            var model = SpawnSc06("Jar1.glb", bench);
+            if (model == null)
+                return false;
+            var root = Sc06Pack(model, new[] { "model_diffuse-material.002" }, "AcidBottle", bench, new Vector3(cx, baseY, cz), 1f, 90f);
+            Object.DestroyImmediate(model);
+            if (root == null)
+                return false;
+            var b0 = Sc06Bounds(root);
+            if (b0.size.y > 0.01f)
+                root.localScale *= Sc04BottleHeight / b0.size.y; // scaled about the base centre: it stays in the tray
+            root.position = new Vector3(cx, baseY, cz);
+
+            var plastic = Mat("Sc04HclPlastic", new Color(0.82f, 0.90f, 0.96f, 0.5f), 0.62f, 0f);
+            MakeTransparent(plastic);
+            var liquid = Mat("Sc04HclLiquid", new Color(0.86f, 0.95f, 0.92f, 0.6f), 0.5f, 0f);
+            MakeTransparent(liquid);
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.name.StartsWith("_gltfNode"))
+                    continue;
+                var sm = r.sharedMaterials;
+                for (var k = 0; k < sm.Length; k++)
+                {
+                    var n = sm[k] != null ? sm[k].name : "";
+                    if (n.Contains("Dark Glass"))
+                        sm[k] = liquid;
+                    else if (n.Contains("Glass Clear"))
+                        sm[k] = plastic;
+                }
+
+                r.sharedMaterials = sm;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            // the designer's HCl sticker (bottle level.png), conformed to the bottle: every vertex of the label lies on the real surface of the body
+            // (rays against the mesh) 0.9 mm off it, so it follows the rounded corners and sits flat on the plastic like a stuck-on label
+            var labelTex = Sc04LabelTexture();
+            if (labelTex != null)
+                Sc04ConformLabel(root, bench, labelTex);
+
+            Debug.Log("[SC04] HCl bottle size " + Sc06Bounds(root).size.ToString("F2"));
+            return true;
         }
 
         // A curved label (part of a cylinder) centred on the +Z side, UV 0..1.

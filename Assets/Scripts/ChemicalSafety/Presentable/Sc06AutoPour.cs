@@ -43,6 +43,7 @@ namespace ChemicalSafety.Presentable
 
         private Vector3 _capHomeLocal;
         private Quaternion _capHomeRot;
+        private Vector3 _capHomeScale = Vector3.one; // the cap is re-parented with world scale kept: restore its own local scale or it comes back too big
         private Transform _capParent;
         private Vector3 _capSetDown;
         private readonly Vector3[] _homePos = new Vector3[3];
@@ -81,6 +82,7 @@ namespace ChemicalSafety.Presentable
                 _capParent = acidCap.transform.parent;
                 _capHomeLocal = acidCap.transform.localPosition;
                 _capHomeRot = acidCap.transform.localRotation;
+                _capHomeScale = acidCap.transform.localScale;
             }
 
             if (liquid != null)
@@ -336,6 +338,7 @@ namespace ChemicalSafety.Presentable
             t.SetParent(_capParent, false);
             t.localPosition = _capHomeLocal;
             t.localRotation = _capHomeRot;
+            t.localScale = _capHomeScale;
             _ = homeRot;
         }
 
@@ -348,6 +351,7 @@ namespace ChemicalSafety.Presentable
                 acidCap.transform.SetParent(_capParent, false);
                 acidCap.transform.localPosition = _capHomeLocal;
                 acidCap.transform.localRotation = _capHomeRot;
+                acidCap.transform.localScale = _capHomeScale;
             }
 
             acidCap.SetActive(true);

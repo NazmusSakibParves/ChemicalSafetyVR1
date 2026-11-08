@@ -288,6 +288,7 @@ namespace ChemicalSafety.Editor
             hso.FindProperty("builtTopY").floatValue = gloveTop;
             hso.FindProperty("minTop").floatValue = 0.75f;
             hso.FindProperty("maxTop").floatValue = 1.1f;
+            hso.FindProperty("fixedHeight").boolValue = Sc04FixedBench; // Quest comfort: the table never follows the head (no drifting world)
             hso.ApplyModifiedPropertiesWithoutUndo();
             refs.bench = height;
 
@@ -339,7 +340,28 @@ namespace ChemicalSafety.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
             refs.inspect = inspect;
             // Far enough back that the eye-level instruction card sits in the open, not in the bench.
-            refs.spawn = Marker("Spawn_SC04", room, new Vector3(ox, 0f, 3.15f), 180f);
+            var spawnAt = new Vector3(ox, 0f, 3.15f);
+            if (Sc04FixedBench && gloveGroups != null)
+            {
+                // the learner starts at the glove stand itself (no forced glide into the scene): a comfortable look-down at the table
+                var gc = Vector3.zero;
+                var gn = 0;
+                foreach (var gg in gloveGroups)
+                {
+                    if (gg == null)
+                        continue;
+                    gc += gg.position;
+                    gn++;
+                }
+
+                if (gn > 0)
+                {
+                    gc /= gn;
+                    spawnAt = new Vector3(gc.x, 0f, gc.z + Sc04StandDistance);
+                }
+            }
+
+            refs.spawn = Marker("Spawn_SC04", room, spawnAt, 180f);
             return refs;
         }
 
@@ -907,12 +929,57 @@ namespace ChemicalSafety.Editor
         }
 
         // Left to right in the player's view (+X to -X): cotton, nitrile, neoprene.
+        // The designer's model mixes sizes inside the white and the black pair (one glove up to 1.4 x the other). Client: the blue pair has the right size,
+        // all three pairs must look like it and the two gloves of a pair must be exactly the same size. Every piece is scaled (about its own centre)
+        // until its measured length (z) equals the blue pair's length; the passes are repeated because a piece can be a child of the other one
+        // (scaling the parent also scales the child). target < 0: untouched.
+        private static void Sc04EqualisePair(Transform[] parts, float target)
+        {
+            if (target < 0.05f || parts == null || parts.Length == 0)
+                return;
+            for (var pass = 0; pass < 4; pass++)
+            {
+                var worst = 0f;
+                for (var i = 0; i < parts.Length; i++)
+                {
+                    var r = parts[i] != null ? parts[i].GetComponent<Renderer>() : null;
+                    if (r == null)
+                        continue;
+                    var len = r.bounds.size.z;
+                    if (len < 0.01f)
+                        continue;
+                    var err = Mathf.Abs(len - target) / target;
+                    worst = Mathf.Max(worst, err);
+                    if (err < 0.01f)
+                        continue;
+                    var k = target / len;
+                    var centre = r.bounds.center;
+                    parts[i].localScale *= k;
+                    parts[i].position = centre + (parts[i].position - centre) * k;
+                }
+
+                if (worst < 0.01f)
+                    break;
+            }
+        }
+
+        // Distance from the middle of the gloves to the learner's start spot (Scenario 4 on the ray, fixed bench).
+        private const float Sc04StandDistance = 1.15f;
+
         private static Transform[] SplitGloves(GameObject model, Transform room, float restY)
         {
             var rends = model.GetComponentsInChildren<Renderer>();
             System.Array.Sort(rends, (a, b) => b.bounds.center.x.CompareTo(a.bounds.center.x));
             var groups = new Transform[3];
             var n = rends.Length;
+            // length of the blue (nitrile, middle) pair: the size of every pair
+            var blueLen = 0f;
+            var blueFrom = n / 3;
+            var blueTo = 2 * n / 3;
+            for (var i = blueFrom; i < blueTo; i++)
+                blueLen += rends[i].bounds.size.z;
+            blueLen /= Mathf.Max(1, blueTo - blueFrom);
+            Debug.Log("[SC04] glove pair length (blue) = " + blueLen.ToString("0.000") + " m");
             for (var g = 0; g < 3; g++)
             {
                 var from = g * n / 3;
@@ -928,6 +995,8 @@ namespace ChemicalSafety.Editor
                 var parts = new Transform[to - from];
                 for (var i = from; i < to; i++)
                     parts[i - from] = rends[i].transform;
+
+                Sc04EqualisePair(parts, g == 1 ? -1f : blueLen);
 
                 var follow = parent.gameObject.AddComponent<GloveParts>();
                 var fso = new SerializedObject(follow);
@@ -955,7 +1024,26 @@ namespace ChemicalSafety.Editor
             SeatGlovesInOrder(groups);
             GroundGloves(groups, restY, room);
             KeepGlovesOnCloth(groups, restY, room);
+            Sc04RaiseSecondPiece(groups[2]);
             return groups;
+        }
+
+        // The second glove of the black pair is a child of the first one: the grounding moved it twice and it sank about 17 mm into the cloth (only
+        // fragments of it showed). It is lifted so that it lies on the cloth, a little above the first glove like the white pair.
+        private static void Sc04RaiseSecondPiece(Transform group)
+        {
+            if (group == null)
+                return;
+            var follow = group.GetComponent<GloveParts>();
+            if (follow == null || follow.Parts == null || follow.Parts.Length < 2 || follow.Parts[0] == null || follow.Parts[1] == null)
+                return;
+            var a = follow.Parts[0].GetComponent<Renderer>();
+            var b = follow.Parts[1].GetComponent<Renderer>();
+            if (a == null || b == null)
+                return;
+            var want = a.bounds.min.y + 0.02f;
+            if (b.bounds.min.y < want)
+                follow.Parts[1].position += Vector3.up * (want - b.bounds.min.y);
         }
 
         // Each glove lies on the cloth (lowest vertex 2 mm above it) with a soft contact shadow under it, so it
@@ -1095,7 +1183,9 @@ namespace ChemicalSafety.Editor
                     Mat("Sc04GloveBlack", new Color(0.05f, 0.05f, 0.06f), 0.55f, 0.06f)
                 };
             var mat = mats[Mathf.Clamp(group, 0, 2)];
-            var grow = group == 2 ? 1.25f : 1f;
+            // (the old growth of the black pair by 1.25 is off: every pair now has the blue pair's size, and a piece that is a child of the other
+            // one was scaled twice by it - that was the black glove pair with two different sizes)
+            var grow = 1f;
             // grow the pair as one piece (positions scale about the group centre too), so the two gloves of the pair keep their
             // spacing: scaling each only about its own centre pushed one glove through the other.
             var all = default(Bounds);

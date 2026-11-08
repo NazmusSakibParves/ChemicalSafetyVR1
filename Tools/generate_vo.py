@@ -100,6 +100,13 @@ CLIPS = {
     # Scenario 3 on the ray: wrong answer (reasons + NEXT), and the narration of the emergency protocol (right answer)
     "VO_Sc03WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[4]),
     "VO_Sc03WrongNext_en": (EN_VOICE, "Wrong answer. Read the reason for each option. Click Next to go to Scenario four."),
+    # Scenario 4-9 on the controller ray: the answer is shown with its reasons, no retry (same wording as Scenario 1-3)
+    "VO_Sc04WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[5]),
+    "VO_Sc05WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[6]),
+    "VO_Sc06WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[7]),
+    "VO_Sc07WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[8]),
+    "VO_Sc08WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[9]),
+    "VO_Sc09WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[10]),
     "VO_Sc03Protocol_bn": (BN_VOICE, "নষ্ট হলে জরুরি পদক্ষেপ: ড্রাম খুলবেন না। এলাকা খালি করুন। সুপারভাইজারকে জানান। বিশেষজ্ঞ নিষ্পত্তি দলকে ডাকুন।"),
     "VO_Sc02Complete_bn": (BN_VOICE, complete_bn(2)),
     "VO_Sc02Complete_en": (EN_VOICE, complete_en(2)),
@@ -256,6 +263,26 @@ CLIPS = {
         BN_VOICE,
         "আইওয়াশ ও শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
+    # Scenario 9 on the controller ray (automatic flow in the factory room)
+    "VO_Sc09RayInstruction_bn": (
+        BN_VOICE,
+        "আপনি ডাইং সেকশনে কেমিক্যাল নিয়ে কাজ করছেন। টেবিলে থাকা কেমিক্যালের ক্যান থেকে খালি পাত্রে ঢালতে যাচ্ছেন। "
+        "কিছু ভুল হলে সাথে সাথে নিরাপত্তা পদ্ধতি মেনে কাজ করুন।",
+    ),
+    "VO_Sc09RaySpill_bn": (
+        BN_VOICE,
+        "অ্যাসিডের ক্যানটি হাত থেকে পড়ে বিকারটি ভেঙে গেছে। অ্যাসিড আপনার চোখে ও মুখে ছিটকে লেগেছে। এখনই ব্যবস্থা নিতে হবে।",
+    ),
+    "VO_Sc09RayWalk_bn": (BN_VOICE, "ডান দিক থেকে ঘুরে পেছনের ইমার্জেন্সি সেফটি শাওয়ারের কাছে যাওয়া হচ্ছে।"),
+    "VO_Sc09RayPush_bn": (BN_VOICE, "শাওয়ারের পুশ প্লেট চাপা হয়েছে, পানি চালু হচ্ছে।"),
+    "VO_Sc09RayBack_bn": (
+        BN_VOICE,
+        "এবার টেবিলে ফিরে এসে দেখুন, অ্যাসিডের ক্যান পড়ে আছে, বিকার ভেঙে গেছে, আর অ্যাসিড টেবিলে ও মেঝেতে ছড়িয়ে আছে।",
+    ),
+    "VO_Sc09RayGate_bn": (
+        BN_VOICE,
+        "ইমার্জেন্সি শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+    ),
     "VO_Sc09Complete_bn": (BN_VOICE, complete_bn(9)),
     "VO_Sc09Complete_en": (EN_VOICE, complete_en(9)),
     # Scenario 10 (acid spill response). শঠিক in the instruction like SC06-SC08. The ending uses complete_bn(10).
@@ -342,6 +369,12 @@ CLIPS_EN = {
     "VO_SC03_Instruction": "You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do.",
     "VO_Sc03Touch": "Touch and hold the drum label with your finger to scan it.",
     "VO_Sc03Inspect": "The drum is organic peroxide. Crystals have formed on the drum and the label has expired.",
+    "VO_Sc04WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario five.",
+    "VO_Sc05WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario six.",
+    "VO_Sc06WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario seven.",
+    "VO_Sc07WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario eight.",
+    "VO_Sc08WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario nine.",
+    "VO_Sc09WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario ten.",
     "VO_Sc03Wrong": "Wrong decision. Crystallized organic peroxide can explode when it is opened or rubbed.",
     "VO_SC04_Instruction": "You are a technician in the dyeing plant. You are about to handle concentrated Hydrochloric Acid. Check the SDS first. Watch each glove and its properties, then choose the right gloves.",
     "VO_Sc04Glove0": "This is a white cotton glove. Cotton gives no chemical protection. Acid soaks through at once.",
@@ -394,6 +427,12 @@ CLIPS_EN = {
     "VO_Sc09Push": "Touch the push plate to start the water.",
     "VO_Sc09Flush": "Hold your eyelids open. Roll your eyes and run water from the inner corner to the outer corner. Keep flushing for fifteen minutes.",
     "VO_Sc09Gate": gate_en("Eyewash and shower practice complete."),
+    "VO_Sc09RayInstruction": "You are working with chemicals in the dyeing section. You are about to pour the chemical from the can on the table into an empty container. If something goes wrong, follow the safety procedure at once.",
+    "VO_Sc09RaySpill": "The acid can slipped from your hand and the beaker broke. Acid has splashed onto your eyes and face. You must respond immediately.",
+    "VO_Sc09RayWalk": "Turning right, to the emergency safety shower behind you.",
+    "VO_Sc09RayPush": "The push plate of the shower has been pressed and the water is starting.",
+    "VO_Sc09RayBack": "Now back at the table, see: the acid can lies there, the beaker is broken, and the acid has spread over the table and the floor.",
+    "VO_Sc09RayGate": "Emergency shower practice complete. If you are ready for the questions, click the Next button. To watch the whole animation again, click the Preview button.",
     "VO_SC10_Instruction": "You are a lab technician. A glass bottle of acid has slipped and shattered on the floor. You are the first person on the scene. The lab supervisor is not in the room. You must respond correctly and safely.",
     "VO_Sc10Sds": "Read the Safety Data Sheet. It lists the spill response steps.",
     "VO_Sc10Ppe": "Put on your protective equipment. Touch each item.",

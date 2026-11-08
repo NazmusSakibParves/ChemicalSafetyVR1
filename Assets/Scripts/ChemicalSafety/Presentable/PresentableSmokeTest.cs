@@ -60,7 +60,18 @@ namespace ChemicalSafety.Presentable
             }
         }
 
-        private static void Say(string s) => Debug.Log("[SMOKE] " + s);
+        private static void Say(string s)
+        {
+            Debug.Log("[SMOKE] " + s);
+            try
+            {
+                System.IO.File.AppendAllText(Path.Combine(Application.dataPath, "../Temp/Smoke/smoke.log"), s + System.Environment.NewLine);
+            }
+            catch
+            {
+                // the log file is only a convenience
+            }
+        }
 
         private IEnumerator Shot(string name)
         {
@@ -371,6 +382,66 @@ namespace ChemicalSafety.Presentable
             Click(mcq6.transform, "NextButton");
         }
 
+        // Scenario 4 dev run (EditorPref ChemSafetySc04Dev, head height offset ChemSafetySc04HeadDy): the instruction card and its Continue button
+        // clear of the table, the world does not move after the intro, glove + card pair, gate, question.
+        private IEnumerator Sc04DevSmoke(InstructionPanelView panel)
+        {
+            var dy = 0f;
+#if UNITY_EDITOR
+            dy = UnityEditor.EditorPrefs.GetFloat("ChemSafetySc04HeadDy", 0f);
+#endif
+            var tag = "h" + (1.6f + dy).ToString("0.0");
+            var bench = Get<Sc04BenchHeight>(_director, "gloveBench");
+            var gloves = Get<GloveInspect>(_director, "gloves");
+            yield return WaitStage("sc04Intro", 60f);
+            var cont = FindDeep(panel.transform, "ContinueButton");
+            var w = 0f;
+            while (cont != null && !cont.gameObject.activeSelf && w < 40f)
+            {
+                w += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.5f);
+            var head = Camera.main.transform.position;
+            var bottom = panel.transform.position.y - panel.BottomExtentMeters;
+            Say("SC04 " + tag + ": head y = " + head.y.ToString("0.00") + ", table top = " + bench.TopY.ToString("0.00") + ", card centre y = " +
+                panel.transform.position.y.ToString("0.00") + ", lowest point (Continue button) = " + bottom.ToString("0.00") + ", clearance above the table = " +
+                (bottom - bench.TopY).ToString("0.00") + " m (must be >= 0.25)");
+            if (bottom - bench.TopY < 0.25f)
+                Debug.LogError("[SMOKE] SC04 " + tag + ": the instruction card / Continue button comes too close to the table");
+            LayoutCheck("SC04 " + tag + " instruction card", panel.transform);
+            yield return Shot("sc04d_" + tag + "_intro");
+            Click(panel.transform, "ContinueButton");
+            yield return WaitStage("sc04Explore", 30f);
+            var top0 = bench.TopY;
+            yield return new WaitForSeconds(1.0f);
+            yield return Shot("sc04d_" + tag + "_table");
+            // the two gloves of every pair have the same size, and all three pairs are as long as the blue pair
+            var blue = gloves.PieceLengths(1);
+            var blueRef = blue.Length > 0 ? blue[0] : 0f;
+            for (var gp = 0; gp < gloves.Count; gp++)
+            {
+                var pl = gloves.PieceLengths(gp);
+                var txt = "";
+                foreach (var l in pl)
+                    txt += l.ToString("0.000") + " ";
+                Say("SC04 glove pair " + gp + " piece lengths = " + txt.Trim() + " m (blue pair " + blueRef.ToString("0.000") + ")");
+                foreach (var l in pl)
+                    if (Mathf.Abs(l - blueRef) > 0.03f * Mathf.Max(0.01f, blueRef))
+                        Debug.LogError("[SMOKE] SC04: a glove of pair " + gp + " is not the size of the blue pair");
+            }
+
+            yield return Sc04RaySmoke(gloves);
+            var head2 = Camera.main.transform.position;
+            Say("SC04 " + tag + ": head moved " + Vector3.Distance(head, head2).ToString("0.000") + " m since the intro (must be 0: no forced motion), table top moved " +
+                Mathf.Abs(bench.TopY - top0).ToString("0.000") + " m (must be 0: no drifting world)");
+            if (Vector3.Distance(head, head2) > 0.05f)
+                Debug.LogError("[SMOKE] SC04 " + tag + ": the learner was moved during Scenario 4");
+            if (Mathf.Abs(bench.TopY - top0) > 0.001f)
+                Debug.LogError("[SMOKE] SC04 " + tag + ": the table moved during Scenario 4");
+        }
+
         private IEnumerator Sc04RaySmoke(GloveInspect gloves)
         {
             Say("SC04 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive);
@@ -402,10 +473,22 @@ namespace ChemicalSafety.Presentable
                     var cam = Camera.main.transform;
                     var gap = Vector3.Distance(cardT.position, hb.center);
                     Say("SC04 ray: card to glove centre distance = " + gap.ToString("0.00") + " m (wanted about 0.2 - 0.5)");
+                    // glove and properties side by side at eye level, both near the view axis (no head turn)
+                    var axis = cam.forward;
+                    var angGlove = Vector3.Angle(axis, hb.center - cam.position);
+                    var angCard = Vector3.Angle(axis, cardT.position - cam.position);
+                    var dGlove = Vector3.Distance(cam.position, hb.center);
+                    var dCard = Vector3.Distance(cam.position, cardT.position);
+                    var dyGC = Mathf.Abs(hb.center.y - cardT.position.y);
+                    Say("SC04 ray: glove " + g + " at " + dGlove.ToString("0.00") + " m, " + angGlove.ToString("0") + " deg off the view axis; card at " +
+                        dCard.ToString("0.00") + " m, " + angCard.ToString("0") + " deg off; height difference " + dyGC.ToString("0.00") + " m (both <= 25 deg, same height)");
+                    if (angGlove > 25f || angCard > 25f)
+                        Debug.LogError("[SMOKE] SC04 ray: glove " + g + " and its card are not both inside +-25 degrees of the view (head turn needed)");
+                    if (dyGC > 0.2f)
+                        Debug.LogError("[SMOKE] SC04 ray: glove " + g + " and its card are not at the same eye height");
                 }
 
-                if (g == 2)
-                    yield return Shot("31b_sc04_glove_card");
+                yield return Shot("31b_sc04_glove_card_" + g);
                 var t1 = 0f;
                 while (gloves.AutoCardShown && t1 < 40f)
                 {
@@ -1537,6 +1620,8 @@ namespace ChemicalSafety.Presentable
             if (fan == null || fan.Speed01 < 0.05f)
                 Debug.LogError("[SMOKE] SC08: the exhaust fan did not start turning");
             yield return WaitStage("sc08Move", 40f);
+            var capGo = Get<GameObject>(Get<Sc06AutoPour>(_director, "sc06Auto"), "acidCap");
+            var capScale0 = capGo != null ? capGo.transform.lossyScale : Vector3.one;
             var steps = "";
             var last = -1;
             var t = 0f;
@@ -1578,6 +1663,14 @@ namespace ChemicalSafety.Presentable
                 dil.MinSeparation.ToString("0.00") + " m (must be >= 0.3)");
             if (dil.MinSeparation < 0.3f)
                 Debug.LogError("[SMOKE] SC08: two containers came closer than 0.3 m");
+            if (capGo != null)
+            {
+                var capScale1 = capGo.transform.lossyScale;
+                Say("SC08 acid cap size after it was put back = " + capScale1.ToString("F3") + " (before: " + capScale0.ToString("F3") + ", must be equal)");
+                if ((capScale1 - capScale0).magnitude > 0.01f)
+                    Debug.LogError("[SMOKE] SC08: the acid cap came back with a different size");
+            }
+
             if (!dil.Finished)
                 Debug.LogError("[SMOKE] SC08: the automatic dilution never finished");
             var g = 0f;
@@ -1629,6 +1722,8 @@ namespace ChemicalSafety.Presentable
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
+            Say("SC08 answer voice (" + (wrong ? "wrong" : "right") + " pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") +
+                (wrong ? " (expected VO_Sc08WrongNext_bn: read the reasons, click Next)" : ""));
             yield return Shot("96_sc08_reveal");
             var reasons = 0;
             foreach (var tmp in mcq8.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
@@ -1836,8 +1931,167 @@ namespace ChemicalSafety.Presentable
             Click(mcq8.transform, "NextButton");
         }
 
+        // Scenario 9 (controller ray, in the Scenario 6/8 factory room): the can slips and the jar breaks by itself, the voiced card, the SDS,
+        // the turn to the right to the shower behind (automatic push, water, drain), back at the table (can, broken jar, acid on table and floor),
+        // the gate (PREVIEW once, then NEXT), the question with the client's four options.
+        private IEnumerator Sc09RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC09 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive + ", scenario = " + PresentableInput.ActiveScenario);
+            var splash = Get<Sc09AutoSplash>(_director, "sc09Auto");
+            var shower = Get<Sc09Shower>(_director, "sc09ShowerRay");
+            var visor = Get<Sc09Visor>(_director, "sc09VisorRay");
+            var gate = Get<Sc06Gate>(_director, "sc09GateRay");
+            var mount = Get<GameObject>(_director, "sc09ShowerMount");
+            var mcq9 = Get<PresentableMcqPanel>(_director, "mcqSc09");
+            var clipboard = Get<SdsClipboardController>(_director, "clipboard");
+            yield return WaitStage("sc09Intro", 80f);
+            Say("SC09 shower mount active = " + (mount != null && mount.activeInHierarchy) + " (expected True)");
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("103_sc09_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC09 small instruction card", ip.transform);
+            yield return WaitStage("sc09Move", 60f);
+            yield return WaitStage("sc09Auto", 30f);
+            Say("SC09 at the table: head = " + Camera.main.transform.position.ToString("F2") + " (expected z about 1.5)");
+            yield return WaitStage("sc09Pour", 30f);
+            yield return new WaitForSeconds(3.2f);
+            yield return Shot("104_sc09_pour");
+            var wb = 0f;
+            while (!splash.Splashed && wb < 20f)
+            {
+                wb += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.45f);
+            yield return Shot("105_sc09_break");
+            yield return new WaitForSeconds(1.4f);
+            Say("SC09 accident: jar broken = " + splash.JarBroken + " (expected True), visor dirty = " + visor.Dirty + " (expected True), strength = " + visor.Strength.ToString("0.00"));
+            yield return Shot("106_sc09_visor");
+            yield return WaitStage("sc09Spill", 20f);
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("107_sc09_spill_card");
+            var ip2 = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip2 != null)
+                LayoutCheck("SC09 spill card", ip2.transform);
+            yield return WaitStage("sc09Sds", 40f);
+            yield return new WaitForSeconds(1.8f);
+            Say("SC09 SDS visible = " + clipboard.IsVisible + " (expected True)");
+            yield return Shot("108_sc09_sds");
+            var sw = 0f;
+            while (clipboard.IsVisible && sw < 40f)
+            {
+                sw += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC09 SDS hid by itself after " + sw.ToString("0.0") + " s (expected: after its voice + 2 s)");
+            yield return WaitStage("sc09Walk", 30f);
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("109_sc09_turning");
+            yield return WaitStage("sc09Wash", 40f);
+            yield return new WaitForSeconds(0.6f);
+            var cam = Camera.main.transform;
+            Say("SC09 at the shower: head = " + cam.position.ToString("F2") + ", looking +Z = " + (cam.forward.z > 0.5f) + " (expected True)");
+            yield return Shot("110_sc09_shower_before");
+            var wj = 0f;
+            while ((shower.ActiveJets == 0 || !shower.HoloVisible) && wj < 15f)
+            {
+                wj += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.5f);
+            Say("SC09 wash: running = " + shower.Running + " (expected True), jets = " + shower.ActiveJets + ", hologram = " + shower.HoloVisible +
+                " (expected True), visor strength = " + visor.Strength.ToString("0.00"));
+            yield return Shot("111_sc09_water");
+            var ww = 0f;
+            while (!shower.WashDone && ww < 30f)
+            {
+                ww += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Say("SC09 wash done = " + shower.WashDone + " (expected True), visor clean = " + visor.Clean.ToString("0.00"));
+            yield return WaitStage("sc09Back", 30f);
+            yield return new WaitForSeconds(2.0f);
+            yield return Shot("112_sc09_turning_back");
+            var g = 0f;
+            while (!gate.Visible && g < 40f)
+            {
+                g += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.0f);
+            cam = Camera.main.transform;
+            Say("SC09 gate view: head = " + cam.position.ToString("F2") + ", looking -Z = " + (cam.forward.z < -0.5f) + " (expected True), can lies = " +
+                (splash.Acid != null ? splash.Acid.position.ToString("F2") : "?") + ", jar active = " + (splash.Jar != null && splash.Jar.gameObject.activeSelf) +
+                " (expected False), puddle on = " + (splash.Puddle != null && splash.Puddle.gameObject.activeSelf) + ", floor puddle on = " +
+                (splash.FloorPuddle != null && splash.FloorPuddle.gameObject.activeSelf));
+            yield return Shot("113_sc09_aftermath");
+            LayoutCheck("SC09 gate card", gate.Card);
+            var label = FindDeep(gate.Card, "BackButton");
+            var lab9 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
+            Say("SC09 gate: left button text = [" + (lab9 != null ? lab9.text : "?") + "] (expected PREVIEW)");
+            Click(gate.Card, "BackButton");
+            yield return new WaitForSeconds(3.0f);
+            Say("SC09 preview: jar active = " + (splash.Jar != null && splash.Jar.gameObject.activeSelf) + " (expected True), visor dirty = " + visor.Dirty +
+                " (expected False), shower running = " + shower.Running + " (expected False)");
+            yield return Shot("114_sc09_preview_reset");
+            // let the second round run to the gate again
+            var g2 = 0f;
+            yield return new WaitForSeconds(5f);
+            while (!gate.Visible && g2 < 160f)
+            {
+                g2 += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.0f);
+            Click(gate.Card, "NextButton");
+            yield return WaitStage("sc09Question", 20f);
+            var q = 0f;
+            while (!mcq9.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("115_sc09_question");
+            LayoutCheck("SC09 MCQ", mcq9.transform);
+            var cur = mcq9.Current;
+            Say("SC09 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
+            // a WRONG pick: the reasons show and the voice sends the learner on with NEXT (no "Try again")
+            var row = FindDeep(mcq9.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            Say("SC09 answer voice (wrong pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected VO_Sc09WrongNext_bn)");
+            yield return Shot("116_sc09_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq9.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC09 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC09 MCQ reveal", mcq9.transform);
+            Say("SC09 shower mount after the run: active = " + (mount != null && mount.activeInHierarchy) + " (shown only inside Scenario 9)");
+            Click(mcq9.transform, "NextButton");
+        }
+
         private IEnumerator Sc09Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
+            if (PresentableInput.AllowedIn(9) && Get<Sc09AutoSplash>(_director, "sc09Auto") != null)
+            {
+                yield return Sc09RaySmoke(voiceSrc);
+                yield break;
+            }
+
             yield return WaitStage("sc09Intro", 40f);
             var flask = Get<Sc09Flask>(_director, "sc09Flask");
             var shower = Get<Sc09Shower>(_director, "sc09Shower");
@@ -2788,6 +3042,17 @@ namespace ChemicalSafety.Presentable
             {
                 Say("SC06-only run (dev start)");
                 yield return Sc06RaySmoke(voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
+            // ChemSafetySc04Dev: director starts at Scenario 4 and stops after it
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Dev", false))
+            {
+                Say("SC04-dev run (dev start, head offset " + UnityEditor.EditorPrefs.GetFloat("ChemSafetySc04HeadDy", 0f).ToString("0.00") + " m)");
+                yield return Sc04DevSmoke(panel);
                 yield return new WaitForSeconds(1f);
                 Say("DONE runtime errors/exceptions = " + _errors);
                 UnityEditor.EditorApplication.isPlaying = false;

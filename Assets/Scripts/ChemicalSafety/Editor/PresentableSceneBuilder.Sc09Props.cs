@@ -336,7 +336,8 @@ namespace ChemicalSafety.Editor
             broken.gameObject.SetActive(false);
         }
 
-        private static void Sc09Shower(Transform room, float ox, PresentableArt art, Sc09Layout lab, Sc09Refs refs)
+        // facing = +1: the shower faces +Z (the old lab); -1: it faces -Z (Scenario 9 on the ray, on the front wall of the factory room)
+        private static void Sc09Shower(Transform room, float ox, PresentableArt art, Sc09Layout lab, Sc09Refs refs, float facing = 1f)
         {
             var plate = lab.showerPlate;
             var bowl = lab.bowlCentre;
@@ -361,14 +362,14 @@ namespace ChemicalSafety.Editor
             glow.SetActive(false);
 
             // the green STAND HERE mark on the floor at the user's feet
-            var stand = QuadObj("Sc09StandHere", room, new Vector3(ox + lab.showerStand.x, 0.008f, lab.showerStand.z), new Vector3(90f, 180f, 0f),
+            var stand = QuadObj("Sc09StandHere", room, new Vector3(ox + lab.showerStand.x, 0.008f, lab.showerStand.z), new Vector3(90f, facing > 0f ? 180f : 0f, 0f),
                 new Vector2(1.5f, 1.0f), MatAlpha("Sc09StandHereMat", Sc06Tex("Label_Sc09StandHere"), Color.white, false));
             Object.DestroyImmediate(stand.GetComponent<Collider>());
             stand.SetActive(false);
 
             // floor drain under the shower (recessed steel rim + dark sump + slotted grate), like the designer picture.
             // ChemLab02's shower pad sits ~0.145 m above y=0 — probe it so the grate is not buried under that slab.
-            const float drainZ = 0.38f;
+            var drainZ = 0.38f * facing;
             var drainXZ = new Vector3(bowl.x, 0f, bowl.z + drainZ);
             var floorY = Sc09ProbeShowerFloorY(room, drainXZ);
             var drainAt = new Vector3(drainXZ.x, floorY, drainXZ.z);
@@ -403,7 +404,7 @@ namespace ChemicalSafety.Editor
             Sc09Jet(fx, "EyewashR", new Vector3(bowl.x - 0.115f, nozzleY, bowl.z), Quaternion.Euler(-80f, 0f, -14f), 160, 5f, 1.9f, 0.7f, 0.006f, 0.014f, 1.0f, waterMat, 0.012f);
             Sc09Jet(fx, "BowlSplash", new Vector3(bowl.x, bowl.y - 0.04f, bowl.z), Quaternion.Euler(-90f, 0f, 0f), 90, 60f, 0.9f, 0.5f, 0.005f, 0.012f, 1.0f, waterMat, 0.09f);
             Sc09Jet(fx, "FloorSplash", new Vector3(drainAt.x, drainAt.y + 0.03f, drainAt.z), Quaternion.Euler(-90f, 0f, 0f), 60, 55f, 0.9f, 0.45f, 0.006f, 0.014f, 1.0f, waterMat, 0.28f);
-            Sc09Jet(fx, "Mist", new Vector3(bowl.x, 1.2f, bowl.z + 0.3f), Quaternion.Euler(-90f, 0f, 0f), 28, 70f, 0.12f, 2.2f, 0.25f, 0.5f, -0.02f, mistMat, 0.5f, 0.12f);
+            Sc09Jet(fx, "Mist", new Vector3(bowl.x, 1.2f, bowl.z + 0.3f * facing), Quaternion.Euler(-90f, 0f, 0f), 28, 70f, 0.12f, 2.2f, 0.25f, 0.5f, -0.02f, mistMat, 0.5f, 0.12f);
         }
 
         // ChemLab02 has a raised pad under the shower (~0.145 m). Probe it so props sit on that slab, not under it.

@@ -141,6 +141,8 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc01WrongNextEn;
         [Tooltip("VO_AnswerWrongSee_bn.mp3 (+ English twin in Resources/VoEn): wrong answer when the reasons are shown and the scenario goes on (Scenario 2, questions 1-5).")]
         public AudioClip voAnswerWrongSee;
+        [Tooltip("VO_Sc04..09WrongNext_bn.mp3 (index = scenario number; English twins in Resources/VoEn): wrong answer on the ray (inline reveal, no retry): read the reasons, click NEXT to go to the next scenario.")]
+        public AudioClip[] voWrongNextBn = new AudioClip[13];
         [Tooltip("VO_Sc02WrongNext_bn / _en.mp3 - wrong answer on the last Scenario 2 question: reasons shown, click NEXT.")]
         public AudioClip voSc02WrongNextBn;
         public AudioClip voSc02WrongNextEn;
@@ -245,6 +247,15 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc09Gate;
         public AudioClip voSc09CompleteBn;
         public AudioClip voSc09CompleteEn;
+        // Scenario 9 on the controller ray (automatic flow in the factory room)
+        public Sprite bnSc09RayInstructionPanel;
+        public Sprite bnSc09RaySpill;
+        public AudioClip voSc09RayInstruction;
+        public AudioClip voSc09RaySpill;
+        public AudioClip voSc09RayWalk;
+        public AudioClip voSc09RayPush;
+        public AudioClip voSc09RayBack;
+        public AudioClip voSc09RayGate;
         public Sprite sdsSc10;
         public Sprite iconSc10Contain;
         public Sprite iconSc10Neutralize;

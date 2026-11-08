@@ -15,6 +15,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Shader shader;
         [SerializeField] private float distance = 0.32f;
         [SerializeField] private Vector2 size = new Vector2(0.95f, 0.8f);
+        [Tooltip("Colour of the drops. Default = the old purple sample (the shader's own default); Scenario 9 on the ray uses a yellow acid.")]
+        [SerializeField] private Color tint = new Color(0.30f, 0.04f, 0.46f, 1f);
 
         private static readonly int CleanId = Shader.PropertyToID("_Clean");
         private static readonly int WetId = Shader.PropertyToID("_Wet");
@@ -59,6 +61,7 @@ namespace ChemicalSafety.Presentable
             _mask = MakeMask(512, 9);
             _mat = new Material(shader) { name = "Sc09VisorRuntime", renderQueue = (int)RenderQueue.Overlay + 10 };
             _mat.SetTexture("_MainTex", _mask);
+            _mat.SetColor("_Tint", tint);
             var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
             go.name = "Sc09VisorQuad";
             Destroy(go.GetComponent<Collider>());

@@ -23,6 +23,12 @@ Source: `on-screen` = taken from the English text in the code, `translated` = tr
 | VO_SC03_Instruction | on-screen | 16.1 / 18.1 | You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do. |
 | VO_Sc03Touch | on-screen | 4.1 / 6.0 | Touch and hold the drum label with your finger to scan it. |
 | VO_Sc03Inspect | translated | 7.4 / 6.9 | The drum is organic peroxide. Crystals have formed on the drum and the label has expired. |
+| VO_Sc04WrongNext | translated | 7.9 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario five. |
+| VO_Sc05WrongNext | translated | 8.0 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario six. |
+| VO_Sc06WrongNext | translated | 8.0 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario seven. |
+| VO_Sc07WrongNext | translated | 7.8 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario eight. |
+| VO_Sc08WrongNext | translated | 7.8 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario nine. |
+| VO_Sc09WrongNext | translated | 7.9 / 7.7 | Wrong answer. Read the reason for each option. Click Next to go to Scenario ten. |
 | VO_Sc03Wrong | translated | 7.5 / 7.3 | Wrong decision. Crystallized organic peroxide can explode when it is opened or rubbed. |
 | VO_SC04_Instruction | on-screen | 10.4 / 12.2 | You are a lab technician preparing to test a dye sample with concentrated HCl. Check the SDS first. Select the right gloves. |
 | VO_SC05_Instruction | on-screen | 14.3 / 12.9 | You are a dyeing machine operator. A batch of fabric needs treatment with a toluene-based solvent. The vapor level is high in there today. Put on the right mask before you go in. |
