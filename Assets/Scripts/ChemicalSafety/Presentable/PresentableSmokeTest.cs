@@ -2947,8 +2947,94 @@ namespace ChemicalSafety.Presentable
             }
         }
 
+        // Scenario 12 on the controller ray: Continue starts everything, the four rounds run by themselves (a wrong pick, then the right one),
+        // the learner clicks NEXT on the ensemble card, BACK replays once, NEXT on the gate card, then the multi-select question with
+        // reasons under every option (no popup).
+        private IEnumerator Sc12RaySmoke(InstructionPanelView panel, AudioSource voiceSrc)
+        {
+            yield return WaitStage("sc12Intro", 40f);
+            var station = Get<Sc12Station>(_director, "sc12Station");
+            var gate = Get<Sc06Gate>(_director, "sc12Gate");
+            var assess = Get<Sc12Assessment>(_director, "assessmentSc12");
+            yield return new WaitForSeconds(2.5f);
+            yield return Shot("131_sc12_ray_instruction");
+            yield return ClickContinue(panel, 40f);
+
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return WaitStage("sc12Sds", 40f);
+                yield return new WaitForSeconds(1.8f);
+                if (shots)
+                    yield return Shot("132_sc12_ray_sds");
+                for (var pick = 0; pick < 4; pick++)
+                {
+                    yield return WaitStage("sc12Pick" + pick, 40f);
+                    yield return new WaitForSeconds(1.4f);
+                    Say("SC12 ray " + tag + " pick " + pick + ": panel open = " + station.PanelOpen + " (expected True)");
+                    LayoutCheck("SC12 ray pick panel " + pick, FindDeep(station.transform, "Sc12Panel"));
+                    if (shots && pick == 0)
+                        yield return Shot("134_sc12_ray_pick");
+                    var worn0 = station.WornCount;
+                    if (shots && pick == 0)
+                    {
+                        yield return Sc10Wait(() => station.Result == 2, 12f);
+                        yield return Shot("135_sc12_ray_wrong_card");
+                    }
+
+                    yield return Sc10Wait(() => station.WornCount > worn0, 25f);
+                    Say("SC12 ray " + tag + " pick " + pick + ": worn items = " + station.WornCount + " (expected " + (pick + 1) + ", no click needed)");
+                }
+
+                yield return WaitStage("sc12Review", 40f);
+                yield return new WaitForSeconds(3.4f);
+                LayoutCheck("SC12 ray review", FindDeep(station.transform, "Sc12Review"));
+                if (shots)
+                    yield return Shot("137_sc12_ray_review");
+                Click(station.transform, "NextButton");
+
+                FingerGuard(false);
+                yield return WaitStage("sc12Gate", 30f);
+                yield return Sc10Wait(() => gate.Visible, 10f);
+                yield return new WaitForSeconds(1.3f);
+                Say("SC12 ray " + tag + ": gate card visible = " + gate.Visible);
+                LayoutCheck("SC12 ray gate card", gate.Card);
+                if (shots)
+                    yield return Shot("138_sc12_ray_gate");
+                Click(gate.transform, round == 0 ? "BackButton" : "NextButton");
+                FingerGuard(true);
+            }
+
+            yield return WaitStage("sc12Question", 20f);
+            yield return Sc10Wait(() => assess.Visible, 8f);
+            yield return new WaitForSeconds(1.2f);
+            Say("SC12 ray assessment visible = " + assess.Visible + " (expected True)");
+            LayoutCheck("SC12 ray assessment", FindDeep(assess.transform, "Sc12AssessPanel"));
+            yield return Shot("139_sc12_ray_question");
+            var labels = Sc12Content.OptionLabels;
+            var boots = -1;
+            for (var r = 0; r < assess.RowCount; r++)
+                if (RowText(assess.transform, "Row" + r) == labels[3])
+                    boots = r;
+            assess.ToggleRow(boots); // only boots: wrong, but the reasons are shown and NEXT still comes (no retry, no popup)
+            assess.PressSubmit();
+            yield return new WaitForSeconds(1.0f);
+            Say("SC12 ray boots only: revealed = " + assess.Revealed + " (expected True), popup visible = " + assess.PopupVisible + " (expected False)");
+            LayoutCheck("SC12 ray assessment revealed", FindDeep(assess.transform, "Sc12AssessPanel"));
+            yield return Shot("140_sc12_ray_reasons");
+            Click(assess.transform, "InlineNextButton");
+            yield return new WaitForSeconds(0.8f);
+        }
+
         private IEnumerator Sc12Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
+            if (Get<bool>(_director, "sc12RayLook") && PresentableInput.AllowedIn(12))
+            {
+                yield return Sc12RaySmoke(panel, voiceSrc);
+                yield break;
+            }
+
             yield return WaitStage("sc12Intro", 40f);
             var station = Get<Sc12Station>(_director, "sc12Station");
             var gate = Get<Sc06Gate>(_director, "sc12Gate");

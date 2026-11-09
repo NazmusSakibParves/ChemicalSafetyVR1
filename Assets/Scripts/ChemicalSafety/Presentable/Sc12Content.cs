@@ -57,5 +57,11 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionLabels => Loc.A("SC12", "OptionLabels");
 
         public static string ModuleComplete => Loc.T("SC12", "ModuleComplete");
+
+        // controller-ray version (Sc12UseRay)
+        public static string RayInstruction => Loc.T("SC12", "RayInstruction");
+        public static string TagRequired => Loc.T("SC12", "TagRequired");
+        public static string TagNotRequired => Loc.T("SC12", "TagNotRequired");
+        public static string[] OptionReasons => Loc.A("SC12", "OptionReasons");
     }
 }

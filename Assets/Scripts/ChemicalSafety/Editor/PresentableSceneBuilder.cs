@@ -401,6 +401,9 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc12Station").objectReferenceValue = sc12.station;
             so.FindProperty("sc12Gate").objectReferenceValue = sc12.gate;
             so.FindProperty("assessmentSc12").objectReferenceValue = mcq12;
+            so.FindProperty("sc12RayStand").objectReferenceValue = sc12.rayStand;
+            so.FindProperty("sc12CardAnchor").objectReferenceValue = sc12.cardAnchor;
+            so.FindProperty("sc12RayLook").boolValue = Sc12UseRay;
             so.FindProperty("envScCheck").objectReferenceValue = envCheck.gameObject;
             so.FindProperty("spawnScCheck").objectReferenceValue = scCheckRefs.spawn;
             so.FindProperty("scCheck").objectReferenceValue = scCheckRefs.runner;
@@ -710,6 +713,7 @@ namespace ChemicalSafety.Editor
             art.iconSc11Call = LoadSprite("2D/Sc11/Icon_CallSupervisor");
             art.sdsSc12 = LoadSprite("2D/Sc12/Sc12_SdsClipboard");
             art.bnSc12InstructionPanel = B("BN_Sc12InstructionPanel");
+            art.bnSc12RayInstructionPanel = B("BN_Sc12RayInstructionPanel");
             art.iconSc12Ppe = new[]
             {
                 LoadSprite("2D/Sc12/Sc12_IconGoggles"), LoadSprite("2D/Sc12/Sc12_IconGloves"),
@@ -955,6 +959,7 @@ namespace ChemicalSafety.Editor
             art.voSc11CompleteBn = Keep("VO_Sc11Complete_bn.mp3", art.voSc11CompleteBn);
             art.voSc11CompleteEn = Keep("VO_Sc11Complete_en.mp3", art.voSc11CompleteEn);
             art.voSc12Instruction = Keep("VO_SC12_Instruction_bn.mp3", art.voSc12Instruction);
+            art.voSc12RayInstruction = V("VO_Sc12RayInstruction_bn.mp3");
             art.voSc12Sds = Keep("VO_Sc12Sds_bn.mp3", art.voSc12Sds);
             art.voSc12Stand = Keep("VO_Sc12Stand_bn.mp3", art.voSc12Stand);
             for (var pi = 0; pi < 4; pi++)

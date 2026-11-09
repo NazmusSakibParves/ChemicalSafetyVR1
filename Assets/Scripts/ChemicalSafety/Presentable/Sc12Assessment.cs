@@ -28,6 +28,11 @@ namespace ChemicalSafety.Presentable
             public string wrongTitle;
             public string wrongItemBody;
             public string missedBody;
+            /// <summary>Ray version: a reason under every row, shown after SUBMIT (REQUIRED / NOT REQUIRED), no popup, NEXT always.</summary>
+            public bool inlineReveal;
+            public string[] reasons;
+            public string tagRequired;
+            public string tagNotRequired;
         }
 
         [SerializeField] private PresentableArt art;
@@ -64,6 +69,25 @@ namespace ChemicalSafety.Presentable
         private bool _locked;
         private bool _won;
 
+        // inline (ray) look: a taller panel, a reason line per row, an own NEXT pill under the rows
+        private RectTransform _panelRt;
+        private RectTransform _headerRt, _promptRt, _submitRt;
+        private RectTransform[] _rowRt, _labelRt, _reasonRt;
+        private TextMeshProUGUI[] _reasons;
+        private bool _revealed;
+        private RectTransform _inlineNextRt;
+        private TextMeshProUGUI _inlineNextText;
+        private bool _inlineMode;
+        private float _scaleMul = 1f;
+
+        /// <summary>World size of the panel as a multiple of the default (the ray version shows it bigger).</summary>
+        public void SetWorldScale(float mul)
+        {
+            _scaleMul = Mathf.Max(0.1f, mul);
+            if (_panel != null && _panel.gameObject.activeSelf)
+                _panel.localScale = Vector3.one * 0.00064f * _scaleMul;
+        }
+
         /// <summary>Raised on SUBMIT: (selection by shown row, all right).</summary>
         public event Action<bool[], bool> Submitted;
 
@@ -71,6 +95,7 @@ namespace ChemicalSafety.Presentable
 
         public bool Visible => _panel != null && _panel.gameObject.activeSelf;
         public bool Won => _won;
+        public bool Revealed => _revealed;
         public bool PopupVisible => _popupRoot != null && _popupRoot.gameObject.activeSelf;
         public int RowCount => _labels != null ? _labels.Length : 0;
 
@@ -92,18 +117,97 @@ namespace ChemicalSafety.Presentable
             _locked = false;
             _header.text = q.header;
             _prompt.text = q.prompt;
+            _prompt.color = HoloWhite;
+            _revealed = false;
+            _inlineMode = q.inlineReveal;
+            ApplyLayout(_inlineMode);
             for (var i = 0; i < RowCount; i++)
             {
                 _labels[i].text = q.labels[i];
                 _checks[i].gameObject.SetActive(false);
+                _checks[i].sprite = art.check;
+                _checks[i].color = Color.white;
                 _rows[i].color = RowIdle;
+                _reasons[i].gameObject.SetActive(false);
             }
 
             _submitText.text = q.submitLabel;
+            _inlineNextText.text = q.nextLabel;
             _nextLabel.text = q.nextLabel;
             _popupRoot.gameObject.SetActive(false);
             _panel.gameObject.SetActive(true);
             StartCoroutine(PopIn());
+        }
+
+        // The standard panel is 820 x 780 with four plain rows. The inline (ray) look is taller: every row has its label and a reason
+        // line under it, and the NEXT pill sits under the rows after SUBMIT.
+        private void ApplyLayout(bool inline)
+        {
+            _panelRt.sizeDelta = inline ? new Vector2(900f, 1080f) : new Vector2(820f, 780f);
+            void Anchor(RectTransform rt, float x0, float y0, float x1, float y1)
+            {
+                rt.anchorMin = new Vector2(x0, y0);
+                rt.anchorMax = new Vector2(x1, y1);
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+            }
+
+            if (inline)
+            {
+                Anchor(_headerRt, 0.06f, 0.875f, 0.94f, 0.945f);
+                Anchor(_promptRt, 0.07f, 0.775f, 0.93f, 0.87f);
+                for (var i = 0; i < RowCount; i++)
+                {
+                    var top = 0.765f - i * 0.155f;
+                    Anchor(_rowRt[i], 0.06f, top - 0.143f, 0.94f, top);
+                    Anchor(_labelRt[i], 0.15f, 0.52f, 0.97f, 0.97f);
+                    Anchor(_reasonRt[i], 0.15f, 0.04f, 0.97f, 0.52f);
+                }
+
+                Anchor(_submitRt, 0.30f, 0.07f, 0.70f, 0.150f);
+            }
+            else
+            {
+                Anchor(_headerRt, 0.06f, 0.85f, 0.94f, 0.935f);
+                Anchor(_promptRt, 0.07f, 0.745f, 0.93f, 0.85f);
+                for (var i = 0; i < RowCount; i++)
+                {
+                    var top = 0.73f - i * 0.135f;
+                    Anchor(_rowRt[i], 0.07f, top - 0.118f, 0.93f, top);
+                    Anchor(_labelRt[i], 0.15f, 0.04f, 0.97f, 0.96f);
+                }
+
+                Anchor(_submitRt, 0.30f, 0.055f, 0.70f, 0.18f);
+            }
+
+            _submit.gameObject.SetActive(true);
+            _inlineNextRt.gameObject.SetActive(false);
+        }
+
+        // ray version: no popup. Every row shows its verdict tag and reason, the ticked rows get a green tick / red cross, then NEXT.
+        private void Reveal(bool allRight, bool wrongTicked)
+        {
+            _revealed = true;
+            for (var i = 0; i < RowCount; i++)
+            {
+                var good = _q.correct[i];
+                _rows[i].color = good ? new Color(0.62f, 1f, 0.78f, 1f) : new Color(1f, 0.72f, 0.70f, 1f);
+                var tag = good ? _q.tagRequired : _q.tagNotRequired;
+                var reason = _q.reasons != null && i < _q.reasons.Length ? _q.reasons[i] : string.Empty;
+                var hex = good ? "#7CFFA8" : "#FF8A80";
+                _reasons[i].text = "<b><color=" + hex + ">" + tag + "</color></b>  " + reason;
+                _reasons[i].gameObject.SetActive(true);
+                _checks[i].gameObject.SetActive(_on[i] || good);
+                _checks[i].sprite = good ? art.check : art.cross;
+                _checks[i].color = good ? new Color(0.30f, 1f, 0.52f, _on[i] ? 1f : 0.45f) : new Color(1f, 0.28f, 0.26f, 1f);
+            }
+
+            _prompt.text = allRight ? _q.rightTitle : _q.wrongTitle;
+            _prompt.color = allRight ? new Color(0.45f, 1f, 0.62f) : new Color(1f, 0.55f, 0.50f);
+            _submit.gameObject.SetActive(false);
+            _inlineNextRt.gameObject.SetActive(true);
+            PresentableFx.Play(allRight ? PresentableFx.Success : PresentableFx.Error, 0.6f);
+            PresentableFx.Haptic(true, allRight ? 0.5f : 0.8f, 0.15f);
         }
 
         public void Hide()
@@ -145,7 +249,11 @@ namespace ChemicalSafety.Presentable
                 return;
             _locked = true;
             _won = allRight;
-            if (allRight)
+            if (_inlineMode)
+            {
+                Reveal(allRight, wrongTicked);
+            }
+            else if (allRight)
             {
                 _correctTitle.text = _q.rightTitle;
                 _correctBody.text = _q.rightBody;
@@ -163,7 +271,7 @@ namespace ChemicalSafety.Presentable
 
         public void PressNext()
         {
-            if (_won)
+            if (_won || (_inlineMode && _revealed))
             {
                 PresentableFx.Play(PresentableFx.Tick);
                 NextPressed?.Invoke();
@@ -208,7 +316,7 @@ namespace ChemicalSafety.Presentable
             yield return PopupOut(_wrongPopup);
             _popupRoot.gameObject.SetActive(false);
             _panel.gameObject.SetActive(true);
-            _panel.localScale = Vector3.one * 0.00064f;
+            _panel.localScale = Vector3.one * 0.00064f * _scaleMul;
             _locked = false;
         }
 
@@ -259,7 +367,7 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PopIn()
         {
-            var baseScale = Vector3.one * 0.00064f;
+            var baseScale = Vector3.one * 0.00064f * _scaleMul;
             var canvas = _panel.GetComponent<CanvasGroup>();
             _panel.localScale = baseScale * 0.85f;
             if (canvas != null)
@@ -350,13 +458,21 @@ namespace ChemicalSafety.Presentable
             _prompt.fontSizeMin = 18f;
             _prompt.fontSizeMax = 34f;
 
+            _panelRt = canvas.GetComponent<RectTransform>();
+            _headerRt = _header.rectTransform;
+            _promptRt = _prompt.rectTransform;
             _labels = new TextMeshProUGUI[rows];
             _rows = new Image[rows];
             _checks = new Image[rows];
+            _rowRt = new RectTransform[rows];
+            _labelRt = new RectTransform[rows];
+            _reasonRt = new RectTransform[rows];
+            _reasons = new TextMeshProUGUI[rows];
             for (var i = 0; i < rows; i++)
             {
                 var top = 0.73f - i * 0.135f;
                 var row = PresentableUi.Rect("Row" + i, canvas.transform, new Vector2(0.07f, top - 0.118f), new Vector2(0.93f, top));
+                _rowRt[i] = row;
                 _rows[i] = PresentableUi.Img(row, art.holoButton != null ? art.holoButton : art.roundedSolid, RowIdle, true, true);
                 var btn = row.gameObject.AddComponent<Button>();
                 btn.targetGraphic = _rows[i];
@@ -377,11 +493,29 @@ namespace ChemicalSafety.Presentable
                 _labels[i].fontSizeMin = 16f;
                 _labels[i].fontSizeMax = 34f;
                 _labels[i].textWrappingMode = TextWrappingModes.Normal;
+                _labelRt[i] = _labels[i].rectTransform;
+                // the reason line of the ray version (hidden until SUBMIT)
+                _reasons[i] = PresentableUi.Text("Reason", row, new Vector2(0.15f, 0.03f), new Vector2(0.97f, 0.50f), "", 24f,
+                    new Color(0.88f, 0.97f, 1f), TextAlignmentOptions.TopLeft, false, art.englishFont);
+                _reasons[i].enableAutoSizing = true;
+                _reasons[i].fontSizeMin = 14f;
+                _reasons[i].fontSizeMax = 24f;
+                _reasons[i].textWrappingMode = TextWrappingModes.Normal;
+                _reasons[i].richText = true;
+                _reasons[i].raycastTarget = false;
+                _reasonRt[i] = _reasons[i].rectTransform;
+                _reasons[i].gameObject.SetActive(false);
             }
 
             var holo = art.holoButtonPrimary != null ? art.holoButtonPrimary : art.holoButton;
             _submit = HoloButton("SubmitButton", canvas.transform, new Vector2(0.30f, 0.055f), new Vector2(0.70f, 0.18f), holo, out _submitText);
             _submit.onClick.AddListener(PressSubmit);
+            _submitRt = _submit.GetComponent<RectTransform>();
+            var nextBtn = HoloButton("InlineNextButton", canvas.transform, new Vector2(0.30f, 0.07f), new Vector2(0.70f, 0.150f), holo,
+                out _inlineNextText);
+            nextBtn.onClick.AddListener(PressNext);
+            _inlineNextRt = nextBtn.GetComponent<RectTransform>();
+            _inlineNextRt.gameObject.SetActive(false);
             PresentableUi.AlwaysOnTop(canvas);
             _panel.gameObject.SetActive(false);
         }

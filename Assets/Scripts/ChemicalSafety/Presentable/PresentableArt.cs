@@ -328,6 +328,8 @@ namespace ChemicalSafety.Presentable
         [Header("Scenario 12 (PPE donning station)")]
         public Sprite sdsSc12;
         public Sprite bnSc12InstructionPanel;
+        public Sprite bnSc12RayInstructionPanel;
+        public AudioClip voSc12RayInstruction;
         [Tooltip("Goggles, gloves, respirator, apron cut-outs (selection panel / review hologram)")]
         public Sprite[] iconSc12Ppe = new Sprite[4];
         public Sprite operatorSc12;

@@ -69,6 +69,72 @@ namespace ChemicalSafety.Presentable
         /// <summary>Fires for every poke on an option row (round, option, right).</summary>
         public event Action<int, int, bool> Picked;
 
+        // ---- controller-ray layout (Scenario 12 ray look): panel / review on the left of the view, the small verdict card above the
+        // cabinet, the rounds run by themselves (AutoRound). Never set in the finger version, so that flow is unchanged.
+        private bool _ray;
+        private Vector3 _panelPos, _cardPos, _reviewPos;
+        private Quaternion _panelRot, _cardRot, _reviewRot;
+        private float _panelMul = 1f, _cardMul = 1f, _reviewMul = 1f;
+        private float _sway = 2.2f;
+
+        public void UseRayLayout(Vector3 panelPos, Quaternion panelRot, float panelMul, Vector3 cardPos, Quaternion cardRot, float cardMul,
+            Vector3 reviewPos, Quaternion reviewRot, float reviewMul)
+        {
+            _ray = true;
+            _panelPos = panelPos;
+            _panelRot = panelRot;
+            _panelMul = panelMul;
+            _cardPos = cardPos;
+            _cardRot = cardRot;
+            _cardMul = cardMul;
+            _reviewPos = reviewPos;
+            _reviewRot = reviewRot;
+            _reviewMul = reviewMul;
+        }
+
+        public void ClearRayLayout()
+        {
+            _ray = false;
+            _sway = 2.2f;
+        }
+
+        private float Mul(Transform t) => !_ray ? 1f : t == _panel ? _panelMul : t == _card ? _cardMul : t == _review ? _reviewMul : 1f;
+
+        /// <summary>
+        /// One pick round without the learner: the selection panel opens, (optionally) a wrong row is chosen first (red card, the item goes
+        /// back), then the right row (green card, the item flies to the learner and is put on).
+        /// </summary>
+        public IEnumerator AutoRound(int round, float thinkSeconds, bool demoWrong)
+        {
+            BeginRound(round);
+            yield return PresentableFx.Wait(thinkSeconds);
+            if (demoWrong)
+            {
+                _sway = 0.7f;
+                OnRow(RowOf(1));
+                while (Result == 0)
+                    yield return null;
+                yield return PresentableFx.Wait(1.1f);
+                Retry();
+                yield return PresentableFx.Wait(0.5f);
+            }
+
+            _sway = 1.3f;
+            OnRow(RowOf(0));
+            while (Result != 1)
+                yield return null;
+            yield return PresentableFx.Wait(0.9f);
+            EndRound();
+        }
+
+        private int RowOf(int option)
+        {
+            for (var r = 0; r < 4; r++)
+                if (_order[r] == option)
+                    return r;
+            return 0;
+        }
+
         private void Start()
         {
             CaptureHomes();
@@ -153,6 +219,9 @@ namespace ChemicalSafety.Presentable
             }
 
             _prompt.text = Sc12Content.PickPrompt[round];
+            var panelGroup = _panel.GetComponent<CanvasGroup>();
+            if (panelGroup != null)
+                panelGroup.interactable = !_ray; // the ray version runs the rounds itself: a stray click must not pick
             _card.gameObject.SetActive(false);
             PlacePanel();
             _open = true;
@@ -186,6 +255,13 @@ namespace ChemicalSafety.Presentable
 
         private void PlacePanel()
         {
+            if (_ray)
+            {
+                _panel.SetPositionAndRotation(_panelPos, _panelRot);
+                _card.SetPositionAndRotation(_cardPos, _cardRot);
+                return;
+            }
+
             var cam = Camera.main != null ? Camera.main.transform : null;
             var fwd = cam != null ? cam.forward : Vector3.forward;
             fwd.y = 0f;
@@ -269,7 +345,7 @@ namespace ChemicalSafety.Presentable
 
             // a slow sway so the user can see the whole shape
             var spin = 0f;
-            for (var t = 0f; t < 2.2f; t += Time.deltaTime)
+            for (var t = 0f; t < _sway; t += Time.deltaTime)
             {
                 spin += Time.deltaTime * 70f;
                 item.rotation = destRot * Quaternion.Euler(0f, Mathf.Sin(spin * Mathf.Deg2Rad) * 35f, 0f);
@@ -332,7 +408,10 @@ namespace ChemicalSafety.Presentable
             fwd.y = 0f;
             fwd = fwd.sqrMagnitude < 0.001f ? Vector3.forward : fwd.normalized;
             var head = cam != null ? cam.position : Vector3.zero;
-            _review.SetPositionAndRotation(head + fwd * 0.85f + Vector3.up * (-0.02f), Quaternion.LookRotation(fwd, Vector3.up));
+            if (_ray)
+                _review.SetPositionAndRotation(_reviewPos, _reviewRot);
+            else
+                _review.SetPositionAndRotation(head + fwd * 0.85f + Vector3.up * (-0.02f), Quaternion.LookRotation(fwd, Vector3.up));
             foreach (var c in _reviewChecks)
                 c.gameObject.SetActive(false);
             _review.gameObject.SetActive(true);
@@ -355,7 +434,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator PopIn(Transform t)
         {
             var group = t.GetComponent<CanvasGroup>();
-            var baseScale = Vector3.one * (t == _review ? 0.00062f : 0.00064f);
+            var baseScale = Vector3.one * (t == _review ? 0.00062f : 0.00064f) * Mul(t);
             t.localScale = baseScale * 0.85f;
             if (group != null)
                 group.alpha = 0f;

@@ -221,6 +221,10 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc12Station sc12Station;
         [SerializeField] private Sc06Gate sc12Gate;
         [SerializeField] private Sc12Assessment assessmentSc12;
+        [Tooltip("Scenario 12 on the controller ray (new hall, automatic rounds). False = the old finger-touch Scenario 12.")]
+        [SerializeField] private bool sc12RayLook;
+        [SerializeField] private Transform sc12RayStand;
+        [SerializeField] private Transform sc12CardAnchor;
         [SerializeField] private GameObject envScCheck;
         [SerializeField] private Transform spawnScCheck;
         [SerializeField] private ScCheckRunner scCheck;
@@ -5084,6 +5088,14 @@ namespace ChemicalSafety.Presentable
         // apron, wrong picks go back to the locker) -> review hologram -> gate card -> multi-select MCQ.
         private IEnumerator RunScenario12()
         {
+            // the controller-ray version (new hall, automatic rounds) is behind sc12RayLook (Sc12UseRay in the builder); false = this finger flow
+            PresentableInput.ActiveScenario = sc12RayLook ? 12 : 0;
+            if (sc12RayLook && PresentableInput.AllowedIn(12))
+            {
+                yield return RunScenario12Ray();
+                yield break;
+            }
+
             Stage("sc12");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -5142,6 +5154,165 @@ namespace ChemicalSafety.Presentable
             Stage("sc12Done");
             if (envScCheck != null && scCheck != null)
                 yield return RunScenarioCheck(13);
+        }
+
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC12 on the controller ray: the PPE cabinet hall. Glass instruction card at the upper left, on Continue the SDS, the four pick
+        // rounds (goggles, gloves, apron, respirator: a wrong pick first, then the right one, small verdict card above the cabinet) all run
+        // by themselves, then the ensemble card (the learner clicks NEXT), the "PPE inspection completed" card (BACK replays), and the
+        // multi-select question with a reason under every option.
+        // ------------------------------------------------------------------------------------------------------------------------
+        private IEnumerator RunScenario12Ray()
+        {
+            PresentableInput.ActiveScenario = 12;
+            Stage("sc12");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc12.SetActive(true);
+            clipboard.SetSheet(art.sdsSc12);
+            clipboard.SetVisible(false);
+            sc12Station.ResetAll();
+            var stand = sc12RayStand != null ? sc12RayStand : sc12StartStand;
+            PlaceRig(stand.position, stand.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc12Intro");
+            _instructionClip = art.voSc12RayInstruction != null ? art.voSc12RayInstruction
+                : art.voSc12Instruction != null ? art.voSc12Instruction : art.voInstruction;
+            instructionPanel.SetContent(Sc12Content.RayInstruction, art.bnSc12RayInstructionPanel);
+            LockLocomotion(true); // the head is free, the body stays: no walking about in VR
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp + 0.42f); // upper left: the yellow cabinet stays uncovered
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue(); // the game play starts with the click
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            yield return RunSc12RayFlow(stand);
+
+            LockLocomotion(false);
+            assessmentSc12.SetWorldScale(1f);
+            sc12Station.ClearRayLayout();
+            Stage("sc12Done");
+            PresentableInput.ActiveScenario = 0; // Scenarios 13-18 keep their own input
+            if (envScCheck != null && scCheck != null)
+                yield return RunScenarioCheck(13);
+        }
+
+        private IEnumerator RunSc12RayFlow(Transform stand)
+        {
+            // everything that needs reading stands on the left of the view, the cabinet in the middle stays clear
+            Sc04PopupPose(-1.15f, 0.12f, 1.7f, out var panelPos, out var panelRot);
+            Sc04PopupPose(0f, 0f, 1.8f, out var reviewPos, out var reviewRot); // the ensemble card: straight ahead, middle of the view, a comfortable distance
+            var cardPos = sc12CardAnchor != null ? sc12CardAnchor.position : panelPos + Vector3.up * 0.7f;
+            var camPos = _cam != null ? _cam.position : rig.position;
+            var cardRot = Quaternion.LookRotation(Flat(cardPos - camPos), Vector3.up);
+            sc12Station.UseRayLayout(panelPos, panelRot, 1.7f, cardPos, cardRot, 2.4f, reviewPos, reviewRot, 1.45f);
+
+            var again = true;
+            var first = true;
+            while (again)
+            {
+                if (!first)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc12Station.ResetAll();
+                    PlaceRig(stand.position, stand.forward);
+                    yield return fader.FadeTo(0f, 0.8f);
+                }
+
+                first = false;
+
+                // 1. the safety data sheet opens by itself, then closes again
+                Stage("sc12Sds");
+                StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
+                clipboard.SetVisible(true);
+                var sdsWait = 0f;
+                var sdsMax = Mathf.Max(6f, art.voSc12Sds != null ? art.voSc12Sds.length + 2f : 6f);
+                while (clipboard.IsVisible && sdsWait < sdsMax)
+                {
+                    sdsWait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                clipboard.SetVisible(false);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+                yield return PresentableFx.Wait(0.5f);
+
+                // 2. four pick rounds, no clicks: a wrong pick (red card, the item goes back), then the right one (green card, worn)
+                void OnPicked(int r, int option, bool right)
+                {
+                    StopAllVoiceCoroutines();
+                    StartCoroutine(PlayVoice(right ? art.voSc12Right : art.voSc12Wrong));
+                }
+
+                sc12Station.Picked += OnPicked;
+                for (var round = 0; round < 4; round++)
+                {
+                    Stage("sc12Pick" + round);
+                    StopAllVoiceCoroutines();
+                    StartCoroutine(PlayVoice(art.voSc12Pick[round]));
+                    yield return sc12Station.AutoRound(round, 2.4f, true);
+                }
+
+                sc12Station.Picked -= OnPicked;
+
+                // 3. the ensemble card: the learner reads the list and clicks NEXT
+                Stage("sc12Review");
+                StopAllVoiceCoroutines();
+                subtitle.Hide();
+                sc12Station.ShowReview(true);
+                StartCoroutine(SubtitledVoice(null, Sc12Content.ReviewHint, art.voSc12Review));
+                var reviewDone = false;
+                void OnReviewNext() => reviewDone = true;
+                sc12Station.ReviewNext += OnReviewNext;
+                while (!reviewDone)
+                    yield return null;
+                sc12Station.ReviewNext -= OnReviewNext;
+                sc12Station.ShowReview(false);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+
+                // 4. "PPE inspection completed": BACK shows the process again, NEXT goes to the question
+                Stage("sc12Gate");
+                yield return PresentableFx.Wait(0.4f);
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc12Gate.Back += OnBack;
+                sc12Gate.Next += OnNext;
+                sc12Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc12Gate));
+                while (choice == 0)
+                    yield return null;
+                sc12Gate.Back -= OnBack;
+                sc12Gate.Next -= OnNext;
+                sc12Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc12Question");
+            yield return Sc12Question(true);
         }
 
         // SC13-SC18: the Supervisor Pre-Task Safety Check. One hall and one runner, the scenario number only selects the content
@@ -5241,7 +5412,7 @@ namespace ChemicalSafety.Presentable
 
         // The multiple-answer assessment. Marks: one question, full mark when the first submission is exactly the right set; every
         // submission is recorded as the letters of the ticked rows ("A,C,D") in the shown order.
-        private IEnumerator Sc12Question()
+        private IEnumerator Sc12Question(bool ray = false)
         {
             _nextPressed = false;
             var labels = Sc12Content.OptionLabels;
@@ -5275,6 +5446,19 @@ namespace ChemicalSafety.Presentable
                 wrongItemBody = Sc12Content.WrongBodyMcq,
                 missedBody = Sc12Content.MissedBodyMcq
             };
+            if (ray)
+            {
+                // ray version: a reason under every option, REQUIRED / NOT REQUIRED after SUBMIT, no popup
+                var allReasons = Sc12Content.OptionReasons;
+                var shownReasons = new string[n];
+                for (var i = 0; i < n; i++)
+                    shownReasons[i] = allReasons != null && order[i] < allReasons.Length ? allReasons[order[i]] : string.Empty;
+                q.inlineReveal = true;
+                q.reasons = shownReasons;
+                q.tagRequired = Sc12Content.TagRequired;
+                q.tagNotRequired = Sc12Content.TagNotRequired;
+            }
+
             SessionResults.BeginScenario("SC12", Loc.Suffix());
             SessionResults.OpenQuestion("SC12.Q1", q.prompt, shown, string.Join(",", correctLetters));
 
@@ -5293,7 +5477,17 @@ namespace ChemicalSafety.Presentable
 
             void OnNext() => _nextPressed = true;
 
-            PlaceAtEyeLevel(assessmentSc12.transform, 0.7f, false);
+            if (ray)
+            {
+                Sc04PopupPose(-1.1f, 0.06f, 1.8f, out var qPos, out var qRot); // left of the view: the cabinet stays visible, nothing cut at the edge
+                assessmentSc12.SetWorldScale(1.4f);
+                assessmentSc12.transform.SetPositionAndRotation(qPos, qRot);
+            }
+            else
+            {
+                PlaceAtEyeLevel(assessmentSc12.transform, 0.7f, false);
+            }
+
             assessmentSc12.Submitted += OnSubmitted;
             assessmentSc12.NextPressed += OnNext;
             assessmentSc12.Show(q);

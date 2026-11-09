@@ -27,6 +27,8 @@ namespace ChemicalSafety.Editor
             public FloorHotspot hotspot;
             public Sc12Station station;
             public Sc06Gate gate;
+            public Transform rayStand;
+            public Transform cardAnchor;
         }
 
         private const float Sc12Ox = 500f;
@@ -171,10 +173,14 @@ namespace ChemicalSafety.Editor
             var len = Sc12BackZ - Sc12FarZ; // 8.6
             var midZ = (Sc12BackZ + Sc12FarZ) * 0.5f;
             var normal = Sc12Tex("Sc12_Stucco_Normal");
-            var wallMat = Sc12Tiled("Sc12WallMat", Sc12Tex("Sc12_Wall"), new Color(1.05f, 1.05f, 1.03f), 0.12f, 0f, new Vector2(2.6f, 1.5f), normal);
-            var wallMatSide = Sc12Tiled("Sc12WallMatSide", Sc12Tex("Sc12_Wall"), new Color(1.05f, 1.05f, 1.03f), 0.12f, 0f, new Vector2(4.4f, 1.5f), normal);
-            var floorMat = Sc12Tiled("Sc12FloorMat", Sc12Tex("Sc12_Floor"), new Color(1.0f, 1.0f, 1.0f), 0.62f, 0.05f, new Vector2(2.5f, 4.3f));
-            var ceilMat = Sc12Tiled("Sc12CeilingMat", Sc12Tex("Sc12_Ceiling"), new Color(1f, 1f, 0.98f), 0.1f, 0f, new Vector2(Sc12HalfW * 2f / 1.2f, len / 1.2f));
+            // Sc12UseRay: the picture's aged hall (old off-white plaster, worn grey concrete floor, stained concrete ceiling)
+            var wallTint = Sc12UseRay ? new Color(1.32f, 1.30f, 1.22f) : new Color(1.05f, 1.05f, 1.03f); // old white plaster (lit, the stains age it)
+            var wallMat = Sc12Tiled("Sc12WallMat", Sc12Tex("Sc12_Wall"), wallTint, 0.12f, 0f, new Vector2(2.6f, 1.5f), normal);
+            var wallMatSide = Sc12Tiled("Sc12WallMatSide", Sc12Tex("Sc12_Wall"), wallTint, 0.12f, 0f, new Vector2(4.4f, 1.5f), normal);
+            var floorMat = Sc12Tiled("Sc12FloorMat", Sc12Tex("Sc12_Floor"), Sc12UseRay ? new Color(0.78f, 0.78f, 0.76f) : Color.white,
+                Sc12UseRay ? 0.30f : 0.62f, 0.05f, new Vector2(2.5f, 4.3f));
+            var ceilMat = Sc12Tiled("Sc12CeilingMat", Sc12Tex("Sc12_Ceiling"), Sc12UseRay ? new Color(0.82f, 0.82f, 0.80f) : new Color(1f, 1f, 0.98f), 0.1f, 0f,
+                new Vector2(Sc12HalfW * 2f / 1.2f, len / 1.2f));
             var skirtMat = Mat("Sc12Skirt", new Color(0.30f, 0.31f, 0.32f), 0.35f, 0f);
             var steelMat = Mat("Sc12SteelMat", new Color(0.62f, 0.64f, 0.66f), 0.55f, 0.85f, Sc12Tex("Sc12_Steel"));
 
@@ -186,11 +192,16 @@ namespace ChemicalSafety.Editor
             Box("Ceiling", room, new Vector3(ox, Sc12H + 0.05f, midZ), new Vector3(Sc12HalfW * 2f, 0.1f, len), ceilMat, false);
             Sc12Wall("FarWall", room, new Vector3(ox, Sc12H * 0.5f, Sc12FarZ - 0.1f), new Vector3(Sc12HalfW * 2f + 0.4f, Sc12H, 0.2f), wallMat);
             Sc12Wall("BackWall", room, new Vector3(ox, Sc12H * 0.5f, Sc12BackZ + 0.1f), new Vector3(Sc12HalfW * 2f + 0.4f, Sc12H, 0.2f), wallMat);
-            Sc12Wall("LeftWall", room, new Vector3(ox + Sc12HalfW + 0.1f, Sc12H * 0.5f, midZ), new Vector3(0.2f, Sc12H, len), wallMatSide);
+            if (!Sc12UseRay)
+                Sc12Wall("LeftWall", room, new Vector3(ox + Sc12HalfW + 0.1f, Sc12H * 0.5f, midZ), new Vector3(0.2f, Sc12H, len), wallMatSide);
             if (solidLayer >= 0)
-                foreach (var n in new[] { "FarWall", "BackWall", "LeftWall" })
+                foreach (var n in Sc12UseRay ? new[] { "FarWall", "BackWall" } : new[] { "FarWall", "BackWall", "LeftWall" })
                     room.Find(n).gameObject.layer = solidLayer;
 
+            if (Sc12UseRay)
+                Sc12HallWalls(room, ox, midZ, len, wallMatSide, steelMat);
+            else
+            {
             // right wall around the window opening: z -2.7 .. 1.5, y 0.95 .. 2.7
             const float wz0 = -2.7f, wz1 = 1.5f, wy0 = 0.95f, wy1 = 2.7f;
             var rx = ox - Sc12HalfW - 0.1f;
@@ -215,20 +226,33 @@ namespace ChemicalSafety.Editor
             var glass = Sc06GlassMat("Sc12WindowGlass", new Color(0.85f, 0.92f, 0.96f), 0.06f, 0.5f);
             var gq = QuadObj("WindowGlass", room, new Vector3(wx - 0.03f, (wy0 + wy1) * 0.5f, wcz), new Vector3(0f, 270f, 0f), new Vector2(ww, wy1 - wy0), glass);
             gq.transform.SetParent(room, true);
+            }
 
-            // skirting boards
-            Box("SkirtLeft", room, new Vector3(ox - Sc12HalfW + 0.02f, 0.07f, midZ), new Vector3(0.04f, 0.14f, len), skirtMat, false);
-            Box("SkirtRight", room, new Vector3(ox + Sc12HalfW - 0.02f, 0.07f, midZ), new Vector3(0.04f, 0.14f, len), skirtMat, false);
+            // skirting boards (the ray hall has a plain right wall and an open section on the left: no skirting there)
+            if (!Sc12UseRay)
+            {
+                Box("SkirtLeft", room, new Vector3(ox - Sc12HalfW + 0.02f, 0.07f, midZ), new Vector3(0.04f, 0.14f, len), skirtMat, false);
+                Box("SkirtRight", room, new Vector3(ox + Sc12HalfW - 0.02f, 0.07f, midZ), new Vector3(0.04f, 0.14f, len), skirtMat, false);
+            }
 
             Sc12Ceiling(room, ox, steelMat);
             Sc12Lockers(room, refs, art, ox);
-            Sc12Signs(room, ox);
+            if (!Sc12UseRay)
+                Sc12Signs(room, ox);
             Sc12Plant(room, ox, steelMat);
+            if (Sc12UseRay)
+            {
+                Sc12HallDress(room, ox, midZ, steelMat);
+                Sc12HallPlant(room, ox);
+                Sc12HallCabinetDoors(room, ox, Sc12FarZ + 0.55f);
+            }
 
             refs.spawn = Marker("Spawn_SC12", room, new Vector3(ox + 0.1f, 0f, 3.7f), 180f);
             refs.startStand = Marker("Stand_SC12_Start", room, new Vector3(ox + 0.1f, 0f, 3.0f), 180f);
             refs.hereStand = Marker("Stand_SC12_Here", room, new Vector3(ox, 0f, -2.55f), 180f);
             refs.hotspot = Hotspot("Hotspot_SC12", room, art, new Vector3(ox, 0f, -2.1f));
+            refs.rayStand = Marker("Stand_SC12_Ray", room, new Vector3(ox, 0f, -0.1f), 180f); // 3.3 m from the cabinet: all of it in view
+            refs.cardAnchor = Marker("Sc12CardAnchor", room, new Vector3(ox, 2.55f, Sc12FarZ + 0.9f), 180f); // the small verdict card floats above the cabinet
 
             var stationGo = new GameObject("Sc12StationHost");
             stationGo.transform.SetParent(room, false);
@@ -285,9 +309,13 @@ namespace ChemicalSafety.Editor
 
         private static void Sc12Lockers(Transform room, Sc12Refs refs, PresentableArt art, float ox)
         {
-            var woodMat = Sc12Tiled("Sc12LockerWood", Sc12Tex("Sc12_Wood"), new Color(1.05f, 1.0f, 0.95f), 0.5f, 0f, new Vector2(1f, 1f));
-            var woodDark = Mat("Sc12LockerWoodDark", new Color(0.50f, 0.34f, 0.17f), 0.4f, 0f, Sc12Tex("Sc12_Wood"));
-            var backMat = Mat("Sc12LockerBack", new Color(0.78f, 0.58f, 0.32f), 0.25f, 0f, Sc12Tex("Sc12_Wood"));
+            // Sc12UseRay: the same cabinet in yellow powder-coated steel (the picture's PPE cabinet) instead of wood
+            var woodMat = Sc12UseRay ? Mat("Sc12CabYellowBody", new Color(0.92f, 0.70f, 0.05f), 0.35f, 0.2f)
+                : Sc12Tiled("Sc12LockerWood", Sc12Tex("Sc12_Wood"), new Color(1.05f, 1.0f, 0.95f), 0.5f, 0f, new Vector2(1f, 1f));
+            var woodDark = Sc12UseRay ? Mat("Sc12CabYellowDark", new Color(0.75f, 0.56f, 0.04f), 0.3f, 0.2f)
+                : Mat("Sc12LockerWoodDark", new Color(0.50f, 0.34f, 0.17f), 0.4f, 0f, Sc12Tex("Sc12_Wood"));
+            var backMat = Sc12UseRay ? Mat("Sc12CabYellowBack", new Color(0.80f, 0.60f, 0.05f), 0.25f, 0.1f)
+                : Mat("Sc12LockerBack", new Color(0.78f, 0.58f, 0.32f), 0.25f, 0f, Sc12Tex("Sc12_Wood"));
             var yellowMat = Sc12Tiled("Sc12BandYellow", Sc12Tex("Sc12_Yellow"), Color.white, 0.35f, 0f, new Vector2(1.5f, 0.5f));
             var solid = SolidLayer;
 
@@ -465,7 +493,7 @@ namespace ChemicalSafety.Editor
                 var room = env12.Find("Room");
                 var go = new GameObject("Sc12ReflectionProbe");
                 go.transform.SetParent(room, false);
-                go.transform.position = new Vector3(Sc12Ox - 16f, 3.5f, -6f);
+                go.transform.position = Sc12UseRay ? new Vector3(Sc12Ox + 16f, 3.5f, -10f) : new Vector3(Sc12Ox - 16f, 3.5f, -6f); // the plant is on the left in the ray hall
                 var probe = go.AddComponent<ReflectionProbe>();
                 probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Baked;
                 probe.resolution = 256;

@@ -125,6 +125,21 @@
       "key": "ModuleComplete",
       "en": "Module complete. Well done!",
       "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    },
+    {
+      "key": "RayInstruction",
+      "en": "You are a process operator about to enter the process area to handle a corrosive acid. Before you go in, check the Safety Data Sheet and choose the right PPE from the yellow cabinet.",
+      "bn": "আপনি একজন প্রসেস অপারেটর এবং ক্ষয়কারী অ্যাসিড সামলাতে প্রসেস এলাকায় ঢুকতে যাচ্ছেন। ঢোকার আগে নিরাপত্তা তথ্যপত্র দেখে নিন এবং হলুদ আলমারি থেকে সঠিক পিপিই বেছে নিন।"
+    },
+    {
+      "key": "TagRequired",
+      "en": "REQUIRED",
+      "bn": "প্রয়োজন"
+    },
+    {
+      "key": "TagNotRequired",
+      "en": "NOT REQUIRED",
+      "bn": "প্রয়োজন নেই"
     }
   ],
   "arrays": [
@@ -246,6 +261,21 @@
         "নিওপ্রিন/বিউটাইল গ্লাভস",
         "রাসায়নিক-প্রতিরোধী অ্যাপ্রন",
         "সেফটি বুট"
+      ]
+    },
+    {
+      "key": "OptionReasons",
+      "en": [
+        "SDS Section 8 specifies eye/face protection for corrosive liquids.",
+        "Correct material for the specific corrosive per SDS.",
+        "Body protection required for liquid corrosives.",
+        "Required in many scenarios but not mandated by SDS for this specific task."
+      ],
+      "bn": [
+        "নিরাপত্তা তথ্যপত্রের সেকশন ৮-এ ক্ষয়কারী তরলের জন্য চোখ ও মুখের সুরক্ষা বলা আছে।",
+        "নিরাপত্তা তথ্যপত্র অনুযায়ী এই ক্ষয়কারী রাসায়নিকের জন্য সঠিক উপাদানের গ্লাভস।",
+        "তরল ক্ষয়কারী রাসায়নিকের জন্য শরীরের সুরক্ষা লাগে।",
+        "অনেক ক্ষেত্রে লাগলেও এই নির্দিষ্ট কাজের জন্য নিরাপত্তা তথ্যপত্রে বাধ্যতামূলক নয়।"
       ]
     }
   ],
