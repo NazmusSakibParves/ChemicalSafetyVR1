@@ -191,6 +191,16 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc09Guide sc10Guide;
         [SerializeField] private Sc06Gate sc10Gate;
         [SerializeField] private Sc06Ambience sc10Ambience;
+        [Header("Scenario 10 (ray, in the Scenario 6/8/9 factory room)")]
+        [SerializeField] private Sc10Spill sc10RaySpill;
+        [SerializeField] private Sc10Accident sc10RayAccident;
+        [SerializeField] private Sc06Gate sc10RayGate;
+        [SerializeField] private GameObject sc10RayMount;
+        [SerializeField] private Transform sc10RayKitStand;
+        [SerializeField] private Transform sc10RaySpillStand;
+        [SerializeField] private float sc10GlideSeconds = 4.0f;
+        [Tooltip("Seconds a step icon (CONTAIN, NEUTRALIZE ...) is shown before it is 'pressed' by itself.")]
+        [SerializeField] private float sc10IconSeconds = 1.8f;
         [SerializeField] private PresentableMcqPanel mcqSc10;
         [SerializeField] private GameObject envSc11;
         [SerializeField] private Transform spawnSc11;
@@ -4370,6 +4380,14 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator RunScenario10()
         {
+            if (PresentableInput.AllowedIn(10) && sc10RaySpill != null && sc10RayAccident != null && sc10RayGate != null && sc10RayMount != null &&
+                sc10RayKitStand != null && sc10RaySpillStand != null && sc08PpeRay != null && envSc06 != null)
+            {
+                PresentableInput.ActiveScenario = 10; // controller ray, in the Scenario 6/8/9 factory room (finger touch: set the input mode / RayScenarios)
+                yield return RunScenario10Ray();
+                yield break;
+            }
+
             Stage("sc10");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -4439,6 +4457,236 @@ namespace ChemicalSafety.Presentable
             Stage("sc10Done");
             if (envSc11 != null)
                 yield return RunScenario11();
+        }
+
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC10 on the controller ray: the factory room of Scenarios 6, 8 and 9. The glass instruction card first (the room is still as in
+        // Scenario 9's start); on Continue the room fades into the aftermath of the accident (can on the table, acid running over the
+        // edge, jar broken on the floor, vapour). Then everything runs by itself: PPE station, spill kit (door, five items), the five
+        // step icons (pressed automatically) with the animations, the "inspection complete" card (PREVIEW replays), the question.
+        // ------------------------------------------------------------------------------------------------------------------------
+        private IEnumerator RunScenario10Ray()
+        {
+            Stage("sc10");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc07, envSc08, envSc09, envSc10 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc07Ambience != null)
+                sc07Ambience.End();
+            envSc06.SetActive(true); // the same factory room as Scenario 6, 8 and 9
+            clipboard.SetSheet(art.sdsSc10);
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            lab.SetVaporOn(false);
+            sc06Auto.ResetAll();
+            if (sc08Dilute != null)
+            {
+                sc08Dilute.ResetAll();
+                sc08Dilute.SetRodVisible(false);
+            }
+
+            if (sc09Auto != null)
+                sc09Auto.ResetAll();
+            if (sc09VisorRay != null)
+                sc09VisorRay.Hide();
+            if (sc09ShowerMount != null)
+                sc09ShowerMount.SetActive(false); // Scenario 9's shower is not part of Scenario 10
+            // the room is shown AFTER the accident from the very first frame (the instruction card opens over it): the acid can lies on the
+            // table, the acid is already running and dripping, the glass jar is broken on the floor, vapour rises
+            sc08PpeRay.SetStationVisible(true);
+            sc08PpeRay.ResetAll();
+            sc10RayMount.SetActive(true);
+            sc10RayAccident.ResetAll();
+            sc10RaySpill.ResetAll();
+            sc10RayAccident.Show();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            PlaceRig(spawnSc06.position, spawnSc06.forward);
+            sc06Ambience.Begin();
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc10Intro");
+            _instructionClip = art.voSc10RayInstruction != null ? art.voSc10RayInstruction : art.voInstruction;
+            instructionPanel.SetContent(Sc10Content.RayInstruction, art.bnSc10RayInstructionPanel);
+            LockLocomotion(true); // the head is free, the body stays: no walking about in VR
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            yield return RunSc10RayFlow();
+
+            LockLocomotion(false);
+            mcqSc10.SetWorldScale(1f);
+            // leave the shared room as Scenarios 6, 8 and 9 expect it (the can, the jar and the cap are put back by the accident component)
+            sc10RayAccident.ResetAll();
+            sc10RaySpill.ResetAll();
+            sc10RayMount.SetActive(false);
+            sc08PpeRay.ResetAll();
+            sc08PpeRay.SetStationVisible(false);
+            sc06Auto.ResetAll();
+            if (sc09Auto != null)
+                sc09Auto.ResetAll();
+            clipboard.SetVisible(false);
+            lab.ResetLab();
+            if (sc06Fan != null)
+                sc06Fan.ResetFan();
+            if (sc06Ambience != null)
+                sc06Ambience.End();
+            Stage("sc10Done");
+            if (envSc11 != null)
+                yield return RunScenario11();
+        }
+
+        private IEnumerator Sc10RayStep(Sprite icon, string label, string sub, AudioClip voice, IEnumerator action, string stage)
+        {
+            Stage(stage);
+            var v = voice != null ? StartCoroutine(PlayVoice(voice)) : null;
+            yield return sc10RaySpill.WaitIcon(icon, label, sub, sc10IconSeconds); // pressed by itself
+            yield return action;
+            if (v != null)
+                yield return v;
+            yield return PresentableFx.Wait(0.5f);
+        }
+
+        private IEnumerator RunSc10RayFlow()
+        {
+            var again = true;
+            var first = true;
+            while (again)
+            {
+                // the first round starts straight from the instruction card (the accident is already on screen); PREVIEW starts the
+                // whole thing again from the accident (a short dip to black so nothing pops)
+                Stage("sc10Reveal");
+                if (!first)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc10RayAccident.ResetAll();
+                    sc10RaySpill.ResetAll();
+                    sc08PpeRay.SetStationVisible(true);
+                    sc08PpeRay.ResetAll();
+                    sc10RayAccident.Show();
+                    PlaceRig(spawnSc06.position, spawnSc06.forward);
+                    yield return fader.FadeTo(0f, 1.0f);
+                }
+
+                first = false;
+                clipboard.SetVisible(false);
+
+                Stage("sc10Look");
+                yield return PlayVoice(art.voSc10RayLook);
+                yield return PresentableFx.Wait(1.2f);
+
+                Stage("sc10Ppe");
+                var ppeVoice = StartCoroutine(PlayVoice(art.voSc10RayPpe));
+                yield return sc08PpeRay.AutoRun(0.8f);
+                yield return ppeVoice;
+                yield return PresentableFx.Wait(0.6f);
+                sc08PpeRay.End();
+                yield return PresentableFx.Wait(0.4f);
+
+                // turned left to the spill kit on the left wall, next to the PPE station
+                Stage("sc10ToKit");
+                yield return GlideTurn(sc10RayKitStand.position, sc10RayKitStand.forward, sc10GlideSeconds, -1f);
+                yield return PresentableFx.Wait(0.4f);
+                Stage("sc10Kit");
+                var kitVoice = StartCoroutine(PlayVoice(art.voSc10RayKit));
+                yield return sc10RaySpill.AutoOpenKit();
+                yield return PresentableFx.Wait(0.4f);
+                Stage("sc10Collect");
+                sc10RaySpill.ShowCollection(true);
+                yield return sc10RaySpill.AutoCollectAll(0.35f);
+                yield return kitVoice;
+                yield return PresentableFx.Wait(0.9f);
+                sc10RaySpill.ShowCollection(false);
+
+                // back to the table: contain, neutralize, absorb, clean the glass, dispose
+                Stage("sc10ToSpill");
+                yield return GlideTurn(sc10RaySpillStand.position, sc10RaySpillStand.forward, sc10GlideSeconds, 1f);
+                yield return PresentableFx.Wait(0.4f);
+                // the source first: the acid can is stood upright on the table so no more acid runs (the table is clean after it)
+                Stage("sc10Can");
+                yield return sc10RayAccident.StandCanUp(); // no voice line for this step (client)
+                yield return PresentableFx.Wait(0.6f);
+                yield return Sc10RayStep(art.iconSc10Contain, Sc10Content.ContainLabel, null, art.voSc10RayContain, sc10RaySpill.Contain(), "sc10Contain");
+                yield return Sc10RayStep(art.iconSc10Neutralize, Sc10Content.NeutralizeLabel, null, art.voSc10RayNeutralize, sc10RaySpill.Neutralize(), "sc10Neutralize");
+                yield return Sc10RayStep(art.iconSc10Absorb, Sc10Content.AbsorbLabel, null, art.voSc10RayAbsorb, sc10RaySpill.Absorb(), "sc10Absorb");
+                yield return Sc10RayStep(art.iconSc10Clean, Sc10Content.CleanLabel, null, art.voSc10RayClean, sc10RaySpill.CleanGlass(), "sc10Clean");
+                yield return Sc10RayStep(art.iconSc10Dispose, Sc10Content.DisposeLabel, Sc10Content.DisposeSub, art.voSc10RayDispose, sc10RaySpill.Dispose(), "sc10Dispose");
+                Stage("sc10Disposed");
+                yield return PresentableFx.Wait(1.0f);
+                // back to the start spot, facing the table: the cards open there
+                yield return GlideTurn(spawnSc06.position, spawnSc06.forward, sc10GlideSeconds, -1f);
+                yield return PresentableFx.Wait(0.4f);
+
+                Stage("sc10Gate");
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK (the whole process again), 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc10RayGate.Back += OnBack;
+                sc10RayGate.Next += OnNext;
+                sc10RayGate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc10RayGate));
+                while (choice == 0)
+                    yield return null;
+                sc10RayGate.Back -= OnBack;
+                sc10RayGate.Next -= OnNext;
+                sc10RayGate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc10Question");
+            Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc10.SetWorldScale(sc06PopupScale);
+            mcqSc10.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc10, BuildSc10RayQuestion(), false, 10);
+        }
+
+        private static PresentableMcqPanel.Question BuildSc10RayQuestion()
+        {
+            var labels = Sc10Content.RayOptionLabels;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = Sc10Content.RayOptionReasons != null && i < Sc10Content.RayOptionReasons.Length ? Sc10Content.RayOptionReasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = Sc10Content.RayOptionWrongTitle[i],
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc10Content.RayQuestionHeader,
+                prompt = Sc10Content.RayQuestionPrompt,
+                correctIndex = Sc10Content.RayCorrectIndex,
+                correctTitle = Sc10Content.RayCorrectTitle,
+                nextLabel = Sc10Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc10Content.TagCorrect,
+                tagWrong = Sc10Content.TagWrong
+            };
         }
 
         private IEnumerator Sc10Round()

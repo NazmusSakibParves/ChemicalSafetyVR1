@@ -27,7 +27,15 @@
     { "key": "CorrectTitle", "en": "RIGHT ACTION", "bn": "সঠিক পদক্ষেপ" },
     { "key": "CorrectBody", "en": "Safe sequence", "bn": "নিরাপদ ক্রম" },
     { "key": "FinishLabel", "en": "NEXT", "bn": "নেক্সট" },
-    { "key": "ModuleComplete", "en": "Module complete. Well done!", "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!" }
+    { "key": "ModuleComplete", "en": "Module complete. Well done!", "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!" },
+    { "key": "RayInstruction", "en": "You are a factory worker. A glass acid bottle has broken in the quality control room. You are the first on the scene, and the lab supervisor is not present. You must take the safe and correct action.", "bn": "আপনি একজন কারখানা শ্রমিক। কারখানার কোয়ালিটি কন্ট্রোল রুমে কাজ করার সময় অ্যাসিডের কাঁচের বোতল ভেঙ্গে গেছে। ঘটনাস্থলে আপনিই প্রথম, আর ল্যাব সুপারভাইজার ঘরে নেই। আপনাকে নিরাপদ এবং সঠিক পদক্ষেপ নিতে হবে।" },
+    { "key": "RayGateTitle", "en": "SPILL RESPONSE INSPECTION COMPLETE.", "bn": "স্পিল সামলানো পরিদর্শন সম্পন্ন।" },
+    { "key": "RayGateBodyPrev", "en": "Press NEXT to proceed or PREVIEW to watch the whole animation again.", "bn": "এগিয়ে যেতে নেক্সট চাপুন, পুরো অ্যানিমেশন আবার দেখতে প্রিভিউ চাপুন।" },
+    { "key": "RayQuestionHeader", "en": "MCQ: Acid Spill Response", "bn": "MCQ: অ্যাসিড স্পিল সামলানো" },
+    { "key": "RayQuestionPrompt", "en": "A glass acid bottle has broken in the quality control room and you are the first on the scene. What will you do?", "bn": "কোয়ালিটি কন্ট্রোল রুমে অ্যাসিডের কাঁচের বোতল ভেঙে গেছে এবং আপনিই প্রথম ঘটনাস্থলে। আপনি কী করবেন?" },
+    { "key": "RayCorrectTitle", "en": "RIGHT ANSWER", "bn": "সঠিক উত্তর" },
+    { "key": "TagCorrect", "en": "CORRECT", "bn": "সঠিক" },
+    { "key": "TagWrong", "en": "WRONG", "bn": "ভুল" }
   ],
   "arrays": [
     { "key": "PpeItems",
@@ -44,7 +52,10 @@
       "bn": ["অ্যাসিড আরও বড় এলাকায় ছড়ায় এবং লুকানো ফাটলে মিশে পাতলা হয়ে যায়।", "নিরাপদ ক্রম", "ভ্যাকুয়াম থেকে স্ফুলিঙ্গ হতে পারে, অ্যাসিডের বাষ্প ছড়ায় এবং অ্যাসিডে যন্ত্রটি নষ্ট হয়।", "অ্যাসিড ও তার বাষ্প বিপজ্জনক থেকে যায় এবং কেউ পিছলে পড়তে বা পুড়ে যেতে পারে।"] },
     { "key": "OptionWrongTitle",
       "en": ["WRONG ACTION", "", "WRONG ACTION", "WRONG ACTION"],
-      "bn": ["ভুল পদক্ষেপ", "", "ভুল পদক্ষেপ", "ভুল পদক্ষেপ"] }
+      "bn": ["ভুল পদক্ষেপ", "", "ভুল পদক্ষেপ", "ভুল পদক্ষেপ"] },
+    { "key": "RayOptionLabels", "en": ["Pick up the glass shards with your gloved hands, then mop the liquid.", "Apply an acid neutralizer/absorbent, then use a dustpan and brush to collect the debris.", "Throw a bucket of water over it to wash it down the nearest floor drain.", "Use an industrial vacuum cleaner to suck up the liquid and glass."], "bn": ["গ্লাভস পরা হাতে কাচ তুলব, তারপর তরল মুছব।", "অ্যাসিডের জন্য উপযুক্ত নিউট্রালাইজার বা শোষক পদার্থ দেব। এরপর ডাস্টপ্যান ও ব্রাশ দিয়ে কাচসহ ময়লা তুলব।", "এক বালতি পানি ঢেলে কাছের ড্রেনে নামিয়ে দেব।", "ইন্ডাস্ট্রিয়াল ভ্যাকুয়াম ক্লিনার দিয়ে অ্যাসিড ও কাঁচ তুলে ফেলব।"] },
+    { "key": "RayOptionReasons", "en": ["Glass can cut through gloves and the acid soaks in; mopping first only smears the acid over a larger area.", "Safe sequence: the neutralizer controls the hazard, the absorbent contains it, then a dustpan and brush remove the glass and waste safely.", "Water spreads the acid, dilutes it into hidden crevices and sends it down the drain where it can react and pollute.", "Acid vapour and glass wreck a vacuum, it can spark, and it throws acid mist into the air."], "bn": ["গ্লাভস কেটে কাচ ঢুকতে পারে আর অ্যাসিড শুষে যায়; আগে মুছলে অ্যাসিড আরও বড় জায়গায় ছড়িয়ে যায়।", "নিরাপদ ক্রম: নিউট্রালাইজার বিপদ কমায়, শোষক পদার্থ আটকে রাখে, তারপর ডাস্টপ্যান ও ব্রাশে কাচ ও বর্জ্য নিরাপদে তোলা হয়।", "পানি অ্যাসিডকে ছড়িয়ে দেয়, লুকানো ফাটলে মিশিয়ে পাতলা করে এবং ড্রেনে পাঠিয়ে বিক্রিয়া ও দূষণ ঘটাতে পারে।", "অ্যাসিডের বাষ্প ও কাচে ভ্যাকুয়াম নষ্ট হয়, স্ফুলিঙ্গ হতে পারে এবং অ্যাসিডের কুয়াশা বাতাসে ছড়ায়।"] },
+    { "key": "RayOptionWrongTitle", "en": ["WRONG ACTION", "", "WRONG ACTION", "WRONG ACTION"], "bn": ["ভুল পদক্ষেপ", "", "ভুল পদক্ষেপ", "ভুল পদক্ষেপ"] }
   ],
   "questions": []
 }

@@ -2294,8 +2294,129 @@ namespace ChemicalSafety.Presentable
                 yield return Shot(shotName + "_done");
         }
 
+        // SC10 on the controller ray (factory room of Scenarios 6/8/9): glass card, the room after the accident on Continue, then everything by itself
+        private IEnumerator Sc10RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC10 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive + ", scenario = " + PresentableInput.ActiveScenario);
+            var accident = Get<Sc10Accident>(_director, "sc10RayAccident");
+            var spill = Get<Sc10Spill>(_director, "sc10RaySpill");
+            var gate = Get<Sc06Gate>(_director, "sc10RayGate");
+            var mount = Get<GameObject>(_director, "sc10RayMount");
+            var ppe = Get<Sc08Ppe>(_director, "sc08PpeRay");
+            var mcq10 = Get<PresentableMcqPanel>(_director, "mcqSc10");
+            var splash9 = Get<Sc09AutoSplash>(_director, "sc09Auto");
+            yield return WaitStage("sc10Intro", 80f);
+            Say("SC10 accident on screen during the instruction card: mount active = " + (mount != null && mount.activeSelf) + ", accident shown = " + accident.Shown + " (both expected True)");
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("103_sc10_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC10 instruction card", ip.transform);
+            yield return RayIntroContinue("SC10");
+            // state based (the game runs on by itself after Continue, stage names would be missed while the harness is still waiting)
+            yield return new WaitForSeconds(3.0f);
+            yield return Shot("104_sc10_accident_start");
+            yield return new WaitForSeconds(4.0f);
+            Say("SC10 accident shown = " + accident.Shown + " (expected True), mount active = " + (mount != null && mount.activeSelf) + ", jar active = " +
+                (splash9 != null && splash9.Jar != null && splash9.Jar.gameObject.activeSelf) + " (expected False), can at " +
+                (splash9 != null && splash9.Acid != null ? splash9.Acid.position.ToString("F2") : "?"));
+            yield return Shot("105_sc10_accident");
+            yield return Sc10Wait(() => ppe.PanelOpen || ppe.AllDone, 40f);
+            yield return new WaitForSeconds(1.5f);
+            Say("SC10 PPE panel open = " + ppe.PanelOpen + " (expected True while the items are taken)");
+            yield return Shot("106_sc10_ppe");
+            yield return Sc10Wait(() => ppe.AllDone, 40f);
+            Say("SC10 all PPE taken by itself = " + ppe.AllDone + " (expected True)");
+            yield return Sc10Wait(() => spill.KitOpen, 60f);
+            yield return new WaitForSeconds(0.6f);
+            Say("SC10 kit open by itself = " + spill.KitOpen + " (expected True), head = " + Camera.main.transform.position.ToString("F2"));
+            yield return Shot("108_sc10_kit_open");
+            yield return Sc10Wait(() => spill.Collected >= 2, 40f);
+            yield return Shot("109_sc10_collect");
+            yield return Sc10Wait(() => spill.AllCollected, 40f);
+            Say("SC10 items collected by itself = " + spill.Collected + "/5 (expected 5)");
+            yield return new WaitForSeconds(6.0f);
+            yield return Shot("110_sc10_can_lifting");
+            yield return Sc10Wait(() => accident.CanUpright, 60f);
+            Say("SC10 can stood upright = " + accident.CanUpright + " (expected True), acid can at " +
+                (splash9 != null && splash9.Acid != null ? splash9.Acid.position.ToString("F2") + " rot " + splash9.Acid.eulerAngles.ToString("F0") : "?"));
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("111_sc10_table_clean");
+            yield return Sc10Wait(() => spill.IconVisible, 40f);
+            Say("SC10 first step icon visible = " + spill.IconVisible + " (expected True, pressed by itself later)");
+            yield return Shot("112_sc10_icon");
+            yield return Sc10Wait(() => spill.SockLaid, 40f);
+            yield return Shot("120_sc10_contained");
+            yield return Sc10Wait(() => spill.Neutralized, 40f);
+            yield return Shot("121_sc10_neutralized");
+            yield return Sc10Wait(() => spill.Absorbed, 40f);
+            yield return Shot("122_sc10_absorbed");
+            yield return Sc10Wait(() => spill.GlassCleaned, 40f);
+            yield return Shot("123_sc10_glass_cleaned");
+            yield return new WaitForSeconds(7.0f);
+            yield return Shot("124_sc10_dispose_bag");
+            yield return Sc10Wait(() => spill.Disposed, 40f);
+            Say("SC10 sock laid = " + spill.SockLaid + ", neutralized = " + spill.Neutralized + ", absorbed = " + spill.Absorbed + ", glass cleaned = " +
+                spill.GlassCleaned + ", disposed = " + spill.Disposed + " (all expected True)");
+            var g = 0f;
+            while (!gate.Visible && g < 40f)
+            {
+                g += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(1.0f);
+            var cam = Camera.main.transform;
+            Say("SC10 gate view: head = " + cam.position.ToString("F2") + ", looking -Z = " + (cam.forward.z < -0.5f) + " (expected True)");
+            yield return Shot("130_sc10_gate");
+            LayoutCheck("SC10 gate card", gate.Card);
+            var label = FindDeep(gate.Card, "BackButton");
+            var lab10 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
+            Say("SC10 gate: left button text = [" + (lab10 != null ? lab10.text : "?") + "] (expected BACK, no PREVIEW)");
+            Click(gate.Card, "NextButton");
+            yield return WaitStage("sc10Question", 20f);
+            var q = 0f;
+            while (!mcq10.IsOpen && q < 8f)
+            {
+                q += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("131_sc10_question");
+            LayoutCheck("SC10 MCQ", mcq10.transform);
+            var cur = mcq10.Current;
+            Say("SC10 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq10.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            Say("SC10 answer voice (wrong pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected VO_Sc10WrongNext_bn)");
+            yield return Shot("132_sc10_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq10.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+            {
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            }
+
+            Say("SC10 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC10 MCQ reveal", mcq10.transform);
+            Click(mcq10.transform, "NextButton");
+            yield return WaitStage("sc10Done", 20f);
+            yield return new WaitForSeconds(0.5f);
+            Say("SC10 left the room clean: mount active = " + (mount != null && mount.activeSelf) + " (expected False), accident shown = " + accident.Shown +
+                " (expected False), jar active = " + (splash9 != null && splash9.Jar != null && splash9.Jar.gameObject.activeSelf) + " (expected True)");
+        }
+
         private IEnumerator Sc10Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
+            if (PresentableInput.AllowedIn(10) && Get<Sc10Spill>(_director, "sc10RaySpill") != null)
+            {
+                yield return Sc10RaySmoke(voiceSrc);
+                yield break;
+            }
+
             yield return WaitStage("sc10Intro", 40f);
             var lab = Get<Sc06Lab>(_director, "sc10Lab");
             var ppe = Get<Sc08Ppe>(_director, "sc10Ppe");

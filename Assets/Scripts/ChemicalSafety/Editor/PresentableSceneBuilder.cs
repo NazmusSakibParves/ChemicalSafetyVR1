@@ -89,6 +89,8 @@ namespace ChemicalSafety.Editor
             var sc8r = Sc08UseFactory ? Sc08BuildRayStation(env6.Find("Room"), sc6, art) : null;
             // Scenario 9 (controller ray) plays in the same room: shower behind the learner, accident props, all hidden outside Scenario 9
             var sc9r = Sc09UseFactory ? Sc09BuildRayStation(env6.Find("Room"), sc6, art) : null;
+            // Scenario 10 (controller ray) plays in the same room: spill kit on the left wall, the spill and the accident on the table, hidden outside Scenario 10
+            var sc10r = Sc10UseFactory ? Sc10BuildRayStation(env6.Find("Room"), sc6, art) : null;
             env6.gameObject.SetActive(false);
             var env7 = new GameObject("Environment_SC07").transform;
             var sc7 = BuildSc07Room(env7, art);
@@ -318,6 +320,15 @@ namespace ChemicalSafety.Editor
                 so.FindProperty("sc09NearStand").objectReferenceValue = sc9r.nearStand;
                 so.FindProperty("sc09ShowerStandRay").objectReferenceValue = sc9r.showerStand;
                 so.FindProperty("sc09ShowerMount").objectReferenceValue = sc9r.showerMount;
+            }
+            if (sc10r != null)
+            {
+                so.FindProperty("sc10RaySpill").objectReferenceValue = sc10r.spill;
+                so.FindProperty("sc10RayAccident").objectReferenceValue = sc10r.accident;
+                so.FindProperty("sc10RayGate").objectReferenceValue = sc10r.gate;
+                so.FindProperty("sc10RayMount").objectReferenceValue = sc10r.mount;
+                so.FindProperty("sc10RayKitStand").objectReferenceValue = sc10r.kitStand;
+                so.FindProperty("sc10RaySpillStand").objectReferenceValue = sc10r.spillStand;
             }
             so.FindProperty("envSc07").objectReferenceValue = env7.gameObject;
             so.FindProperty("spawnSc07").objectReferenceValue = sc7.spawn;
@@ -689,6 +700,7 @@ namespace ChemicalSafety.Editor
             art.bnSc09FlushHint = B("BN_Sc09FlushHint");
             art.bnSc09RayInstructionPanel = B("BN_Sc09RayInstructionPanel");
             art.bnSc09RaySpill = B("BN_Sc09RaySpill");
+            art.bnSc10RayInstructionPanel = B("BN_Sc10RayInstructionPanel");
             art.sdsSc11 = LoadSprite("2D/Sc11/SDS_SC11");
             art.minimapSc11 = LoadSprite("2D/Sc11/Minimap");
             art.bnSc11InstructionPanel = B("BN_Sc11InstructionPanel");
@@ -774,6 +786,7 @@ namespace ChemicalSafety.Editor
             art.voWrongNextBn = new AudioClip[13];
             for (var wn = 4; wn <= 9; wn++)
                 art.voWrongNextBn[wn] = V("VO_Sc0" + wn + "WrongNext_bn.mp3");
+            art.voWrongNextBn[10] = V("VO_Sc10WrongNext_bn.mp3");
             art.voSc03Protocol = V("VO_Sc03Protocol_bn.mp3") ?? art.voSc03Protocol;
             var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
             if (sc02Hint != null)
@@ -897,6 +910,16 @@ namespace ChemicalSafety.Editor
             art.voSc09RayPush = V("VO_Sc09RayPush_bn.mp3");
             art.voSc09RayBack = V("VO_Sc09RayBack_bn.mp3");
             art.voSc09RayGate = V("VO_Sc09RayGate_bn.mp3");
+            art.voSc10RayInstruction = V("VO_Sc10RayInstruction_bn.mp3");
+            art.voSc10RayLook = V("VO_Sc10RayLook_bn.mp3");
+            art.voSc10RayPpe = V("VO_Sc10RayPpe_bn.mp3");
+            art.voSc10RayKit = V("VO_Sc10RayKit_bn.mp3");
+            art.voSc10RayContain = V("VO_Sc10RayContain_bn.mp3");
+            art.voSc10RayNeutralize = V("VO_Sc10RayNeutralize_bn.mp3");
+            art.voSc10RayAbsorb = V("VO_Sc10RayAbsorb_bn.mp3");
+            art.voSc10RayClean = V("VO_Sc10RayClean_bn.mp3");
+            art.voSc10RayDispose = V("VO_Sc10RayDispose_bn.mp3");
+            art.voSc10RayGate = V("VO_Sc10RayGate_bn.mp3");
             art.voSc10Instruction = Keep("VO_SC10_Instruction_bn.mp3", art.voSc10Instruction);
             art.voSc10Sds = Keep("VO_Sc10Sds_bn.mp3", art.voSc10Sds);
             art.voSc10Ppe = Keep("VO_Sc10Ppe_bn.mp3", art.voSc10Ppe);

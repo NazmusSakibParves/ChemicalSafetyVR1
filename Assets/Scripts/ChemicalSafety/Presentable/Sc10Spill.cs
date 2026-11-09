@@ -78,6 +78,8 @@ namespace ChemicalSafety.Presentable
         private ParticleSystem _powderFx;
         private ParticleSystem _fizzFx;
         private ParticleSystem _vaporFx;
+        private ParticleSystem _bubbleFx;
+        private ParticleSystem _foamFx;
         private AudioSource _audio;
         private Transform _icon;
         private PokeTarget _iconPoke;
@@ -426,6 +428,46 @@ namespace ChemicalSafety.Presentable
                 _vaporFx.transform.position = SpillPos() + Vector3.up * 0.05f;
                 _vaporFx.Play();
             }
+
+            // the acid on the floor bubbles and foams (until the neutralizer goes on)
+            if (_bubbleFx != null)
+            {
+                _bubbleFx.transform.position = SpillPos() + Vector3.up * 0.025f;
+                _bubbleFx.Clear();
+                _bubbleFx.Play();
+            }
+
+            if (_foamFx != null)
+            {
+                _foamFx.transform.position = SpillPos() + Vector3.up * 0.012f;
+                _foamFx.Clear();
+                _foamFx.Play();
+            }
+        }
+
+        // ------------------------------------------------------------------ controller-ray flow: everything by itself
+
+        /// <summary>The glass door swings open by itself; ends when <see cref="KitOpen"/> is true.</summary>
+        public IEnumerator AutoOpenKit()
+        {
+            if (_kitOpen)
+                yield break;
+            _busy = true;
+            yield return OpenKit();
+        }
+
+        /// <summary>Takes the five kit items one after another (each flies to the learner, is shown for a moment, goes into the collection list).</summary>
+        public IEnumerator AutoCollectAll(float gap)
+        {
+            for (var i = 0; i < ItemCount; i++)
+            {
+                if (_collected[i] || _items[i] == null)
+                    continue;
+                _busy = false;
+                yield return Collect(i);
+                SetItemsInteractable(false);
+                yield return PresentableFx.Wait(gap);
+            }
         }
 
         // ------------------------------------------------------------------ spill kit
@@ -642,7 +684,7 @@ namespace ChemicalSafety.Presentable
         }
 
         /// <summary>Shows a neon icon 0.6 m in front of the user at chest height and waits until it is touched.</summary>
-        public IEnumerator WaitIcon(Sprite icon, string label, string sub = null)
+        public IEnumerator WaitIcon(Sprite icon, string label, string sub = null, float autoClickAfter = 0f)
         {
             EnsureIcon();
             if (_icon == null)
@@ -678,11 +720,17 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return PresentableFx.Wait(0.3f);
-            _iconPoke.SetInteractable(true);
+            // controller-ray flow: nobody clicks, the icon is "pressed" by itself after autoClickAfter seconds (a slow, soft pulse first)
+            var auto = autoClickAfter > 0f;
+            _iconPoke.SetInteractable(!auto);
+            var shown = 0f;
             while (!_iconPoked)
             {
                 var p = 1f + 0.05f * Mathf.Sin(Time.time * 4f);
                 _icon.localScale = Vector3.one * (baseScale * p);
+                shown += Time.deltaTime;
+                if (auto && shown >= autoClickAfter)
+                    _iconPoked = true;
                 yield return null;
             }
 
@@ -888,6 +936,10 @@ namespace ChemicalSafety.Presentable
                 _powderFx.Play();
             if (_vaporFx != null)
                 _vaporFx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (_bubbleFx != null)
+                _bubbleFx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (_foamFx != null)
+                _foamFx.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             Sfx(powderClip, 0.7f);
             Sfx(fizzClip, 0.5f);
             var pour = 3.4f;
@@ -1162,11 +1214,23 @@ namespace ChemicalSafety.Presentable
                 _bin.localScale = Vector3.one;
             }
 
-            var bagPos = _binPoint != null ? new Vector3(_binPoint.position.x - 0.75f, 0f, _binPoint.position.z) : SpillPos();
+            // the bag stands on the learner's side of the bin (in front of it, never hidden behind it), its label towards the learner
+            var bagPos = SpillPos();
+            var bagFacing = Vector3.right;
+            if (_binPoint != null)
+            {
+                var camT = Camera.main != null ? Camera.main.transform : null;
+                var toUser = camT != null ? Flat(camT.position - _binPoint.position) : Vector3.left;
+                toUser = toUser.sqrMagnitude < 1e-4f ? Vector3.left : toUser.normalized;
+                bagPos = new Vector3(_binPoint.position.x, 0f, _binPoint.position.z) + toUser * 0.8f;
+                bagFacing = toUser;
+            }
+
             if (_bagOpen != null)
             {
                 _bagOpen.gameObject.SetActive(true);
                 _bagOpen.position = bagPos;
+                _bagOpen.rotation = Quaternion.LookRotation(bagFacing, Vector3.up);
                 _bagOpen.localScale = Vector3.one * 0.01f;
                 for (var t = 0f; t < 0.5f; t += Time.deltaTime)
                 {
@@ -1412,6 +1476,15 @@ namespace ChemicalSafety.Presentable
 
             if (fizzMaterial != null)
             {
+                // small bubbles rising and popping all over the acid, and soft creamy foam patches lying on it
+                _bubbleFx = MakeSpillParticles("Sc10BubbleFx", 360, new Vector2(0.8f, 1.6f), new Vector2(0.01f, 0.05f), new Vector2(0.026f, 0.075f), 100f,
+                    new Color(0.97f, 0.95f, 0.78f, 0.70f), ParticleSystemRenderMode.Billboard, 0.92f, true);
+                _foamFx = MakeSpillParticles("Sc10FoamFx", 180, new Vector2(3f, 5f), new Vector2(0f, 0.005f), new Vector2(0.14f, 0.30f), 26f,
+                    new Color(0.97f, 0.95f, 0.82f, 0.55f), ParticleSystemRenderMode.HorizontalBillboard, 0.84f, false);
+            }
+
+            if (fizzMaterial != null)
+            {
                 var go = new GameObject("Sc10FizzFx");
                 go.transform.SetParent(transform, false);
                 _fizzFx = go.AddComponent<ParticleSystem>();
@@ -1435,6 +1508,47 @@ namespace ChemicalSafety.Presentable
                 rend.shadowCastingMode = ShadowCastingMode.Off;
                 _fizzFx.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
+        }
+
+        private ParticleSystem MakeSpillParticles(string name, int max, Vector2 life, Vector2 speed, Vector2 size, float rate, Color colour,
+            ParticleSystemRenderMode mode, float areaScale, bool pop)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.loop = true;
+            main.playOnAwake = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(life.x, life.y);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(speed.x, speed.y);
+            main.startSize = new ParticleSystem.MinMaxCurve(size.x, size.y);
+            main.startColor = colour;
+            main.gravityModifier = 0f;
+            main.maxParticles = max;
+            var em = ps.emission;
+            em.rateOverTime = rate;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(PuddleW * areaScale, 0.01f, PuddleD * areaScale);
+            var col = ps.colorOverLifetime;
+            col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.25f), new GradientAlphaKey(pop ? 0.9f : 1f, 0.8f), new GradientAlphaKey(0f, 1f) });
+            col.color = g;
+            var sz = ps.sizeOverLifetime;
+            sz.enabled = true;
+            // bubbles swell and pop; foam grows slowly and melts away
+            sz.size = new ParticleSystem.MinMaxCurve(1f, pop
+                ? new AnimationCurve(new Keyframe(0f, 0.35f), new Keyframe(0.85f, 1f), new Keyframe(1f, 1.25f))
+                : new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(0.6f, 1f), new Keyframe(1f, 0.85f)));
+            var rend = go.GetComponent<ParticleSystemRenderer>();
+            rend.sharedMaterial = fizzMaterial;
+            rend.renderMode = mode;
+            rend.shadowCastingMode = ShadowCastingMode.Off;
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            return ps;
         }
 
         private static Bounds BoundsOf(Transform t)

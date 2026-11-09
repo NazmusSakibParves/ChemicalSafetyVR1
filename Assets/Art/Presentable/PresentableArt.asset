@@ -129,7 +129,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 1278e9f8c062d074faaf80e96895b69f, type: 3}
   - {fileID: 8300000, guid: 2f5e1b0ce312f3347b51780b8d7a0d9b, type: 3}
   - {fileID: 8300000, guid: 23d49f0c1cc17ed4eb5e99b6e97c8d08, type: 3}
-  - {fileID: 0}
+  - {fileID: 8300000, guid: 120201de665a82b439615f27dc292320, type: 3}
   - {fileID: 0}
   - {fileID: 0}
   voSc02WrongNextBn: {fileID: 8300000, guid: 4df5bb48517607044b37b48e409b39ac, type: 3}
@@ -251,6 +251,17 @@ MonoBehaviour:
   voSc09RayPush: {fileID: 8300000, guid: b40e17a2c175af74fba48faa5540d0ee, type: 3}
   voSc09RayBack: {fileID: 8300000, guid: 05cfa6553781bde418cfdba844e58247, type: 3}
   voSc09RayGate: {fileID: 8300000, guid: f2f3b6ed4b297b841945c01dbf0194c2, type: 3}
+  bnSc10RayInstructionPanel: {fileID: 21300000, guid: 3813224786bd7a548ad7a485183adc3e, type: 3}
+  voSc10RayInstruction: {fileID: 8300000, guid: c9749097da8ad9143ac049d64122a839, type: 3}
+  voSc10RayLook: {fileID: 8300000, guid: e354589a60983094c870da7f864571c9, type: 3}
+  voSc10RayPpe: {fileID: 8300000, guid: 24fc7a237a114f6459140f499c45ddeb, type: 3}
+  voSc10RayKit: {fileID: 8300000, guid: 01880aa02deba38469a076b3218ed465, type: 3}
+  voSc10RayContain: {fileID: 8300000, guid: 25edeef9bc3a8a24bb23a474606103e3, type: 3}
+  voSc10RayNeutralize: {fileID: 8300000, guid: 5b356c0a6e9f54741814cf5eb690446d, type: 3}
+  voSc10RayAbsorb: {fileID: 8300000, guid: 75926df5d32e1034c86f1e1d5d8a8101, type: 3}
+  voSc10RayClean: {fileID: 8300000, guid: 0c8440e26e5f29e4b9a59a1886238c56, type: 3}
+  voSc10RayDispose: {fileID: 8300000, guid: 5eedcc12c52837e4299c3de99b723624, type: 3}
+  voSc10RayGate: {fileID: 8300000, guid: 9a3b10256249e074c8df8ee730ceafb7, type: 3}
   sdsSc10: {fileID: 21300000, guid: 9fb2a5bea4556934b8db863e0dfc060f, type: 3}
   iconSc10Contain: {fileID: 21300000, guid: 3436e90d189b2d548a68b131c1699385, type: 3}
   iconSc10Neutralize: {fileID: 21300000, guid: 94d004e2a2c5a104e9a43eb600c617af, type: 3}

@@ -102,6 +102,115 @@ namespace ChemicalSafety.Editor
             return root;
         }
 
+        // ---------------------------------------------------------------- realistic broken glass (Scenario 10, factory room)
+        private static Mesh Sc10NewMesh(string name)
+        {
+            var path = GenDir + "/Mesh_" + name + ".asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = new Mesh { name = name };
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+
+            mesh.Clear();
+            return mesh;
+        }
+
+        // a thin glass splinter: an irregular elongated quad with real thickness (top, bottom and edge walls), slightly bent
+        private static Mesh Sc10GlassSlab(string name, int seed, float size)
+        {
+            var mesh = Sc10NewMesh(name);
+            var rnd = new System.Random(seed);
+            float R() => (float)rnd.NextDouble();
+            var l = size * (1.3f + R() * 1.3f);
+            var w = size * (0.35f + R() * 0.5f);
+            var poly = new[]
+            {
+                new Vector2(-l * 0.5f, -w * (0.2f + R() * 0.4f)),
+                new Vector2(l * (0.25f + R() * 0.25f), -w * 0.5f),
+                new Vector2(l * 0.5f, w * R() * 0.5f),
+                new Vector2(-l * (0.1f + R() * 0.3f), w * 0.5f)
+            };
+            const float t = 0.0032f;
+            var v = new List<Vector3>();
+            var tri = new List<int>();
+            var cen = Vector2.zero;
+            foreach (var p in poly)
+                cen += p / poly.Length;
+            for (var side = 0; side < 2; side++)
+            {
+                var y = side == 0 ? t * 0.5f : -t * 0.5f;
+                v.Add(new Vector3(cen.x, y, cen.y));
+                foreach (var p in poly)
+                    v.Add(new Vector3(p.x, y + 0.12f * size * Mathf.Sin(p.x * 18f), p.y));
+            }
+
+            var n = poly.Length;
+            for (var i = 0; i < n; i++)
+            {
+                var a = 1 + i;
+                var b = 1 + (i + 1) % n;
+                tri.AddRange(new[] { 0, b, a }); // top
+                tri.AddRange(new[] { n + 1, n + 1 + a, n + 1 + b }); // bottom
+                tri.AddRange(new[] { a, b, n + 1 + b, a, n + 1 + b, n + 1 + a }); // edge wall
+            }
+
+            mesh.SetVertices(v);
+            mesh.SetTriangles(tri, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
+        // a curved piece of the jar wall (an arc of the cylinder with a jagged top edge and sharp cut ends), thin, two-sided
+        private static Mesh Sc10JarWallPiece(string name, int seed, float radius, float height, float arcDeg)
+        {
+            var mesh = Sc10NewMesh(name);
+            var rnd = new System.Random(seed);
+            float R() => (float)rnd.NextDouble();
+            const int nA = 9;
+            const int nH = 3;
+            const float t = 0.0035f;
+            var v = new List<Vector3>();
+            var tri = new List<int>();
+            for (var layer = 0; layer < 2; layer++)
+            {
+                var rr = layer == 0 ? radius : radius - t;
+                for (var j = 0; j <= nH; j++)
+                for (var i = 0; i <= nA; i++)
+                {
+                    var f = i / (float)nA;
+                    var ang = (f - 0.5f) * arcDeg * Mathf.Deg2Rad;
+                    // a ragged upper edge: each column has its own height, the ends are cut at a slant
+                    var colH = height * (0.45f + 0.55f * Mathf.Abs(Mathf.Sin(f * 5.1f + seed)) * (0.7f + 0.3f * R()));
+                    var slant = 1f - 0.55f * Mathf.Abs(f - 0.5f) * 2f * (seed % 2 == 0 ? f : 1f - f);
+                    var y = j / (float)nH * colH * slant;
+                    v.Add(new Vector3(Mathf.Sin(ang) * rr, y, Mathf.Cos(ang) * rr - radius));
+                }
+            }
+
+            var per = (nA + 1) * (nH + 1);
+            for (var j = 0; j < nH; j++)
+            for (var i = 0; i < nA; i++)
+            {
+                var a = j * (nA + 1) + i;
+                var b = a + 1;
+                var c = a + nA + 1;
+                var d = c + 1;
+                tri.AddRange(new[] { a, c, b, b, c, d }); // outer
+                tri.AddRange(new[] { per + a, per + b, per + c, per + b, per + d, per + c }); // inner
+            }
+
+            mesh.SetVertices(v);
+            mesh.SetTriangles(tri, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
         private static void Sc10AddPoke(Transform item, Vector3 worldPad, float reach)
         {
             var b = BoundsOfTree(item);
@@ -116,8 +225,40 @@ namespace ChemicalSafety.Editor
             pso.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void Sc10Bay(Transform room, float ox, float x1, float zBack, float zFront, float h, PresentableArt art, Sc10Refs refs)
+        // Where the spill bay's pieces go. null = the old Scenario 10 lab (the numbers below are the old constants).
+        // The factory-room version (Sc10Factory) moves the kit, the spill, the bin and the sign and drops the drain and the SDS table.
+        private sealed class Sc10BayCfg
         {
+            public float kitShiftZ = 1.0f;
+            public bool kitDetail;
+            public int shards = 16;
+            public float shardMin = 0.016f;
+            public float shardMax = 0.044f;
+            public float shardSpread = 0.45f;
+            public float kitScale = 1.0f;
+            public Vector3 spillC;
+            public Vector2 bin;
+            public Vector2 sign;
+            public bool drain = true;
+            public bool sds = true;
+            public bool stains = true;
+            public bool jarBroken;
+            public float jarR = 0.09f;
+            public float jarH = 0.2f;
+            public Color puddleTint = Color.white;
+            public Vector2 puddleSize = new Vector2(2.6f, 1.4f);
+            public Material puddleMat;
+            public float puddleOffsetX = 0.45f;
+        }
+
+        private static void Sc10Bay(Transform room, float ox, float x1, float zBack, float zFront, float h, PresentableArt art, Sc10Refs refs, Sc10BayCfg cfg = null)
+        {
+            cfg ??= new Sc10BayCfg
+            {
+                spillC = new Vector3(x1 - 3.0f, 0f, 1.35f),
+                bin = new Vector2(x1 - 2.5f, 2.3f),
+                sign = new Vector2(x1 - 2.3f, 0.35f)
+            };
             var bay = new GameObject("Sc10Bay").transform;
             bay.SetParent(room, false);
 
@@ -135,7 +276,8 @@ namespace ChemicalSafety.Editor
 
             // ------------------------------------------------------------------ the red cabinet (built at z 0.35, then moved along the wall)
             var kitStart = bay.childCount;
-            const float kz = 0.35f, kitY = 1.45f, kitW = 1.25f, kitH = 0.95f, kitD = 0.2f;
+            const float kz = 0.35f, kitY = 1.45f, kitW = 1.25f, kitH = 0.95f;
+            var kitD = cfg.kitDetail ? 0.27f : 0.2f;
             var fx = x1 - kitD;
             Box("KitBack", bay, new Vector3(x1 - 0.015f, kitY, kz), new Vector3(0.03f, kitH, kitW), redIn, false);
             Box("KitTop", bay, new Vector3(x1 - kitD * 0.5f, kitY + kitH * 0.5f - 0.035f, kz), new Vector3(kitD, 0.07f, kitW), red, false);
@@ -151,6 +293,27 @@ namespace ChemicalSafety.Editor
             Box("KitHingeB", bay, new Vector3(fx - 0.012f, kitY - 0.30f, kz + kitW * 0.5f - 0.005f), new Vector3(0.02f, 0.07f, 0.014f), steel, false);
             Box("KitLatch", bay, new Vector3(fx - 0.016f, kitY, kz - kitW * 0.5f + 0.02f), new Vector3(0.02f, 0.08f, 0.02f), steel, false);
 
+            if (cfg.kitDetail)
+            {
+                // a more solid, three-dimensional cabinet: raised frame round the opening, dark inner shading, a handle, a first-aid style plate
+                var redEdge = Mat("Sc10RedEdge", new Color(0.90f, 0.15f, 0.10f), 0.8f, 0f);
+                var inkDark = Mat("Sc10KitShade", new Color(0.16f, 0.02f, 0.015f), 0.2f, 0f);
+                var plateWhite = Mat("Sc10KitWhite", new Color(0.92f, 0.92f, 0.90f), 0.5f, 0f);
+                var plateGreen = Mat("Sc10KitGreen", new Color(0.05f, 0.55f, 0.25f), 0.5f, 0f);
+                Box("KitFrameTop", bay, new Vector3(fx - 0.012f, kitY + kitH * 0.5f - 0.02f, kz), new Vector3(0.03f, 0.05f, kitW + 0.02f), redEdge, false);
+                Box("KitFrameBottom", bay, new Vector3(fx - 0.012f, kitY - kitH * 0.5f + 0.02f, kz), new Vector3(0.03f, 0.05f, kitW + 0.02f), redEdge, false);
+                Box("KitFrameL", bay, new Vector3(fx - 0.012f, kitY, kz + kitW * 0.5f - 0.015f), new Vector3(0.03f, kitH, 0.05f), redEdge, false);
+                Box("KitFrameR", bay, new Vector3(fx - 0.012f, kitY, kz - kitW * 0.5f + 0.015f), new Vector3(0.03f, kitH, 0.05f), redEdge, false);
+                Box("KitInnerTop", bay, new Vector3(x1 - kitD * 0.5f, kitY + kitH * 0.5f - 0.075f, kz), new Vector3(kitD - 0.03f, 0.012f, kitW - 0.1f), inkDark, false);
+                Box("KitShelfShadow", bay, new Vector3(x1 - kitD * 0.5f + 0.01f, kitY - 0.03f, kz), new Vector3(kitD - 0.04f, 0.012f, kitW - 0.12f), inkDark, false);
+                Box("KitInnerBottom", bay, new Vector3(x1 - kitD * 0.5f, kitY - kitH * 0.5f + 0.075f, kz), new Vector3(kitD - 0.03f, 0.012f, kitW - 0.1f), inkDark, false);
+                var plateY = kitY + kitH * 0.5f + 0.05f;
+                var plateZ = kz + kitW * 0.5f - 0.09f;
+                Box("KitCrossPlate", bay, new Vector3(fx - 0.004f, plateY, plateZ), new Vector3(0.012f, 0.085f, 0.085f), plateWhite, false);
+                Box("KitCrossV", bay, new Vector3(fx - 0.011f, plateY, plateZ), new Vector3(0.008f, 0.06f, 0.02f), plateGreen, false);
+                Box("KitCrossH", bay, new Vector3(fx - 0.011f, plateY, plateZ), new Vector3(0.008f, 0.02f, 0.06f), plateGreen, false);
+            }
+
             // glass door: hinged on the +Z edge, swings toward the room
             var doorPivot = new GameObject("Sc10KitDoor").transform;
             doorPivot.SetParent(bay, false);
@@ -161,6 +324,8 @@ namespace ChemicalSafety.Editor
             Sc08LocalBox("DoorBottom", doorPivot, new Vector3(0f, -(kitH - 0.1f) * 0.5f, -dw * 0.5f), new Vector3(0.016f, 0.03f, dw), red);
             Sc08LocalBox("DoorHingeSide", doorPivot, new Vector3(0f, 0f, -0.015f), new Vector3(0.016f, kitH - 0.1f, 0.03f), red);
             Sc08LocalBox("DoorLatchSide", doorPivot, new Vector3(0f, 0f, -dw + 0.015f), new Vector3(0.016f, kitH - 0.1f, 0.03f), red);
+            if (cfg.kitDetail)
+                Sc08LocalBox("DoorHandle", doorPivot, new Vector3(-0.022f, 0f, -dw + 0.06f), new Vector3(0.016f, 0.20f, 0.018f), steel);
 
             var kitPoke = Sc08Poke("Sc10KitPoke", bay, new Vector3(fx - 0.12f, kitY, kz), new Vector3(0.3f, kitH, kitW), 0.06f);
 
@@ -233,7 +398,7 @@ namespace ChemicalSafety.Editor
                 Sc06Label("Sc10HazTagMat", "Label_Sc10HazTag", false, 0.3f));
             var ppeHolder = new GameObject("KitPpe").transform;
             ppeHolder.SetParent(bay, false);
-            ppeHolder.position = new Vector3(ix, botY, 0f);
+            ppeHolder.position = new Vector3(ix, botY, 0.11f); // the whole stack stays inside the cabinet (the green roll stuck out of its side)
             ppeHolder.rotation = Quaternion.Euler(0f, 270f, 0f);
             Sc08Goggles(ppeHolder, "KitGoggles", new Vector3(-0.0f, 0.2f, 0f), 0.95f, Quaternion.identity);
             Sc08FaceShield(ppeHolder, "KitShield", new Vector3(-0.2f, 0.12f, 0f), 0.9f, Quaternion.identity);
@@ -241,24 +406,36 @@ namespace ChemicalSafety.Editor
             var green = Mat("Sc10GreenBag", new Color(0.10f, 0.52f, 0.30f), 0.55f, 0f);
             Sc08LocalBox("GreenRoll", ppeHolder, new Vector3(-0.2f, 0.025f, 0.0f), new Vector3(0.24f, 0.05f, 0.2f), green);
 
+            var kitPivot = new Vector3(x1, kitY, kz + cfg.kitShiftZ);
             for (var ki = kitStart; ki < bay.childCount; ki++)
-                bay.GetChild(ki).position += new Vector3(0f, 0f, 1.0f);
+            {
+                var kc = bay.GetChild(ki);
+                kc.position += new Vector3(0f, 0f, cfg.kitShiftZ);
+                if (!Mathf.Approximately(cfg.kitScale, 1f))
+                {
+                    kc.position = kitPivot + (kc.position - kitPivot) * cfg.kitScale; // a smaller kit on the factory wall
+                    kc.localScale *= cfg.kitScale;
+                }
+            }
 
             // ------------------------------------------------------------------ the spill on the floor, in front of the kit
-            var c = new Vector3(x1 - 3.0f, 0f, 1.35f);
+            var c = cfg.spillC;
             var spill = new GameObject("Sc10Spill").transform;
             spill.SetParent(bay, false);
             spill.position = c;
-            var puddleMat = MatAlpha("Sc10PuddleMat", Sc06Tex("Label_Sc10Puddle"), Color.white, false);
-            var puddle = QuadObj("Sc10Puddle", bay, c + new Vector3(0.45f, 0.004f, 0f), new Vector3(90f, 0f, 0f), new Vector2(2.6f, 1.4f), puddleMat);
+            var puddleMat = cfg.puddleMat != null ? cfg.puddleMat : MatAlpha("Sc10PuddleMat", Sc06Tex("Label_Sc10Puddle"), cfg.puddleTint, false);
+            var puddle = QuadObj("Sc10Puddle", bay, c + new Vector3(cfg.puddleOffsetX, 0.004f, 0f), new Vector3(90f, 0f, 0f), cfg.puddleSize, puddleMat);
             puddle.GetComponent<MeshRenderer>().sharedMaterial = puddleMat;
             var powderMat = MatAlpha("Sc10PowderDecalMat", Sc06Tex("Label_Sc10Powder"), new Color(1f, 1f, 1f, 0.85f), false);
             var powderDecal = QuadObj("Sc10PowderDecal", bay, c + new Vector3(0f, 0.007f, 0f), new Vector3(90f, 0f, 0f), new Vector2(1.1f, 0.8f), powderMat);
             powderDecal.SetActive(false);
             var stainMat = MatAlpha("Sc10StainMat", Sc06Tex("Label_Sc10Stain"), new Color(1f, 1f, 1f, 0.55f), false);
-            QuadObj("Sc10StainA", bay, new Vector3(x1 - 3.3f, 0.003f, 2.5f), new Vector3(90f, 20f, 0f), new Vector2(0.9f, 0.9f), stainMat);
-            QuadObj("Sc10StainB", bay, new Vector3(x1 - 3.6f, 0.003f, 0.5f), new Vector3(90f, -35f, 0f), new Vector2(0.7f, 0.7f), stainMat);
-            QuadObj("Sc10StainC", bay, new Vector3(x1 - 1.1f, 0.003f, 2.9f), new Vector3(90f, 80f, 0f), new Vector2(0.6f, 0.6f), stainMat);
+            if (cfg.stains)
+            {
+                QuadObj("Sc10StainA", bay, new Vector3(x1 - 3.3f, 0.003f, 2.5f), new Vector3(90f, 20f, 0f), new Vector2(0.9f, 0.9f), stainMat);
+                QuadObj("Sc10StainB", bay, new Vector3(x1 - 3.6f, 0.003f, 0.5f), new Vector3(90f, -35f, 0f), new Vector2(0.7f, 0.7f), stainMat);
+                QuadObj("Sc10StainC", bay, new Vector3(x1 - 1.1f, 0.003f, 2.9f), new Vector3(90f, 80f, 0f), new Vector2(0.6f, 0.6f), stainMat);
+            }
 
             // broken bottle: jagged body and neck lying on the floor, plus loose shards
             var bottleGlass = Sc06GlassMat("Sc10BottleGlass3", new Color(0.72f, 0.88f, 0.86f), 0.2f, 1.0f);
@@ -267,11 +444,49 @@ namespace ChemicalSafety.Editor
                 new Vector2(0f, 0f), new Vector2(0.038f, 0f), new Vector2(0.05f, 0.012f), new Vector2(0.052f, 0.1f), new Vector2(0.05f, 0.15f),
                 new Vector2(0.036f, 0.19f), new Vector2(0.022f, 0.225f), new Vector2(0.0185f, 0.26f), new Vector2(0.0185f, 0.285f), new Vector2(0.022f, 0.29f), new Vector2(0.023f, 0.3f)
             }, 0.003f, 32);
-            Sc08Part("Sc10Bottle0", bay, body, bottleGlass, c + new Vector3(-0.3f, 0.07f, -0.2f), Quaternion.Euler(0f, 24f, -90f));
-            bay.Find("Sc10Bottle0").localScale = Vector3.one * 1.35f;
+            if (cfg.jarBroken)
+            {
+                // the broken glass jar of the factory room: a jagged base lying on its side (the same glass as the shards)
+                var jr = cfg.jarR;
+                var jh = cfg.jarH;
+                var jarBase = Sc09JaggedShell("Sc10JarBase", new[]
+                {
+                    new Vector2(0f, 0f), new Vector2(jr * 0.97f, 0f), new Vector2(jr, 0.010f), new Vector2(jr * 0.99f, jh * 0.22f), new Vector2(jr * 0.96f, jh * 0.42f)
+                }, 24, 0.03f, true);
+                Sc08Part("Sc10Bottle0", bay, jarBase, bottleGlass, c + new Vector3(-0.30f, jr + 0.012f, -0.15f), Quaternion.Euler(6f, 24f, -78f));
+                bay.Find("Sc10Bottle0").localScale = Vector3.one;
+            }
+            else
+            {
+                Sc08Part("Sc10Bottle0", bay, body, bottleGlass, c + new Vector3(-0.3f, 0.07f, -0.2f), Quaternion.Euler(0f, 24f, -90f));
+                bay.Find("Sc10Bottle0").localScale = Vector3.one * 1.35f;
+            }
             Sc08Part("Sc10Bottle1", bay, Sc09ShardMesh("Sc10ShardBig", 77, 0.05f), bottleGlass, c + new Vector3(-0.38f, 0.017f, 0.14f), Quaternion.Euler(0f, 40f, 0f));
             var rnd = new System.Random(310);
-            for (var i = 0; i < 16; i++)
+            if (cfg.jarBroken)
+            {
+                // the factory jar: a few big curved pieces of the wall, many long splinters and chips, all lying where they landed
+                for (var i = 0; i < cfg.shards; i++)
+                {
+                    var ang = (float)rnd.NextDouble() * Mathf.PI * 2f;
+                    var rr = 0.10f + Mathf.Sqrt((float)rnd.NextDouble()) * cfg.shardSpread;
+                    var pos = c + new Vector3(-0.30f + Mathf.Cos(ang) * rr * 0.9f, 0.012f, -0.10f + Mathf.Sin(ang) * rr * 0.65f);
+                    if (i < 5)
+                    {
+                        var piece = Sc10JarWallPiece("Sc10JarWallPiece" + i, 200 + i, cfg.jarR, cfg.jarH * (0.35f + 0.25f * (float)rnd.NextDouble()), 40f + 28f * (float)rnd.NextDouble());
+                        Sc08Part("Sc10Shard" + i, bay, piece, bottleGlass, pos + Vector3.up * (cfg.jarR * 0.28f),
+                            Quaternion.Euler(80f + (float)rnd.NextDouble() * 20f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 30f - 15f));
+                    }
+                    else
+                    {
+                        var sz = cfg.shardMin + (float)rnd.NextDouble() * (cfg.shardMax - cfg.shardMin);
+                        var slab = Sc10GlassSlab("Sc10GlassSlab" + i, 500 + i, sz);
+                        Sc08Part("Sc10Shard" + i, bay, slab, bottleGlass, pos, Quaternion.Euler((float)rnd.NextDouble() * 10f - 5f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 10f - 5f));
+                    }
+                }
+            }
+
+            for (var i = 0; i < (cfg.jarBroken ? 0 : 16); i++)
             {
                 var ang = (float)rnd.NextDouble() * Mathf.PI * 2f;
                 var rr = 0.12f + (float)rnd.NextDouble() * 0.45f;
@@ -299,6 +514,7 @@ namespace ChemicalSafety.Editor
             Marker("Sc10PanPoint", bay, c + new Vector3(-1.2f, 0.02f, 0.1f), 90f);
 
             // ------------------------------------------------------------------ floor drain: a wide steel channel running out from under the kit wall (as in the picture)
+            if (cfg.drain)
             {
                 const float dLen = 1.85f, dW = 0.34f;
                 var dz = 1.35f;
@@ -318,8 +534,8 @@ namespace ChemicalSafety.Editor
             }
 
             // ------------------------------------------------------------------ CAUTION - SPILL A-frame sign: tall panels with the top handle slot
-            var sx = x1 - 2.3f;
-            var sz2 = 0.35f;
+            var sx = cfg.sign.x;
+            var sz2 = cfg.sign.y;
             var cautionMat = Sc06Label("Sc10CautionMat", "Label_Sc10Caution", false, 0.4f);
             for (var side = -1; side <= 1; side += 2)
             {
@@ -341,8 +557,10 @@ namespace ChemicalSafety.Editor
             tableRig.SetParent(bay, false);
             Sc10Table(tableRig, tableX, tableZ, tableX + 0.35f, steel, darkSteel);
             tableRig.RotateAround(new Vector3(tableX, 0f, tableZ), Vector3.up, 90f);
-            var bx = x1 - 2.5f;
-            var bz = 2.3f;
+            if (!cfg.sds)
+                Object.DestroyImmediate(tableRig.gameObject);
+            var bx = cfg.bin.x;
+            var bz = cfg.bin.y;
             var bin = Sc10Bin(bay, bx, bz);
 
             // open bag (hidden until DISPOSE): body, flared neck, a filling mound

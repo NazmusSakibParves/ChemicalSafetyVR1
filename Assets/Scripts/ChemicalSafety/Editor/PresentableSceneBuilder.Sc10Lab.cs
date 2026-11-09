@@ -16,9 +16,10 @@ namespace ChemicalSafety.Editor
         // ---------------------------------------------------------------- hazardous waste bin (root is inactive until the DISPOSE step)
         private static Transform Sc10Bin(Transform parent, float bx, float bz)
         {
-            var yellow = Mat("Sc10BinYellow2", new Color(0.96f, 0.77f, 0.05f), 0.58f, 0f);
-            var rib = Mat("Sc10BinYellowRib", new Color(0.84f, 0.64f, 0.03f), 0.5f, 0f);
-            var dark = Mat("Sc10BinTrim", new Color(0.12f, 0.12f, 0.13f), 0.5f, 0f);
+            // an old, well-used bin (client: it was too shiny): faded yellow, almost no gloss, grimy trim, dirt on the walls
+            var yellow = Mat("Sc10BinYellowWorn", new Color(0.56f, 0.45f, 0.10f), 0.05f, 0f);
+            var rib = Mat("Sc10BinYellowRibWorn", new Color(0.40f, 0.31f, 0.06f), 0.04f, 0f);
+            var dark = Mat("Sc10BinTrimWorn", new Color(0.11f, 0.11f, 0.10f), 0.08f, 0f);
             var inside = Mat("Sc10BinInside", new Color(0.12f, 0.10f, 0.03f), 0.2f, 0f);
             var root = new GameObject("Sc10Bin").transform;
             root.SetParent(parent, false);
@@ -56,6 +57,35 @@ namespace ChemicalSafety.Editor
             B("LabelPlate", new Vector3(-0.2535f, 0.42f, 0f), new Vector3(0.006f, 0.47f, 0.39f), dark);
             QuadObj("BinLabel", root, new Vector3(-0.2575f, 0.42f, 0f), new Vector3(0f, 90f, 0f), new Vector2(0.35f, 0.4375f),
                 Sc06Label("Sc10BinLabelMat", "Label_Sc10BinLabel", false, 0.4f));
+
+            // dirt on every side: dark grease and dust blotches, bigger near the bottom (a bin that stands on a factory floor)
+            var grime = MatAlpha("Sc10BinGrime2", Sc06Tex("Label_Sc10Stain"), new Color(0.14f, 0.11f, 0.07f, 0.90f), false);
+            var grng = new System.Random(77);
+            for (var face = 0; face < 4; face++)
+            {
+                for (var gi = 0; gi < 6; gi++)
+                {
+                    var along = ((float)grng.NextDouble() - 0.5f) * 0.36f;
+                    var gy = 0.10f + (float)grng.NextDouble() * 0.52f;
+                    var gs = 0.18f + (float)grng.NextDouble() * 0.22f + (gy < 0.3f ? 0.08f : 0f);
+                    var roll = (float)grng.NextDouble() * 360f;
+                    Vector3 gp;
+                    float gyaw;
+                    switch (face)
+                    {
+                        case 0: gp = new Vector3(-0.2575f, gy, along); gyaw = 90f; break; // front (the label side is kept clearer below)
+                        case 1: gp = new Vector3(along, gy, 0.2575f); gyaw = 180f; break;
+                        case 2: gp = new Vector3(along, gy, -0.2575f); gyaw = 0f; break;
+                        default: gp = new Vector3(0.2575f, gy, along); gyaw = -90f; break;
+                    }
+
+                    if (face == 0 && Mathf.Abs(along) < 0.19f && gy > 0.2f && gy < 0.64f)
+                        gy = 0.1f; // not over the label
+                    gp.y = gy;
+                    var gq = QuadObj("BinGrime" + face + "_" + gi, root, gp, new Vector3(0f, gyaw, roll), new Vector2(gs, gs), grime);
+                    Object.DestroyImmediate(gq.GetComponent<Collider>());
+                }
+            }
 
             var lid = new GameObject("Sc10BinLid").transform;
             lid.SetParent(root, false);

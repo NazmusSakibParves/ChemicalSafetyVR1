@@ -256,6 +256,18 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc09RayPush;
         public AudioClip voSc09RayBack;
         public AudioClip voSc09RayGate;
+        // Scenario 10 on the controller ray (automatic flow in the factory room)
+        public Sprite bnSc10RayInstructionPanel;
+        public AudioClip voSc10RayInstruction;
+        public AudioClip voSc10RayLook;
+        public AudioClip voSc10RayPpe;
+        public AudioClip voSc10RayKit;
+        public AudioClip voSc10RayContain;
+        public AudioClip voSc10RayNeutralize;
+        public AudioClip voSc10RayAbsorb;
+        public AudioClip voSc10RayClean;
+        public AudioClip voSc10RayDispose;
+        public AudioClip voSc10RayGate;
         public Sprite sdsSc10;
         public Sprite iconSc10Contain;
         public Sprite iconSc10Neutralize;
