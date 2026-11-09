@@ -387,7 +387,9 @@ namespace ChemicalSafety.Presentable
             foreach (var d in drums)
                 d?.SetCalloutVisible(false, 0.01f);
 
-            _instructionClip = Sc01(art.voInstruction, art.trialInstruction);
+            _instructionClip = Artist(Sc01(art.voInstruction, art.trialInstruction), art.artistSc01Instruction);
+            if (art.useArtistVoice && art.artistBnInstructionPanel != null)
+                instructionPanel.SetContent(null, art.artistBnInstructionPanel); // Bangla card text = the artist's script (English text untouched)
             PlaceRig(spawnStart.position, spawnStart.forward);
             yield return fader.FadeTo(0f, 1.4f);
             yield return PresentableFx.Wait(0.4f);
@@ -405,7 +407,7 @@ namespace ChemicalSafety.Presentable
             Stage("instruction");
             instructionPanel.SetContinueCentered(true);
             instructionPanel.SetSpeaking(true);
-            yield return SubtitledVoice(art.bnInstructionSub,
+            yield return SubtitledVoice(art.useArtistVoice && art.artistBnInstructionSub != null ? art.artistBnInstructionSub : art.bnInstructionSub,
                 Sc01Content.InstructionSub, _instructionClip);
             instructionPanel.SetSpeaking(false);
 
@@ -417,7 +419,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetSpeaking(true);
             StartCoroutine(SubtitledVoice(art.bnContinueHint,
                 Sc01Content.ContinueHint,
-                Sc01(art.voContinueHint, art.trialContinueHint)));
+                Artist(Sc01(art.voContinueHint, art.trialContinueHint), art.artistContinueHint)));
             while (!_continuePressed)
                 yield return null;
             instructionPanel.SpeakerClicked -= OnSpeakerClicked;
@@ -512,7 +514,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc02Intro");
             _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc02Content.InstructionEnglish, art.bnSc02InstructionPanel);
+            instructionPanel.SetContent(Sc02Content.InstructionEnglish, ArtistCard(2, art.bnSc02InstructionPanel));
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -607,7 +609,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc03Intro");
             _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc03Content.InstructionEnglish, art.bnSc03InstructionPanel);
+            instructionPanel.SetContent(Sc03Content.InstructionEnglish, ArtistCard(3, art.bnSc03InstructionPanel));
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -810,7 +812,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc04Intro");
             _instructionClip = art.voSc04Instruction != null ? art.voSc04Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc04Content.InstructionEnglish, art.bnSc04InstructionPanel);
+            instructionPanel.SetContent(Sc04Content.InstructionEnglish, ArtistCard(4, art.bnSc04InstructionPanel));
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             if (ray4)
@@ -1050,7 +1052,7 @@ namespace ChemicalSafety.Presentable
             var ray5 = PresentableInput.RayActive;
             Stage("sc05Intro");
             _instructionClip = art.voSc05Instruction != null ? art.voSc05Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc05Content.InstructionEnglish, art.bnSc05InstructionPanel);
+            instructionPanel.SetContent(Sc05Content.InstructionEnglish, ArtistCard(5, art.bnSc05InstructionPanel));
             if (ray5)
             {
                 // controller ray: head free, a SMALL glass card at the left / up of the view (clear of the rail and the masks),
@@ -1382,7 +1384,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc06Intro");
             _instructionClip = art.voSc06Instruction != null ? art.voSc06Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc06Content.InstructionEnglish, art.bnSc06InstructionPanel);
+            instructionPanel.SetContent(Sc06Content.InstructionEnglish, ArtistCard(6, art.bnSc06InstructionPanel));
             if (PresentableInput.RayActive && sc06Auto != null)
             {
                 // controller ray: head free, a SMALL glass card on the RIGHT, the voice reads it, then it goes by itself (no Continue click)
@@ -1581,7 +1583,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc07Intro");
             _instructionClip = art.voSc07Instruction != null ? art.voSc07Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc07Content.InstructionEnglish, art.bnSc07InstructionPanel);
+            instructionPanel.SetContent(Sc07Content.InstructionEnglish, ArtistCard(7, art.bnSc07InstructionPanel));
             instructionPanel.SetContinueCentered(true);
             if (ray7)
             {
@@ -1961,7 +1963,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc08Intro");
             _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc08Content.InstructionEnglish, art.bnSc08InstructionPanel);
+            instructionPanel.SetContent(Sc08Content.InstructionEnglish, ArtistCard(8, art.bnSc08InstructionPanel));
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
             instructionPanel.SetCompact(true, sc689CardScale);
             instructionPanel.SetGlass(sc04GlassCard);
@@ -2034,7 +2036,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc08Intro");
             _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
-            instructionPanel.SetContent(Sc08Content.InstructionEnglish, art.bnSc08InstructionPanel);
+            instructionPanel.SetContent(Sc08Content.InstructionEnglish, ArtistCard(8, art.bnSc08InstructionPanel));
             instructionPanel.SetContinueCentered(true);
             BeginEyeInstruction();
             yield return instructionPanel.Show();
@@ -4036,14 +4038,14 @@ namespace ChemicalSafety.Presentable
             var correctClip = art.voCorrect;
             if (scenario == 1)
             {
-                correctClip = Sc01(art.voCorrect, art.trialCorrect);
-                wrongClip = Sc01(art.voWrong, art.trialWrong);
+                correctClip = Artist(Sc01(art.voCorrect, art.trialCorrect), art.artistCorrect);
+                wrongClip = Artist(Sc01(art.voWrong, art.trialWrong), art.artistWrong);
             }
 
             if (scenario == 1 && !correct && art.voSc01WrongNextBn != null)
             {
                 // no retry in Scenario 1: it says why and sends the learner on with NEXT
-                yield return PlayVoice(Loc.IsBangla ? art.voSc01WrongNextBn : art.voSc01WrongNextEn);
+                yield return PlayVoice(Loc.IsBangla ? Artist(art.voSc01WrongNextBn, art.artistSc01WrongNext) : art.voSc01WrongNextEn);
                 yield break;
             }
 
@@ -4134,7 +4136,7 @@ namespace ChemicalSafety.Presentable
             }
             else
             {
-                doneBn = Sc01(art.voSc01CompleteBn, art.trialSc01CompleteBn);
+                doneBn = Artist(Sc01(art.voSc01CompleteBn, art.trialSc01CompleteBn), art.artistSc01Complete);
                 doneEn = art.voSc01CompleteEn;
             }
 
@@ -4184,6 +4186,42 @@ namespace ChemicalSafety.Presentable
                 subtitle.Hide();
         }
 
+        // Voice artist test clips (login salam, Scenario 1 instruction). Off or missing clip = the clip given as `current`.
+        private AudioClip Artist(AudioClip current, AudioClip artist)
+        {
+            return art != null && art.useArtistVoice && artist != null ? artist : current;
+        }
+
+        // Artist test set (Scenarios 1-8): in Bangla mode every clip whose name the artist re-recorded is swapped here, the one place all
+        // narration goes through. Switch off (or no clip of that name) = the clip as it was. English never reaches this.
+        private Dictionary<string, AudioClip> _artistMap;
+
+        private AudioClip ArtistClip(AudioClip clip)
+        {
+            if (art == null || !art.useArtistVoice || art.artistClips == null || clip == null)
+                return clip;
+            if (_artistMap == null)
+            {
+                _artistMap = new Dictionary<string, AudioClip>();
+                foreach (var c in art.artistClips)
+                {
+                    if (c != null)
+                        _artistMap[c.name] = c;
+                }
+            }
+
+            return _artistMap.TryGetValue(clip.name, out var artist) && artist != null ? artist : clip;
+        }
+
+        // Bangla instruction card text of Scenarios 2-8 = the artist's script (Scenario 1 is set where it starts).
+        private Sprite ArtistCard(int scenario, Sprite current)
+        {
+            if (art == null || !art.useArtistVoice || art.artistBnInstructionCards == null || scenario < 0 || scenario >= art.artistBnInstructionCards.Length)
+                return current;
+            var card = art.artistBnInstructionCards[scenario];
+            return card != null ? card : current;
+        }
+
         // Scenario 1 trial recordings. Scenarios 2-8 keep calling the original slots directly.
         private AudioClip Sc01(AudioClip original, AudioClip trial)
         {
@@ -4195,9 +4233,11 @@ namespace ChemicalSafety.Presentable
         private static readonly Dictionary<string, AudioClip> EnglishClips = new Dictionary<string, AudioClip>();
 
         /// <summary>English mode plays the English twin (Resources/VoEn/&lt;name&gt;) of every Bangla clip; Bangla mode plays the clip as is.</summary>
-        private static AudioClip LocalizedClip(AudioClip clip)
+        private AudioClip LocalizedClip(AudioClip clip)
         {
-            if (clip == null || Loc.IsBangla)
+            if (clip != null && Loc.IsBangla)
+                return ArtistClip(clip);
+            if (clip == null)
                 return clip;
             var n = clip.name;
             if (n.EndsWith("_en"))
@@ -4263,8 +4303,9 @@ namespace ChemicalSafety.Presentable
             Debug.Log("[Voice] login greeting: English clip " + (english != null ? english.name : "MISSING"));
             yield return PlayVoiceAsIs(english);
             yield return PresentableFx.Wait(1f);
-            Debug.Log("[Voice] login greeting: Bangla clip " + (art.voSalam != null ? art.voSalam.name : "MISSING"));
-            yield return PlayVoiceAsIs(art.voSalam);
+            var bangla = Artist(art.voSalam, art.artistSalamBn);
+            Debug.Log("[Voice] login greeting: Bangla clip " + (bangla != null ? bangla.name : "MISSING") + (bangla != art.voSalam ? " (artist)" : ""));
+            yield return PlayVoiceAsIs(bangla);
             _welcomeDone = true;
         }
 

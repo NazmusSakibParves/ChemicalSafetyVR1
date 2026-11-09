@@ -362,6 +362,25 @@ namespace ChemicalSafety.Presentable
         public AudioClip trialCarrier;
         public AudioClip trialSc01CompleteBn;
 
+        [Header("Artist Bangla voice (test)")]
+        [Tooltip("On = login salam (Bangla + English) and the Scenario 1 instruction play the artist's recordings. Off = previous voices. Missing clip = previous voice.")]
+        public bool useArtistVoice;
+        [Tooltip("Bangla clips only. English voice-overs are never replaced.")]
+        public AudioClip artistSalamBn;
+        public AudioClip artistSc01Instruction;
+        public AudioClip artistSc01Complete;
+        public AudioClip artistSc01WrongNext;
+        public AudioClip artistContinueHint;
+        public AudioClip artistCorrect;
+        public AudioClip artistWrong;
+        [Tooltip("Scenario 1 Bangla card text and subtitle for the artist's instruction script")]
+        public Sprite artistBnInstructionPanel;
+        public Sprite artistBnInstructionSub;
+        [Tooltip("Every artist clip (Scenarios 1-8). In Bangla mode a clip with the same name as an original is played instead of it.")]
+        public AudioClip[] artistClips;
+        [Tooltip("Index = scenario number (2-8): Bangla instruction card text of the artist's script")]
+        public Sprite[] artistBnInstructionCards = new Sprite[9];
+
         [Header("Fonts")]
         public TMP_FontAsset englishFont;
     }

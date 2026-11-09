@@ -980,6 +980,7 @@ namespace ChemicalSafety.Editor
             if (art.voWrongLabel == null)
                 Debug.LogWarning("[Presentable] VO_WrongLabel_bn.mp3 is missing - AudioClip slot left empty.");
             AssignSc01TrialClips(art);
+            AssignArtistClips(art);
 
             foreach (var guid in AssetDatabase.FindAssets("LiberationSans SDF t:TMP_FontAsset"))
             {
