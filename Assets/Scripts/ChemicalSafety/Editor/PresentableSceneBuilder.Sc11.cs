@@ -87,6 +87,8 @@ namespace ChemicalSafety.Editor
 
         private static Sc11Refs BuildSc11Room(Transform env, PresentableArt art)
         {
+            if (Sc11UseYard)
+                return BuildSc11YardRoom(env, art); // the client's chlorine yard (PresentableSceneBuilder.Sc11Yard.cs); false = the previous yard below
             const float ox = Sc11Ox;
             var refs = new Sc11Refs();
             var room = new GameObject("Room").transform;
@@ -272,40 +274,8 @@ namespace ChemicalSafety.Editor
             // ---------------------------------------------------------------- the people, the path out
             var crowd = new GameObject("Crowd").transform;
             crowd.SetParent(room, false);
-            // Reuse the Scenario 7 prefab: saving it again gives the Head renderer a new id and the Scenario 7 crowd loses its Head material (magenta faces).
-            var prefabLo = AssetDatabase.LoadAssetAtPath<GameObject>(Sc07GenDir + "/Worker_Lo.prefab") ?? Sc07MakeHuman("Lo");
-            var walkClips = Sc07Clips("Step_Walk_", 6);
-            var colors = new[] { new Color(0.1f, 0.45f, 0.85f), new Color(1f, 0.74f, 0.04f), new Color(0.1f, 0.45f, 0.85f), new Color(1f, 0.74f, 0.04f), new Color(0.1f, 0.45f, 0.85f) };
             var starts = new[] { new Vector3(ox - 0.2f, 0f, -1.4f), new Vector3(ox - 0.9f, 0f, -2.2f), new Vector3(ox - 1.6f, 0f, -1.6f), new Vector3(ox - 2.3f, 0f, -2.4f), new Vector3(ox - 2.9f, 0f, -1.7f) };
-            var workers = new Sc07Human[5];
-            var startMarks = new Transform[5];
-            for (var i = 0; i < 5; i++)
-            {
-                var person = Sc07People[(i % (Sc07People.Length - 1)) + 1];
-                person = new Sc07Person { name = "Y" + i, skin = person.skin, height = person.height, girth = person.girth, helmet = colors[i] };
-                var inst = (GameObject)PrefabUtility.InstantiatePrefab(prefabLo);
-                inst.name = "Worker_" + i;
-                inst.transform.SetParent(crowd, false);
-                inst.transform.localScale = Vector3.one * (person.height / 3.64f);
-                inst.transform.position = starts[i];
-                inst.transform.rotation = Quaternion.Euler(0f, 215f, 0f);
-                Sc07Dress(inst, person);
-                // hi-vis vest: the uniform takes the neon yellow-green / orange of the picture
-                foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                    if (smr.name == "Uniform")
-                        smr.sharedMaterial = Mat("Sc11HiVis" + (i % 2), i % 2 == 0 ? new Color(0.62f, 0.70f, 0.14f) : new Color(0.80f, 0.40f, 0.12f), 0.2f, 0f, Sc07WorkerTex("Worker_Uniform"));
-                var human = inst.AddComponent<Sc07Human>();
-                var hso = new SerializedObject(human);
-                FillArray(hso.FindProperty("stepWalk"), walkClips.Length, (pp, k) => pp.objectReferenceValue = walkClips[k]);
-                hso.FindProperty("stepVolume").floatValue = 0.35f;
-                hso.ApplyModifiedPropertiesWithoutUndo();
-                human.Evaluate(0f, 0f);
-                var shadowQuad = QuadObj("ContactShadow", inst.transform, Vector3.zero, new Vector3(90f, 0f, 0f), new Vector2(0.7f, 0.7f) / (person.height / 3.64f),
-                    MatAlpha("Sc07WorkerShadow", AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc04/ContactShadow.png"), new Color(0f, 0f, 0f, 0.5f), false));
-                shadowQuad.transform.localPosition = new Vector3(0f, 0.012f / (person.height / 3.64f), 0f);
-                workers[i] = human;
-                startMarks[i] = Marker("WorkerStart_" + i, crowd, starts[i], 215f);
-            }
+            Sc11MakeWorkers(crowd, starts, 215f, out var workers, out var startMarks);
 
             var pathPts = new[]
             {
@@ -330,88 +300,15 @@ namespace ChemicalSafety.Editor
             Sc11Scenery(room, ox);
             Sc11Tufts(room, 12, 46, ox - 13f, ox + 12f, -3.85f, -3.0f, 0.45f, 0.95f);
 
-            var radioGo = Sc11Spawn("Wireless.glb", room);
-            Transform radioT = null;
-            Transform screenT = null;
-            if (radioGo != null)
-            {
-                radioGo.name = "Walkie";
-                FitHeight(radioGo, 0.21f);
-                radioT = new GameObject("RadioRig").transform;
-                radioT.SetParent(room, false);
-                radioGo.transform.SetParent(radioT, false);
-                var rb = BoundsOfTree(radioGo.transform);
-                radioGo.transform.position += radioT.position - rb.center; // model centred on the rig
-                screenT = new GameObject("RadioScreen").transform;
-                screenT.SetParent(radioT, false);
-                screenT.localPosition = new Vector3(-0.0218f, 0.0105f, 0f);
-                screenT.localRotation = Quaternion.identity;
-                radioT.gameObject.SetActive(false);
-            }
+            Sc11MakeRadio(room, out var radioT, out var screenT);
 
             // ---------------------------------------------------------------- the host, sounds, guide arrow, gate card
-            var hostGo = new GameObject("Sc11YardHost");
-            hostGo.transform.SetParent(room, false);
-            refs.yard = hostGo.AddComponent<Sc11Yard>();
-            var yso = new SerializedObject(refs.yard);
-            yso.FindProperty("art").objectReferenceValue = art;
-            yso.FindProperty("leakGas").objectReferenceValue = gasGo;
-            yso.FindProperty("leakGasPurple").objectReferenceValue = purpleGo;
-            FillArray(yso.FindProperty("frost"), frostRenderers.Length, (pp, k) => pp.objectReferenceValue = frostRenderers[k]);
-            FillArray(yso.FindProperty("beacons"), 2, (pp, k) => pp.objectReferenceValue = k == 0 ? beacon1 : beacon2);
-            yso.FindProperty("exitSign").objectReferenceValue = exitGo;
-            FillArray(yso.FindProperty("workers"), workers.Length, (pp, k) => pp.objectReferenceValue = workers[k]);
-            FillArray(yso.FindProperty("workerStarts"), startMarks.Length, (pp, k) => pp.objectReferenceValue = startMarks[k]);
-            FillArray(yso.FindProperty("exitPath"), path.Length, (pp, k) => pp.objectReferenceValue = path[k]);
-            yso.FindProperty("radio").objectReferenceValue = radioT;
-            yso.FindProperty("radioScreen").objectReferenceValue = screenT;
-            yso.FindProperty("outsideRoot").objectReferenceValue = outside.gameObject;
-            AudioClip Clip(string n) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Art/Audio/Sc11/" + n + ".wav");
-            yso.FindProperty("windLoop").objectReferenceValue = Clip("Wind_Loop");
-            yso.FindProperty("murmurLoop").objectReferenceValue = Clip("Crowd_Murmur_Loop");
-            for (var lang = 0; lang < 2; lang++)
+            return Sc11Finish(room, art, new Sc11Parts
             {
-                var pre = lang == 0 ? "bn_" : "en_";
-                var clips = new System.Collections.Generic.List<AudioClip>();
-                for (var ci = 0; ci < 6; ci++)
-                    clips.Add(AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Art/Audio/Sc11Crowd/" + pre + ci + ".mp3"));
-                FillArray(yso.FindProperty(lang == 0 ? "crowdBn" : "crowdEn"), clips.Count, (pp, k) => pp.objectReferenceValue = clips[k]);
-            }
-
-            yso.FindProperty("hissLoop").objectReferenceValue = Clip("Gas_Hiss_Loop");
-            yso.FindProperty("sirenLoop").objectReferenceValue = Clip("Siren_Loop");
-            yso.FindProperty("staticLoop").objectReferenceValue = Clip("Radio_Static_Loop");
-            yso.FindProperty("squelch").objectReferenceValue = Clip("Radio_Squelch");
-            yso.FindProperty("callTone").objectReferenceValue = Clip("Radio_Call");
-            yso.FindProperty("roger").objectReferenceValue = Clip("Radio_Roger");
-            yso.FindProperty("click").objectReferenceValue = Clip("Radio_Click");
-            yso.FindProperty("hissAt").objectReferenceValue = valveAt;
-            yso.FindProperty("sirenAt").objectReferenceValue = pl.transform;
-            yso.ApplyModifiedPropertiesWithoutUndo();
-            outside.gameObject.SetActive(false);
-
-            var gateGo = new GameObject("Sc11GateHost");
-            gateGo.transform.SetParent(room, false);
-            refs.gate = gateGo.AddComponent<Sc06Gate>();
-            SetRef(refs.gate, "art", art);
-            var gso = new SerializedObject(refs.gate);
-            gso.FindProperty("titleText").stringValue = Sc11Content.GateTitle;
-            gso.FindProperty("questionText").stringValue = Sc11Content.GateQuestion;
-            gso.FindProperty("bodyText").stringValue = Sc11Content.GateBody;
-            gso.ApplyModifiedPropertiesWithoutUndo();
-
-            var guideGo = new GameObject("Sc11Guide");
-            guideGo.transform.SetParent(room, false);
-            guideGo.transform.localScale = Vector3.one * 0.55f;
-            refs.guide = guideGo.AddComponent<Sc09Guide>();
-            SetRef(refs.guide, "art", art);
-
-            refs.exitTarget = Marker("ExitTarget", room, new Vector3(ox + Sc11GateX, 0f, Sc11FenceZ + 0.3f), 0f);
-            refs.spawn = Marker("Spawn_SC11", room, new Vector3(ox + 1.2f, 0f, 1.4f), 180f);
-            refs.yardStand = Marker("Stand_SC11_Yard", room, new Vector3(ox + 1.0f, 0f, 0.9f), 180f);
-            refs.gateStand = Marker("Stand_SC11_Gate", room, new Vector3(ox + Sc11GateX + 0.9f, 0f, -0.2f), 180f);
-            refs.outsideStand = Marker("Stand_SC11_Outside", room, new Vector3(ox - 2.2f, 0f, -32f), 0f);
-            return refs;
+                gas = gasGo, purple = purpleGo, frost = frostRenderers, beacons = new[] { beacon1, beacon2 }, exitSign = exitGo, outside = outside.gameObject,
+                workers = workers, starts = startMarks, path = path, radio = radioT, radioScreen = screenT, valveAt = valveAt, sirenAt = pl.transform
+            }, new Vector3(ox + 1.2f, 0f, 1.4f), new Vector3(ox + 1.0f, 0f, 0.9f), new Vector3(ox + Sc11GateX + 0.9f, 0f, -0.2f),
+                new Vector3(ox - 2.2f, 0f, -32f), new Vector3(ox + Sc11GateX, 0f, Sc11FenceZ + 0.3f));
         }
     }
 }

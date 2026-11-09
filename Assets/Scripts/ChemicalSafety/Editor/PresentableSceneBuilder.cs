@@ -393,6 +393,7 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc11Guide").objectReferenceValue = sc11.guide;
             so.FindProperty("sc11Gate").objectReferenceValue = sc11.gate;
             so.FindProperty("mcqSc11").objectReferenceValue = mcq11;
+            so.FindProperty("sc11YardLook").boolValue = Sc11UseYard;
             so.FindProperty("envSc12").objectReferenceValue = env12.gameObject;
             so.FindProperty("spawnSc12").objectReferenceValue = sc12.spawn;
             so.FindProperty("sc12StartStand").objectReferenceValue = sc12.startStand;
@@ -701,6 +702,7 @@ namespace ChemicalSafety.Editor
             art.bnSc09RayInstructionPanel = B("BN_Sc09RayInstructionPanel");
             art.bnSc09RaySpill = B("BN_Sc09RaySpill");
             art.bnSc10RayInstructionPanel = B("BN_Sc10RayInstructionPanel");
+            art.bnSc11RayInstructionPanel = B("BN_Sc11RayInstructionPanel");
             art.sdsSc11 = LoadSprite("2D/Sc11/SDS_SC11");
             art.minimapSc11 = LoadSprite("2D/Sc11/Minimap");
             art.bnSc11InstructionPanel = B("BN_Sc11InstructionPanel");
@@ -787,6 +789,7 @@ namespace ChemicalSafety.Editor
             for (var wn = 4; wn <= 9; wn++)
                 art.voWrongNextBn[wn] = V("VO_Sc0" + wn + "WrongNext_bn.mp3");
             art.voWrongNextBn[10] = V("VO_Sc10WrongNext_bn.mp3");
+            art.voWrongNextBn[11] = V("VO_Sc11WrongNext_bn.mp3");
             art.voSc03Protocol = V("VO_Sc03Protocol_bn.mp3") ?? art.voSc03Protocol;
             var sc02Hint = V("VO_Sc02PlaceHint_bn.mp3");
             if (sc02Hint != null)
@@ -910,6 +913,10 @@ namespace ChemicalSafety.Editor
             art.voSc09RayPush = V("VO_Sc09RayPush_bn.mp3");
             art.voSc09RayBack = V("VO_Sc09RayBack_bn.mp3");
             art.voSc09RayGate = V("VO_Sc09RayGate_bn.mp3");
+            art.voSc11RayInstruction = V("VO_Sc11RayInstruction_bn.mp3");
+            art.voSc11RayAlarm = V("VO_Sc11RayAlarm_bn.mp3");
+            art.voSc11RayEvacuate = V("VO_Sc11RayEvacuate_bn.mp3");
+            art.voSc11RayCall = V("VO_Sc11RayCall_bn.mp3");
             art.voSc10RayInstruction = V("VO_Sc10RayInstruction_bn.mp3");
             art.voSc10RayLook = V("VO_Sc10RayLook_bn.mp3");
             art.voSc10RayPpe = V("VO_Sc10RayPpe_bn.mp3");

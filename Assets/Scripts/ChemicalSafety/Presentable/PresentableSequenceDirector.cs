@@ -212,6 +212,8 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc09Guide sc11Guide;
         [SerializeField] private Sc06Gate sc11Gate;
         [SerializeField] private PresentableMcqPanel mcqSc11;
+        [SerializeField, Tooltip("Set by the builder (Sc11UseYard): the scene holds the client's chlorine yard, played on the controller ray")]
+        private bool sc11YardLook;
         [SerializeField] private GameObject envSc12;
         [SerializeField] private Transform spawnSc12;
         [SerializeField] private Transform sc12StartStand;
@@ -4823,6 +4825,12 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator RunScenario11()
         {
+            if (sc11YardLook && PresentableInput.AllowedIn(11))
+            {
+                yield return RunScenario11Ray();
+                yield break;
+            }
+
             Stage("sc11");
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
@@ -4889,6 +4897,187 @@ namespace ChemicalSafety.Presentable
             Stage("sc11Done");
             if (envSc12 != null)
                 yield return RunScenario12();
+        }
+
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC11 on the controller ray: the client's chlorine cylinder yard. The glass instruction card over the live leak (hiss, gas), on
+        // Continue everything runs by itself: alarm (siren icon pressed automatically), everybody leaves and the learner steps back from the
+        // plume, the supervisor is called by radio (no conversation), then the "response completed" card (BACK replays) and the question.
+        // ------------------------------------------------------------------------------------------------------------------------
+        private IEnumerator RunScenario11Ray()
+        {
+            PresentableInput.ActiveScenario = 11;
+            Stage("sc11");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc11.SetActive(true);
+            clipboard.SetSheet(art.sdsSc11);
+            clipboard.SetVisible(false);
+            sc11Yard.Begin();
+            PlaceRig(sc11YardStand.position, sc11YardStand.forward);
+            yield return fader.FadeTo(0f, 0.9f);
+
+            Stage("sc11Intro");
+            _instructionClip = art.voSc11RayInstruction != null ? art.voSc11RayInstruction : art.voInstruction;
+            instructionPanel.SetContent(Sc11Content.RayInstruction, art.bnSc11RayInstructionPanel);
+            LockLocomotion(true); // the head is free, the body stays: no walking about in VR
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp + 0.42f); // raised: the cylinders and their labels stay uncovered
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoice(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue(); // Continue appears after the voice; the game play starts with the click
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            yield return RunSc11RayFlow();
+
+            LockLocomotion(false);
+            mcqSc11.SetWorldScale(1f);
+            sc11Yard.End();
+            Stage("sc11Done");
+            PresentableInput.ActiveScenario = 12; // Scenario 12 is finger touch (not in RayScenarios)
+            if (envSc12 != null)
+                yield return RunScenario12();
+        }
+
+        private IEnumerator Sc11RayStep(Sprite icon, string label, AudioClip voice, IEnumerator action, string stage)
+        {
+            Stage(stage);
+            var v = voice != null ? StartCoroutine(PlayVoice(voice)) : null;
+            yield return sc11Yard.WaitIcon(icon, label, sc10IconSeconds); // pressed by itself
+            yield return action;
+            if (v != null)
+                yield return v;
+            yield return PresentableFx.Wait(0.5f);
+        }
+
+        private IEnumerator Sc11RayAlarm()
+        {
+            sc11Yard.RaiseAlarm();
+            yield return PresentableFx.Wait(0.8f);
+        }
+
+        private IEnumerator Sc11RayCall()
+        {
+            yield return sc11Yard.RadioRaise();
+            yield return sc11Yard.RadioDial();
+            sc11Yard.RadioTalk(true); // the learner reports; no conversation, only the narration
+            yield return PresentableFx.Wait(1.8f);
+            sc11Yard.RadioTalk(false);
+            yield return PresentableFx.Wait(0.4f);
+            sc11Yard.RadioHide();
+        }
+
+        private IEnumerator RunSc11RayFlow()
+        {
+            var again = true;
+            var first = true;
+            while (again)
+            {
+                // the first round starts straight from the instruction card (the leak is already running); BACK starts the whole thing again
+                Stage("sc11Reveal");
+                if (!first)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc11Yard.ResetAll();
+                    PlaceRig(sc11YardStand.position, sc11YardStand.forward);
+                    yield return fader.FadeTo(0f, 1.0f);
+                }
+
+                first = false;
+                clipboard.SetVisible(false);
+
+                Stage("sc11Look");
+                yield return PresentableFx.Wait(1.2f); // hissing, the plume drifts
+
+                yield return Sc11RayStep(art.iconSc11Siren, Sc11Content.AlarmLabel, art.voSc11RayAlarm, Sc11RayAlarm(), "sc11Alarm");
+
+                Stage("sc11Evacuate");
+                var evacVoice = StartCoroutine(PlayVoice(art.voSc11RayEvacuate));
+                StartCoroutine(sc11Yard.Evacuate());
+                yield return Glide(sc11GateStand.position, 3.2f); // the learner steps back from the plume while everybody leaves
+                var evacGuard = 0f;
+                while (sc11Yard.WorkersOut < sc11Yard.WorkerCount && evacGuard < 2.5f) // the last ones keep walking off during the next step
+                {
+                    evacGuard += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                yield return evacVoice;
+
+                yield return Sc11RayStep(art.iconSc11Call, Sc11Content.CallLabel, art.voSc11RayCall, Sc11RayCall(), "sc11Call");
+                Stage("sc11Called");
+                yield return PresentableFx.Wait(0.4f);
+
+                Stage("sc11Gate");
+                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK (the whole process again), 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc11Gate.Back += OnBack;
+                sc11Gate.Next += OnNext;
+                sc11Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoice(art.voSc11Gate));
+                while (choice == 0)
+                    yield return null;
+                sc11Gate.Back -= OnBack;
+                sc11Gate.Next -= OnNext;
+                sc11Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+            }
+
+            Stage("sc11Question");
+            Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc11.SetWorldScale(sc06PopupScale);
+            mcqSc11.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc11, BuildSc11RayQuestion(), false, 11);
+        }
+
+        private static PresentableMcqPanel.Question BuildSc11RayQuestion()
+        {
+            var labels = Sc11Content.RayOptionLabels;
+            var reasons = Sc11Content.RayOptionReasons;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = Sc11Content.RayOptionWrongTitle[i],
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc11Content.QuestionHeader,
+                prompt = Sc11Content.RayQuestionPrompt,
+                correctIndex = Sc11Content.RayCorrectIndex,
+                correctTitle = Sc11Content.RayCorrectTitle,
+                nextLabel = Sc11Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc11Content.TagCorrect,
+                tagWrong = Sc11Content.TagWrong
+            };
         }
 
         // SC12: PPE Donning Station. Instruction card -> SDS -> stand on the arrow -> four pick rounds (goggles / gloves / respirator /

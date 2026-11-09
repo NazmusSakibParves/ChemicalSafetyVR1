@@ -140,15 +140,19 @@ namespace ChemicalSafety.Editor
         }
 
         private static void Sc11BuildRack(Transform root, float ox, PresentableArt art, out Transform valveAt, out Renderer[] frostRenderers,
-            out ParticleSystem gas, out ParticleSystem purple)
+            out ParticleSystem gas, out ParticleSystem purple, bool yard = false)
         {
             valveAt = null;
             frostRenderers = new Renderer[0];
             gas = null;
             purple = null;
             var glowTex = art.radialGlow != null ? art.radialGlow.texture : null;
-            const float z = -3.30f;
-            var xs = new[] { ox + 3.6f, ox + 2.67f, ox + 1.74f, ox + 0.81f, ox - 0.12f };
+            // yard = the chlorine yard of the controller-ray redo: grey / green cylinders against the concrete wall, the leak in module 1
+            var z = yard ? -3.12f : -3.30f;
+            var leakModule = yard ? 1 : 4;
+            var xs = yard
+                ? new[] { ox + 0.0f, ox - 0.93f, ox - 1.86f, ox - 2.79f, ox - 3.72f }
+                : new[] { ox + 3.6f, ox + 2.67f, ox + 1.74f, ox + 0.81f, ox - 0.12f };
             for (var m = 0; m < xs.Length; m++)
             {
                 var module = Sc11Spawn("GasCylinder.glb", root);
@@ -167,7 +171,11 @@ namespace ChemicalSafety.Editor
                     {
                         r.shadowCastingMode = ShadowCastingMode.On;
                         var src = r.sharedMaterial;
-                        var blue = Mat("Sc11CylinderBlue", new Color(0.38f, 0.55f, 0.82f), 0.5f, 0.45f, src.GetTexture("_BaseMap"));
+                        var blue = yard
+                            ? (m % 2 == 0
+                                ? Mat("Sc11CylinderGreen", new Color(0.30f, 0.46f, 0.35f), 0.38f, 0.4f, src.GetTexture("_BaseMap"))
+                                : Mat("Sc11CylinderGrey", new Color(0.60f, 0.62f, 0.64f), 0.38f, 0.4f, src.GetTexture("_BaseMap")))
+                            : Mat("Sc11CylinderBlue", new Color(0.38f, 0.55f, 0.82f), 0.5f, 0.45f, src.GetTexture("_BaseMap"));
                         if (src.GetTexture("_BumpMap") != null)
                         {
                             blue.SetTexture("_BumpMap", src.GetTexture("_BumpMap"));
@@ -178,7 +186,10 @@ namespace ChemicalSafety.Editor
                     }
                 }
 
-                if (m == 4)
+                if (yard && m <= 2)
+                    Sc11ChlorineLabels(module.transform, root);
+
+                if (m == leakModule)
                 {
                     // the leaking cylinder: its valve is the front-left one of the left module
                     Transform leak = null;
@@ -192,20 +203,81 @@ namespace ChemicalSafety.Editor
                     valveAt.position = top;
                     var gasMat = ParticleMat("Sc11GasWhite", glowTex, false);
                     var purpleMat = ParticleMat("Sc11GasPurple", glowTex, false);
-                    gas = Sc11Gas("LeakGas", root, top + new Vector3(-0.04f, 0.02f, 0.06f), new Vector3(-0.5f, 0.25f, 0.8f), new Color(0.92f, 0.95f, 1f, 0.42f), gasMat, 0.34f, 3.2f);
-                    purple = Sc11Gas("LeakGasPurple", root, top + new Vector3(-0.02f, 0.02f, 0.05f), new Vector3(-0.35f, 0.4f, 0.7f), new Color(0.62f, 0.36f, 0.95f, 0.5f), purpleMat, 0.4f, 3.6f);
+                    if (yard)
+                    {
+                        // chlorine: pale yellow-green plume drifting to the left of the view (the wind sock points the same way), thicker after the alarm
+                        gas = Sc11Gas("LeakGas", root, top + new Vector3(0.06f, 0.003f, 0.0f), new Vector3(1.0f, 0.10f, 0.14f), new Color(0.80f, 0.88f, 0.42f, 0.38f), gasMat, 0.30f, 4.2f);
+                        purple = Sc11Gas("LeakGasThick", root, top + new Vector3(0.06f, 0.003f, 0.0f), new Vector3(1.0f, 0.14f, 0.16f), new Color(0.62f, 0.78f, 0.22f, 0.5f), purpleMat, 0.36f, 4.6f);
+                    }
+                    else
+                    {
+                        gas = Sc11Gas("LeakGas", root, top + new Vector3(-0.04f, 0.02f, 0.06f), new Vector3(-0.5f, 0.25f, 0.8f), new Color(0.92f, 0.95f, 1f, 0.42f), gasMat, 0.34f, 3.2f);
+                        purple = Sc11Gas("LeakGasPurple", root, top + new Vector3(-0.02f, 0.02f, 0.05f), new Vector3(-0.35f, 0.4f, 0.7f), new Color(0.62f, 0.36f, 0.95f, 0.5f), purpleMat, 0.4f, 3.6f);
+                    }
+
                     var em = purple.emission;
                     em.rateOverTime = 0f;
-                    // frost crust around the valve: a few flattened white blobs
-                    var frostMat = MatAlpha("Sc11Frost", glowTex, new Color(0.88f, 0.95f, 1f, 0.8f), false);
-                    var list = new System.Collections.Generic.List<Renderer>();
-                    for (var i = 0; i < 4; i++)
+                    if (yard)
                     {
-                        var f = QuadObj("Frost_" + i, root, top + new Vector3(((i % 2) - 0.5f) * 0.05f, -0.04f - i * 0.045f, 0.14f - i * 0.02f),
-                            new Vector3(0f, 180f, 0f), new Vector2(0.16f - i * 0.02f, 0.12f), frostMat);
-                        f.transform.SetParent(root, true);
-                        Object.DestroyImmediate(f.GetComponent<Collider>());
-                        list.Add(f.GetComponent<Renderer>());
+                        // cold white vapour right at the valve (the gas is freezing as it expands): small, soft, lifted a little by the draught
+                        var mist = Sc11Gas("ColdMist", root, top + new Vector3(0.06f, 0.003f, 0.0f), new Vector3(1.0f, 0.18f, 0.12f), new Color(0.96f, 0.98f, 1f, 0.42f),
+                            ParticleMat("Sc11ColdMist", glowTex, false), 0.16f, 2.0f);
+                        var mem = mist.emission;
+                        mem.rateOverTime = 14f;
+                    }
+
+                    // frost crust around the valve
+                    var list = new System.Collections.Generic.List<Renderer>();
+                    if (yard)
+                    {
+                        // ice crust on the valve and the cylinder shoulder: ragged white-blue patches (alpha clipped texture) on squashed spheres
+                        var iceTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc11Yard/Yard_Frost.png");
+                        var ice = Mat("Sc11FrostIce", Color.white, 0.2f, 0f, iceTex, new Color(0.10f, 0.12f, 0.15f), false, true);
+                        // like the client's picture: a smooth white ice cap over the valve collars (rounded, opaque), a sparse skirt where it thins out on the
+                        // shoulder, a clump of ice on the valve mouth and a brass nozzle there
+                        var iceMouthTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc11Yard/Yard_FrostMouth.png");
+                        var iceMouth = Mat("Sc11FrostIceMouth", Color.white, 0.2f, 0f, iceMouthTex, new Color(0.10f, 0.12f, 0.15f), false, true);
+                        var iceCap = Mat("Sc11FrostCap", new Color(0.93f, 0.96f, 1f), 0.12f, 0f, iceMouthTex, new Color(0.06f, 0.07f, 0.09f), false, false);
+                        var brass = Mat("Sc11Brass", new Color(0.80f, 0.60f, 0.24f), 0.6f, 0.9f);
+                        var nozzle = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        nozzle.name = "BrassNozzle";
+                        nozzle.transform.SetParent(root, true);
+                        nozzle.transform.position = top + new Vector3(0.028f, 0.003f, 0f);
+                        nozzle.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                        nozzle.transform.localScale = new Vector3(0.038f, 0.034f, 0.038f); // cylinder: y is half the length
+                        nozzle.GetComponent<MeshRenderer>().sharedMaterial = brass;
+                        Object.DestroyImmediate(nozzle.GetComponent<Collider>());
+                        foreach (var spec in new[]
+                                 {
+                                     new Vector4(0.000f, -0.040f, 0.114f, 0.108f), // the cap on the collar rings (opaque)
+                                     new Vector4(0.052f, 0.003f, 0.050f, 0.040f), // the mouth of the valve
+                                     new Vector4(0.000f, -0.100f, 0.172f, 0.062f) // the skirt: sparse specks
+                                 })
+                        {
+                            var sp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                            sp.name = "FrostCrust";
+                            sp.transform.SetParent(root, true);
+                            sp.transform.position = top + new Vector3(spec.x, spec.y, 0f);
+                            sp.transform.localScale = new Vector3(spec.z, spec.w, spec.z);
+                            var rr = sp.GetComponent<MeshRenderer>();
+                            rr.sharedMaterial = spec.w > 0.1f ? iceCap : spec.x > 0f ? iceMouth : ice;
+                            rr.shadowCastingMode = ShadowCastingMode.Off;
+                            Object.DestroyImmediate(sp.GetComponent<Collider>());
+                            list.Add(rr);
+                        }
+                        list.Add(nozzle.GetComponent<MeshRenderer>());
+                    }
+                    else
+                    {
+                        var frostMat = MatAlpha("Sc11Frost", glowTex, new Color(0.88f, 0.95f, 1f, 0.8f), false);
+                        for (var i = 0; i < 4; i++)
+                        {
+                            var f = QuadObj("Frost_" + i, root, top + new Vector3(((i % 2) - 0.5f) * 0.05f, -0.04f - i * 0.045f, 0.14f - i * 0.02f),
+                                new Vector3(0f, 180f, 0f), new Vector2(0.16f - i * 0.02f, 0.12f), frostMat);
+                            f.transform.SetParent(root, true);
+                            Object.DestroyImmediate(f.GetComponent<Collider>());
+                            list.Add(f.GetComponent<Renderer>());
+                        }
                     }
 
                     frostRenderers = list.ToArray();
@@ -217,6 +289,78 @@ namespace ChemicalSafety.Editor
             var pq = QuadObj("Puddle", root, new Vector3(ox + 3.5f, 0.02f, -1.2f), new Vector3(90f, 0f, 0f), new Vector2(1.6f, 0.9f), puddle);
             pq.transform.SetParent(root, true);
             Object.DestroyImmediate(pq.GetComponent<Collider>());
+        }
+
+        /// <summary>The white CHLORINE stencil with the skull and corrosion diamonds, wrapped on the front (+Z side) of every cylinder of a rack
+        /// module: a curved strip that follows the real body radius (read from the mesh), so it sits ON the metal instead of floating in front.</summary>
+        private static void Sc11ChlorineLabels(Transform module, Transform root)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/2D/Sc11Yard/Label_Chlorine.png");
+            if (tex == null)
+                return;
+            var mat = Mat("Sc11ChlorineLabel", Color.white, 0.25f, 0f, tex, null, false, true);
+            mat.SetFloat("_Cull", 0f);
+            Mesh mesh = null;
+            foreach (var t in module.GetComponentsInChildren<Transform>(true))
+            {
+                if (!t.name.StartsWith("SM_GasCylinder"))
+                    continue;
+                var b = BoundsOfTree(t);
+                if (b.size.y < 0.5f)
+                    continue;
+                var yc = b.min.y + b.size.y * 0.50f;
+                var c = new Vector2(b.center.x, b.center.z);
+                if (mesh == null)
+                    mesh = Sc11LabelMesh(Mathf.Max(b.size.x, b.size.z) * 0.5f + 0.002f); // the body radius = half the width of the (vertical) cylinder's bounds
+                var go = new GameObject("ChlorineLabel");
+                go.transform.SetParent(root, true);
+                go.transform.position = new Vector3(c.x, yc, c.y);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = mat;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+        }
+
+        /// <summary>A strip of a cylinder (axis through the origin, centred on +Z, about 110 degrees) with uv 0..1; u runs to the viewer's right.</summary>
+        private static Mesh Sc11LabelMesh(float radius)
+        {
+            var path = GenDir + "/Mesh_Sc11CylLabel.asset";
+            var m = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (m == null)
+            {
+                m = new Mesh();
+                AssetDatabase.CreateAsset(m, path);
+            }
+
+            const int seg = 14;
+            var arc = 1.9f; // radians
+            var h = arc * radius * 1.25f;
+            var v = new Vector3[(seg + 1) * 2];
+            var uv = new Vector2[v.Length];
+            var tri = new System.Collections.Generic.List<int>();
+            for (var i = 0; i <= seg; i++)
+            {
+                var th = (i / (float)seg - 0.5f) * arc;
+                var x = Mathf.Sin(th) * radius;
+                var z = Mathf.Cos(th) * radius;
+                v[i * 2] = new Vector3(x, -h * 0.5f, z);
+                v[i * 2 + 1] = new Vector3(x, h * 0.5f, z);
+                var u = 0.5f - th / arc; // +X is the viewer's left (the viewer faces -Z)
+                uv[i * 2] = new Vector2(u, 0f);
+                uv[i * 2 + 1] = new Vector2(u, 1f);
+                if (i < seg)
+                    tri.AddRange(new[] { i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2 });
+            }
+
+            m.Clear();
+            m.vertices = v;
+            m.uv = uv;
+            m.triangles = tri.ToArray();
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            EditorUtility.SetDirty(m);
+            return m;
         }
     }
 }

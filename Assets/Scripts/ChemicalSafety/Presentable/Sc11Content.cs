@@ -39,6 +39,17 @@ namespace ChemicalSafety.Presentable
         public static string[] OptionFeedback => Loc.A("SC11", "OptionFeedback");
         public static string[] OptionWrongTitle => Loc.A("SC11", "OptionWrongTitle");
 
+        // controller-ray yard (chlorine cylinder): the client's instruction and options, tick / cross with a reason under every option
+        public static string RayInstruction => Loc.T("SC11", "RayInstruction");
+        public static string RayQuestionPrompt => Loc.T("SC11", "RayQuestionPrompt");
+        public static string RayCorrectTitle => Loc.T("SC11", "RayCorrectTitle");
+        public static string TagCorrect => Loc.T("SC11", "TagCorrect");
+        public static string TagWrong => Loc.T("SC11", "TagWrong");
+        public const int RayCorrectIndex = 3;
+        public static string[] RayOptionLabels => Loc.A("SC11", "RayOptionLabels");
+        public static string[] RayOptionReasons => Loc.A("SC11", "RayOptionReasons");
+        public static string[] RayOptionWrongTitle => Loc.A("SC11", "RayOptionWrongTitle");
+
         public static string ModuleComplete => Loc.T("SC11", "ModuleComplete");
     }
 }

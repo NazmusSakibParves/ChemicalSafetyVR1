@@ -2588,8 +2588,92 @@ namespace ChemicalSafety.Presentable
             Click(mcq10.transform, "NextButton");
         }
 
+        // SC11 on the controller ray (client's chlorine yard): glass card over the live leak, then everything by itself, BACK replays once, question
+        private IEnumerator Sc11RaySmoke(AudioSource voiceSrc)
+        {
+            Say("SC11 input mode = " + PresentableInput.Mode + ", ray active = " + PresentableInput.RayActive + ", scenario = " + PresentableInput.ActiveScenario);
+            var yard = Get<Sc11Yard>(_director, "sc11Yard");
+            var gate = Get<Sc06Gate>(_director, "sc11Gate");
+            var mcq11 = Get<PresentableMcqPanel>(_director, "mcqSc11");
+            yield return WaitStage("sc11Intro", 80f);
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("119_sc11_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC11 instruction card", ip.transform);
+            yield return RayIntroContinue("SC11");
+            for (var round = 0; round < 2; round++)
+            {
+                var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
+                var shots = round == 0;
+                yield return new WaitForSeconds(1.8f);
+                if (shots)
+                    yield return Shot("120_sc11_look");
+                yield return Sc10Wait(() => yard.IconVisible, 20f);
+                yield return new WaitForSeconds(0.6f);
+                Say("SC11 " + tag + ": siren icon visible = " + yard.IconVisible + " (expected True, pressed by itself)");
+                if (shots)
+                    yield return Shot("121_sc11_alarm_icon");
+                yield return Sc10Wait(() => yard.AlarmOn, 20f);
+                yield return new WaitForSeconds(2.0f);
+                Say("SC11 " + tag + ": alarm on = " + yard.AlarmOn + ", siren sound = " + yard.SirenPlaying + " (expected True)");
+                if (shots)
+                    yield return Shot("122_sc11_alarm_on");
+                yield return new WaitForSeconds(2.5f);
+                if (shots)
+                    yield return Shot("123_sc11_evacuate");
+                yield return Sc10Wait(() => yard.WorkersOut >= yard.WorkerCount, 60f);
+                Say("SC11 " + tag + ": workers out = " + yard.WorkersOut + "/" + yard.WorkerCount + " (expected all), head = " + Camera.main.transform.position.ToString("F2"));
+                yield return Sc10Wait(() => yard.RadioVisible, 40f);
+                yield return new WaitForSeconds(2.4f);
+                Say("SC11 " + tag + ": radio in hand = " + yard.RadioVisible + ", calling = " + yard.Calling);
+                if (shots)
+                    yield return Shot("124_sc11_call");
+                yield return Sc10Wait(() => gate.Visible, 40f);
+                yield return new WaitForSeconds(1.3f);
+                Say("SC11 " + tag + ": gate card visible = " + gate.Visible + " (expected True)");
+                LayoutCheck("SC11 gate card", gate.Card);
+                if (shots)
+                    yield return Shot("127_sc11_gate");
+                Click(gate.Card, round == 0 ? "BackButton" : "NextButton");
+                if (round == 0)
+                {
+                    yield return new WaitForSeconds(2.0f);
+                    yield return Sc10Wait(() => !yard.AlarmOn, 10f);
+                }
+            }
+
+            yield return WaitStage("sc11Question", 20f);
+            yield return Sc10Wait(() => mcq11.IsOpen, 8f);
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("128_sc11_question");
+            LayoutCheck("SC11 MCQ", mcq11.transform);
+            var cur = mcq11.Current;
+            Say("SC11 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq11.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.2f);
+            Say("SC11 answer voice (wrong pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected VO_Sc11WrongNext_bn)");
+            yield return Shot("129_sc11_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq11.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            Say("SC11 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC11 MCQ reveal", mcq11.transform);
+            Click(mcq11.transform, "NextButton");
+            yield return WaitStage("sc11Done", 20f);
+        }
+
         private IEnumerator Sc11Smoke(InstructionPanelView panel, AudioSource voiceSrc)
         {
+            if (PresentableInput.AllowedIn(11) && Get<bool>(_director, "sc11YardLook"))
+            {
+                yield return Sc11RaySmoke(voiceSrc);
+                yield break;
+            }
+
             yield return WaitStage("sc11Intro", 40f);
             var yard = Get<Sc11Yard>(_director, "sc11Yard");
             var gate = Get<Sc06Gate>(_director, "sc11Gate");

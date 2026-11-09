@@ -337,6 +337,16 @@ CLIPS = {
         BN_VOICE,
         "গ্যাস লিক সামলানোর অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন। আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
+    # Scenario 11 on the controller ray (chlorine yard, automatic flow): narration only, nothing to touch
+    "VO_Sc11WrongNext_bn": (BN_VOICE, "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % TO_NUM[12]),
+    "VO_Sc11RayInstruction_bn": (
+        BN_VOICE,
+        "আপনি একজন সাধারণ শ্রমিক। কাজ করার সময় একটি গ্যাসের সিলিন্ডারের কাছে হিসহিস শব্দ শুনলেন এবং গ্যাস বের হতে দেখলেন। "
+        "যা গ্যাস লিকের সুস্পষ্ট লক্ষণ। এখন সঠিক পদক্ষেপ নিন।",
+    ),
+    "VO_Sc11RayAlarm_bn": (BN_VOICE, "সিলিন্ডার থেকে গ্যাস বেরোচ্ছে। জরুরি অ্যালার্ম বাজিয়ে সবাইকে সতর্ক করা হচ্ছে।"),
+    "VO_Sc11RayEvacuate_bn": (BN_VOICE, "সবাই এলাকা খালি করে নিরাপদ দূরত্বে সরে যাচ্ছে। আপনিও গ্যাস থেকে দূরে সরে আসুন।"),
+    "VO_Sc11RayCall_bn": (BN_VOICE, "নিরাপদ জায়গা থেকে সুপারভাইজারকে কল করে ঘটনাটি জানানো হচ্ছে।"),
     "VO_Sc11Complete_bn": (BN_VOICE, complete_bn(11)),
     "VO_Sc11Complete_en": (EN_VOICE, complete_en(11)),
     "VO_SC12_Instruction_bn": (BN_VOICE, "আপনি একজন প্রসেস অপারেটর এবং ক্ষয়কারী রাসায়নিক সামলাতে প্রসেস এলাকায় ঢুকতে যাচ্ছেন। নিরাপত্তা তথ্যপত্র পড়ুন, তারপর পুরো পিপিই সেট পরুন।"),
@@ -483,6 +493,11 @@ CLIPS_EN = {
     "VO_Sc11RadioPlayer": "Supervisor, I am secure outside, calling in my report. Section B is evacuated.",
     "VO_Sc11RadioReply": "Copy that. Stay clear of the area. The response team is on its way.",
     "VO_Sc11Gate": gate_en("Gas leakage response complete."),
+    "VO_Sc11WrongNext": "Wrong answer. Read the reason for each option. Click Next to go to Scenario twelve.",
+    "VO_Sc11RayInstruction": "You are a general worker. While working, you heard a hissing sound from a gas cylinder and saw gas leaking. These are clear signs of a gas leak. Now take the correct action.",
+    "VO_Sc11RayAlarm": "Gas is leaking from the cylinder. The emergency alarm is raised to warn everyone.",
+    "VO_Sc11RayEvacuate": "Everyone leaves the area and moves to a safe distance. Move away from the gas as well.",
+    "VO_Sc11RayCall": "From a safe place, the supervisor is called and told about the leak.",
     "VO_SC12_Instruction": "You are a process operator about to enter the process area to handle a corrosive chemical. Read the SDS, then put on the full ensemble.",
     "VO_Sc12Sds": "Read the Safety Data Sheet. It lists the PPE for each hazard.",
     "VO_Sc12Stand": "Stand on the green arrow in front of the lockers.",

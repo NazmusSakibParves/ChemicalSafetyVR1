@@ -319,6 +319,12 @@ namespace ChemicalSafety.Presentable
         public AudioClip voSc11Gate;
         public AudioClip voSc11CompleteBn;
         public AudioClip voSc11CompleteEn;
+        [Header("Scenario 11 on the controller ray (chlorine yard)")]
+        public Sprite bnSc11RayInstructionPanel;
+        public AudioClip voSc11RayInstruction;
+        public AudioClip voSc11RayAlarm;
+        public AudioClip voSc11RayEvacuate;
+        public AudioClip voSc11RayCall;
         [Header("Scenario 12 (PPE donning station)")]
         public Sprite sdsSc12;
         public Sprite bnSc12InstructionPanel;

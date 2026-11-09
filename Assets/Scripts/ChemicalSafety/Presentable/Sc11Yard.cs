@@ -332,7 +332,7 @@ namespace ChemicalSafety.Presentable
         }
 
         /// <summary>Shows a neon icon 0.62 m in front of the user and waits until a finger touches it.</summary>
-        public IEnumerator WaitIcon(Sprite icon, string label)
+        public IEnumerator WaitIcon(Sprite icon, string label, float autoClickAfter = 0f)
         {
             EnsureIcon();
             if (_icon == null)
@@ -368,8 +368,11 @@ namespace ChemicalSafety.Presentable
 
             yield return PresentableFx.Wait(0.3f);
             _iconPoke.SetInteractable(true);
-            while (!_iconPoked)
+            var shown = 0f;
+            // autoClickAfter > 0 (controller-ray yard): the icon presses itself after that many seconds, nobody has to click
+            while (!_iconPoked && !(autoClickAfter > 0f && shown >= autoClickAfter))
             {
+                shown += Time.deltaTime;
                 _icon.localScale = Vector3.one * (baseScale * (1f + 0.05f * Mathf.Sin(Time.time * 4f)));
                 yield return null;
             }

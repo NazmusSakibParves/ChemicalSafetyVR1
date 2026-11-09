@@ -116,6 +116,11 @@
       "en": "YOU",
       "bn": "আপনি"
     },
+    { "key": "RayInstruction", "en": "You are a general worker. While working, you heard a hissing sound from a gas cylinder and saw gas leaking — clear signs of a gas leak. Now take the correct action.", "bn": "আপনি একজন সাধারণ শ্রমিক। কাজ করার সময় একটি গ্যাসের সিলিন্ডারের কাছে হিসহিস শব্দ শুনলেন এবং গ্যাস বের হতে দেখলেন। যা গ্যাস লিকের সুস্পষ্ট লক্ষণ। এখন সঠিক পদক্ষেপ নিন।" },
+    { "key": "RayQuestionPrompt", "en": "You are a Factory worker. While working, you hear hissing and see gas leaking from a gas cylinder. What will you do?", "bn": "আপনি একজন সাধারণ শ্রমিক। কাজ করার সময় একটি গ্যাসের সিলিন্ডারের কাছে হিসহিস শব্দ শুনলেন এবং গ্যাস বের হতে দেখলেন। এখন কী করবেন?" },
+    { "key": "RayCorrectTitle", "en": "RIGHT ANSWER", "bn": "সঠিক উত্তর" },
+    { "key": "TagCorrect", "en": "CORRECT", "bn": "সঠিক" },
+    { "key": "TagWrong", "en": "WRONG", "bn": "ভুল" },
     {
       "key": "RadioOut",
       "en": "PLAYER: [to supervisor] Understood. I am waiting outside the gate. Over and out.",
@@ -123,6 +128,41 @@
     }
   ],
   "arrays": [
+    {
+      "key": "RayOptionLabels",
+      "en": [
+        "Walk up closely and try to tighten the valve with your bare hands.",
+        "Cover the leaking valve with a wet cloth to stop the gas.",
+        "Ignore it; minor leaks are normal in industrial yards.",
+        "Evacuate the area immediately upwind and trigger the facility emergency alarm."
+      ],
+      "bn": [
+        "খালি হাতে ভালভটি শক্ত করে বন্ধ করার চেষ্টা করব।",
+        "ভেজা কাপড় চাপা দিয়ে গ্যাসের লিক বন্ধ করব।",
+        "কিছু করব না, কারখানায় সামান্য গ্যাস বের হওয়া স্বাভাবিক।",
+        "দেরি না করে বাতাস যেদিক থেকে আসছে, সেদিকে সরে যাব এবং জরুরি অ্যালার্ম বাজাব।"
+      ]
+    },
+    {
+      "key": "RayOptionReasons",
+      "en": [
+        "Going close without PPE and training exposes you to the toxic gas and can make the leak worse.",
+        "A wet cloth cannot seal a pressurized valve. Chlorine reacts with water and the gas spreads.",
+        "A leak never fixes itself. The gas builds up and can poison people nearby.",
+        "Moving upwind keeps you out of the gas, and the alarm warns everyone so trained people can respond."
+      ],
+      "bn": [
+        "পিপিই ও প্রশিক্ষণ ছাড়া কাছে গেলে বিষাক্ত গ্যাসের ঝুঁকি থাকে এবং লিক আরও বাড়তে পারে।",
+        "ভেজা কাপড় চাপযুক্ত ভালভ আটকাতে পারে না। ক্লোরিন পানির সাথে বিক্রিয়া করে এবং গ্যাস ছড়িয়ে পড়ে।",
+        "গ্যাস লিক কখনো নিজে থেকে ঠিক হয় না। গ্যাস জমে আশপাশের মানুষ বিষাক্ত হতে পারে।",
+        "বাতাসের উজানে সরে গেলে গ্যাস থেকে দূরে থাকা যায়, আর অ্যালার্ম সবাইকে সতর্ক করে প্রশিক্ষিত দলকে ব্যবস্থা নিতে সাহায্য করে।"
+      ]
+    },
+    {
+      "key": "RayOptionWrongTitle",
+      "en": [ "WRONG", "WRONG", "WRONG", "" ],
+      "bn": [ "ভুল", "ভুল", "ভুল", "" ]
+    },
     {
       "key": "OptionLabels",
       "en": [
