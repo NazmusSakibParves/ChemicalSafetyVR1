@@ -85,6 +85,8 @@ namespace ChemicalSafety.Editor
             var env6 = new GameObject("Environment_SC06").transform;
             var sc6 = BuildSc06Room(env6, art);
             Sc06BakeProbe(env, env6);
+            // Scenarios 13-18 get their own COPY of this finished room (before the Scenario 8/9/10 mounts are added); nothing here is changed
+            ScCheckCaptureHall(env6.Find("Room"));
             // Scenario 8 (controller ray) plays in this room: its own pieces are added while the room is on (bounds need active renderers)
             var sc8r = Sc08UseFactory ? Sc08BuildRayStation(env6.Find("Room"), sc6, art) : null;
             // Scenario 9 (controller ray) plays in the same room: shower behind the learner, accident props, all hidden outside Scenario 9

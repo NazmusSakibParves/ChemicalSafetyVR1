@@ -50,7 +50,7 @@ def lines(n):
 
     add("Instruction", s["InstructionEnglish"]["en"], s["InstructionEnglish"]["bn"])
     add("StartCard", s["StartCard"]["en"], s["StartCard"]["bn"])
-    add("BottleCard", s["BottleTitle"]["en"] + ". " + s["BottleMcq"]["en"] + ". " + s["BottleHint"]["en"], s["BottleTitle"]["bn"] + "। " + s["BottleMcq"]["bn"] + "। " + s["BottleHint"]["bn"])
+    add("BottleName", s["BottleTitle"]["en"], s["BottleTitle"]["bn"])
     for i, q in enumerate(data["questions"], 1):
         add("Q%d" % i, q["prompt"]["en"], q["prompt"]["bn"])
     for key in ("Right", "Wrong", "ResultGood", "ResultLow", "ResultGoodLast", "ResultLowLast"):
@@ -83,9 +83,19 @@ async def main():
                     shutil.copyfile(done[(lang, text)], path)
                     print("copied", path)
                     continue
-                await edge_tts.Communicate(say, voice).save(path)
+                for attempt in range(4):
+                    try:
+                        await edge_tts.Communicate(say, voice).save(path)
+                        break
+                    except edge_tts.exceptions.NoAudioReceived:
+                        if attempt < 3:
+                            print("retry %d for SC%d_%s_%s" % (attempt + 1, n, key, lang))
+                            await asyncio.sleep(2 * (attempt + 1))
+                        else:
+                            print("FAILED SC%d_%s_%s (skipped)" % (n, key, lang))
                 done[(lang, text)] = path
-                print("wrote", path, os.path.getsize(path), "bytes")
+                if os.path.exists(path):
+                    print("wrote", path, os.path.getsize(path), "bytes")
 
 
 if __name__ == "__main__":

@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check' with the supervisor. He asks three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে সুপারভাইজারের সঙ্গে একটি ‘কাজ-পূর্ব নিরাপত্তা পরীক্ষা’ পাস করতে হবে। তিনি এসডিএস থেকে তিনটি প্রশ্ন করবেন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
+      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
     },
     {
       "key": "Instructions",
@@ -48,13 +48,13 @@
     },
     {
       "key": "ChemName",
-      "en": "Hydrochloric Acid (HCL)",
-      "bn": "হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Bleaching Powder",
+      "bn": "ব্লিচিং পাউডার"
     },
     {
       "key": "BottleTitle",
-      "en": "Chemical Name: Hydrochloric Acid (HCL)",
-      "bn": "রাসায়নিকের নাম: হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Chemical Name: Bleaching Powder",
+      "bn": "রাসায়নিকের নাম: ব্লিচিং পাউডার"
     },
     {
       "key": "ChemLabel",
@@ -221,41 +221,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Which protective equipment does the SDS recommend for a corrosive liquid like hydrochloric acid?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিডের মতো ক্ষয়কারী তরলের জন্য নিরাপত্তা তথ্যপত্র কোন সুরক্ষা সরঞ্জাম সুপারিশ করে?"
+        "en": "First, tell me — what is the first-aid response for eye contact with Bleaching Powder?",
+        "bn": "প্রথমে বলুন, ব্লিচিং পাউডার চোখে লাগলে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Safety glasses + cotton gloves",
-            "bn": "সেফটি চশমা + সুতির গ্লাভস"
+            "en": "Rinse cautiously with water for several minutes, remove contact lenses if possible, continue rinsing, and immediately call a doctor/poison center.",
+            "bn": "কয়েক মিনিট ধরে সতর্কতার সঙ্গে পানি দিয়ে ধোব, কন্ট্যাক্ট লেন্স থাকলে খুলে ফেলব, ধোয়া চালিয়ে যাব এবং সঙ্গে সঙ্গে ডাক্তার/বিষ বিশেষজ্ঞের সাহায্য নেব।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Goggles + face shield, neoprene gloves, apron",
-            "bn": "ফেস শিল্ডসহ গগলস, নিওপ্রিন গ্লাভস, অ্যাপ্রন"
+            "en": "Neutralize with a weak acid.",
+            "bn": "দুর্বল অ্যাসিড দিয়ে নিষ্ক্রিয় করব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Normal glasses + cloth mask",
-            "bn": "সাধারণ চশমা + কাপড়ের মাস্ক"
+            "en": "Wash with soap and water for 2 minutes.",
+            "bn": "সাবান-পানি দিয়ে ২ মিনিট ধোব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Nitrile gloves only",
-            "bn": "শুধু নাইট্রাইল গ্লাভস"
+            "en": "Apply ointment and cover the eye.",
+            "bn": "চোখে মলম লাগিয়ে ঢেকে দেব।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Flush for several minutes, remove lenses if possible, continue rinsing, and seek immediate medical help.",
+        "bn": "সঠিক! কয়েক মিনিট পানি দিয়ে ধুয়ে, প্রয়োজনে লেন্স খুলে, ধোয়া চালিয়ে যেতে হবে এবং সঙ্গে সঙ্গে ডাক্তারের সাহায্য নিতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Never use a neutralizing agent in the eyes. Soapy water or ointment are not suitable for eyes. SDS Section 4 requires prolonged flushing with water and immediate medical attention.",
+        "bn": "চোখে কোনো নিষ্ক্রিয়কারী পদার্থ (Neutralizing Agent) ব্যবহার করবেন না। সাবান-পানি বা মলম চোখের জন্য উপযুক্ত নয়। SDS-এর ৪ নম্বর অংশ অনুযায়ী দীর্ঘ সময় পানি দিয়ে ধোয়া এবং অবিলম্বে চিকিৎসকের সাহায্য নেওয়া প্রয়োজন।"
+      }
     },
     {
       "id": "SC18.Q2",
@@ -264,41 +272,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "What to do if hydrochloric acid touches your skin?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড ত্বকে লাগলে কী করবেন?"
+        "en": "Now — what are the GHS hazard pictograms for Bleaching Powder?",
+        "bn": "এবার বলুন, ব্লিচিং পাউডারের GHS পিক্টোগ্রামগুলো কী কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Apply burn cream and continue",
-            "bn": "পোড়ার ক্রিম লাগিয়ে কাজ চালান"
+            "en": "Flame over circle (Oxidizer), Corrosion, Exclamation mark (Harmful/Irritant), and Environment (Aquatic toxicity).",
+            "bn": "শিখা-বৃত্ত (অক্সিডাইজার), ক্ষয়কারী (Corrosion), বিস্ময়চিহ্ন (বিষাক্ত/উত্তেজক) এবং পরিবেশ (জলজ বিষাক্ততা)।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Flush with water 15+ min, remove clothing, get help",
-            "bn": "১৫ মিনিটের বেশি পানিতে ধুয়ে কাপড় খুলুন, সাহায্য নিন"
+            "en": "Skull and crossbones (Acute toxicity), Health hazard (Carcinogen).",
+            "bn": "মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা), স্বাস্থ্য বিপদ (ক্যান্সার)।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with dry cloth",
-            "bn": "শুকনো কাপড়ে মুছুন"
+            "en": "Gas cylinder and Exploding bomb.",
+            "bn": "গ্যাস সিলিন্ডার এবং বিস্ফোরক বোমা।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Rinse briefly, return to work",
-            "bn": "অল্প ধুয়ে কাজে ফিরুন"
+            "en": "Only the Corrosion pictogram.",
+            "bn": "শুধু ক্ষয়কারী (Corrosion) পিক্টোগ্রাম।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! The Flame over circle, Corrosion, Exclamation mark, and Environment pictograms all apply.",
+        "bn": "সঠিক! শিখা-বৃত্ত, ক্ষয়কারী, বিস্ময়চিহ্ন এবং পরিবেশ — এই চারটি পিক্টোগ্রামই প্রযোজ্য।"
+      },
+      "reasonWrong": {
+        "en": "Bleaching powder is an oxidizer, corrosive, harmful, and toxic to aquatic life. SDS Section 2 includes all four of these pictograms.",
+        "bn": "ব্লিচিং পাউডার একটি অক্সিডাইজার, ক্ষয়কারী, ক্ষতিকর এবং জলজ জীবনের জন্য বিষাক্ত। SDS-এর ২ নম্বর অংশে এই চারটি পিক্টোগ্রামই রয়েছে।"
+      }
     },
     {
       "id": "SC18.Q3",
@@ -307,41 +323,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "At what temperature should hydrochloric acid be stored?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড কোন তাপমাত্রায় সংরক্ষণ করতে হয়?"
+        "en": "And finally — what is the first-aid response if Bleaching Powder is swallowed?",
+        "bn": "শেষ প্রশ্ন: ব্লিচিং পাউডার গিলে ফেললে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "2 to 8 °C, cold room",
-            "bn": "২ থেকে ৮ °সে, ঠান্ডা ঘরে"
+            "en": "Rinse mouth, do NOT induce vomiting, and immediately call a doctor/poison center.",
+            "bn": "মুখ ধোব, বমি করাব না, এবং সঙ্গে সঙ্গে ডাক্তার/বিষ বিশেষজ্ঞের সাহায্য নেব।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Below 15 °C, cool and dark",
-            "bn": "১৫ °সে-এর নিচে, ঠান্ডা ও অন্ধকারে"
+            "en": "Induce vomiting immediately.",
+            "bn": "সঙ্গে সঙ্গে বমি করাব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "15 to 25 °C, room temperature",
-            "bn": "১৫ থেকে ২৫ °সে, ঘরের তাপমাত্রায়"
+            "en": "Give milk or vinegar.",
+            "bn": "দুধ বা ভিনেগার খাওয়াব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "In a freezer",
-            "bn": "ফ্রিজারে"
+            "en": "Wait for symptoms to appear.",
+            "bn": "লক্ষণ দেখা পর্যন্ত অপেক্ষা করব।"
           }
         }
       ],
-      "correct": "C",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Rinse mouth, do not induce vomiting, and seek immediate medical help.",
+        "bn": "সঠিক! মুখ ধুয়ে, বমি না করিয়ে, সঙ্গে সঙ্গে ডাক্তারের সাহায্য নিতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Inducing vomiting can cause further damage to the esophagus. Do not attempt to neutralize with milk or vinegar. SDS Section 4 requires rinsing the mouth, NOT inducing vomiting, and seeking immediate medical help.",
+        "bn": "বমি করালে খাদ্যনালীতে আরও ক্ষতি হতে পারে। দুধ বা ভিনেগার দিয়ে নিষ্ক্রিয় করার চেষ্টা করবেন না। SDS-এর ৪ নম্বর অংশ অনুযায়ী মুখ ধুয়ে, বমি না করিয়ে, অবিলম্বে চিকিৎসকের সাহায্য নিতে হবে।"
+      }
     }
   ]
 }

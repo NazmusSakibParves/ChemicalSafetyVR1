@@ -308,9 +308,9 @@ namespace ChemicalSafety.Editor
             ScMeshObj("Crate", bench, crate, Mat("ScCheckCrate", new Color(0.35f, 0.3f, 0.22f), 0.2f, 0f), ScP(tr + 0.5f, 0.375f, tf), Vector3.zero);
 
             const float topY = 0.91f;
-            // the 5 L jerry can of the earlier scenarios (Sc06BuildJug: real jug mesh, red cap, "5L" print) with the chemical's label on its front
+            // the chemical jug, centered on the table (single prop per round)
             var plastic = Mat("ScCheckJugPlastic", new Color(0.93f, 0.95f, 0.97f), 0.72f, 0f);
-            var jugR = tr + 0.45f;
+            var jugR = tr;
             var jugRoot = Sc06BuildJug(bench, ScP(jugR, topY, tf + 0.05f), null, out _, out var jugCap);
             jugRoot.transform.rotation = Quaternion.identity;
             jugRoot.transform.localScale = Vector3.one * 1.45f; // a little larger than life so the label reads from the player spot, like the picture
@@ -337,105 +337,7 @@ namespace ChemicalSafety.Editor
             var penLathe = ScLathe("PenTable", new[] { new Vector2(0f, 0f), new Vector2(0.0025f, 0f), new Vector2(0.0058f, 0.012f), new Vector2(0.0058f, 0.15f), new Vector2(0.0045f, 0.155f), new Vector2(0f, 0.155f) }, 14);
             ScMeshObj("PenOnTable", bench, penLathe, Mat("ScCheckPen", new Color(0.08f, 0.16f, 0.5f), 0.6f, 0.3f), ScP(tr + 0.2f, topY + 0.0075f, tf - 0.15f), new Vector3(0f, 0f, 90f) + new Vector3(0f, 25f, 0f), false);
 
-            // ---- crystal-clear glassware: every piece is a thick lathe shell (outer + inner wall + rolled rim), liquid with a meniscus, stoppers, tubes
-            // visible glass: a real body tint and a wide bright rim, so it reads against the steel table from the player's place
-            var flaskMat = Sc06GlassMat("ScCheckGlass", new Color(0.62f, 0.86f, 0.95f), 0.17f, 1f);
-            var flaskIn = Sc06GlassMat("ScCheckGlassInner", new Color(0.55f, 0.8f, 0.92f), 0.09f, 0.7f);
-            foreach (var gm in new[] { flaskMat, flaskIn })
-            {
-                gm.SetFloat("_Power", 1.7f);
-                gm.SetFloat("_Reflect", 2.0f);
-                gm.SetFloat("_Spec", 2.6f);
-                EditorUtility.SetDirty(gm);
-            }
-
-            var liquid = Mat("ScCheckLiquid", new Color(0.1f, 0.42f, 0.95f), 0.95f, 0f);
-            var liquidClear = Mat("ScCheckLiquidClear", new Color(0.32f, 0.78f, 0.78f), 0.95f, 0f);
-            var rubber = Mat("ScCheckStopper", new Color(0.55f, 0.18f, 0.12f), 0.35f, 0f);
-            var silicone = Mat("ScCheckHose", new Color(0.35f, 0.62f, 0.95f), 0.6f, 0f);
-            var mark = Mat("ScCheckGlassMark", new Color(0.92f, 0.95f, 1f), 0.3f, 0f);
-            const float gs = 1.28f; // glassware is a little larger than life so it reads clearly from the player's place
-
-            Vector2[] FlaskProfile(float inset)
-            {
-                var pts = new List<Vector2>
-                {
-                    new Vector2(0f, inset), new Vector2(0.046f - inset, inset), new Vector2(0.058f - inset, 0.006f + inset), new Vector2(0.062f - inset, 0.02f),
-                    new Vector2(0.05f - inset, 0.06f), new Vector2(0.03f - inset * 0.7f, 0.1f), new Vector2(0.02f - inset * 0.5f, 0.125f), new Vector2(0.02f - inset * 0.5f, 0.16f)
-                };
-                if (inset <= 0f)
-                {
-                    pts.Add(new Vector2(0.026f, 0.164f));
-                    pts.Add(new Vector2(0.027f, 0.172f));
-                    pts.Add(new Vector2(0.0235f, 0.175f));
-                    pts.Add(new Vector2(0.0185f, 0.172f));
-                }
-
-                return pts.ToArray();
-            }
-
-            var flaskOut = ScLathe("FlaskOuter", FlaskProfile(0f), 40);
-            var flaskInner = ScLathe("FlaskInner", FlaskProfile(0.0028f), 40);
-            var flaskLiquid = ScLathe("FlaskLiquid2", new[] { new Vector2(0f, 0.0035f), new Vector2(0.0425f, 0.0035f), new Vector2(0.0545f, 0.011f), new Vector2(0.058f, 0.022f), new Vector2(0.049f, 0.052f), new Vector2(0f, 0.052f) }, 32);
-            var stopper = ScLathe("Stopper", new[] { new Vector2(0f, 0f), new Vector2(0.0165f, 0f), new Vector2(0.021f, 0.02f), new Vector2(0.0225f, 0.02f), new Vector2(0.0225f, 0.026f), new Vector2(0f, 0.026f) }, 20);
-            var glassTube = ScTube("GlassTube", new[] { new Vector3(0f, 0f, 0f), new Vector3(0f, 0.07f, 0f), new Vector3(0.012f, 0.1f, 0f), new Vector3(0.05f, 0.108f, 0f) }, 0.0048f, 10);
-            for (var i = 0; i < 3; i++)
-            {
-                var fr = i == 0 ? tr - 0.42f : tr + 0.9f + (i - 1) * 0.24f;
-                var fz = tf - 0.1f;
-                var at = ScP(fr, topY, fz);
-                var ours = ScMeshObj("FlaskShell" + i, bench, flaskOut, flaskMat, at, Vector3.zero, false);
-                ours.transform.localScale = Vector3.one * gs;
-                var inn = ScMeshObj("FlaskInnerShell" + i, bench, flaskInner, flaskIn, at, Vector3.zero, false);
-                inn.transform.localScale = Vector3.one * gs;
-                var liq = ScMeshObj("FlaskLiquid" + i, bench, flaskLiquid, i == 0 ? liquidClear : liquid, at, Vector3.zero, false);
-                liq.transform.localScale = Vector3.one * gs;
-                if (i > 0)
-                {
-                    var st = ScMeshObj("FlaskStopper" + i, bench, stopper, rubber, at + Vector3.up * (0.165f * gs), Vector3.zero, false);
-                    st.transform.localScale = Vector3.one * gs;
-                    var gt = ScMeshObj("FlaskTube" + i, bench, glassTube, flaskMat, at + Vector3.up * (0.188f * gs), Vector3.zero, false);
-                    gt.transform.localScale = Vector3.one * gs;
-                }
-
-                ScBlob(room, ScP(fr, 0f, fz) + Vector3.up * (topY - 0.004f), new Vector2(0.22f, 0.22f), 0.4f);
-            }
-
-            // beaker with a rolled lip, graduation rings and some liquid
-            Vector2[] BeakerProfile(float inset) => new[]
-            {
-                new Vector2(0f, inset), new Vector2(0.04f - inset, inset), new Vector2(0.043f - inset, 0.008f), new Vector2(0.044f - inset, 0.11f), inset <= 0f ? new Vector2(0.0475f, 0.118f) : new Vector2(0.0425f, 0.108f)
-            };
-            var bAt = ScP(tr - 0.72f, topY, tf + 0.02f);
-            ScMeshObj("BeakerShell", bench, ScLathe("BeakerOuter", BeakerProfile(0f), 40), flaskMat, bAt, Vector3.zero, false).transform.localScale = Vector3.one * gs;
-            ScMeshObj("BeakerInner", bench, ScLathe("BeakerInner", BeakerProfile(0.003f), 40), flaskIn, bAt, Vector3.zero, false).transform.localScale = Vector3.one * gs;
-            ScMeshObj("BeakerLiquid", bench, ScLathe("BeakerLiquid", new[] { new Vector2(0f, 0.004f), new Vector2(0.0375f, 0.004f), new Vector2(0.0415f, 0.012f), new Vector2(0.0425f, 0.05f), new Vector2(0f, 0.05f) }, 28), liquidClear, bAt, Vector3.zero, false).transform.localScale = Vector3.one * gs;
-            var ring = ScLathe("GradRing", new[] { new Vector2(0.0432f, 0f), new Vector2(0.0442f, 0f), new Vector2(0.0442f, 0.0016f), new Vector2(0.0432f, 0.0016f) }, 40);
-            for (var k = 1; k <= 4; k++)
-                ScMeshObj("GradMark" + k, bench, ring, mark, bAt + Vector3.up * (0.02f * k * gs), Vector3.zero, false).transform.localScale = Vector3.one * gs;
-
-            // a blue silicone hose from the first flask over the table to the second one
-            var hosePts = new List<Vector3>();
-            var a0 = ScP(tr + 0.9f, topY + 0.2f * gs + 0.04f, tf - 0.1f);
-            var a1 = ScP(tr + 1.14f, topY + 0.2f * gs + 0.04f, tf - 0.1f);
-            for (var k = 0; k <= 14; k++)
-            {
-                var t = k / 14f;
-                var p = Vector3.Lerp(a0, a1, t);
-                p += Vector3.up * (Mathf.Sin(t * Mathf.PI) * 0.1f);
-                hosePts.Add(p);
-            }
-
-            ScMeshObj("LabHose", bench, ScTube("LabHose", hosePts.ToArray(), 0.0075f, 10), silicone, Vector3.zero, Vector3.zero, false);
-            // a longer hose lying on the table toward the jug, like the picture
-            var floorHose = new List<Vector3>();
-            for (var k = 0; k <= 18; k++)
-            {
-                var t = k / 18f;
-                floorHose.Add(ScP(tr + 1.14f - t * 0.55f, topY + 0.01f + Mathf.Sin(t * Mathf.PI * 2f) * 0.008f, tf + 0.1f + Mathf.Sin(t * Mathf.PI) * 0.18f));
-            }
-
-            ScMeshObj("TableHose", bench, ScTube("TableHose", floorHose.ToArray(), 0.0085f, 10), silicone, Vector3.zero, Vector3.zero, false);
+            // Glassware, flasks, beaker, and hoses removed (client request: single chemical prop per round, no extra lab containers)
 
             benchHeight = bench.gameObject.AddComponent<Sc04BenchHeight>();
             var bso = new SerializedObject(benchHeight);

@@ -54,6 +54,8 @@ namespace ChemicalSafety.Localization
         public LText nextLabel;
         [Tooltip("false when an option refers to other options by position (all of the above, A and B).")]
         public bool shuffle = true;
+        public LText reasonCorrect;
+        public LText reasonWrong;
     }
 
     [Serializable]

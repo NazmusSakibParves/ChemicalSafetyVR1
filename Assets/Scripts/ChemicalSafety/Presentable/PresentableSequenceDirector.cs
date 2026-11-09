@@ -2280,6 +2280,36 @@ namespace ChemicalSafety.Presentable
 
         // The ray intros of Scenarios 5, 6, 8 and 9: after the voice a Continue button appears (as in Scenarios 1-4 and 7) and the game play
         // starts only when the learner clicks it (client: the card must not hide by itself). The speaker replays the instruction.
+        private System.Func<bool> _continueExternal; // Scenario 13-18: the smoke test presses the runner's card instead of the panel's Continue
+
+        // Scenarios 13-18: the SAME glass instruction card as Scenarios 6 / 8 / 9 (same size, text size, clear look, same spot), then the
+        // learner is taken a little forward to the table so the chemical reads well
+        private IEnumerator ScCheckInstruction(string english, AudioClip clip, System.Func<bool> pressed)
+        {
+            instructionPanel.SetContent(english, null);
+            LockLocomotion(true);
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(sc689CardRight, sc689CardUp);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            if (clip != null)
+                yield return PlayVoiceAsIs(clip); // already the right language (the runner loads it)
+            instructionPanel.SetSpeaking(false);
+            _continueExternal = pressed;
+            yield return RayInstructionContinue();
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+            if (scCheck != null && scCheck.ViewStand != null)
+                yield return Glide(scCheck.ViewStand.position, 1.6f);
+            LockLocomotion(false);
+        }
+
         private IEnumerator RayInstructionContinue()
         {
             _continuePressed = false;
@@ -2288,8 +2318,9 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.ShowContinue();
             instructionPanel.SetSpeaking(true);
             StartCoroutine(PlayVoice(art.voContinueHint));
-            while (!_continuePressed)
+            while (!_continuePressed && !(_continueExternal != null && _continueExternal()))
                 yield return null;
+            _continueExternal = null;
             instructionPanel.SpeakerClicked -= OnSpeakerClicked;
             instructionPanel.Continue -= OnContinueClicked;
             StopAllVoiceCoroutines();
@@ -5329,12 +5360,19 @@ namespace ChemicalSafety.Presentable
                 sc10Ambience.End();
             envScCheck.SetActive(true);
             clipboard.SetVisible(false);
-            PlaceRig(spawnScCheck.position, spawnScCheck.forward);
+            clipboard.SetSuspended(true); // Scenarios 13-18 show the SDS beside the options; the X button belongs to that panel
+            if (n > 13 && scCheck.ViewStand != null)
+                PlaceRig(scCheck.ViewStand.position, scCheck.ViewStand.forward); // no instruction again: straight in front of the table
+            else
+                PlaceRig(spawnScCheck.position, spawnScCheck.forward);
             yield return fader.FadeTo(0f, 0.9f);
+            scCheck.InstructionRoutine = ScCheckInstruction;
             yield return scCheck.Run(n, _cam);
             Stage("sc" + n + "Done");
             if (n < 18)
                 yield return RunScenarioCheck(n + 1);
+            else
+                clipboard.SetSuspended(false);
         }
 
         private IEnumerator Sc12Round()

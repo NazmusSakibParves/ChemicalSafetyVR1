@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check' with the supervisor. He asks three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে সুপারভাইজারের সঙ্গে একটি ‘কাজ-পূর্ব নিরাপত্তা পরীক্ষা’ পাস করতে হবে। তিনি এসডিএস থেকে তিনটি প্রশ্ন করবেন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
+      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
     },
     {
       "key": "Instructions",
@@ -48,13 +48,13 @@
     },
     {
       "key": "ChemName",
-      "en": "Hydrochloric Acid (HCL)",
-      "bn": "হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Hydrogen Peroxide (H₂O₂)",
+      "bn": "হাইড্রোজেন পারঅক্সাইড (H₂O₂)"
     },
     {
       "key": "BottleTitle",
-      "en": "Chemical Name: Hydrochloric Acid (HCL)",
-      "bn": "রাসায়নিকের নাম: হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Chemical Name: Hydrogen Peroxide (H₂O₂)",
+      "bn": "রাসায়নিকের নাম: হাইড্রোজেন পারঅক্সাইড (H₂O₂)"
     },
     {
       "key": "ChemLabel",
@@ -221,41 +221,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Which protective equipment does the SDS recommend for a corrosive liquid like hydrochloric acid?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিডের মতো ক্ষয়কারী তরলের জন্য নিরাপত্তা তথ্যপত্র কোন সুরক্ষা সরঞ্জাম সুপারিশ করে?"
+        "en": "First, tell me — what is the primary hazard statement for Hydrogen Peroxide?",
+        "bn": "প্রথমে বলুন, হাইড্রোজেন পারঅক্সাইডের প্রধান হ্যাজার্ড স্টেটমেন্ট কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Safety glasses + cotton gloves",
-            "bn": "সেফটি চশমা + সুতির গ্লাভস"
+            "en": "Strong oxidizer; may cause fire or explosion. Causes severe skin burns and eye damage. Harmful if swallowed.",
+            "bn": "শক্তিশালী অক্সিডাইজার; আগুন বা বিস্ফোরণ ঘটাতে পারে। ত্বকে গুরুতর পোড়া এবং চোখের ক্ষতি করে। গিলে ফেললে ক্ষতিকর।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Goggles + face shield, neoprene gloves, apron",
-            "bn": "ফেস শিল্ডসহ গগলস, নিওপ্রিন গ্লাভস, অ্যাপ্রন"
+            "en": "Extremely flammable liquid and vapor; may cause drowsiness or dizziness.",
+            "bn": "অত্যন্ত দাহ্য তরল এবং বাষ্প; তন্দ্রা বা মাথা ঘোরা সৃষ্টি করতে পারে।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Normal glasses + cloth mask",
-            "bn": "সাধারণ চশমা + কাপড়ের মাস্ক"
+            "en": "Fatal if inhaled; toxic to aquatic life.",
+            "bn": "শ্বাস নিলে মারাত্মক; জলজ জীবনের জন্য বিষাক্ত।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Nitrile gloves only",
-            "bn": "শুধু নাইট্রাইল গ্লাভস"
+            "en": "May cause cancer.",
+            "bn": "ক্যান্সার সৃষ্টি করতে পারে।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! It is a strong oxidizer that causes severe skin burns and eye damage.",
+        "bn": "সঠিক! এটি একটি শক্তিশালী অক্সিডাইজার যা ত্বক ও চোখের গুরুতর ক্ষতি করে।"
+      },
+      "reasonWrong": {
+        "en": "Hydrogen peroxide is not extremely flammable; it is a strong oxidizer that can cause fire or explosion. The correct hazard statement is in SDS Section 2.",
+        "bn": "হাইড্রোজেন পারঅক্সাইড অত্যন্ত দাহ্য নয়, বরং এটি একটি শক্তিশালী অক্সিডাইজার যা আগুন বা বিস্ফোরণ ঘটাতে পারে। SDS-এর ২ নম্বর অংশে সঠিক হ্যাজার্ড স্টেটমেন্ট রয়েছে।"
+      }
     },
     {
       "id": "SC17.Q2",
@@ -264,41 +272,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "What to do if hydrochloric acid touches your skin?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড ত্বকে লাগলে কী করবেন?"
+        "en": "Now — what are the firefighting measures for Hydrogen Peroxide?",
+        "bn": "এবার বলুন, হাইড্রোজেন পারঅক্সাইডের অগ্নি নির্বাপণ ব্যবস্থা কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Apply burn cream and continue",
-            "bn": "পোড়ার ক্রিম লাগিয়ে কাজ চালান"
+            "en": "Use water spray to cool containers. It is non-combustible but decomposes to release oxygen, which intensifies fire. Firefighters must wear SCBA.",
+            "bn": "পাত্র ঠান্ডা করতে পানি স্প্রে ব্যবহার করব। এটি নিজে পোড়ে না, কিন্তু ভেঙে গিয়ে অক্সিজেন ছড়ায় যা আগুন বাড়ায়। অগ্নিনির্বাপকদের SCBA পরতে হবে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Flush with water 15+ min, remove clothing, get help",
-            "bn": "১৫ মিনিটের বেশি পানিতে ধুয়ে কাপড় খুলুন, সাহায্য নিন"
+            "en": "Use a direct, high-pressure water jet to extinguish the flames.",
+            "bn": "সরাসরি উচ্চ-চাপের পানি জেট দিয়ে আগুন নেভাব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with dry cloth",
-            "bn": "শুকনো কাপড়ে মুছুন"
+            "en": "Use dry chemical extinguisher only.",
+            "bn": "শুধু ড্রাই কেমিক্যাল এক্সটিংগুইশার ব্যবহার করব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Rinse briefly, return to work",
-            "bn": "অল্প ধুয়ে কাজে ফিরুন"
+            "en": "No protective equipment is required for small fires.",
+            "bn": "ছোট আগুনের জন্য কোনো সুরক্ষা সরঞ্জাম লাগবে না।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Use water spray to cool containers, and firefighters must wear SCBA.",
+        "bn": "সঠিক! পাত্র ঠান্ডা করতে পানি স্প্রে ব্যবহার করতে হবে এবং অগ্নিনির্বাপকদের SCBA পরতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Hydrogen peroxide itself is non-combustible but decomposes under heat to release oxygen, intensifying fire. A direct water jet or dry chemical alone is insufficient. Firefighters must always wear SCBA and full gear.",
+        "bn": "হাইড্রোজেন পারঅক্সাইড নিজে পোড়ে না, কিন্তু তাপে ভেঙে অক্সিজেন ছড়ায় যা আগুনকে তীব্র করে। তাই সরাসরি পানি জেট বা শুধু ড্রাই কেমিক্যাল যথেষ্ট নয়। অগ্নিনির্বাপকদের সর্বদা SCBA এবং সম্পূর্ণ সুরক্ষা পোশাক পরতে হবে।"
+      }
     },
     {
       "id": "SC17.Q3",
@@ -307,41 +323,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "At what temperature should hydrochloric acid be stored?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড কোন তাপমাত্রায় সংরক্ষণ করতে হয়?"
+        "en": "And finally — what are the key precautionary statements for Hydrogen Peroxide?",
+        "bn": "শেষ প্রশ্ন: হাইড্রোজেন পারঅক্সাইডের জন্য মূল সতর্কতামূলক ব্যবস্থা কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "2 to 8 °C, cold room",
-            "bn": "২ থেকে ৮ °সে, ঠান্ডা ঘরে"
+            "en": "Keep away from heat, sparks, open flames, and combustibles. Wear protective gloves and eye/face protection. Store in a well-ventilated place, away from incompatible materials.",
+            "bn": "তাপ, স্পার্ক, খোলা আগুন এবং দাহ্য পদার্থ থেকে দূরে রাখব। সুরক্ষা গ্লাভস ও চোখ/মুখের সুরক্ষা পরব। ভালো বাতাস চলাচলযুক্ত স্থানে, বেমানান পদার্থ থেকে দূরে রাখব।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Below 15 °C, cool and dark",
-            "bn": "১৫ °সে-এর নিচে, ঠান্ডা ও অন্ধকারে"
+            "en": "Store next to organic solvents and reducing agents.",
+            "bn": "জৈব দ্রাবক এবং বিজারক পদার্থের পাশে রাখব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "15 to 25 °C, room temperature",
-            "bn": "১৫ থেকে ২৫ °সে, ঘরের তাপমাত্রায়"
+            "en": "Work without any PPE.",
+            "bn": "কোনো PPE ছাড়াই কাজ করব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "In a freezer",
-            "bn": "ফ্রিজারে"
+            "en": "Avoid washing skin with water.",
+            "bn": "পানি দিয়ে ত্বক ধোয়া এড়িয়ে চলব।"
           }
         }
       ],
-      "correct": "C",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Keep away from heat and combustibles, and wear protective gloves and eye/face protection.",
+        "bn": "সঠিক! তাপ ও দাহ্য পদার্থ থেকে দূরে রাখতে হবে এবং সুরক্ষা গ্লাভস ও চোখ/মুখের সুরক্ষা পরতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Hydrogen peroxide is a strong oxidizer. Contact with organic materials, heat, or fire poses a risk of fire or explosion. SDS Section 2 requires keeping it away from heat and combustibles, and wearing full PPE.",
+        "bn": "হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার। জৈব পদার্থ, তাপ বা আগুনের সংস্পর্শে এলে আগুন বা বিস্ফোরণের ঝুঁকি থাকে। SDS-এর ২ নম্বর অংশ অনুযায়ী তাপ ও দাহ্য পদার্থ থেকে দূরে রাখতে হবে এবং সম্পূর্ণ PPE পরতে হবে।"
+      }
     }
   ]
 }

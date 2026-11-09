@@ -5,6 +5,7 @@ using ChemicalSafety.Localization;
 using ChemicalSafety.Results;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace ChemicalSafety.Presentable
@@ -24,6 +25,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Renderer posterRenderer;
         [SerializeField] private Transform pointTarget;
         [SerializeField] private Sc04BenchHeight bench;
+        [SerializeField] private Transform viewStand;  // where the learner is taken after the instruction (close to the table)
+        [SerializeField] private Transform chemAnchor; // point above the chemical: popups sit above it
+        [SerializeField] private GameObject[] chemProps; // one chemical per scenario 13..18 (index n-13)
         [SerializeField] private Transform supStart;
         [SerializeField] private Transform supStand;
         [SerializeField] private Transform supSide;
@@ -43,7 +47,7 @@ namespace ChemicalSafety.Presentable
         private Canvas _card;
 
         // question panel
-        private TextMeshProUGUI _title, _chemLabel, _chemName, _mcq, _prompt, _verdict, _sdsToggleText, _nextText;
+        private TextMeshProUGUI _title, _chemLabel, _chemName, _mcq, _prompt, _verdict, _sdsToggleText, _nextText, _reason;
         private readonly TextMeshProUGUI[] _optText = new TextMeshProUGUI[4];
         private readonly TextMeshProUGUI[] _optLetter = new TextMeshProUGUI[4];
         private readonly Image[] _optBg = new Image[4];
@@ -69,6 +73,12 @@ namespace ChemicalSafety.Presentable
         private bool _next, _locked;
         private int _correctShown;
         private bool _cardPressed;
+        private Localization.LQuestion _currentQuestion;
+
+        /// <summary>The director shows the instruction with the SAME card as Scenarios 6 / 8 / 9 (text, voice clip, "pressed" probe for the smoke test).</summary>
+        public System.Func<string, AudioClip, System.Func<bool>, IEnumerator> InstructionRoutine;
+        public Transform ViewStand => viewStand;
+        private bool _hookWaiting;
 
         public bool SdsOpen => _sdsOpen;
         public int CorrectRow => _correctShown;
@@ -80,8 +90,46 @@ namespace ChemicalSafety.Presentable
         public string Stage { get; private set; } = "idle";
         public int LastScore { get; private set; }
 
+        private InputAction _sdsKey;
+
+        // the left controller's X button opens / hides the reference SDS in every scenario; here it does the same for the SDS panel beside the question
+        private void OnEnable()
+        {
+            _sdsKey = new InputAction("ScCheckSds", InputActionType.Button);
+            _sdsKey.AddBinding("<XRController>{LeftHand}/primaryButton");
+            _sdsKey.AddBinding("<Keyboard>/c");
+            _sdsKey.performed += _ =>
+            {
+                if (QuestionVisible)
+                    ToggleSds();
+            };
+            _sdsKey.Enable();
+            // the thumbsticks scroll the sheet up and down (the sheet is taller than its window)
+            _sdsStick = new InputAction("ScCheckSdsScroll", InputActionType.Value);
+            _sdsStick.AddBinding("<XRController>{RightHand}/thumbstick");
+            _sdsStick.AddBinding("<XRController>{LeftHand}/thumbstick");
+            _sdsStick.Enable();
+        }
+
+        private InputAction _sdsStick;
+
+        private void OnDisable()
+        {
+            _sdsStick?.Dispose();
+            _sdsStick = null;
+            _sdsKey?.Dispose();
+            _sdsKey = null;
+        }
+
         private void Update()
         {
+            if (_sdsStick != null && _sdsOpen && QuestionVisible)
+            {
+                var y = _sdsStick.ReadValue<Vector2>().y;
+                if (Mathf.Abs(y) > 0.2f)
+                    ScrollSds(y * Time.unscaledDeltaTime * 0.8f);
+            }
+
             // the table stands a comfortable look-down below the eyes, seated or standing
             if (bench != null && _cam != null && Stage != "idle" && Stage != "done")
                 bench.Follow(_cam.position.y);
@@ -154,6 +202,11 @@ namespace ChemicalSafety.Presentable
             _sc = "SC" + n;
             _cam = cam;
             Stage = "start";
+            PresentableInput.ActiveScenario = n;
+            if (chemProps != null)
+                for (var i = 0; i < chemProps.Length; i++)
+                    if (chemProps[i] != null)
+                        chemProps[i].SetActive(i == n - 13);
             ApplyArt();
             Build();
             _refTitle.text = Str("RefSds");
@@ -164,26 +217,19 @@ namespace ChemicalSafety.Presentable
                 supervisor.SetPose(SupPose.Relaxed);
                 if (supStart != null && supStand != null)
                 {
-                    // he walks in from the machine wing to his place beside the table, then faces the player
                     supervisor.PlaceAt(supStart.position, supStand.position);
                     supervisor.WalkTo(supStand.position);
                 }
             }
 
-            // 1. the supervisor speaks the task
+            // 1. instruction: the same glass card as Scenarios 6 / 8 / 9 (shown by the director, left side), then the learner is taken to the table
             Stage = "intro";
-            yield return Card(CardMode.Instruction, "Instruction", Str("Next"));
-            // after the instruction he steps aside (to the left, out of the way of the cards and the question panel, like the workflow pictures)
-            if (supervisor != null && supSide != null)
-                supervisor.WalkTo(supSide.position, 1.0f);
-            // 2. start card
-            Stage = "startCard";
-            if (supervisor != null)
-                supervisor.SetPose(SupPose.Talk);
-            yield return Card(CardMode.Start, "StartCard", Str("Start"));
-            // 3. the chemical on the table
+            if (n == 13)
+                yield return Card(CardMode.Instruction, "Instruction", Str("Next")); // 14-18 go straight to the chemical (the rules were told once)
+            // 2. the chemical's name is only SPOKEN (no card), the chemical stands on the table in front of the learner
             Stage = "bottle";
-            yield return Card(CardMode.Bottle, "BottleCard", Str("Next"));
+            yield return Say("BottleName");
+            yield return PresentableFx.Wait(0.3f);
 
             // 4. three questions
             SessionResults.BeginScenario(_sc, Loc.Suffix());
@@ -220,6 +266,43 @@ namespace ChemicalSafety.Presentable
                 if (tex != null)
                     posterRenderer.material.SetTexture("_BaseMap", tex);
             }
+        }
+
+        // above the chemical on the table (clear of it), turned to the learner; falls back to the old eye-relative spot without an anchor
+        private void PlaceAbove(Transform t, float heightMeters)
+        {
+            if (_cam == null)
+                return;
+            if (chemAnchor == null)
+            {
+                Place(t, 1.05f, 0.12f, 0f);
+                return;
+            }
+
+            var toAnchor = Vector3.ProjectOnPlane(chemAnchor.position - _cam.position, Vector3.up);
+            if (toAnchor.sqrMagnitude < 0.01f)
+                toAnchor = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
+            toAnchor.Normalize();
+            var pos = _cam.position + toAnchor * 1.6f; // 1.6 m from the eyes, in line with the chemical, so it reads big and sits above it
+            pos.y = chemAnchor.position.y + 0.05f + heightMeters * 0.5f;
+            t.SetPositionAndRotation(pos, Quaternion.LookRotation(toAnchor, Vector3.up));
+            if (t == _main.transform)
+            {
+                _mainBase = pos;
+                _mainRight = Vector3.Cross(Vector3.up, toAnchor);
+                ApplyMainOffset();
+            }
+        }
+
+        private Vector3 _mainBase, _mainRight;
+
+        // SDS hidden: the question panel is the left 55% of the canvas, so the canvas slides right to bring it over the chemical;
+        // SDS open: question and SDS stand side by side with the chemical under the gap between them
+        private void ApplyMainOffset()
+        {
+            if (_main == null || chemAnchor == null || _mainRight == Vector3.zero)
+                return;
+            _main.transform.position = _mainBase + _mainRight * (_sdsOpen ? 0f : 0.46f);
         }
 
         private void Place(Transform t, float distance, float drop, float side = 0f)
@@ -293,10 +376,18 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Card(CardMode mode, string voiceKey, string button)
         {
             _cardPressed = false;
+            if (mode == CardMode.Instruction && InstructionRoutine != null)
+            {
+                _hookWaiting = true;
+                yield return InstructionRoutine(Str("InstructionEnglish"), Clip(voiceKey), () => _cardPressed);
+                _hookWaiting = false;
+                yield break;
+            }
+
             _cardButtonText.text = button;
             _cardButtonImg.sprite = LoadSprite(mode == CardMode.Start ? "ScCheck/ui_start" : "ScCheck/ui_next");
             ConfigureCard(mode);
-            Place(_card.transform, 1.0f, -0.02f, mode == CardMode.Instruction ? 0.38f : 0f);
+            Place(_card.transform, 1.0f, -0.02f, mode == CardMode.Instruction ? -0.38f : 0f);
             _card.gameObject.SetActive(true);
             yield return PopIn(_card.transform, 1f);
             _cardButton.gameObject.SetActive(false);
@@ -318,6 +409,12 @@ namespace ChemicalSafety.Presentable
 
         public void PressCard()
         {
+            if (_hookWaiting)
+            {
+                _cardPressed = true; // the smoke test / finger press the director's Continue
+                return;
+            }
+
             if (_card != null && _card.gameObject.activeSelf && _cardButton.gameObject.activeSelf)
             {
                 PresentableFx.Play(PresentableFx.Tick);
@@ -330,6 +427,7 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Question(int n, int q, bool[] flags)
         {
             var qq = Loc.Question(_sc, _sc + ".Q" + (q + 1));
+            _currentQuestion = qq;
             var count = Mathf.Min(4, qq.options.Length);
             var order = OptionShuffle.Order(count, SessionResults.ShuffleSeed, qq.id, qq.shuffle);
             var shown = new List<OptionPair>();
@@ -361,22 +459,26 @@ namespace ChemicalSafety.Presentable
                 if (i >= count)
                     continue;
                 _optText[i].text = shown[i].text;
-                _optBg[i].color = new Color(0.55f, 0.85f, 1f, 0.22f);
+                _optBg[i].color = new Color(0.45f, 0.78f, 1f, 0.30f);
                 _optLetter[i].color = HoloWhite;
             }
 
             _verdict.text = string.Empty;
             _verdictBg.color = new Color(0f, 0f, 0f, 0f);
+            if (_reason != null) _reason.text = string.Empty;
             _nextBtn.gameObject.SetActive(false);
             _sdsSheet.sprite = SdsSprite(q);
             SetSdsSheetSize();
-            SetSds(false, true);
+            SetSds(true, true); // the SDS opens by itself beside the question and scrolls slowly so it can be read
+            if (_autoScroll != null)
+                StopCoroutine(_autoScroll);
+            _autoScroll = StartCoroutine(AutoScrollSds());
             _answered = -1;
             _next = false;
             _locked = false;
             _correctShown = correctRow;
 
-            Place(_main.transform, 1.05f, -0.02f, 0.25f); // a little to the player's right, so the supervisor stands clear on its left
+            PlaceAbove(_main.transform, 0.688f);
             ShowMain();
             if (supervisor != null)
             {
@@ -433,12 +535,18 @@ namespace ChemicalSafety.Presentable
                 else if (i == row)
                     _optBg[i].color = new Color(0.95f, 0.25f, 0.2f, 0.55f);
                 else
-                    _optBg[i].color = new Color(0.55f, 0.85f, 1f, 0.1f);
+                    _optBg[i].color = new Color(0.30f, 0.5f, 0.7f, 0.16f);
             }
 
             _verdict.color = right ? Good : Bad;
             _verdict.text = right ? Str("Right") : Str("Wrong");
             _verdictBg.color = right ? new Color(0.1f, 0.45f, 0.25f, 0.45f) : new Color(0.55f, 0.12f, 0.1f, 0.45f);
+            if (_reason != null && _currentQuestion != null)
+            {
+                var rField = right ? _currentQuestion.reasonCorrect : _currentQuestion.reasonWrong;
+                _reason.text = rField != null ? rField.Get(Localization.Loc.Current) : string.Empty;
+                _reason.color = right ? new Color(0.7f, 1f, 0.8f) : new Color(1f, 0.8f, 0.75f);
+            }
         }
 
         public void PressNext()
@@ -468,6 +576,7 @@ namespace ChemicalSafety.Presentable
         private void SetSds(bool open, bool instant)
         {
             _sdsOpen = open;
+            ApplyMainOffset();
             _sdsToggleText.text = Str(open ? "HideSds" : "CheckSds");
             if (_sdsAnim != null)
                 StopCoroutine(_sdsAnim);
@@ -536,7 +645,7 @@ namespace ChemicalSafety.Presentable
             _resBadge.text = score + "/3";
             _resMsg.text = Str(score >= 2 ? (last ? "ResultGoodLast" : "ResultGood") : (last ? "ResultLowLast" : "ResultLow"));
             _resNextText.text = Str("NextRound");
-            Place(_results.transform, 1.0f, -0.02f);
+            PlaceAbove(_results.transform, 0.52f);
             _results.gameObject.SetActive(true);
             _next = false;
             if (supervisor != null)
@@ -589,8 +698,61 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(PopIn(_main.transform, 1f));
         }
 
+        private Coroutine _autoScroll;
+
+        // top to bottom and back, slowly (one pass about 28 s); any touch of the sheet (stick, drag, arrows) pauses it for a few seconds
+        private IEnumerator AutoScrollSds()
+        {
+            yield return PresentableFx.Wait(2.5f);
+            var dir = -1f;
+            var pause = 0f;
+            var last = _sdsScroll.verticalNormalizedPosition;
+            while (true)
+            {
+                if (!_sdsOpen || !QuestionVisible)
+                {
+                    last = _sdsScroll.verticalNormalizedPosition;
+                    yield return null;
+                    continue;
+                }
+
+                var cur = _sdsScroll.verticalNormalizedPosition;
+                if (Mathf.Abs(cur - last) > 0.003f)
+                    pause = 6f;
+                if (pause > 0f)
+                {
+                    pause -= Time.unscaledDeltaTime;
+                    last = cur;
+                    yield return null;
+                    continue;
+                }
+
+                cur = Mathf.Clamp01(cur + dir * Time.unscaledDeltaTime / 28f);
+                _sdsScroll.verticalNormalizedPosition = cur;
+                last = cur;
+                if (cur <= 0.001f)
+                {
+                    dir = 1f;
+                    pause = 2f;
+                }
+                else if (cur >= 0.999f)
+                {
+                    dir = -1f;
+                    pause = 2f;
+                }
+
+                yield return null;
+            }
+        }
+
         private void HideMain()
         {
+            if (_autoScroll != null)
+            {
+                StopCoroutine(_autoScroll);
+                _autoScroll = null;
+            }
+
             if (_main != null)
                 _main.gameObject.SetActive(false);
         }
@@ -630,7 +792,7 @@ namespace ChemicalSafety.Presentable
             var round = LoadSprite("ScCheck/ui_round_button");
             var sdsFrame = LoadSprite("ScCheck/ui_sds_frame");
             var cardSp = art.holoButton != null ? art.holoButton : art.roundedSolid;
-            var panelTint = new Color(0.30f, 0.42f, 0.62f, 0.80f);
+            var panelTint = new Color(0.16f, 0.42f, 0.72f, 0.52f); // glass blue on top of a dark underlay (below): the reference look, the words stay clear
 
             // ---- glass card (instructions / start / bottle)
             _card = PresentableUi.WorldCanvas("ScCheckCard", transform, new Vector2(900f, 560f), Scale, true, 30);
@@ -648,54 +810,57 @@ namespace ChemicalSafety.Presentable
             _card.gameObject.SetActive(false);
 
             // ---- question panel (left) + SDS panel (right) on one canvas
-            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(1700f, 720f), Scale, true, 30);
+            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(2200f, 860f), Scale, true, 30);
             _mainGroup = _main.gameObject.AddComponent<CanvasGroup>();
-            var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.125f), new Vector2(0.5476f, 1f));
+            var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.255f), new Vector2(0.4773f, 1f));
             var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
-            PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.30f), true);
+            PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
+            PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.004f, 0.004f), new Vector2(0.996f, 0.996f)), art.roundedSolid, new Color(0.02f, 0.07f, 0.15f, 0.80f), true);
             PresentableUi.Img(panel, screen, panelTint, true).raycastTarget = true;
-            _title = T("Title", panel, new Vector2(0.04f, 0.855f), new Vector2(0.96f, 0.975f), 46f, HoloWhite, TextAlignmentOptions.Center, true, 22f);
-            _chemLabel = T("ChemLabel", panel, new Vector2(0.05f, 0.765f), new Vector2(0.30f, 0.855f), 34f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
-            _chemName = T("ChemName", panel, new Vector2(0.30f, 0.765f), new Vector2(0.97f, 0.855f), 32f, HoloCyan, TextAlignmentOptions.MidlineLeft, false, 18f);
-            _mcq = T("Mcq", panel, new Vector2(0.06f, 0.64f), new Vector2(0.21f, 0.75f), 36f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
-            _prompt = T("Prompt", panel, new Vector2(0.21f, 0.60f), new Vector2(0.95f, 0.76f), 34f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, 18f);
+            _title = T("Title", panel, new Vector2(0.04f, 0.865f), new Vector2(0.96f, 0.985f), 52f, HoloWhite, TextAlignmentOptions.Center, true, 22f);
+            _chemLabel = T("ChemLabel", panel, new Vector2(0.05f, 0.775f), new Vector2(0.30f, 0.865f), 40f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
+            _chemName = T("ChemName", panel, new Vector2(0.30f, 0.775f), new Vector2(0.97f, 0.865f), 38f, HoloCyan, TextAlignmentOptions.MidlineLeft, false, 18f);
+            _mcq = T("Mcq", panel, new Vector2(0.05f, 0.66f), new Vector2(0.21f, 0.77f), 42f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
+            _prompt = T("Prompt", panel, new Vector2(0.21f, 0.615f), new Vector2(0.96f, 0.78f), 42f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, 18f);
             const float gap = 0.014f;
             const float x0 = 0.045f;
             const float totalW = 0.91f;
             var w = (totalW - gap * 3f) / 4f;
             for (var i = 0; i < 4; i++)
             {
-                var min = new Vector2(x0 + i * (w + gap), 0.20f);
-                var max = new Vector2(x0 + i * (w + gap) + w, 0.58f);
+                var min = new Vector2(x0 + i * (w + gap), 0.19f);
+                var max = new Vector2(x0 + i * (w + gap) + w, 0.60f);
                 var card = PresentableUi.Rect("Option" + i, panel, min, max);
-                _optBg[i] = PresentableUi.Img(card, cardSp, new Color(0.55f, 0.85f, 1f, 0.22f), true, true);
+                _optBg[i] = PresentableUi.Img(card, cardSp, new Color(0.45f, 0.78f, 1f, 0.30f), true, true);
                 var idx = i;
                 MakeButton("OptBtn" + i, panel, card, _optBg[i], () => SelectOption(idx));
-                _optLetter[i] = T("Letter", card, new Vector2(0.07f, 0.74f), new Vector2(0.45f, 0.97f), 52f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 22f);
+                _optLetter[i] = T("Letter", card, new Vector2(0.07f, 0.74f), new Vector2(0.45f, 0.98f), 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 22f);
                 _optLetter[i].text = ((char)('A' + i)).ToString();
-                _optText[i] = T("Text", card, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.76f), 30f, HoloWhite, TextAlignmentOptions.Center, false, 14f);
+                _optText[i] = T("Text", card, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.76f), 42f, HoloWhite, TextAlignmentOptions.Center, false, 22f);
                 _optText[i].textWrappingMode = TextWrappingModes.Normal;
             }
 
             // verdict strip inside the panel: its own padded band between the cards and the bottom edge
-            var strip = PresentableUi.Rect("VerdictStrip", panel, new Vector2(0.07f, 0.045f), new Vector2(0.93f, 0.155f));
+            var strip = PresentableUi.Rect("VerdictStrip", panel, new Vector2(0.04f, 0.01f), new Vector2(0.96f, 0.19f));
             _verdictBg = PresentableUi.Img(strip, art.roundedSolid, new Color(0.1f, 0.3f, 0.5f, 0.0f), true);
-            _verdict = T("Verdict", strip, new Vector2(0.03f, 0.08f), new Vector2(0.97f, 0.92f), 30f, Good, TextAlignmentOptions.Center, true, 14f);
+            _verdict = T("Verdict", strip, new Vector2(0.03f, 0.52f), new Vector2(0.97f, 0.95f), 28f, Good, TextAlignmentOptions.Center, true, 14f);
+            _reason = T("Reason", strip, new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.52f), 20f, HoloWhite, TextAlignmentOptions.Center, false, 10f);
+            _reason.textWrappingMode = TextWrappingModes.Normal;
 
-            _nextBtn = PresentableUi.Rect("Next", _main.transform, new Vector2(0.206f, 0.0f), new Vector2(0.375f, 0.115f));
+            _nextBtn = PresentableUi.Rect("Next", _main.transform, new Vector2(0.166f, 0.0f), new Vector2(0.311f, 0.097f));
             _nextBtn.gameObject.AddComponent<CanvasGroup>();
             var nextImg = PresentableUi.Img(_nextBtn, nextSp, Color.white, false, true, true);
             _nextText = T("Label", _nextBtn, new Vector2(0.12f, 0.15f), new Vector2(0.88f, 0.85f), 46f, HoloWhite, TextAlignmentOptions.Center, true, 18f);
             MakeButton("NextBtn", _main.transform, _nextBtn, nextImg, PressNext);
 
             // SDS side panel: the frame picture (584x924, glow padding inside the file) is shown unsliced; everything sits inside its visible edge
-            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(0.555f, 0f), new Vector2(1f, 1f));
+            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(0.495f, 0f), new Vector2(1f, 1f));
             _sdsPanel.gameObject.AddComponent<CanvasGroup>();
             var sdsBg = PresentableUi.Img(_sdsPanel, sdsFrame, new Color(0.82f, 0.9f, 1f, 0.97f), false);
             sdsBg.type = Image.Type.Simple;
             sdsBg.raycastTarget = true;
             _refTitle = T("RefTitle", _sdsPanel, new Vector2(0.15f, 0.87f), new Vector2(0.90f, 0.94f), 36f, HoloWhite, TextAlignmentOptions.Center, true, 14f);
-            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.10f, 0.15f), new Vector2(0.92f, 0.855f));
+            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.08f, 0.15f), new Vector2(0.93f, 0.86f));
             PresentableUi.Img(viewport, null, new Color(0f, 0f, 0f, 0.01f), false, true);
             viewport.gameObject.AddComponent<RectMask2D>();
             _sdsContent = PresentableUi.Rect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f));
@@ -736,6 +901,7 @@ namespace ChemicalSafety.Presentable
             // ---- results (translucent glass like the picture, rows with bracket frames)
             _results = PresentableUi.WorldCanvas("ScCheckResults", transform, new Vector2(900f, 650f), Scale, true, 30);
             _results.gameObject.AddComponent<CanvasGroup>();
+            PresentableUi.Img("Back", _results.transform, new Vector2(0.01f, 0.01f), new Vector2(0.99f, 0.99f), art.roundedSolid, new Color(0.07f, 0.14f, 0.26f, 0.94f));
             PresentableUi.Img("Frame", _results.transform, Vector2.zero, Vector2.one, popup, Color.white).type = Image.Type.Sliced;
             _resTitle = T("Title", _results.transform, new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.95f), 58f, HoloCyan, TextAlignmentOptions.Center, true, 22f);
             _resScore = T("Score", _results.transform, new Vector2(0.1f, 0.67f), new Vector2(0.72f, 0.80f), 40f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, 18f);

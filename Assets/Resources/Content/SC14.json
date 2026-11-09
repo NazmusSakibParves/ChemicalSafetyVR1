@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check' with the supervisor. He asks three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে সুপারভাইজারের সঙ্গে একটি ‘কাজ-পূর্ব নিরাপত্তা পরীক্ষা’ পাস করতে হবে। তিনি এসডিএস থেকে তিনটি প্রশ্ন করবেন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
+      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
     },
     {
       "key": "Instructions",
@@ -48,13 +48,13 @@
     },
     {
       "key": "ChemName",
-      "en": "Hydrochloric Acid (HCL)",
-      "bn": "হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Nitric Acid",
+      "bn": "নাইট্রিক অ্যাসিড"
     },
     {
       "key": "BottleTitle",
-      "en": "Chemical Name: Hydrochloric Acid (HCL)",
-      "bn": "রাসায়নিকের নাম: হাইড্রোক্লোরিক অ্যাসিড (এইচসিএল)"
+      "en": "Chemical Name: Nitric Acid",
+      "bn": "রাসায়নিকের নাম: নাইট্রিক অ্যাসিড"
     },
     {
       "key": "ChemLabel",
@@ -221,41 +221,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Which protective equipment does the SDS recommend for a corrosive liquid like hydrochloric acid?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিডের মতো ক্ষয়কারী তরলের জন্য নিরাপত্তা তথ্যপত্র কোন সুরক্ষা সরঞ্জাম সুপারিশ করে?"
+        "en": "Before you begin, tell me — what PPE is required for Nitric Acid?",
+        "bn": "কাজ শুরুর আগে বলুন, নাইট্রিক অ্যাসিডের জন্য কোন কোন PPE লাগবে?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Safety glasses + cotton gloves",
-            "bn": "সেফটি চশমা + সুতির গ্লাভস"
+            "en": "Heavy-duty chemical-resistant gloves (Neoprene, Butyl, or Viton), protective clothing, and splash goggles with face shield.",
+            "bn": "ভারী রাসায়নিক-প্রতিরোধী গ্লাভস (নিওপ্রিন, বিউটাইল বা ভাইটন), সুরক্ষা পোশাক এবং স্প্ল্যাশ গগলস ও ফেস শিল্ড।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Goggles + face shield, neoprene gloves, apron",
-            "bn": "ফেস শিল্ডসহ গগলস, নিওপ্রিন গ্লাভস, অ্যাপ্রন"
+            "en": "Thin nitrile gloves and standard glasses.",
+            "bn": "পাতলা নাইট্রাইল গ্লাভস এবং সাধারণ চশমা।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Normal glasses + cloth mask",
-            "bn": "সাধারণ চশমা + কাপড়ের মাস্ক"
+            "en": "Respirator only.",
+            "bn": "শুধু রেসপিরেটর।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Nitrile gloves only",
-            "bn": "শুধু নাইট্রাইল গ্লাভস"
+            "en": "No PPE required.",
+            "bn": "কোনো PPE পরার দরকার নেই।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Neoprene, Butyl, or Viton gloves along with a face shield and full protective ensemble are required.",
+        "bn": "সঠিক! নিওপ্রিন, বিউটাইল বা ভাইটন গ্লাভস এবং ফেস শিল্ড সহ সম্পূর্ণ সুরক্ষা সেট প্রয়োজন।"
+      },
+      "reasonWrong": {
+        "en": "Thin nitrile or latex gloves are not recommended for concentrated nitric acid as it can break through in less than a minute. SDS Section 8 mandates heavy-duty gloves and full eye/face protection.",
+        "bn": "ঘন নাইট্রিক অ্যাসিডের জন্য পাতলা নাইট্রাইল বা ল্যাটেক্স গ্লাভস সুপারিশ করা হয় না, কারণ এটি এক মিনিটেরও কম সময়ে গ্লাভস ভেদ করতে পারে। SDS-এর ৮ নম্বর অংশ অনুযায়ী ভারী গ্লাভস এবং চোখ-মুখের সুরক্ষা বাধ্যতামূলক।"
+      }
     },
     {
       "id": "SC14.Q2",
@@ -264,41 +272,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "What to do if hydrochloric acid touches your skin?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড ত্বকে লাগলে কী করবেন?"
+        "en": "Now — what is the first-aid response for skin contact with Nitric Acid?",
+        "bn": "এবার বলুন, নাইট্রিক অ্যাসিড ত্বকে লাগলে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Apply burn cream and continue",
-            "bn": "পোড়ার ক্রিম লাগিয়ে কাজ চালান"
+            "en": "Remove contaminated clothing and flush with water for at least 15 minutes, then seek medical help.",
+            "bn": "দাগানো কাপড় খুলে ফেলব এবং কমপক্ষে ১৫ মিনিট পানি দিয়ে ধোব, তারপর ডাক্তারের সাহায্য নেব।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Flush with water 15+ min, remove clothing, get help",
-            "bn": "১৫ মিনিটের বেশি পানিতে ধুয়ে কাপড় খুলুন, সাহায্য নিন"
+            "en": "Neutralize the acid with baking soda.",
+            "bn": "বেসিং সোডা দিয়ে অ্যাসিড নিষ্ক্রিয় করব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with dry cloth",
-            "bn": "শুকনো কাপড়ে মুছুন"
+            "en": "Wipe with a dry cloth.",
+            "bn": "শুকনো কাপড় দিয়ে মুছে ফেলব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Rinse briefly, return to work",
-            "bn": "অল্প ধুয়ে কাজে ফিরুন"
+            "en": "Apply burn cream and cover.",
+            "bn": "পোড়ার মলম লাগিয়ে ঢেকে দেব।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Matches SDS Section 4: flush for at least 15 minutes, remove contaminated clothing, seek medical attention.",
+        "bn": "SDS-এর ৪ নম্বর অংশ অনুযায়ী কমপক্ষে ১৫ মিনিট পানি দিয়ে ধুতে হবে, দাগানো পোশাক খুলতে হবে এবং ডাক্তারের কাছে যেতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Do not attempt to neutralize acid on the skin. Wiping with a dry cloth spreads it. Prolonged flushing with water is the only correct SDS first-aid step.",
+        "bn": "ত্বকে অ্যাসিড নিষ্ক্রিয় করার চেষ্টা করবেন না। শুকনো কাপড়ে মুছলে তা আরও ছড়ায়। দীর্ঘ সময় পানি দিয়ে ধোয়াই একমাত্র সঠিক প্রাথমিক চিকিৎসা।"
+      }
     },
     {
       "id": "SC14.Q3",
@@ -307,41 +323,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "At what temperature should hydrochloric acid be stored?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড কোন তাপমাত্রায় সংরক্ষণ করতে হয়?"
+        "en": "And finally — what are the safe storage conditions for Nitric Acid?",
+        "bn": "শেষ প্রশ্ন: নাইট্রিক অ্যাসিড নিরাপদে রাখার শর্ত কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "2 to 8 °C, cold room",
-            "bn": "২ থেকে ৮ °সে, ঠান্ডা ঘরে"
+            "en": "In a cool, dry, well-ventilated place, away from heat, direct sunlight, and organic materials.",
+            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, তাপ, সরাসরি রোদ এবং জৈব পদার্থ থেকে দূরে রাখতে হবে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Below 15 °C, cool and dark",
-            "bn": "১৫ °সে-এর নিচে, ঠান্ডা ও অন্ধকারে"
+            "en": "Next to organic solvents.",
+            "bn": "জৈব দ্রাবকের পাশে রাখব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "15 to 25 °C, room temperature",
-            "bn": "১৫ থেকে ২৫ °সে, ঘরের তাপমাত্রায়"
+            "en": "In a heated area.",
+            "bn": "গরম করার জন্য হিটারযুক্ত জায়গায় রাখব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "In a freezer",
-            "bn": "ফ্রিজারে"
+            "en": "Outside in the open.",
+            "bn": "খোলা জায়গায় রাখব।"
           }
         }
       ],
-      "correct": "C",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! Store in a cool, dry, well-ventilated place, away from organic materials.",
+        "bn": "সঠিক! শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থানে এবং জৈব পদার্থ থেকে দূরে সংরক্ষণ করতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Nitric acid is a strong oxidizer. Contact with organic materials, heat, or direct sunlight poses a fire or explosion risk. SDS Section 7 requires keeping it away from these.",
+        "bn": "নাইট্রিক অ্যাসিড একটি শক্তিশালী অক্সিডাইজার। জৈব পদার্থ, তাপ বা সরাসরি রোদের সংস্পর্শে এলে আগুন বা বিস্ফোরণের ঝুঁকি থাকে। SDS-এর ৭ নম্বর অংশ অনুযায়ী এগুলো থেকে দূরে রাখতে হবে।"
+      }
     }
   ]
 }

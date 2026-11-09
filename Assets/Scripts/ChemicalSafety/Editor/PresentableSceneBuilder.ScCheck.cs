@@ -101,33 +101,31 @@ namespace ChemicalSafety.Editor
 
         private static ScCheckRefs BuildScCheckRoom(Transform env, PresentableArt art)
         {
+            if (ScCheckUseFactory && _scCheckHall != null)
+                return BuildScCheckFactory(env, art); // the client's factory room (copy of the Scenario 6 room); the old brick hall below stays restorable
             var refs = new ScCheckRefs();
             var room = new GameObject("Room").transform;
             room.SetParent(env, false);
 
-            // light: no sun, soft ambient, windows and lamps do the rest
+            // mood: bright dusty grey like the client's factory photo, haze only far away
             var mood = env.gameObject.AddComponent<ChemicalSafety.Presentable.Sc03Mood>();
             var mso = new SerializedObject(mood);
-            mso.FindProperty("ambientSky").colorValue = new Color(0.82f, 0.85f, 0.90f);
-            mso.FindProperty("ambientEquator").colorValue = new Color(0.72f, 0.72f, 0.74f);
-            mso.FindProperty("ambientGround").colorValue = new Color(0.50f, 0.48f, 0.45f);
-            mso.FindProperty("fogColor").colorValue = new Color(0.58f, 0.62f, 0.68f);
-            mso.FindProperty("fogStart").floatValue = 40f;
-            mso.FindProperty("fogEnd").floatValue = 140f;
+            mso.FindProperty("ambientSky").colorValue = new Color(1.0f, 0.99f, 0.96f);
+            mso.FindProperty("ambientEquator").colorValue = new Color(0.84f, 0.83f, 0.80f);
+            mso.FindProperty("ambientGround").colorValue = new Color(0.40f, 0.39f, 0.37f);
+            mso.FindProperty("fogColor").colorValue = new Color(0.74f, 0.75f, 0.74f);
+            mso.FindProperty("fogStart").floatValue = 9f;
+            mso.FindProperty("fogEnd").floatValue = 46f;
             mso.FindProperty("sunIntensity").floatValue = 0.0f;
-            mso.FindProperty("reflectionIntensity").floatValue = 0.55f;
+            mso.FindProperty("reflectionIntensity").floatValue = 0.5f;
             mso.ApplyModifiedPropertiesWithoutUndo();
 
-            var brick = Sc12Tiled("ScCheckBrick", ScTex("ScCheck_Brick"), new Color(1.05f, 1.0f, 0.98f), 0.14f, 0f, new Vector2(4f, 3f), ScTex("ScCheck_Brick_Normal"));
-            var brickSide = Sc12Tiled("ScCheckBrickSide", ScTex("ScCheck_Brick"), new Color(1.0f, 0.95f, 0.93f), 0.14f, 0f, new Vector2(4.4f, 3f), ScTex("ScCheck_Brick_Normal"));
-            var panel = Sc12Tiled("ScCheckPanel", ScTex("ScCheck_Panel"), new Color(0.92f, 0.94f, 0.97f), 0.3f, 0.2f, new Vector2(6f, 2f));
-            var floorMat = Sc12Tiled("ScCheckFloor", ScTex("ScCheck_Floor"), new Color(1.12f, 1.10f, 1.06f), 0.68f, 0.08f, new Vector2(9f, 6f), ScTex("ScCheck_Floor_Normal"));
-            var ceilMat = Mat("ScCheckCeiling", new Color(0.66f, 0.68f, 0.70f), 0.25f, 0.1f);
+            // factory materials: dirty plaster walls, concrete floor, pale ceiling (same texture set as SC06 factory)
+            var wallMat = Sc01Pbr("ScCheckFacWall", "Wall", new Color(1.55f, 1.55f, 1.52f), 0.12f, 1f);
+            var floorMat = Sc01Pbr("ScCheckFacFloor", "Wall", new Color(0.80f, 0.77f, 0.70f), 0.25f, 1f);
+            var ceilMat = Sc01Pbr("ScCheckFacCeil", "Wall", new Color(1.05f, 1.04f, 1.0f), 0.1f, 0.9f);
+            var bandMat = Sc01Pbr("ScCheckFacBand", "Wall", new Color(0.60f, 0.70f, 0.80f), 0.2f, 1f);
             var steel = Mat("ScCheckSteel", new Color(0.82f, 0.84f, 0.87f), 0.65f, 0.55f);
-            foreach (var bm in new[] { brick, brickSide, floorMat })
-                bm.SetFloat("_BumpScale", 0.28f);
-            brick.SetColor("_BaseColor", new Color(1.12f, 1.06f, 1.02f));
-            brickSide.SetColor("_BaseColor", new Color(1.08f, 1.02f, 0.98f));
             var darkSteel = Mat("ScCheckDarkSteel", new Color(0.24f, 0.26f, 0.29f), 0.5f, 0.7f);
             var yellow = Mat("ScCheckYellow", new Color(0.95f, 0.66f, 0.08f), 0.45f, 0.2f);
             var blue = Mat("ScCheckBlueCab", new Color(0.12f, 0.32f, 0.62f), 0.45f, 0.1f);
@@ -146,15 +144,15 @@ namespace ChemicalSafety.Editor
                 floor.layer = solidLayer;
             ScBox("Ceiling_Main", room, (rL + rR) * 0.5f, H + 0.05f, (fNear + fBack) * 0.5f, rR - rL, 0.1f, fBack - fNear, ceilMat);
 
-            // ---------------------------------------------------------------- walls
+            // ---------------------------------------------------------------- walls (dirty plaster, factory style)
             var walls = new List<GameObject>
             {
-                ScBox("Wall_FarBrick", room, (0.9f + rR) * 0.5f, H * 0.5f, fFar + 0.1f, rR - 0.9f + 0.2f, H, 0.2f, brick),
-                ScBox("Wall_Return", room, 1.0f, H * 0.5f, (fFar + fBack) * 0.5f, 0.2f, H, fBack - fFar, panel),
-                ScBox("Wall_RightBrick", room, rR + 0.1f, H * 0.5f, (fNear + fFar) * 0.5f, 0.2f, H, fFar - fNear + 0.4f, brickSide),
-                ScBox("Wall_Behind", room, (rL + rR) * 0.5f, H * 0.5f, fNear - 0.1f, rR - rL + 0.4f, H, 0.2f, panel),
-                ScBox("Wall_Left", room, rL - 0.1f, H * 0.5f, (fNear + fBack) * 0.5f, 0.2f, H, fBack - fNear + 0.4f, panel),
-                ScBox("Wall_Back", room, (rL + 0.4f) * 0.5f, H * 0.5f, fBack + 0.1f, 0.4f - rL + 0.2f, H, 0.2f, panel)
+                ScBox("Wall_FarBrick", room, (0.9f + rR) * 0.5f, H * 0.5f, fFar + 0.1f, rR - 0.9f + 0.2f, H, 0.2f, wallMat),
+                ScBox("Wall_Return", room, 1.0f, H * 0.5f, (fFar + fBack) * 0.5f, 0.2f, H, fBack - fFar, wallMat),
+                ScBox("Wall_RightBrick", room, rR + 0.1f, H * 0.5f, (fNear + fFar) * 0.5f, 0.2f, H, fFar - fNear + 0.4f, wallMat),
+                ScBox("Wall_Behind", room, (rL + rR) * 0.5f, H * 0.5f, fNear - 0.1f, rR - rL + 0.4f, H, 0.2f, wallMat),
+                ScBox("Wall_Left", room, rL - 0.1f, H * 0.5f, (fNear + fBack) * 0.5f, 0.2f, H, fBack - fNear + 0.4f, wallMat),
+                ScBox("Wall_Back", room, (rL + 0.4f) * 0.5f, H * 0.5f, fBack + 0.1f, 0.4f - rL + 0.2f, H, 0.2f, wallMat)
             };
             foreach (var w in walls)
             {
@@ -162,6 +160,17 @@ namespace ChemicalSafety.Editor
                 if (solidLayer >= 0)
                     w.layer = solidLayer;
             }
+
+            // pale-blue band at the bottom of every wall (like the factory photo)
+            var bandEdge = Mat("ScCheckFacBandEdge", new Color(0.30f, 0.34f, 0.38f), 0.2f, 0f);
+            ScBox("BandFar", room, (0.9f + rR) * 0.5f, 0.55f, fFar + 0.006f, rR - 0.9f, 1.1f, 0.012f, bandMat);
+            ScBox("BandRight", room, rR + 0.006f, 0.55f, (fNear + fFar) * 0.5f, 0.012f, 1.1f, fFar - fNear, bandMat);
+            ScBox("BandBehind", room, (rL + rR) * 0.5f, 0.55f, fNear - 0.006f, rR - rL, 1.1f, 0.012f, bandMat);
+            ScBox("BandLeft", room, rL - 0.006f, 0.55f, (fNear + fBack) * 0.5f, 0.012f, 1.1f, fBack - fNear, bandMat);
+            ScBox("BandEdgeFar", room, (0.9f + rR) * 0.5f, 1.105f, fFar + 0.008f, rR - 0.9f, 0.02f, 0.016f, bandEdge);
+            ScBox("BandEdgeRight", room, rR + 0.008f, 1.105f, (fNear + fFar) * 0.5f, 0.016f, 0.02f, fFar - fNear, bandEdge);
+            ScBox("BandEdgeBehind", room, (rL + rR) * 0.5f, 1.105f, fNear - 0.008f, rR - rL, 0.02f, 0.016f, bandEdge);
+            ScBox("BandEdgeLeft", room, rL - 0.008f, 1.105f, (fNear + fBack) * 0.5f, 0.016f, 0.02f, fBack - fNear, bandEdge);
 
             // the far end of the hall is the client's own picture (machines, windows, crane, roof); the real 3D hall stands in front of it
             var backTex = Resources.Load<Texture2D>("ScCheck/backdrop");
@@ -203,27 +212,31 @@ namespace ChemicalSafety.Editor
             for (var i = 0; i < 4; i++)
                 ScBox("Column" + i, room, rL + 0.3f, H * 0.5f, 2.2f + i * 3.6f, 0.4f, H, 0.4f, columnMat);
 
-            var lamp = Mat("ScCheckLampUnlit", new Color(1f, 0.97f, 0.88f), 0f, 0f, null, null, true);
-            var lampPositions = new List<Vector2>();
-            foreach (var lr in new[] { -7.5f, -4f, -0.5f, 3f })
-                foreach (var lf in new[] { 1f, 4.5f, 8f, 11.5f })
-                    lampPositions.Add(new Vector2(lr, lf));
-            foreach (var p in lampPositions)
+            // fluorescent tube fixtures hanging from chains (like the factory photo)
+            var tubeMat = Mat("ScCheckFacTube", new Color(0.95f, 0.97f, 0.92f), 0.2f, 0f, null, new Color(2.4f, 2.4f, 2.3f), false);
+            var housing = Mat("ScCheckFacHousing", new Color(0.56f, 0.57f, 0.57f), 0.4f, 0.3f);
+            var tubePositions = new[]
             {
-                var lg = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                lg.name = "Lamp";
-                lg.transform.SetParent(room, true);
-                lg.transform.position = ScP(p.x, H - 0.9f, p.y);
-                lg.transform.localScale = new Vector3(0.55f, 0.04f, 0.55f);
-                lg.GetComponent<MeshRenderer>().sharedMaterial = lamp;
-                Object.DestroyImmediate(lg.GetComponent<Collider>());
-                ScBox("LampStem", room, p.x, H - 0.5f, p.y, 0.03f, 0.8f, 0.03f, darkSteel);
+                new Vector2(-7.5f, 1f), new Vector2(-4f, 1f), new Vector2(-0.5f, 1f), new Vector2(3f, 1f),
+                new Vector2(-7.5f, 4.5f), new Vector2(-4f, 4.5f), new Vector2(-0.5f, 4.5f), new Vector2(3f, 4.5f),
+                new Vector2(-7.5f, 8f), new Vector2(-4f, 8f), new Vector2(-0.5f, 8f),
+                new Vector2(-7.5f, 11.5f), new Vector2(-4f, 11.5f)
+            };
+            for (var i = 0; i < tubePositions.Length; i++)
+            {
+                var p = ScP(tubePositions[i].x, H - 0.9f, tubePositions[i].y);
+                ScBox("TubeChainA" + i, room, tubePositions[i].x, H - 0.5f, tubePositions[i].y, 0.012f, 0.8f, 0.012f, darkSteel);
+                var hg = Box("TubeHousing" + i, room, p + Vector3.up * 0.04f, new Vector3(2.2f, 0.05f, 0.18f), housing, false);
+                Box("TubeA" + i, room, p - new Vector3(0f, 0f, 0.04f), new Vector3(2.1f, 0.04f, 0.04f), tubeMat, false);
+                Box("TubeB" + i, room, p + new Vector3(0f, 0f, 0.04f), new Vector3(2.1f, 0.04f, 0.04f), tubeMat, false);
+                var angle = i % 2 == 0 ? 20f : -14f;
+                hg.transform.RotateAround(p, Vector3.up, angle);
             }
 
-            ScLight(room, "Light_Table", ScP(1.4f, 4.2f, 3.4f), 9f, 4.2f, new Color(1f, 0.95f, 0.86f));
-            ScLight(room, "Light_Sup", ScP(-1.4f, 4.0f, 2.6f), 8f, 3.2f, new Color(1f, 0.97f, 0.92f));
+            ScLight(room, "Light_Table", ScP(1.4f, 4.2f, 3.4f), 9f, 4.2f, new Color(0.94f, 0.96f, 0.92f));
+            ScLight(room, "Light_Sup", ScP(-1.4f, 4.0f, 2.6f), 8f, 3.2f, new Color(0.94f, 0.96f, 0.92f));
             ScLight(room, "Light_Deep", ScP(-4f, 5.0f, 9f), 12f, 3.4f, new Color(0.92f, 0.96f, 1f));
-            ScLight(room, "Light_Player", ScP(0f, 3.4f, -0.8f), 7f, 2.2f, new Color(1f, 0.97f, 0.92f));
+            ScLight(room, "Light_Player", ScP(0f, 3.4f, -0.8f), 7f, 2.2f, new Color(0.94f, 0.96f, 0.92f));
 
             // floor markings: the yellow safety line runs in from the left foreground, a keep-out frame around the table
             var line = ScBox("SafetyLine", room, -2.7f, 0.006f, 1.6f, 0.14f, 0.012f, 12f, yellow);
@@ -240,30 +253,8 @@ namespace ChemicalSafety.Editor
             if (placeHydroPress3D)
                 ScMachines(room, steel, darkSteel, yellow, blue, white);
 
-            // ---------------------------------------------------------------- the supervisor and his clipboard
-            var supPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScCheckSupervisorPrefab);
+            // Supervisor removed from SC13-18 (client request 2026-11-09)
             LabSupervisor supervisor = null;
-            if (supPrefab != null)
-            {
-                var sup = (GameObject)PrefabUtility.InstantiatePrefab(supPrefab);
-                sup.name = "LabSupervisor";
-                sup.transform.SetParent(room, true);
-                sup.transform.position = ScP(-0.35f, 0f, 3.2f); // clear of the table's left end (r 0.3) and ahead of its front edge
-                var toSpawn = ScP(0.6f, 0f, 2.3f) - sup.transform.position;
-                toSpawn.y = 0f;
-                sup.transform.rotation = Quaternion.LookRotation(toSpawn.normalized, Vector3.up);
-                ScBlob(room, sup.transform.position, new Vector2(0.9f, 0.7f), 0.6f);
-                var s = 1.78f / 5.11f;
-                sup.transform.localScale = Vector3.one * s;
-                supervisor = sup.AddComponent<LabSupervisor>();
-                foreach (var hair in sup.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                    hair.updateWhenOffscreen = true;
-                // no clipboard and no pen: the supervisor stands, walks and talks with his hands free
-            }
-            else
-            {
-                Debug.LogWarning("[ScCheck] Supervisor prefab missing: run Chemical Safety/Presentable/Check Scenarios/Build Supervisor Prefab");
-            }
 
             // ---------------------------------------------------------------- markers + runner
             var supStart = Marker("SupervisorStart", room, ScP(-0.35f, 0f, 9.5f), 0f);

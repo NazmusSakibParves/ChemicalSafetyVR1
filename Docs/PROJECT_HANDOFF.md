@@ -728,3 +728,84 @@ Read `Docs/INPUT_MODE_AND_FEEDBACK_PLAN.md`. Summary of the user's decisions: lo
 - **Content**: `SC10.json` new `Ray*` keys (bn + en), `Sc10Content`, voices `VO_Sc10Ray*` + `VO_Sc10WrongNext` (bn in `Art/Audio/VO`, en twins in `Resources/VoEn`, `Tools/generate_vo.py`), Bangla card `BN_Sc10RayInstructionPanel`, Bangla images with `Tools/render_bn_only.py SC10`. Gate voice says "process" (not "animation").
 - **Smoke**: `Sc10RaySmoke` (state based) with `ChemSafetySc10Only`; ends `runtime errors/exceptions = 0`; SC09-only run was started once but stopped by hand, SC06/08/09 were NOT rerun after the final changes. Keep every dev flag OFF.
 - **Not verified**: Quest (comfort, frame rate, the spill kit and glass look), all new voices by ear, SC06/08/09 smoke after the last edits.
+
+### 14.30 SC13-18 redesign: unique chemicals, inline reasons, factory environment, no supervisor (2026-11-09, same branch, NOT committed / pushed, no APK)
+
+**Goal**: The user provided a full redesign of SC13-18 with: 6 unique chemicals (not all HCl), inline correct/wrong reasons on every MCQ, remove lab supervisor NPC, remove glassware from table (single chemical prop per round), reduce user clicks (drop Start card), left-side instruction card (like SC06/08), MCQ above table, controller ray input, and the **factory-lab environment** from the reference photo (dirty plaster walls, fume hood, exhaust fan, PPE shelf, GHS sign, fire extinguishers, industrial sink — the same look used in SC06/08/09/10).
+
+**IMPORTANT — SC01-12 isolation**: all changes are in ScCheck-isolated files. `Environment_SCCHECK` (ScOx=540) is completely separate from `Environment_SC06` (Sc06Ox=200). SC06/08/09/10 share `env6`; SC13-18 have their own `envScCheck`. No SC01-12 code or scene objects were touched.
+
+#### What was done (code changes complete):
+
+1. **Content generator rewrite** (`Tools/generate_sccheck_content.py`): 6 unique chemicals: SC13=HCl, SC14=Nitric Acid, SC15=Chlorine Gas, SC16=H₂O₂ (PPE focus), SC17=H₂O₂ (hazard focus), SC18=Bleaching Powder. Each question has `reasonCorrect` and `reasonWrong` bilingual fields (BN+EN). All 18 questions with full MCQ content from the user.
+
+2. **JSON regenerated** (`Assets/Resources/Content/SC13..18.json`): all 6 files with reasons.
+
+3. **Loc.cs**: added `reasonCorrect` and `reasonWrong` LText fields to `LQuestion` class.
+
+4. **ScCheckRunner.cs** (4 changes):
+   - Removed `startCard` stage (flow: intro → bottle → questions)
+   - Instruction card moved to left side (`-0.38f` offset, like SC06/08)
+   - MCQ panel placed above table (`y=0.12f`, centered, no chemical overlap)
+   - Inline reason display after answer: green text for correct, red for wrong; verdict strip expanded with `_reason` TextMeshProUGUI
+
+5. **PresentableInput.cs**: `RayScenarios` now includes 1-18 (was 1-12).
+
+6. **PresentableSceneBuilder.ScCheck.cs**: supervisor spawn replaced with `LabSupervisor supervisor = null;` (markers kept, runner handles null gracefully, smoke test `ScSupervisorClear` skips if null).
+
+7. **PresentableSceneBuilder.ScCheckProps.cs**: removed ~80 lines of glassware (flasks, beakers, liquid, stoppers, glass tubes, hoses). Jug centered on table (`jugR = tr` instead of `tr + 0.45f`).
+
+8. **SDS images**: SC17 (`Resources/ScCheck/SC17/sds1-3.png` = Hydrogen Peroxide SDS), SC18 (`Resources/ScCheck/SC18/sds1-3.png` = Bleaching Powder SDS).
+
+9. **HCl model**: `Assets/Art/Presentable/3D/ScCheck/HydrochloricAcid.glb` copied from Downloads (2.78 MB). NOT wired into builder yet — the jug (Sc06BuildJug) is still the chemical prop.
+
+10. **VO regenerated**: all SC13-18 BN+EN clips (24 clips × 6 scenarios = 144 files) via `Tools/generate_sccheck_vo.py` (retry logic added for edge_tts failures). Each scenario done individually (`--force --only SCnn`).
+
+11. **Factory environment (IN PROGRESS)** in `PresentableSceneBuilder.ScCheck.cs`:
+    - ✅ Mood/ambient → bright dusty grey (matching SC06 factory: sky 1.0/0.99/0.96, fog 0.74/0.75/0.74)
+    - ✅ Wall material → dirty plaster (`Sc01Pbr "Wall"` texture set, same as SC06)
+    - ✅ Floor → concrete factory floor, ceiling → factory ceiling
+    - ✅ Pale-blue band at bottom of all walls + dark edge strip
+    - ✅ Round disc lamps → hanging fluorescent tube fixtures (housing + twin tubes + chains)
+    - ❌ NOT DONE: exhaust fan, Fume Hood Area sign, Caution Toxic Vapors sign, GHS box, fire extinguishers, PPE shelf, industrial sink, dirt/stains (oil blots, grime drips, rust), broken plaster patches, ceiling pipes
+
+#### What is NOT done:
+
+- **Factory props**: exhaust fan, signs (Fume Hood Area, Caution Toxic Vapors), GHS box with lamps, fire extinguishers, PPE shelf, steel sink, dirt/stains on floor/walls, broken plaster patches showing brick, ceiling pipes and cable tray. These are decorative — the scenario RUNS without them but doesn't match the reference photo.
+- **Scene build + Smoke test**: must run **Build Presentable Scene** then **Run Smoke Test** (use `Dev: start at Scenario 13 (check)` toggle for SC13-18 only). A partial smoke ran earlier: SC13 stages (intro, bottle, q1-q3) worked, SDS scroll worked, supervisor-clear skipped correctly. Layout fail on CHECK SDS button (`x 0.93-1.01` — slightly past right edge).
+- **HCl model wiring**: the `.glb` is imported but the builder still uses `Sc06BuildJug` for the chemical prop. Could be swapped in later.
+- **Quest verification**: no APK built, no headset test.
+
+#### Mistake log:
+- The initial implementation focused entirely on logic/content (runner, JSON, VO, supervisor removal, glassware removal) and **missed the factory environment visual redesign** that the user explicitly requested with a reference photo. The environment materials and props are now being added.
+
+#### Key files:
+| File | Role |
+|------|------|
+| `Tools/generate_sccheck_content.py` | 6-chemical content generator with reasons |
+| `Assets/Resources/Content/SC13..18.json` | Generated content per scenario |
+| `Tools/generate_sccheck_vo.py` | VO generator with retry logic |
+| `Assets/Resources/ScCheckVo/{bn,en}/` | 144 VO clips |
+| `Assets/Scripts/.../Localization/Loc.cs` | `LQuestion.reasonCorrect/reasonWrong` |
+| `Assets/Scripts/.../Presentable/ScCheckRunner.cs` | Runner: reason display, no startCard, left instruction, above MCQ |
+| `Assets/Scripts/.../Presentable/PresentableInput.cs` | RayScenarios 1-18 |
+| `Assets/Scripts/.../Editor/PresentableSceneBuilder.ScCheck.cs` | Room builder: no supervisor, factory materials (IN PROGRESS) |
+| `Assets/Scripts/.../Editor/PresentableSceneBuilder.ScCheckProps.cs` | Table props: no glassware, jug centered |
+| `Assets/Resources/ScCheck/SC17/`, `SC18/` | SDS images for H₂O₂ and Bleaching Powder |
+| `Assets/Art/Presentable/3D/ScCheck/HydrochloricAcid.glb` | HCl model (not wired yet) |
+
+#### Reference photo:
+The user's factory-lab reference (used in SC06/08/09/10): `assets/c__Users_msi_AppData_Roaming_Cursor_User_workspaceStorage_2bfaa2e540da71d5d90f27bffa436554_images_13-18-42ddfaa9-590b-4ee8-a4c8-40089811f76e.jpg`. Shows: dirty plaster walls with blue band, fume hood area with sign, PPE shelf, GHS sign, fire extinguishers, exhaust fan, fluorescent tubes, steel table with chemical containers, industrial sink.
+
+### 14.31 SC13-18 in the real factory room (copy of the Scenario 6 room), one chemical per scenario (2026-11-09, same branch, NOT committed / pushed, no APK)
+
+Replaces the "IN PROGRESS" environment work of 14.30 (the half-restyled brick hall is no longer built; its code stays behind a switch).
+
+- **Environment**: `PresentableSceneBuilder.ScCheckFactory.cs`. `ScCheckCaptureHall` (called from `PresentableSceneBuilder.cs` right after `Sc06BakeProbe`, BEFORE the Scenario 8/9/10 mounts are added) makes a hidden COPY of the finished Scenario 6 room (`Object.Instantiate`). `BuildScCheckFactory` then reparents it under `Environment_SCCHECK`, strips every MonoBehaviour (no Scenario 6 logic runs twice), deletes the old-lab leftovers and the three Scenario 6 containers (AcidCan, WaterJug, MixtureJar) plus the SDS poster, and moves it by `ScOx - Sc06Ox` (340 m) in X. Result: the client's photo room (fume hood, fan, signs, PPE shelf, extinguishers, sink, steel table). **Scenarios 1-12 are untouched**: the original rooms are only read (cloned), never modified, and the copy lives in its own environment.
+- **Switch**: `ScCheckUseFactory` (top of `ScCheckFactory.cs`). `false` + Build Presentable Scene = the previous brick hall (the old `BuildScCheckRoom` code below the hook is intact).
+- **Learner spot**: same as Scenarios 8/9/10 (`ScOx + 1.2, 0, 3.0`, yaw 187). The table top height/centre is measured from the copied `TableTopA/B` renderers.
+- **Chemicals** (`ScBuildChemical`, group `ScChemicals`, `ScCheckRunner.chemProps[n-13]`, the runner shows only the running scenario's one): SC13 = the designer's HCl bottle (`Sc04HclModel`, reused read-only from the Scenario 4 builder, same glb), SC14 nitric acid and SC16/17 hydrogen peroxide = the same bottle with its HCl label covered by a printed plate (`ScRelabel`, TextMeshPro 3D text, coloured band), SC15 = green steel gas cylinder with valve and CHLORINE tag plate, SC18 = white bleaching-powder sack with label. Scaled about the base so it stands on the table.
+- **Content check**: `SC13..18.json` match the user's pasted Q&A (18 questions, correct = A, `reasonCorrect` + `reasonWrong`, shuffle on).
+- **Popups**: instruction card on the left (like Scenarios 6/8), question / bottle cards above the table (`Place(..., 1.05, 0.12, 0)`), nothing else is on the table, so the cards cannot touch the chemical.
+- **Still open**: Quest look (label text size, bottle shimmer, plate readability), 3D models are my own (user may replace them later), SDS pages 13-16 still use the SC13 pictures (user will send), VO of the chemical name only (4th image card is not used).
+- **Rule for future work**: never edit `Sc06*/Sc08*/Sc09*/Sc10*` builders for SC13-18; the copy approach makes that unnecessary.

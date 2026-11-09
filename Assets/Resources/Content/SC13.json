@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check' with the supervisor. He asks three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে সুপারভাইজারের সঙ্গে একটি ‘কাজ-পূর্ব নিরাপত্তা পরীক্ষা’ পাস করতে হবে। তিনি এসডিএস থেকে তিনটি প্রশ্ন করবেন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
+      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
     },
     {
       "key": "Instructions",
@@ -221,41 +221,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Which protective equipment does the SDS recommend for a corrosive liquid like hydrochloric acid?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিডের মতো ক্ষয়কারী তরলের জন্য নিরাপত্তা তথ্যপত্র কোন সুরক্ষা সরঞ্জাম সুপারিশ করে?"
+        "en": "Before you begin, tell me — what PPE is required for Hydrochloric Acid? Check the SDS.",
+        "bn": "কাজ শুরুর আগে বলুন, হাইড্রোক্লোরিক অ্যাসিডের জন্য কোন কোন PPE লাগবে? SDS দেখে উত্তর দিন।"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Safety glasses + cotton gloves",
-            "bn": "সেফটি চশমা + সুতির গ্লাভস"
+            "en": "Chemical-resistant gloves (Butyl/Neoprene), protective clothing, and splash goggles or face shield.",
+            "bn": "রাসায়নিক-প্রতিরোধী গ্লাভস (বিউটাইল/নিওপ্রিন), সুরক্ষা পোশাক এবং স্প্ল্যাশ গগলস বা ফেস শিল্ড।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Goggles + face shield, neoprene gloves, apron",
-            "bn": "ফেস শিল্ডসহ গগলস, নিওপ্রিন গ্লাভস, অ্যাপ্রন"
+            "en": "Safety glasses only.",
+            "bn": "শুধু সেফটি চশমা।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Normal glasses + cloth mask",
-            "bn": "সাধারণ চশমা + কাপড়ের মাস্ক"
+            "en": "Thin nitrile gloves and a standard lab coat.",
+            "bn": "পাতলা নাইট্রাইল গ্লাভস এবং সাধারণ ল্যাব কোট।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Nitrile gloves only",
-            "bn": "শুধু নাইট্রাইল গ্লাভস"
+            "en": "No PPE required.",
+            "bn": "কোনো PPE পরার দরকার নেই।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Matches SDS Section 8. Full ensemble required: Butyl/Neoprene gloves, protective clothing, and splash goggles/face shield.",
+        "bn": "SDS-এর ৮ নম্বর অংশের সঙ্গে মিলছে: বিউটাইল/নিওপ্রিন গ্লাভস, সুরক্ষা পোশাক এবং স্প্ল্যাশ গগলস/ফেস শিল্ড তিনটিই পরতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "SDS Section 8 mandates heavy-duty chemical-resistant gloves and full eye/face protection for concentrated acids. Thin gloves or safety glasses alone are insufficient.",
+        "bn": "SDS-এর ৮ নম্বর অংশ অনুযায়ী ঘন অ্যাসিডের জন্য মোটা রাসায়নিক-প্রতিরোধী গ্লাভস এবং চোখের সম্পূর্ণ সুরক্ষা প্রয়োজন। পাতলা গ্লাভস বা শুধু চশমা যথেষ্ট নয়।"
+      }
     },
     {
       "id": "SC13.Q2",
@@ -264,41 +272,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "What to do if hydrochloric acid touches your skin?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড ত্বকে লাগলে কী করবেন?"
+        "en": "Now — what is the first-aid response if this chemical contacts the skin?",
+        "bn": "এবার বলুন, এই কেমিক্যাল ত্বকে লাগলে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Apply burn cream and continue",
-            "bn": "পোড়ার ক্রিম লাগিয়ে কাজ চালান"
+            "en": "Remove contaminated clothing and flush with water for 15–30 minutes, then seek medical help.",
+            "bn": "দাগানো কাপড় খুলে ফেলব এবং কমপক্ষে ১৫–৩০ মিনিট পানি দিয়ে ধোব, তারপর ডাক্তারের সাহায্য নেব।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Flush with water 15+ min, remove clothing, get help",
-            "bn": "১৫ মিনিটের বেশি পানিতে ধুয়ে কাপড় খুলুন, সাহায্য নিন"
+            "en": "Apply burn cream and continue working.",
+            "bn": "পোড়ার মলম লাগিয়ে কাজ চালিয়ে যাব।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with dry cloth",
-            "bn": "শুকনো কাপড়ে মুছুন"
+            "en": "Wipe with a dry cloth.",
+            "bn": "শুকনো কাপড় দিয়ে মুছে নেব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Rinse briefly, return to work",
-            "bn": "অল্প ধুয়ে কাজে ফিরুন"
+            "en": "Neutralize the acid with baking soda.",
+            "bn": "অ্যাসিড নিষ্ক্রিয় করতে বেসিং সোডা লাগাব।"
           }
         }
       ],
-      "correct": "B",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Matches SDS Section 4: flush for 15–30 minutes, remove contaminated clothing, seek medical attention.",
+        "bn": "SDS-এর ৪ নম্বর অংশ অনুযায়ী কমপক্ষে ১৫–৩০ মিনিট পানি দিয়ে ধুতে হবে, দাগানো পোশাক খুলতে হবে এবং ডাক্তারের কাছে যেতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Cream traps chemical, wiping spreads it. Do not attempt to neutralize acid on the skin. Prolonged flushing with water is the only correct SDS first-aid step.",
+        "bn": "ক্রিম লাগালে কেমিক্যাল ত্বকের ভেতরে আটকে যেতে পারে। শুকনো কাপড়ে মুছলে তা আরও ছড়ায়। ত্বকে অ্যাসিড নিষ্ক্রিয় করার চেষ্টা করবেন না। দীর্ঘ সময় পানি দিয়ে ধোয়াই একমাত্র সঠিক প্রাথমিক চিকিৎসা।"
+      }
     },
     {
       "id": "SC13.Q3",
@@ -307,41 +323,49 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "At what temperature should hydrochloric acid be stored?",
-        "bn": "হাইড্রোক্লোরিক অ্যাসিড কোন তাপমাত্রায় সংরক্ষণ করতে হয়?"
+        "en": "And finally — what is the safe storage temperature for Hydrochloric Acid?",
+        "bn": "শেষ প্রশ্ন: হাইড্রোক্লোরিক অ্যাসিড নিরাপদে রাখার জন্য কত তাপমাত্রা দরকার?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "2 to 8 °C, cold room",
-            "bn": "২ থেকে ৮ °সে, ঠান্ডা ঘরে"
+            "en": "In a cool, dry, well-ventilated place, typically 15–25°C, away from direct sunlight.",
+            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, সাধারণত ১৫–২৫°C তাপমাত্রায়, সরাসরি রোদ থেকে দূরে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Below 15 °C, cool and dark",
-            "bn": "১৫ °সে-এর নিচে, ঠান্ডা ও অন্ধকারে"
+            "en": "Any temperature below 50°C.",
+            "bn": "৫০°C-এর নিচে যেকোনো তাপমাত্রায়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "15 to 25 °C, room temperature",
-            "bn": "১৫ থেকে ২৫ °সে, ঘরের তাপমাত্রায়"
+            "en": "Freezer storage to prevent degradation.",
+            "bn": "নষ্ট হওয়া ঠেকাতে ফ্রিজারে রাখব।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "In a freezer",
-            "bn": "ফ্রিজারে"
+            "en": "Outside in the yard.",
+            "bn": "খোলা উঠানে রাখব।"
           }
         }
       ],
-      "correct": "C",
-      "shuffle": true
+      "correct": "A",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Read SDS Section 7 directly. Store in a cool, dry place, typically between 15–25°C.",
+        "bn": "SDS-এর ৭ নম্বর অংশ দেখুন। সাধারণত ১৫–২৫°C তাপমাত্রায় শীতল ও শুষ্ক স্থানে সংরক্ষণ করতে হবে।"
+      },
+      "reasonWrong": {
+        "en": "Storage range is chemical-specific. Vague ranges, freezer storage, or outdoor storage are unsafe.",
+        "bn": "প্রতিটি কেমিক্যালের জন্য সংরক্ষণের তাপমাত্রা আলাদা। অনুমান করে তাপমাত্রা ঠিক করা, ফ্রিজারে রাখা বা খোলা জায়গায় রাখা নিরাপদ নয়।"
+      }
     }
   ]
 }
