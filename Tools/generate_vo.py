@@ -281,7 +281,7 @@ CLIPS = {
     ),
     "VO_Sc09RayGate_bn": (
         BN_VOICE,
-        "ইমার্জেন্সি শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+        "ইমার্জেন্সি শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
     ),
     "VO_Sc09Complete_bn": (BN_VOICE, complete_bn(9)),
     "VO_Sc09Complete_en": (EN_VOICE, complete_en(9)),
@@ -451,7 +451,7 @@ CLIPS_EN = {
     "VO_Sc09RayWalk": "Turning right, to the emergency safety shower behind you.",
     "VO_Sc09RayPush": "The push plate of the shower has been pressed and the water is starting.",
     "VO_Sc09RayBack": "Now back at the table, see: the acid can lies there, the beaker is broken, and the acid has spread over the table and the floor.",
-    "VO_Sc09RayGate": "Emergency shower practice complete. If you are ready for the questions, click the Next button. To watch the whole animation again, click the Preview button.",
+    "VO_Sc09RayGate": "Emergency shower practice complete. If you are ready for the questions, click the Next button. To watch the whole process again, click the Preview button.",
     "VO_SC10_Instruction": "You are a lab technician. A glass bottle of acid has slipped and shattered on the floor. You are the first person on the scene. The lab supervisor is not in the room. You must respond correctly and safely.",
     "VO_Sc10Sds": "Read the Safety Data Sheet. It lists the spill response steps.",
     "VO_Sc10Ppe": "Put on your protective equipment. Touch each item.",
