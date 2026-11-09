@@ -98,8 +98,8 @@
     },
     {
       "key": "GateBodyPrev",
-      "en": "Press NEXT to proceed or PREVIEW to watch the whole animation again.",
-      "bn": "এগিয়ে যেতে নেক্সট চাপুন, পুরো অ্যানিমেশন আবার দেখতে প্রিভিউ চাপুন।"
+      "en": "Press NEXT to proceed or BACK to watch the whole process again.",
+      "bn": "এগিয়ে যেতে নেক্সট চাপুন, পুরো প্রসেসটি আবার দেখতে ব্যাক চাপুন।"
     }
   ],
   "arrays": [

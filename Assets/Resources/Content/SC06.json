@@ -53,8 +53,8 @@
     },
     {
       "key": "GateBody",
-      "en": "To proceed click next button or to watch the whole animation again click the preview button.",
-      "bn": "এগিয়ে যেতে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।"
+      "en": "To proceed click next button or to watch the whole process again click the back button.",
+      "bn": "এগিয়ে যেতে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।"
     },
     {
       "key": "QuestionHeader",

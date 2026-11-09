@@ -794,7 +794,6 @@ namespace ChemicalSafety.Editor
             if (Sc06UseFactory)
             {
                 var gso = new SerializedObject(refs.gate);
-                gso.FindProperty("backText").stringValue = "PREVIEW";
                 gso.ApplyModifiedPropertiesWithoutUndo();
             }
 

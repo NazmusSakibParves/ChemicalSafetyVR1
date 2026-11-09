@@ -180,7 +180,7 @@ CLIPS = {
     "VO_Sc06Pour_bn": (BN_VOICE, "কাচের জারটি ছুঁয়ে ধীরে ধীরে দ্রাবক ঢালুন।"),
     "VO_Sc06Gate_bn": (
         BN_VOICE,
-        "পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+        "পরিদর্শন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
     "VO_Sc06AutoHood_bn": (BN_VOICE, "ফিউম হুড চালু হয়েছে। সবুজ বাতি জ্বলছে, মানে হুড কাজ করছে।"),
     "VO_Sc06AutoFan_bn": (BN_VOICE, "এবার এক্সজস্ট ফ্যান চালু হলো। ফ্যান ঘুরে ঘরের বাষ্প বাইরে টেনে নিচ্ছে।"),
@@ -236,7 +236,7 @@ CLIPS = {
     "VO_Sc08AutoAcid_bn": (BN_VOICE, "এবার পানির মধ্যে ধীরে ধীরে অ্যাসিড ঢালা হচ্ছে, আর কাচের দণ্ড দিয়ে নাড়া হচ্ছে। সবসময় পানিতে অ্যাসিড ঢালতে হয়, অ্যাসিডে পানি নয়।"),
     "VO_Sc08GatePrev_bn": (
         BN_VOICE,
-        "অ্যাসিড পাতলা করার অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো অ্যানিমেশন আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+        "অ্যাসিড পাতলা করার অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
     # Scenario 9 (chemical splash on the face: broken flask, SDS, safety shower / eye wash). Nothing follows it: custom ending.
     "VO_SC09_Instruction_bn": (
@@ -281,7 +281,7 @@ CLIPS = {
     ),
     "VO_Sc09RayGate_bn": (
         BN_VOICE,
-        "ইমার্জেন্সি শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে প্রিভিউ বাটনে ক্লিক করুন।",
+        "ইমার্জেন্সি শাওয়ারের অনুশীলন সম্পন্ন হয়েছে। প্রশ্নের জন্য প্রস্তুত থাকলে নেক্সট বাটনে ক্লিক করুন, পুরো প্রসেসটি আবার দেখতে চাইলে ব্যাক বাটনে ক্লিক করুন।",
     ),
     "VO_Sc09Complete_bn": (BN_VOICE, complete_bn(9)),
     "VO_Sc09Complete_en": (EN_VOICE, complete_en(9)),
@@ -414,7 +414,7 @@ CLIPS_EN = {
     "VO_Sc06Jug": "Touch the Volatile Solvent container to pick it up.",
     "VO_Sc06Sash": "Touch the glass door of the fume hood to open it.",
     "VO_Sc06Pour": "Touch the glass jar to pour the solvent slowly.",
-    "VO_Sc06Gate": "Inspection completed. If you are ready for the questions, click the Next button. To watch the whole animation again, click the Preview button.",
+    "VO_Sc06Gate": "Inspection completed. If you are ready for the questions, click the Next button. To watch the whole process again, click the Back button.",
     "VO_Sc06AutoHood": "The fume hood is on. The green light is blinking, so the hood is running.",
     "VO_Sc06AutoFan": "Now the exhaust fan is switched on. The fan spins and pulls the vapour out of the room.",
     "VO_Sc06AutoMove": "The water jug, the acid can and the empty container are moved inside the hood.",
@@ -437,7 +437,7 @@ CLIPS_EN = {
     "VO_Sc08AutoPpe": "First, the protective equipment is taken from the station on the left wall, one by one: goggles, respirator, gloves and apron.",
     "VO_Sc08AutoWater": "First, the water is poured into the empty container.",
     "VO_Sc08AutoAcid": "Now the acid is added slowly to the water, and the glass rod keeps stirring. Always add acid to water, never water to acid.",
-    "VO_Sc08GatePrev": "Dilution practice complete. If you are ready for the questions, click the Next button. To watch the whole animation again, click the Preview button.",
+    "VO_Sc08GatePrev": "Dilution practice complete. If you are ready for the questions, click the Next button. To watch the whole process again, click the Back button.",
     "VO_SC09_Instruction": "You are a lab technician. Pour the chemical from the sample flask into the next flask. If something goes wrong, follow the safety procedure at once.",
     "VO_Sc09Flask": "Touch the purple sample flask to lift it and pour.",
     "VO_Sc09Spill": "The flask slipped from your hand and broke. A harmful chemical has splashed onto your face and eyes. You must respond immediately.",
@@ -451,7 +451,7 @@ CLIPS_EN = {
     "VO_Sc09RayWalk": "Turning right, to the emergency safety shower behind you.",
     "VO_Sc09RayPush": "The push plate of the shower has been pressed and the water is starting.",
     "VO_Sc09RayBack": "Now back at the table, see: the acid can lies there, the beaker is broken, and the acid has spread over the table and the floor.",
-    "VO_Sc09RayGate": "Emergency shower practice complete. If you are ready for the questions, click the Next button. To watch the whole process again, click the Preview button.",
+    "VO_Sc09RayGate": "Emergency shower practice complete. If you are ready for the questions, click the Next button. To watch the whole process again, click the Back button.",
     "VO_SC10_Instruction": "You are a lab technician. A glass bottle of acid has slipped and shattered on the floor. You are the first person on the scene. The lab supervisor is not in the room. You must respond correctly and safely.",
     "VO_Sc10Sds": "Read the Safety Data Sheet. It lists the spill response steps.",
     "VO_Sc10Ppe": "Put on your protective equipment. Touch each item.",

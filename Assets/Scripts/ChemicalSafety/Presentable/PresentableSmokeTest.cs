@@ -355,7 +355,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC06 gate card", gate.Card);
             var label = FindDeep(gate.Card, "BackButton");
             var lab6 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
-            Say("SC06 gate: left button text = [" + (lab6 != null ? lab6.text : "?") + "] (expected PREVIEW), visible = " + gate.Visible);
+            Say("SC06 gate: left button text = [" + (lab6 != null ? lab6.text : "?") + "] (expected BACK), visible = " + gate.Visible);
             yield return Shot("66_sc06_gate");
             // PREVIEW: the whole animation plays again from the start
             Click(gate.Card, "BackButton");
@@ -1710,7 +1710,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC08 gate card", gate.Card);
             var label = FindDeep(gate.Card, "BackButton");
             var lab8 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
-            Say("SC08 gate: left button text = [" + (lab8 != null ? lab8.text : "?") + "] (expected PREVIEW), visible = " + gate.Visible);
+            Say("SC08 gate: left button text = [" + (lab8 != null ? lab8.text : "?") + "] (expected BACK), visible = " + gate.Visible);
             yield return Shot("94_sc08_gate");
             Click(gate.Card, "BackButton");
             yield return new WaitForSeconds(2.0f);
@@ -2060,7 +2060,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC09 gate card", gate.Card);
             var label = FindDeep(gate.Card, "BackButton");
             var lab9 = label != null ? label.GetComponentInChildren<TMPro.TextMeshProUGUI>() : null;
-            Say("SC09 gate: left button text = [" + (lab9 != null ? lab9.text : "?") + "] (expected PREVIEW)");
+            Say("SC09 gate: left button text = [" + (lab9 != null ? lab9.text : "?") + "] (expected BACK)");
             Click(gate.Card, "BackButton");
             yield return new WaitForSeconds(3.0f);
             Say("SC09 preview: jar active = " + (splash.Jar != null && splash.Jar.gameObject.activeSelf) + " (expected True), visor dirty = " + visor.Dirty +

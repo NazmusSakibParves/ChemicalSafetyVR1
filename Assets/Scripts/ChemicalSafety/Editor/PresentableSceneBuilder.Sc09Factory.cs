@@ -335,7 +335,6 @@ namespace ChemicalSafety.Editor
             gso.FindProperty("titleText").stringValue = Sc09Content.GateTitle;
             gso.FindProperty("questionText").stringValue = Sc09Content.GateQuestion;
             gso.FindProperty("bodyText").stringValue = Sc09Content.RayGateBodyPrev;
-            gso.FindProperty("backText").stringValue = "PREVIEW";
             gso.ApplyModifiedPropertiesWithoutUndo();
             return refs;
         }
