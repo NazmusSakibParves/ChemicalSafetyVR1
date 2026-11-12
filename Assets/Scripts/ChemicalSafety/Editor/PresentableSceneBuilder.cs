@@ -24,6 +24,9 @@ namespace ChemicalSafety.Editor
         public const string ScenePath = "Assets/Scenes/ChemicalSafety_Presentable.unity";
 
         private const string ArtRoot = "Assets/Art/Presentable";
+
+        /// <summary>Client MCQ box design (Scenarios 1-12, 2026-11-11). false + Build Presentable Scene = the previous MCQ look.</summary>
+        private const bool McqNewDesign = true;
         private const string GenDir = ArtRoot + "/Generated";
         private const string XrOriginPrefabPath =
             "Assets/Samples/XR Interaction Toolkit/3.6.1/Starter Assets/Prefabs/XR Origin (XR Rig).prefab";
@@ -476,7 +479,7 @@ namespace ChemicalSafety.Editor
 
         private static void ConfigureImports()
         {
-            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10", "2D/Sc11", "2D/Sc12" })
+            foreach (var dir in new[] { "2D/Generated", "2D/BanglaText", "2D/Designer", "2D/Env", "2D/Sc02", "2D/Sc03", "2D/Sc04", "2D/Sc05", "2D/Sc06", "2D/Sc07", "2D/Sc08", "2D/Sc09", "2D/Sc10", "2D/Sc11", "2D/Sc12", "2D/McqUi" })
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { ArtRoot + "/" + dir }))
                 {
@@ -532,6 +535,17 @@ namespace ChemicalSafety.Editor
                         if (ti.spriteBorder != border12)
                         {
                             ti.spriteBorder = border12;
+                            changed = true;
+                        }
+                    }
+
+                    // client MCQ boxes (Scenarios 1-12): chamfered 9-slice plates
+                    if (path.Contains("/McqUi/Mcq_Box"))
+                    {
+                        var borderM = new Vector4(60f, 36f, 60f, 36f);
+                        if (ti.spriteBorder != borderM)
+                        {
+                            ti.spriteBorder = borderM;
                             changed = true;
                         }
                     }
@@ -632,6 +646,13 @@ namespace ChemicalSafety.Editor
             art.frameWide = D("Frame_Wide");
             art.optionBar = D("OptionBar");
             art.optionBarHot = D("OptionBarHot");
+            // client MCQ design for Scenarios 1-12: false = the previous look (the new sprites are simply not given to the panels)
+            art.mcqFrame = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_Frame") : null;
+            art.mcqBoxBlue = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_BoxBlue") : null;
+            art.mcqBoxGreen = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_BoxGreen") : null;
+            art.mcqBoxRed = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_BoxRed") : null;
+            art.mcqTick = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_Tick") : null;
+            art.mcqCross = McqNewDesign ? LoadSprite("2D/McqUi/Mcq_Cross") : null;
             art.popupFrameRed = G("UI_Red_PopupScreen");
             art.answerBoxRed = G("UI_Red_AnswerBox");
             art.buttonRed = G("UI_Red_Button");

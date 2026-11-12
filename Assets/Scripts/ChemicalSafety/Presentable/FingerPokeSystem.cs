@@ -55,6 +55,9 @@ namespace ChemicalSafety.Presentable
             Entries.Add(new Entry { canvas = canvas, group = canvas.GetComponent<CanvasGroup>() });
         }
 
+        /// <summary>Forgets every registered canvas (Back to Home reloads the scene; the old canvases are gone).</summary>
+        public static void ClearAll() => Entries.Clear();
+
         /// <summary>Registered interactive canvases (used by the controller ray, ControllerRayPointer).</summary>
         public static void CollectCanvases(List<Canvas> into)
         {

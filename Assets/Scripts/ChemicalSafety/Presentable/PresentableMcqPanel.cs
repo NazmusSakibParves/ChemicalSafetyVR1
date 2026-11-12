@@ -67,6 +67,7 @@ namespace ChemicalSafety.Presentable
             public Image gloss;   // white highlight on the top half of the bar (inlineReveal)
             public Image badge;   // round glow behind the tick / cross (inlineReveal)
             public TextMeshProUGUI reason; // line under the row (inlineReveal)
+            public TextMeshProUGUI reasonTag; // client design: the word "Reason:" / "কারণঃ" in front of the reason line
             public TextMeshProUGUI label;
             public Image[] icons;
             public Image[] overlays;
@@ -84,6 +85,25 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float metersPerPixel = 0.00055f;
 
         private float _worldScale = 1f;
+
+        // ---- client MCQ design (Scenarios 1-12): transparent glass frame, light-blue answer boxes that turn green / red, tick / cross.
+        // Active only when the builder gave the panel the new sprites (PresentableSceneBuilder.McqNewDesign); otherwise nothing changes.
+        private bool Skin => art != null && art.mcqFrame != null && art.mcqBoxBlue != null && art.mcqBoxGreen != null && art.mcqBoxRed != null;
+
+        /// <summary>True when this panel wears the client MCQ design (the box effects of Sc06McqFx then stay off).</summary>
+        public bool NewSkin => Skin;
+
+        private static readonly Color SkinTitle = new Color(0.62f, 0.90f, 1f, 1f);
+        private static readonly Color SkinIdle = new Color(0.88f, 0.95f, 1f, 1f);
+        private const float SkinTop0 = 0.765f;
+        private const float SkinSlot = 0.158f;
+        private const float SkinRowH = 0.104f;
+        private const float SkinRowHBn = 0.086f; // Bangla: shorter answer boxes leave room for a two-line, larger reason under each
+
+        private static float SkinRowHNow => ChemicalSafety.Localization.Loc.IsBangla ? SkinRowHBn : SkinRowH;
+        private readonly List<GameObject> _skinDecor = new List<GameObject>();
+
+        private static float SkinTop(int i) => SkinTop0 - i * SkinSlot;
 
         /// <summary>Controller-ray scenario: same card, same text sizes in pixels, scaled uniformly so it reads from further away.</summary>
         public void SetWorldScale(float scale)
@@ -170,7 +190,7 @@ namespace ChemicalSafety.Presentable
             SetQuestionChrome(true);
             _locked = false;
             IsOpen = true;
-            _header.text = question.header;
+            _header.text = Skin && !string.IsNullOrEmpty(question.prompt) ? question.prompt : question.header;
             _prompt.text = question.prompt;
 
             for (var i = 0; i < _rows.Count; i++)
@@ -333,15 +353,23 @@ namespace ChemicalSafety.Presentable
         /// <summary>Normal question layout again (prompt visible, rows in their slots) and the reveal pieces hidden.</summary>
         private void ResetInline()
         {
-            _readPlate.anchorMin = new Vector2(0.06f, 0.10f);
-            _readPlate.anchorMax = new Vector2(0.94f, 0.83f);
-            _prompt.gameObject.SetActive(true);
+            _readPlate.anchorMin = Skin ? new Vector2(0.045f, 0.075f) : new Vector2(0.06f, 0.10f);
+            _readPlate.anchorMax = Skin ? new Vector2(0.955f, 0.925f) : new Vector2(0.94f, 0.83f);
+            _prompt.gameObject.SetActive(!Skin);
             _inlineNext.gameObject.SetActive(false);
+            if (Skin)
+            {
+                var nr = _inlineNext;
+                nr.anchorMin = new Vector2(0.32f, 0.012f);
+                nr.anchorMax = new Vector2(0.68f, 0.108f);
+            }
+
             for (var i = 0; i < _rows.Count; i++)
             {
-                var top = 0.655f - i * (RowH + RowGap);
+                var top = Skin ? SkinTop(i) : 0.655f - i * (RowH + RowGap);
+                var rowH = Skin ? SkinRowHNow : RowH;
                 var r = _rows[i];
-                r.root.anchorMin = new Vector2(0.05f, top - RowH);
+                r.root.anchorMin = new Vector2(0.05f, top - rowH);
                 r.root.anchorMax = new Vector2(0.95f, top);
                 r.verdict.gameObject.SetActive(false);
                 r.bloom.gameObject.SetActive(false);
@@ -350,13 +378,33 @@ namespace ChemicalSafety.Presentable
                 r.badge.gameObject.SetActive(false);
                 r.cross.gameObject.SetActive(false);
                 r.reason.gameObject.SetActive(false);
-                r.label.rectTransform.anchorMin = new Vector2(0.06f, r.label.rectTransform.anchorMin.y);
+                if (r.reasonTag != null)
+                    r.reasonTag.gameObject.SetActive(false);
+                r.label.rectTransform.anchorMin = new Vector2(Skin ? 0.125f : 0.06f, r.label.rectTransform.anchorMin.y);
             }
         }
 
         // Rows move up (the question line is gone) so every option has a one-line reason under it, and NEXT fits below.
         private void LayoutReveal()
         {
+            if (Skin)
+            {
+                // rows stay where they are (the question stays on top); only the reason lines appear under them
+                for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
+                {
+                    var rr = _rows[i].reason.rectTransform;
+                    var top = SkinTop(i) - SkinRowHNow;
+                    var space = SkinSlot - SkinRowHNow - 0.008f; // the whole gap down to the next answer box
+                    rr.anchorMin = new Vector2(0.205f, top - space - 0.002f);
+                    rr.anchorMax = new Vector2(0.94f, top - 0.004f);
+                    var tg = _rows[i].reasonTag.rectTransform;
+                    tg.anchorMin = new Vector2(0.105f, top - space - 0.002f);
+                    tg.anchorMax = new Vector2(0.2f, top - 0.004f);
+                }
+
+                return;
+            }
+
             _prompt.gameObject.SetActive(false);
             _readPlate.anchorMin = new Vector2(0.06f, 0.17f);
             _readPlate.anchorMax = new Vector2(0.94f, 0.83f);
@@ -371,6 +419,13 @@ namespace ChemicalSafety.Presentable
                 rr.anchorMin = new Vector2(0.09f, top - RevealRowH - 0.0485f);
                 rr.anchorMax = new Vector2(0.94f, top - RevealRowH - 0.0035f);
             }
+        }
+
+        private static IEnumerator SkinMarkPop(RectTransform rt)
+        {
+            rt.localScale = Vector3.zero;
+            yield return PresentableFx.Tween(0.4f, t => rt.localScale = Vector3.one * Mathf.LerpUnclamped(0f, 1f, t), PresentableFx.EaseOutBack);
+            rt.localScale = Vector3.one;
         }
 
         // The marked row's bloom swells in and then breathes softly; the badge pops.
@@ -407,7 +462,7 @@ namespace ChemicalSafety.Presentable
         {
             PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
             PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
-            _header.color = Color.white;
+            _header.color = Skin ? SkinTitle : Color.white;
             if (_embedded)
             {
                 if (_fx != null)
@@ -426,6 +481,27 @@ namespace ChemicalSafety.Presentable
                 var r = _rows[i];
                 var isRight = i == rightIdx;
                 var isPick = i == index;
+                if (Skin)
+                {
+                    // client rules: right answer = the picked row green + tick, the others red; wrong answer = the pick red + cross,
+                    // the other wrong ones red, the right one green WITHOUT a tick
+                    r.frame.sprite = isRight ? art.mcqBoxGreen : art.mcqBoxRed;
+                    r.frame.color = Color.white;
+                    r.check.gameObject.SetActive(isRight && isPick);
+                    r.cross.gameObject.SetActive(isPick && !isRight);
+                    if (isPick)
+                        StartCoroutine(SkinMarkPop(isRight ? r.check.rectTransform : r.cross.rectTransform));
+                    // client: every line starts with "Reason:" (Bangla "কারণঃ"), no RIGHT / WRONG tag
+                    r.reasonTag.text = ChemicalSafety.Localization.Loc.T("GENERAL", "McqReason");
+                    r.reasonTag.color = isRight ? new Color(0.55f, 1f, 0.68f) : new Color(1f, 0.62f, 0.58f);
+                    r.reasonTag.gameObject.SetActive(true);
+                    r.reason.text = _question.options[i].reason;
+                    r.reason.color = new Color(0.95f, 0.98f, 1f);
+                    r.reason.gameObject.SetActive(true);
+                    r.root.GetComponent<CanvasGroup>().alpha = 1f;
+                    continue;
+                }
+
                 var good = isRight;
                 var marked = isRight || isPick;
                 var main = good ? EmeraldMain : RubyMain;
@@ -522,7 +598,9 @@ namespace ChemicalSafety.Presentable
             if (_header != null)
                 _header.gameObject.SetActive(visible);
             if (_prompt != null)
-                _prompt.gameObject.SetActive(visible);
+                _prompt.gameObject.SetActive(visible && !Skin);
+            foreach (var d in _skinDecor)
+                d.SetActive(visible);
             for (var i = 0; i < _rows.Count; i++)
             {
                 var show = visible && _question != null && i < _question.options.Length;
@@ -536,7 +614,7 @@ namespace ChemicalSafety.Presentable
                 SetPanelColors(PresentableUi.FlatBorder, PresentableUi.FlatFill);
             else if (_frame != null)
                 _frame.color = Color.white;
-            _header.color = Color.white;
+            _header.color = Skin ? SkinTitle : Color.white;
             foreach (var r in _rows)
             {
                 PaintRow(r, false, Color.white);
@@ -547,6 +625,13 @@ namespace ChemicalSafety.Presentable
 
         private void PaintRow(Row row, bool hot, Color tint)
         {
+            if (Skin)
+            {
+                row.frame.sprite = art.mcqBoxBlue;
+                row.frame.color = hot ? Color.white : SkinIdle;
+                return;
+            }
+
             if (art.optionBar != null)
                 row.frame.sprite = hot && art.optionBarHot != null ? art.optionBarHot : art.optionBar;
             row.frame.color = tint;
@@ -690,7 +775,12 @@ namespace ChemicalSafety.Presentable
             var font = art.englishFont;
 
             var panel = root;
-            if (art.frameWide != null)
+            if (Skin)
+            {
+                var skinRt = PresentableUi.Centered("Frame", root, Vector2.zero, sizePx * 1.1f);
+                _frame = PresentableUi.Img(skinRt, art.mcqFrame, Color.white);
+            }
+            else if (art.frameWide != null)
             {
                 var frameRt = PresentableUi.Centered("Frame", root, Vector2.zero, sizePx * 1.08f);
                 _frame = PresentableUi.Img(frameRt, art.frameWide, Color.white);
@@ -706,11 +796,31 @@ namespace ChemicalSafety.Presentable
 
             // Dark plate behind the words so they stay readable on the translucent blue glass.
             _readPlate = PresentableUi.Rect("ReadPlate", panel, new Vector2(0.06f, 0.10f), new Vector2(0.94f, 0.83f));
-            PresentableUi.Img(_readPlate, art.roundedSolid, new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
+            PresentableUi.Img(_readPlate, art.roundedSolid, Skin ? new Color(0.03f, 0.10f, 0.22f, 0.30f) : new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
             _header = HeaderTitle(PresentableUi.Text("Header", panel, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.93f),
                 string.Empty, 24f, Color.white, bold: true, font: font));
             _header.fontSizeMin = 18f;
             _header.fontSizeMax = 28f;
+            if (Skin)
+            {
+                // the question is the title line (sample: Q badge, question, ? mark)
+                _header.rectTransform.anchorMin = new Vector2(0.17f, 0.785f);
+                _header.rectTransform.anchorMax = new Vector2(0.89f, 0.955f);
+                _header.textWrappingMode = TextWrappingModes.Normal;
+                _header.overflowMode = TextOverflowModes.Truncate;
+                _header.fontSizeMin = 14f;
+                _header.fontSizeMax = 30f;
+                _header.margin = new Vector4(4f, 0f, 4f, 0f);
+                _header.color = SkinTitle;
+                var q = PresentableUi.Text("QBadge", panel, new Vector2(0.075f, 0.84f), new Vector2(0.16f, 0.955f), "Q", 72f, SkinTitle,
+                    TextAlignmentOptions.Center, true, font);
+                q.enableAutoSizing = false;
+                var qm = PresentableUi.Text("QMark", panel, new Vector2(0.9f, 0.87f), new Vector2(0.95f, 0.94f), "?", 40f,
+                    new Color(SkinTitle.r, SkinTitle.g, SkinTitle.b, 0.5f), TextAlignmentOptions.Center, true, font);
+                qm.enableAutoSizing = false;
+                _skinDecor.Add(q.gameObject);
+                _skinDecor.Add(qm.gameObject);
+            }
             _prompt = FitInside(PresentableUi.Text("Prompt", panel, new Vector2(0.08f, 0.675f), new Vector2(0.92f, 0.825f),
                 string.Empty, 28f, new Color(0.94f, 0.97f, 1f), font: font), 20f, 32f);
 
@@ -737,9 +847,9 @@ namespace ChemicalSafety.Presentable
             row.root.gameObject.AddComponent<CanvasGroup>();
             row.root.localPosition += new Vector3(0f, 0f, -12f);
 
-            var bar = art.optionBar != null ? art.optionBar : art.roundedSolid;
+            var bar = Skin ? art.mcqBoxBlue : art.optionBar != null ? art.optionBar : art.roundedSolid;
             row.frame = PresentableUi.Img(PresentableUi.Rect("Frame", row.root, Vector2.zero, Vector2.one),
-                bar, Color.white);
+                bar, Skin ? SkinIdle : Color.white, sliced: Skin);
             row.fill = PresentableUi.Img(PresentableUi.Rect("Fill", row.root, Vector2.zero, Vector2.one),
                 null, new Color(1f, 1f, 1f, 0.02f), raycast: true);
 
@@ -752,7 +862,15 @@ namespace ChemicalSafety.Presentable
             lift.Init(row.root);
             lift.HoverChanged += on =>
             {
-                if (_locked || art.optionBar == null)
+                if (_locked)
+                    return;
+                if (Skin)
+                {
+                    row.frame.color = on ? Color.white : SkinIdle;
+                    return;
+                }
+
+                if (art.optionBar == null)
                     return;
                 row.frame.sprite = on && art.optionBarHot != null ? art.optionBarHot : art.optionBar;
                 row.frame.color = Color.white;
@@ -777,12 +895,14 @@ namespace ChemicalSafety.Presentable
             var badgeRt = PresentableUi.Rect("Badge", row.root, new Vector2(-0.004f, 0.02f), new Vector2(0.098f, 0.98f));
             row.badge = PresentableUi.Img(badgeRt, art.radialGlow, EmeraldMain, preserveAspect: true);
             row.badge.gameObject.SetActive(false);
-            var checkRt = PresentableUi.Rect("Check", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
-            row.check = PresentableUi.Img(checkRt, art.check, PresentableUi.Green, preserveAspect: true);
+            var checkRt = Skin ? PresentableUi.Rect("Check", row.root, new Vector2(0.022f, 0.09f), new Vector2(0.108f, 0.91f))
+                : PresentableUi.Rect("Check", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
+            row.check = PresentableUi.Img(checkRt, Skin && art.mcqTick != null ? art.mcqTick : art.check, Skin && art.mcqTick != null ? Color.white : PresentableUi.Green, preserveAspect: true);
             row.check.gameObject.SetActive(false);
 
-            var crossRt = PresentableUi.Rect("Cross", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
-            row.cross = PresentableUi.Img(crossRt, art.cross, RubyLight, preserveAspect: true);
+            var crossRt = Skin ? PresentableUi.Rect("Cross", row.root, new Vector2(0.022f, 0.09f), new Vector2(0.108f, 0.91f))
+                : PresentableUi.Rect("Cross", row.root, new Vector2(0.012f, 0.20f), new Vector2(0.082f, 0.80f));
+            row.cross = PresentableUi.Img(crossRt, Skin && art.mcqCross != null ? art.mcqCross : art.cross, Skin && art.mcqCross != null ? Color.white : RubyLight, preserveAspect: true);
             row.cross.gameObject.SetActive(false);
 
             // colour wash and top gloss over the bar (below the words), inlineReveal only
@@ -818,6 +938,20 @@ namespace ChemicalSafety.Presentable
             row.reason.fontSizeMax = 22f;
             row.reason.raycastTarget = false;
             row.reason.gameObject.SetActive(false);
+            if (Skin)
+            {
+                var tagRt = PresentableUi.Rect("ReasonTag" + (index + 1), root, new Vector2(0.09f, 0.1f), new Vector2(0.17f, 0.15f));
+                tagRt.localPosition += new Vector3(0f, 0f, -12f);
+                row.reasonTag = PresentableUi.Text(tagRt, string.Empty, 22f, SkinTitle, TextAlignmentOptions.MidlineLeft, true, font);
+                row.reasonTag.fontStyle = FontStyles.Bold | FontStyles.Italic;
+                row.reasonTag.textWrappingMode = TextWrappingModes.NoWrap;
+                row.reasonTag.enableAutoSizing = true;
+                row.reasonTag.fontSizeMin = 14f;
+                row.reasonTag.fontSizeMax = 22f;
+                row.reasonTag.raycastTarget = false;
+                row.reasonTag.gameObject.SetActive(false);
+            }
+
             return row;
         }
 

@@ -39,6 +39,11 @@ namespace ChemicalSafety.Presentable
 
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color RowIdle = new Color(0.8f, 0.95f, 1f, 0.9f);
+
+        // client MCQ design (Scenarios 1-12): transparent glass frame + light-blue boxes that turn green / red. Same logic as before.
+        private bool Skin => art != null && art.mcqFrame != null && art.mcqBoxBlue != null && art.mcqBoxGreen != null && art.mcqBoxRed != null;
+        private static readonly Color SkinIdle = new Color(0.88f, 0.95f, 1f, 1f);
+        private Color IdleColor => Skin ? SkinIdle : RowIdle;
         private static readonly Color RowOn = new Color(0.55f, 0.92f, 1f, 1f);
         private const float PopupScale = 0.0006f;
 
@@ -127,7 +132,9 @@ namespace ChemicalSafety.Presentable
                 _checks[i].gameObject.SetActive(false);
                 _checks[i].sprite = art.check;
                 _checks[i].color = Color.white;
-                _rows[i].color = RowIdle;
+                if (Skin)
+                    _rows[i].sprite = art.mcqBoxBlue;
+                _rows[i].color = IdleColor;
                 _reasons[i].gameObject.SetActive(false);
             }
 
@@ -191,15 +198,29 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < RowCount; i++)
             {
                 var good = _q.correct[i];
-                _rows[i].color = good ? new Color(0.62f, 1f, 0.78f, 1f) : new Color(1f, 0.72f, 0.70f, 1f);
+                if (Skin)
+                {
+                    _rows[i].sprite = good ? art.mcqBoxGreen : art.mcqBoxRed;
+                    _rows[i].color = Color.white;
+                }
+                else
+                    _rows[i].color = good ? new Color(0.62f, 1f, 0.78f, 1f) : new Color(1f, 0.72f, 0.70f, 1f);
                 var tag = good ? _q.tagRequired : _q.tagNotRequired;
                 var reason = _q.reasons != null && i < _q.reasons.Length ? _q.reasons[i] : string.Empty;
                 var hex = good ? "#7CFFA8" : "#FF8A80";
                 _reasons[i].text = "<b><color=" + hex + ">" + tag + "</color></b>  " + reason;
                 _reasons[i].gameObject.SetActive(true);
                 _checks[i].gameObject.SetActive(_on[i] || good);
-                _checks[i].sprite = good ? art.check : art.cross;
-                _checks[i].color = good ? new Color(0.30f, 1f, 0.52f, _on[i] ? 1f : 0.45f) : new Color(1f, 0.28f, 0.26f, 1f);
+                if (Skin && art.mcqTick != null && art.mcqCross != null)
+                {
+                    _checks[i].sprite = good ? art.mcqTick : art.mcqCross;
+                    _checks[i].color = new Color(1f, 1f, 1f, good && !_on[i] ? 0.5f : 1f);
+                }
+                else
+                {
+                    _checks[i].sprite = good ? art.check : art.cross;
+                    _checks[i].color = good ? new Color(0.30f, 1f, 0.52f, _on[i] ? 1f : 0.45f) : new Color(1f, 0.28f, 0.26f, 1f);
+                }
             }
 
             _prompt.text = allRight ? _q.rightTitle : _q.wrongTitle;
@@ -225,7 +246,7 @@ namespace ChemicalSafety.Presentable
                 return;
             _on[row] = !_on[row];
             _checks[row].gameObject.SetActive(_on[row]);
-            _rows[row].color = _on[row] ? RowOn : RowIdle;
+            _rows[row].color = _on[row] ? (Skin ? Color.white : RowOn) : IdleColor;
             PresentableFx.Play(PresentableFx.Tick, 0.7f);
         }
 
@@ -438,12 +459,12 @@ namespace ChemicalSafety.Presentable
         private void BuildQuestion()
         {
             const int rows = 4;
-            var plate = art.holoPanel != null ? art.holoPanel : art.frameWide;
+            var plate = Skin ? art.mcqFrame : art.holoPanel != null ? art.holoPanel : art.frameWide;
             var canvas = PresentableUi.WorldCanvas("Sc12AssessPanel", transform, new Vector2(820f, 780f), 0.00064f, true, 30);
             _panel = canvas.transform;
             canvas.gameObject.AddComponent<CanvasGroup>();
             var bg = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, plate, Color.white);
-            if (art.holoPanel != null)
+            if (art.holoPanel != null && !Skin)
                 bg.type = Image.Type.Sliced;
             bg.raycastTarget = true;
             _header = PresentableUi.Text("Header", canvas.transform, new Vector2(0.06f, 0.85f), new Vector2(0.94f, 0.935f), "", 40f,
@@ -473,7 +494,7 @@ namespace ChemicalSafety.Presentable
                 var top = 0.73f - i * 0.135f;
                 var row = PresentableUi.Rect("Row" + i, canvas.transform, new Vector2(0.07f, top - 0.118f), new Vector2(0.93f, top));
                 _rowRt[i] = row;
-                _rows[i] = PresentableUi.Img(row, art.holoButton != null ? art.holoButton : art.roundedSolid, RowIdle, true, true);
+                _rows[i] = PresentableUi.Img(row, Skin ? art.mcqBoxBlue : art.holoButton != null ? art.holoButton : art.roundedSolid, IdleColor, true, true);
                 var btn = row.gameObject.AddComponent<Button>();
                 btn.targetGraphic = _rows[i];
                 btn.transition = Selectable.Transition.None;

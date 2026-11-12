@@ -23,7 +23,7 @@ namespace ChemicalSafety.Localization
         // keep equal to RENDER_PX in Tools/render_bn_auto.py
         public const float RenderPx = 80f;
         private const int DefaultBucket = 1200;
-        private const float BnScale = 1.18f;
+        private const float BnScale = 1.30f; // client: Bangla must read easily (was 1.18)
 
         private static Dictionary<string, int[]> _index;
         private static readonly Dictionary<string, Sprite> SpriteCache = new Dictionary<string, Sprite>();
@@ -140,7 +140,7 @@ namespace ChemicalSafety.Localization
             var bucket = WantedPx();
             var sprites = new List<Sprite>();
             var scales = new List<float>();
-            var whole = FindSprite(shown, bucket);
+            var whole = FindBest(shown, bucket);
             if (whole != null)
             {
                 sprites.Add(whole);
@@ -225,6 +225,51 @@ namespace ChemicalSafety.Localization
             }
 
             return sp;
+        }
+
+        /// <summary>
+        /// The rung of the ladder (one image per wrap width) that gives the LARGEST text inside this box: every rung is scaled down to
+        /// the box and the biggest result wins; on a tie the wider rung (fewer lines) wins. So a long reason line next to free space
+        /// becomes one line instead of two tiny ones, and a tall box still gets its multi-line image at full size.
+        /// </summary>
+        private Sprite FindBest(string bn, float fallbackPx)
+        {
+            var box = rectTransform.rect.size;
+            if (box.x < 8f || box.y < 8f)
+                return FindSprite(bn, fallbackPx);
+            if (_index == null)
+                LoadIndex();
+            var key = Hash(bn, IsBold);
+            if (!_index.TryGetValue(key, out var buckets))
+            {
+                key = Hash(bn, !IsBold);
+                if (!_index.TryGetValue(key, out buckets))
+                    return null;
+            }
+
+            var baseScale = EffectiveFont / RenderPx * BnScale;
+            Sprite best = null;
+            var bestShrink = -1f;
+            foreach (var b in buckets)
+            {
+                var name = key + "_" + b;
+                if (!SpriteCache.TryGetValue(name, out var sp) || sp == null)
+                {
+                    sp = Resources.Load<Sprite>("BnAuto/" + name);
+                    SpriteCache[name] = sp;
+                }
+
+                if (sp == null)
+                    continue;
+                var shrink = Mathf.Min(1f, box.x / Mathf.Max(1f, sp.rect.width * baseScale), box.y / Mathf.Max(1f, sp.rect.height * baseScale));
+                if (best == null || shrink >= bestShrink - 0.01f)
+                {
+                    best = sp;
+                    bestShrink = shrink;
+                }
+            }
+
+            return best;
         }
 
         private void Fit(List<Sprite> sprites, List<float> pcts)

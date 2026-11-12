@@ -1,0 +1,25 @@
+{
+  "_rule_en": "1 mark per MCQ. Right on the first try = 1, wrong (or wrong first, then right) = 0. Scenario 12 multi-select = 1 mark for the exact right set. Scenarios never reached count as 0 and their MCQs count as incorrect on the result card.",
+  "_rule_bn": "প্রতিটি MCQ-তে ১ নম্বর। প্রথমবারেই সঠিক হলে ১, ভুল হলে (বা আগে ভুল পরে সঠিক) ০। সিনারিও ১২-র মাল্টি-সিলেক্টে ঠিক সঠিক সেট বাছাই করলে ১ নম্বর। যে সিনারিওতে পৌঁছানো যায়নি তার নম্বর ০ এবং তার MCQ রেজাল্ট কার্ডে ভুল হিসেবে গণ্য।",
+  "totalScenarios": 22,
+  "mcqs": [
+    { "id": "SC01", "count": 1 },
+    { "id": "SC02", "count": 6 },
+    { "id": "SC03", "count": 1 },
+    { "id": "SC04", "count": 1 },
+    { "id": "SC05", "count": 1 },
+    { "id": "SC06", "count": 1 },
+    { "id": "SC07", "count": 1 },
+    { "id": "SC08", "count": 1 },
+    { "id": "SC09", "count": 1 },
+    { "id": "SC10", "count": 1 },
+    { "id": "SC11", "count": 1 },
+    { "id": "SC12", "count": 1 },
+    { "id": "SC13", "count": 3 },
+    { "id": "SC14", "count": 3 },
+    { "id": "SC15", "count": 3 },
+    { "id": "SC16", "count": 3 },
+    { "id": "SC17", "count": 3 },
+    { "id": "SC18", "count": 3 }
+  ]
+}

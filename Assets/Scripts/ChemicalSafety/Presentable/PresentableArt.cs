@@ -40,6 +40,14 @@ namespace ChemicalSafety.Presentable
         public Sprite frameWide;
         public Sprite optionBar;
         public Sprite optionBarHot;
+
+        [Header("MCQ client design (Scenarios 1-12); used only by PresentableMcqPanel / Sc12Assessment, nothing shared")]
+        public Sprite mcqFrame;
+        public Sprite mcqBoxBlue;
+        public Sprite mcqBoxGreen;
+        public Sprite mcqBoxRed;
+        public Sprite mcqTick;
+        public Sprite mcqCross;
         [Header("Red variants (generated from the designer frames)")]
         public Sprite popupFrameRed;
         public Sprite answerBoxRed;

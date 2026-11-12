@@ -21,7 +21,7 @@ namespace ChemicalSafety.Editor
         // the glass INSTRUCTIONS card + CONTINUE button in Scenario 1. false = the previous cyan pop-up frame
         private const bool Sc01UseGlassCard = true;
         // ray mode: the instruction / question cards sit this far to the LEFT of the view (metres). 0 = centred like before
-        private const float Sc01CardsLeftOffset = 0.85f;
+        private const float Sc01CardsLeftOffset = 0f; // client 2026-11-11: every card opens in the middle of the view (was 0.85 = to the left)
         // the SDS sheet is closed until the left controller X opens it. false = open at the start like before
         private const bool Sc01SdsStartsHidden = true;
 

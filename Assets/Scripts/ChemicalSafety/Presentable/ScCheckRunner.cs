@@ -284,7 +284,8 @@ namespace ChemicalSafety.Presentable
                 toAnchor = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
             toAnchor.Normalize();
             var pos = _cam.position + toAnchor * 1.6f; // 1.6 m from the eyes, in line with the chemical, so it reads big and sits above it
-            pos.y = chemAnchor.position.y + 0.05f + heightMeters * 0.5f;
+            // client: popups open at eye level in free space; only lifted when eye level would put the card into the chemical
+            pos.y = Mathf.Max(_cam.position.y + 0.03f, chemAnchor.position.y + 0.05f + heightMeters * 0.5f);
             t.SetPositionAndRotation(pos, Quaternion.LookRotation(toAnchor, Vector3.up));
             if (t == _main.transform)
             {
@@ -797,6 +798,7 @@ namespace ChemicalSafety.Presentable
             // ---- glass card (instructions / start / bottle)
             _card = PresentableUi.WorldCanvas("ScCheckCard", transform, new Vector2(900f, 560f), Scale, true, 30);
             _card.gameObject.AddComponent<CanvasGroup>();
+            DraggablePanel.Attach(_card);
             PresentableUi.Img("Frame", _card.transform, Vector2.zero, Vector2.one, popup, Color.white).type = Image.Type.Sliced;
             _cardIcon = PresentableUi.Img(PresentableUi.Rect("Icon", _card.transform, new Vector2(0.4f, 0.6f), new Vector2(0.6f, 0.9f)), null, Color.white, false, false, true);
             _cardTitle = T("Title", _card.transform, new Vector2(0.08f, 0.82f), new Vector2(0.92f, 0.94f), 42f, HoloWhite, TextAlignmentOptions.Center, true, 20f);
@@ -812,6 +814,7 @@ namespace ChemicalSafety.Presentable
             // ---- question panel (left) + SDS panel (right) on one canvas
             _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(2200f, 860f), Scale, true, 30);
             _mainGroup = _main.gameObject.AddComponent<CanvasGroup>();
+            DraggablePanel.Attach(_main);
             var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.255f), new Vector2(0.4773f, 1f));
             var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
             PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
@@ -834,9 +837,10 @@ namespace ChemicalSafety.Presentable
                 _optBg[i] = PresentableUi.Img(card, cardSp, new Color(0.45f, 0.78f, 1f, 0.30f), true, true);
                 var idx = i;
                 MakeButton("OptBtn" + i, panel, card, _optBg[i], () => SelectOption(idx));
-                _optLetter[i] = T("Letter", card, new Vector2(0.07f, 0.74f), new Vector2(0.45f, 0.98f), 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 22f);
+                _optLetter[i] = T("Letter", card, new Vector2(0.07f, 0.84f), new Vector2(0.45f, 0.99f), 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 22f);
                 _optLetter[i].text = ((char)('A' + i)).ToString();
-                _optText[i] = T("Text", card, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.76f), 42f, HoloWhite, TextAlignmentOptions.Center, false, 22f);
+                _optText[i] = T("Text", card, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.83f), 42f, HoloWhite, TextAlignmentOptions.Center, false, 22f);
+                _optText[i].fontSizeMin = 14f; // the longest answers (Scenarios 17 / 18) must still fit the narrow card
                 _optText[i].textWrappingMode = TextWrappingModes.Normal;
             }
 
@@ -901,6 +905,7 @@ namespace ChemicalSafety.Presentable
             // ---- results (translucent glass like the picture, rows with bracket frames)
             _results = PresentableUi.WorldCanvas("ScCheckResults", transform, new Vector2(900f, 650f), Scale, true, 30);
             _results.gameObject.AddComponent<CanvasGroup>();
+            DraggablePanel.Attach(_results);
             PresentableUi.Img("Back", _results.transform, new Vector2(0.01f, 0.01f), new Vector2(0.99f, 0.99f), art.roundedSolid, new Color(0.07f, 0.14f, 0.26f, 0.94f));
             PresentableUi.Img("Frame", _results.transform, Vector2.zero, Vector2.one, popup, Color.white).type = Image.Type.Sliced;
             _resTitle = T("Title", _results.transform, new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.95f), 58f, HoloCyan, TextAlignmentOptions.Center, true, 22f);

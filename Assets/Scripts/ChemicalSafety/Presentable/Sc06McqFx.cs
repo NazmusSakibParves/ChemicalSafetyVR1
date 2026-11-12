@@ -80,7 +80,8 @@ namespace ChemicalSafety.Presentable
             _landed = false;
             _t = 0f;
             HideResult(); // a result from a previous question never carries over
-            _fx.gameObject.SetActive(true);
+            // client MCQ design: the glass frame and the answer boxes are the whole look, so the comet / scan / sheen / chevrons stay off
+            _fx.gameObject.SetActive(!panel.NewSkin);
             _burst.gameObject.SetActive(false);
             _flash.gameObject.SetActive(false);
             for (var i = 0; i < _chevrons.Count; i++)
@@ -163,8 +164,8 @@ namespace ChemicalSafety.Presentable
         public void OnResult(bool correct, int index, bool wholeBox = false, bool embedded = false)
         {
             SetRowDecor(false); // rows may stay on screen (Scenario 1 reveal): no glow or chevron left frozen on them
-            if (embedded)
-                return;
+            if (embedded || (_panel != null && _panel.NewSkin))
+                return; // client MCQ design: the answer boxes turn green / red, no halo, sheen or sparks round the frame
             if (wholeBox)
             {
                 // Scenario 1: the rows stay, the whole box takes the result colour (emerald / ruby) with a glossy sheen

@@ -7,6 +7,7 @@ from Segoe UI / Segoe UI Symbol because the Bengali font has none).
     python Tools/render_bn_auto.py            # renders what is missing
     python Tools/render_bn_auto.py --force    # renders everything again
     python Tools/render_bn_auto.py --check    # renders nothing; exit 1 when an image is missing
+    python Tools/render_bn_auto.py --keep     # renders what is missing and deletes nothing
 
 Inputs
   * every `bn` string / array element in Assets/Resources/Content/*.json, and
@@ -38,7 +39,8 @@ LATIN_BOLD = "C:/Windows/Fonts/segoeuib.ttf"
 SYMBOL = "C:/Windows/Fonts/seguisym.ttf"
 
 RENDER_PX = 80          # keep equal to BnTmp.RenderPx
-LADDER = (900, 1500, 2400)
+LADDER = (900, 1500, 2400, 3600, 5200)  # 3600 / 5200: a long sentence can be ONE line where the box is wide (client 2026-11-12)
+STROKE = 1  # px at 80 px: slightly heavier strokes so Bangla stays readable on the transparent glass
 PAD = 6
 LINE_H = int(RENDER_PX * 1.5)  # Bengali metrics are tall; 1.5 em keeps matras clear without airy lines
 BOLD_WORDS = ("TITLE", "HEADER", "LABEL", "BUTTON")
@@ -100,7 +102,7 @@ class Fonts:
     def draw(self, draw, x, base, text):
         for k, t in runs_of(text, self):
             f = self.pick(k)
-            draw.text((x, base), t, font=f, fill=255, anchor="ls")
+            draw.text((x, base), t, font=f, fill=255, anchor="ls", stroke_width=STROKE, stroke_fill=255)
             x += draw.textlength(t, font=f)
 
 
@@ -181,6 +183,7 @@ def content_strings():
 def main():
     force = "--force" in sys.argv
     check = "--check" in sys.argv
+    keep_all = "--keep" in sys.argv  # never delete images that are not referenced by Content JSON (dynamic labels asked for by BnTmp)
     if not features.check("raqm"):
         print("Pillow has no libraqm: Bangla would be shaped wrongly. Aborting.")
         return 2
@@ -219,7 +222,7 @@ def main():
             done += 1
             if lines == 1:
                 break
-    if not check:
+    if not check and not keep_all:
         for fn in os.listdir(OUT):
             if fn.endswith(".png") and fn not in keep:
                 os.remove(os.path.join(OUT, fn))

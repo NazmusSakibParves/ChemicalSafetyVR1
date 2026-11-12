@@ -25,6 +25,9 @@ namespace ChemicalSafety.Presentable
         private bool _wasDown;
         private float _nextScan;
         private PokeTarget[] _pokes = new PokeTarget[0];
+        private DraggablePanel _drag;
+        private DraggablePanel _pending;
+        private Vector3 _pendingPoint;
 
         private void Awake()
         {
@@ -157,7 +160,67 @@ namespace ChemicalSafety.Presentable
                     PresentableFx.Haptic(true, 0.15f, 0.03f);
             }
 
+            // popup drag handles (DraggablePanel): the grip bar wins over what is behind it, a button in front wins over the grip
+            var down = TriggerDown();
+            if (_drag != null)
+            {
+                if (down)
+                {
+                    var head = Camera.main != null ? Camera.main.transform.position : origin;
+                    _drag.Drag(origin, dir, head);
+                    _line.enabled = true;
+                    _line.SetPosition(0, origin + dir * 0.03f);
+                    _line.SetPosition(1, _drag.transform.position);
+                    _dot.gameObject.SetActive(false);
+                    _wasDown = true;
+                    return;
+                }
+
+                _drag.Highlight(false);
+                _drag.EndDrag();
+                _drag = null;
+            }
+
+            // drag: hold the trigger on the card body (not on a button) and move; it starts after ~2 cm of movement so a plain press never shifts a card
+            DraggablePanel bodyHit = null;
+            Vector3 bodyPoint = default;
+            var bodyT = bestT;
+            if (best == null && bestPoke == null)
+            {
+                foreach (var d in DraggablePanel.All)
+                {
+                    if (d != null && d.HitBody(origin, dir, bodyT, out var ht, out var hp))
+                    {
+                        bodyT = ht;
+                        bodyHit = d;
+                        bodyPoint = hp;
+                    }
+                }
+            }
+
+            if (down && !_wasDown && bodyHit != null)
+            {
+                _pending = bodyHit;
+                _pendingPoint = bodyPoint;
+            }
+
+            if (_pending != null)
+            {
+                if (!down)
+                    _pending = null;
+                else if (_pending.HitBody(origin, dir, maxDistance, out _, out var cur) && Vector3.Distance(cur, _pendingPoint) > 0.02f)
+                {
+                    _drag = _pending;
+                    _pending = null;
+                    _drag.BeginDrag(origin, _pendingPoint);
+                    PresentableFx.Haptic(true, 0.4f, 0.05f);
+                    _wasDown = true;
+                    return;
+                }
+            }
+
             var hitSomething = best != null || bestPoke != null;
+
             var end = hitSomething ? bestPoint : origin + dir * 3f;
             _line.enabled = true;
             _line.SetPosition(0, origin + dir * 0.03f);
@@ -166,7 +229,6 @@ namespace ChemicalSafety.Presentable
             if (hitSomething)
                 _dot.position = bestPoint;
 
-            var down = TriggerDown();
             if (down && !_wasDown && bestPoke != null)
                 bestPoke.RayFire();
             else if (down && !_wasDown && best != null)

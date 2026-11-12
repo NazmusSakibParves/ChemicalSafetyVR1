@@ -23,6 +23,13 @@ namespace ChemicalSafety.Results
             Field(sb, 1, "participant_notes", s.participant_notes, true);
             Field(sb, 1, "device_id", s.device_id, true);
             Field(sb, 1, "completed_at", s.completed_at, true);
+            Raw(sb, 1, "total_score", s.total_score.ToString(), true);
+            Raw(sb, 1, "total_max_score", s.total_max.ToString(), true);
+            Raw(sb, 1, "total_correct", s.total_correct.ToString(), true);
+            Raw(sb, 1, "total_incorrect", s.total_incorrect.ToString(), true);
+            Raw(sb, 1, "completed_scenarios", s.completed_scenarios.ToString(), true);
+            Raw(sb, 1, "elapsed_ms", s.elapsed_ms.ToString(), true);
+            Raw(sb, 1, "timed_out", s.timed_out ? "true" : "false", true);
             sb.Append("  \"attempts\": [");
             for (var i = 0; i < s.attempts.Count; i++)
             {

@@ -41,6 +41,7 @@ namespace ChemicalSafety.Results
         public int score;
         public int max_score;
         public bool passed;
+        public bool interrupted; // time-out in the middle of this scenario: not counted as completed
         public List<AnswerRecord> answers = new List<AnswerRecord>();
     }
 
@@ -57,7 +58,39 @@ namespace ChemicalSafety.Results
         public string participant_notes = string.Empty;
         public string device_id = string.Empty;
         public string completed_at = string.Empty;
+        // Totals for the result card (additions to the sample schema; 1 mark per MCQ, first try right = 1, else 0).
+        public int total_score;
+        public int total_max;
+        public int total_correct;
+        public int total_incorrect;
+        public long elapsed_ms;
+        public int completed_scenarios;
+        public bool timed_out;
         public List<AttemptRecord> attempts = new List<AttemptRecord>();
+
+        /// <summary>Recomputes the totals from the attempts. Scenarios never reached count in neither score nor answered.</summary>
+        public void RecomputeTotals()
+        {
+            total_score = 0;
+            total_max = 0;
+            total_correct = 0;
+            total_incorrect = 0;
+            completed_scenarios = 0;
+            foreach (var a in attempts)
+            {
+                total_score += a.score;
+                total_max += a.max_score;
+                if (!string.IsNullOrEmpty(a.ended_at) && !a.interrupted)
+                    completed_scenarios++;
+                foreach (var an in a.answers)
+                {
+                    if (an.is_correct && an.wrong_attempts == 0)
+                        total_correct++;
+                    else if (!string.IsNullOrEmpty(an.selected_option))
+                        total_incorrect++;
+                }
+            }
+        }
     }
 
     /// <summary>Where a finished (or in-progress) submission goes. File today; an HTTP sink later (retry queue).</summary>
@@ -99,6 +132,7 @@ namespace ChemicalSafety.Results
         private static AttemptRecord _attempt;
         private static AnswerRecord _answer;
         private static float _questionOpenedAt;
+        private static float _pausedAtOpen;
 
         public static Submission Current { get; private set; } = new Submission();
 
@@ -142,6 +176,7 @@ namespace ChemicalSafety.Results
             _attempt.answers.Add(_answer);
             _attempt.max_score += 1;
             _questionOpenedAt = Time.realtimeSinceStartup;
+            _pausedAtOpen = ChemicalSafety.Presentable.SessionClock.PausedTotal;
         }
 
         public static void RecordTry(string letter, bool correct, bool hintUsed = false)
@@ -152,7 +187,8 @@ namespace ChemicalSafety.Results
             _answer.selected_option = letter;
             _answer.is_correct = correct;
             _answer.hint_used |= hintUsed;
-            _answer.time_ms = (long)((Time.realtimeSinceStartup - _questionOpenedAt) * 1000f);
+            var paused = ChemicalSafety.Presentable.SessionClock.PausedTotal - _pausedAtOpen; // the pause button stops the question clock too
+            _answer.time_ms = (long)(Mathf.Max(0f, Time.realtimeSinceStartup - _questionOpenedAt - paused) * 1000f);
             if (!correct)
                 _answer.wrong_attempts++;
             else if (_attempt != null && _answer.wrong_attempts == 0)
@@ -170,9 +206,17 @@ namespace ChemicalSafety.Results
             _sink.Save(Current);
         }
 
-        public static void CompleteAll()
+        public static void CompleteAll(long elapsedMs = 0, bool timedOut = false)
         {
             Current.completed_at = Now();
+            Current.elapsed_ms = elapsedMs;
+            Current.timed_out = timedOut;
+            if (_attempt != null && string.IsNullOrEmpty(_attempt.ended_at))
+            {
+                _attempt.interrupted = true; // time-out in the middle of a scenario: keep what was answered, do not count it as completed
+                EndScenario();
+            }
+            Current.RecomputeTotals();
             _sink.Save(Current);
         }
     }

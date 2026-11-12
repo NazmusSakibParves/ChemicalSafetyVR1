@@ -271,7 +271,119 @@ namespace ChemicalSafety.Presentable
             _cam = Camera.main != null ? Camera.main.transform : null;
         }
 
-        private IEnumerator Start()
+        // ------------------------------------------------------------------ session: timer, time-out, result card, back to home
+
+        private Coroutine _flow;
+        private bool _resultShown;
+        private bool _homePressed;
+
+        private void Start()
+        {
+            _flow = StartCoroutine(MainFlow());
+            // draggable popups (client): grip bar on the top edge, drag with the controller ray
+            DraggablePanel.Attach(instructionPanel);
+            DraggablePanel.Attach(mcqSc01);
+            DraggablePanel.Attach(mcqSc02);
+            DraggablePanel.Attach(mcqSc03);
+            DraggablePanel.Attach(mcqSc04);
+            DraggablePanel.Attach(mcqSc05);
+            DraggablePanel.Attach(mcqSc06);
+            DraggablePanel.Attach(mcqSc07);
+            DraggablePanel.Attach(mcqSc08);
+            DraggablePanel.Attach(mcqSc09);
+            DraggablePanel.Attach(mcqSc10);
+            DraggablePanel.Attach(mcqSc11);
+            DraggablePanel.Attach(sc04Gate);
+            DraggablePanel.Attach(sc06Gate);
+            DraggablePanel.Attach(sc07Gate);
+            DraggablePanel.Attach(sc08Gate);
+            DraggablePanel.Attach(sc08GateRay);
+            DraggablePanel.Attach(sc09Gate);
+            DraggablePanel.Attach(sc09GateRay);
+            DraggablePanel.Attach(sc10Gate);
+            DraggablePanel.Attach(sc10RayGate);
+            DraggablePanel.Attach(sc11Gate);
+            DraggablePanel.Attach(sc12Gate);
+            DraggablePanel.Attach(assessmentSc12); // Scenario 12 multi-select question card
+        }
+
+        private void BeginSession()
+        {
+            var hud = SessionHud.Create(_cam);
+            SessionClock.Begin();
+            hud.TimeUp += () =>
+            {
+                if (!_resultShown)
+                    StartCoroutine(TimeUpThenResult());
+            };
+        }
+
+        private IEnumerator TimeUpThenResult()
+        {
+            _resultShown = true;
+            if (_flow != null)
+                StopCoroutine(_flow);
+            _flow = null;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            subtitle.Hide();
+            HideScenarioCanvases();
+            LockLocomotion(true);
+            if (clipboard != null)
+                clipboard.SetSuspended(true);
+            fader.SetImmediate(0f);
+            Stage("timeUp");
+            yield return SessionHud.Instance.Toast(2.5f);
+            yield return ShowResultCard(true);
+        }
+
+        private void HideScenarioCanvases()
+        {
+            var list = new List<Canvas>(32);
+            FingerPokeSystem.CollectCanvases(list);
+            foreach (var c in list)
+                if (c != null && c.GetComponentInParent<SessionHud>() == null)
+                    c.gameObject.SetActive(false);
+        }
+
+        private IEnumerator ShowResultCard(bool timedOut)
+        {
+            _resultShown = true;
+            SessionClock.Stop();
+            SessionResults.CompleteAll(SessionClock.ElapsedMs, timedOut);
+            if (SessionHud.Instance != null)
+                SessionHud.Instance.SetVisible(false);
+            if (PresentableInput.ActiveScenario < 1)
+                PresentableInput.ActiveScenario = 1; // the card is pressed with the controller ray
+            Stage("result");
+            PresentableFx.Play(PresentableFx.Success);
+            _homePressed = false;
+            ResultCardView.Show(_cam, ResultSummary.Compute(), () => _homePressed = true);
+            while (!_homePressed)
+                yield return null;
+            GoHome();
+        }
+
+        /// <summary>Back to Home: drops the whole session (marks, language, clock, registered canvases) and loads the scene again, which starts at the login.</summary>
+        private void GoHome()
+        {
+            SessionClock.Reset();
+            SessionResults.StartSession(string.Empty, string.Empty, string.Empty, "en");
+            Loc.SetLanguage(Lang.En);
+            PresentableInput.ActiveScenario = 0;
+            FingerPokeSystem.ClearAll();
+            DraggablePanel.All.Clear();
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.buildIndex >= 0)
+                UnityEngine.SceneManagement.SceneManager.LoadScene(scene.buildIndex);
+#if UNITY_EDITOR
+            else
+                UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scene.path,
+                    new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+#endif
+        }
+
+        private IEnumerator MainFlow()
         {
             fader.SetImmediate(1f);
             yield return null;
@@ -370,6 +482,7 @@ namespace ChemicalSafety.Presentable
                 _welcomeDone = true;
                 if (clipboard != null)
                     clipboard.SetSuspended(false);
+                BeginSession(); // the 40-minute clock and the timer / pause button start after the login
             }
 
             // Scenario 1 may run on the controller ray (PresentableInput). The fingertip flow below stays as it was.
@@ -582,6 +695,13 @@ namespace ChemicalSafety.Presentable
                 : envSc03 != null ? Sc03Content.ModuleComplete
                 : "Module complete. Well done!";
             subtitle.Show(null, doneLine, 8f);
+            // all scenarios of this build finished: the result card (the same card as after a time-out)
+            if (SessionClock.Running && !_resultShown)
+            {
+                yield return PresentableFx.Wait(4f);
+                subtitle.Hide();
+                yield return ShowResultCard(false);
+            }
         }
 
         // SC03: old storage room. Instruction card (eye level) -> inspect the crystallised peroxide drum ->
@@ -949,9 +1069,22 @@ namespace ChemicalSafety.Presentable
             var cam = _cam != null ? _cam.position : rig.position;
             var fwd = _cam != null ? Flat(_cam.forward) : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, fwd);
+            if (CentrePopups)
+            {
+                // client: every popup (MCQ, gate, review...) opens in the middle of the view at eye level; the learner drags it where they like
+                sideways = 0f;
+                // table scenes (6, 8, 9, 10): a little higher so the card clears the boxes and cans on the table; everywhere else eye level
+                var tableScene = PresentableInput.ActiveScenario == 6 || PresentableInput.ActiveScenario == 8 ||
+                                 PresentableInput.ActiveScenario == 9 || PresentableInput.ActiveScenario == 10;
+                rise = Mathf.Min(rise, tableScene ? 0.20f : 0.04f);
+            }
+
             position = new Vector3(cam.x, Sc03ViewHeight() + rise, cam.z) + fwd * distance + right * sideways;
             rotation = Quaternion.LookRotation(Flat(position - cam), Vector3.up);
         }
+
+        /// <summary>One switch: false = the earlier per-scenario side offsets of the popups (beside the props).</summary>
+        private const bool CentrePopups = true;
 
         private float Sc04TableTop() => gloveBench != null ? gloveBench.TopY : 0.9f;
 
@@ -1190,6 +1323,12 @@ namespace ChemicalSafety.Presentable
         {
             if (_cam == null)
                 return;
+            if (CentrePopups)
+            {
+                left = 0f; // client: the instruction card opens in the middle of the view at eye level (the learner can drag it away)
+                up = 0f;
+            }
+
             var t = instructionPanel.transform;
             var right = Vector3.Cross(Vector3.up, Flat(_cam.forward));
             t.position += -right * left + Vector3.up * up;
@@ -2881,7 +3020,7 @@ namespace ChemicalSafety.Presentable
                  "so it needs roughly this much to keep the question text as readable.")]
         [SerializeField] private float sc02CalloutScale = 2.0f;
         [SerializeField] private float sc02FirstCalloutDelay = 3f;
-        [SerializeField] private float sc02NextCalloutDelay = 3f;
+        [SerializeField] private float sc02NextCalloutDelay = 1f; // client: the next chemical's callout opens about 1 s after the previous one is hidden
         [SerializeField] private float sc02ReadSeconds = 7f;
 
         private Sc02Callout _sc02Callout;
@@ -3400,20 +3539,19 @@ namespace ChemicalSafety.Presentable
 
             // loaded: like a real hand truck it tips back a little, is pulled handle first to the right (never toward the
             // learner's face: it used to roll to under a metre from the camera and its drum filled the view), and folds away
+            // client: the loaded trolley only rolls a little to the side and STAYS there with the drum on it (it no longer shrinks away)
             var p0 = tr.position;
-            var away = p0 + new Vector3(1.5f, 0f, 0.15f);
-            var scale0 = tr.localScale;
-            yield return PresentableFx.Tween(2.0f, t =>
+            var away = p0 + new Vector3(0.55f, 0f, 0.08f);
+            var yawEnd = Mathf.LerpAngle(faceRack, 180f, 0.35f);
+            yield return PresentableFx.Tween(1.2f, t =>
             {
                 var e = Mathf.SmoothStep(0f, 1f, t);
                 tr.position = Vector3.Lerp(p0, away, e);
-                // the handle (local -x) ends up pointing along the way it is pulled (+x of the room)
-                tr.rotation = Quaternion.Euler(0f, Mathf.Lerp(faceRack, 180f, e), 0f) *
-                              Quaternion.Euler(0f, 0f, 4f * Mathf.Sin(Mathf.Min(1f, t * 3f) * Mathf.PI * 0.5f));
-                tr.localScale = scale0 * Mathf.Lerp(1f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.65f, 1f, t)));
+                tr.rotation = Quaternion.Euler(0f, Mathf.LerpAngle(faceRack, yawEnd, e), 0f) *
+                              Quaternion.Euler(0f, 0f, 4f * Mathf.Sin(t * Mathf.PI)); // tips back a little while rolling, upright at rest
             }, x => x);
-            trolley.SetActive(false);
-            tr.localScale = scale0;
+            tr.position = away;
+            tr.rotation = Quaternion.Euler(0f, yawEnd, 0f);
             _sc01Moving = false;
         }
 
@@ -3484,19 +3622,17 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(0.4f);
 
             // pulled away handle first (the handle is local -z), folds away at the end
+            // client: the cart only rolls a short way along the wall and STAYS there with the drum on it (it no longer shrinks away)
             var p0 = tr.position;
-            var away = p0 + new Vector3(1.2f, 0f, -0.9f); // the tall wall is just to the right: leave along it, not through it
-            var scale0 = tr.localScale;
-            yield return PresentableFx.Tween(2.0f, t =>
+            var away = p0 + new Vector3(0.6f, 0f, -0.45f); // the tall wall is just to the right: along it, not through it
+            yield return PresentableFx.Tween(1.2f, t =>
             {
                 var e = Mathf.SmoothStep(0f, 1f, t);
                 tr.position = Vector3.Lerp(p0, away, e);
-                tr.rotation = Quaternion.Euler(0f, yaw + 18f * e, 0f);
-                tr.localScale = scale0 * Mathf.Lerp(1f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.65f, 1f, t)));
+                tr.rotation = Quaternion.Euler(0f, yaw + 10f * e, 0f);
             }, x => x);
-            trolley.SetActive(false);
-            tr.localScale = scale0;
-            tr.rotation = rot;
+            tr.position = away;
+            tr.rotation = Quaternion.Euler(0f, yaw + 10f, 0f);
         }
 
         // A soft ring of light on the floor where the drum settles on the trolley.
@@ -4210,7 +4346,13 @@ namespace ChemicalSafety.Presentable
                 }
             }
 
-            return _artistMap.TryGetValue(clip.name, out var artist) && artist != null ? artist : clip;
+            if (_artistMap.TryGetValue(clip.name, out var artist) && artist != null)
+            {
+                Debug.Log("[Voice] artist clip plays: " + artist.name + " (" + artist.length.ToString("0.0") + " s)");
+                return artist;
+            }
+
+            return clip;
         }
 
         // Bangla instruction card text of Scenarios 2-8 = the artist's script (Scenario 1 is set where it starts).

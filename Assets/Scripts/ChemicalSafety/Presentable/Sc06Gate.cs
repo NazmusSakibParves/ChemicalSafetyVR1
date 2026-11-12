@@ -20,6 +20,12 @@ namespace ChemicalSafety.Presentable
         [Tooltip("Label of the left button; empty = BACK (Scenario 6 on the ray uses PREVIEW: it replays the whole animation).")]
         [SerializeField] private string backText;
 
+        /// <summary>The gate ("Inspection complete") cards wear the instruction-card glass. false = the earlier darker look.</summary>
+        private const bool GateUsesGlass = true;
+        private const float GlassBackAlpha = 0.62f; // the instruction card's glassBackAlpha
+
+        private bool Glass => GateUsesGlass && art != null && art.glassPanel != null && art.glassButton != null;
+
         private static readonly Color HoloWhite = new Color(0.96f, 0.99f, 1f);
         private static readonly Color HoloCyan = new Color(0.62f, 0.95f, 1f);
         private Transform _card;
@@ -126,19 +132,33 @@ namespace ChemicalSafety.Presentable
             _group = canvas.gameObject.GetComponent<CanvasGroup>();
             if (_group == null)
                 _group = canvas.gameObject.AddComponent<CanvasGroup>();
-            // a dark backing behind the translucent panel: the words stay readable over any scene (client: hard to read, too transparent)
-            // the panel sprite is itself see-through (low alpha), so its own shape is stacked a few times to get a nearly solid dark plate
-            for (var layer = 0; layer < 4; layer++)
+            Image plate;
+            if (Glass)
             {
-                var backing = PresentableUi.Img("FrameBack" + layer, canvas.transform, Vector2.zero, Vector2.one,
-                    art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(0.02f, 0.08f, 0.11f, 1f));
-                backing.type = Image.Type.Sliced;
+                // client: the same glass as the Scenario 2 instruction card - a tinted backing at the same alpha under the glass itself
+                var glassBack = PresentableUi.Img("FrameBack0", canvas.transform, Vector2.zero, Vector2.one, art.glassPanel,
+                    new Color(0.02f, 0.08f, 0.11f, GlassBackAlpha));
+                glassBack.type = Image.Type.Sliced;
+                plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one, art.glassPanel, Color.white);
+                plate.type = Image.Type.Sliced;
+                plate.raycastTarget = true;
             }
+            else
+            {
+                // a dark backing behind the translucent panel: the words stay readable over any scene (client: hard to read, too transparent)
+                // the panel sprite is itself see-through (low alpha), so its own shape is stacked a few times to get a nearly solid dark plate
+                for (var layer = 0; layer < 4; layer++)
+                {
+                    var backing = PresentableUi.Img("FrameBack" + layer, canvas.transform, Vector2.zero, Vector2.one,
+                        art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(0.02f, 0.08f, 0.11f, 1f));
+                    backing.type = Image.Type.Sliced;
+                }
 
-            var plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one,
-                art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(1f, 1f, 1f, 0.55f));
-            plate.type = Image.Type.Sliced;
-            plate.raycastTarget = true;
+                plate = PresentableUi.Img("Frame", canvas.transform, Vector2.zero, Vector2.one,
+                    art.gatePanel != null ? art.gatePanel : art.holoPanel, new Color(1f, 1f, 1f, 0.55f));
+                plate.type = Image.Type.Sliced;
+                plate.raycastTarget = true;
+            }
             var title = PresentableUi.Text("Title", canvas.transform, new Vector2(0.09f, 0.70f), new Vector2(0.90f, 0.90f),
                 string.IsNullOrEmpty(titleText) ? Sc06Content.GateTitle : titleText, 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, art.englishFont);
             title.enableAutoSizing = true;
@@ -168,7 +188,9 @@ namespace ChemicalSafety.Presentable
             UnityEngine.Events.UnityAction action, Sprite background)
         {
             var backRt = PresentableUi.Rect(name + "Back", parent, min, max);
-            PresentableUi.Img(backRt, background, new Color(0.02f, 0.08f, 0.11f, 0.85f), sliced: true);
+            if (Glass)
+                background = art.glassButton; // same glass pill as the instruction card's Continue button
+            PresentableUi.Img(backRt, background, new Color(0.02f, 0.08f, 0.11f, Glass ? GlassBackAlpha : 0.85f), sliced: true);
             var rt = PresentableUi.Rect(name, parent, min, max);
             var img = PresentableUi.Img(rt, background, Color.white, sliced: true, raycast: true);
             img.type = Image.Type.Sliced;

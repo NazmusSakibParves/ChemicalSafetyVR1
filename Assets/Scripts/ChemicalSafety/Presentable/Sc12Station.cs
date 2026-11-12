@@ -551,6 +551,7 @@ namespace ChemicalSafety.Presentable
             var canvas = PresentableUi.WorldCanvas("Sc12Review", transform, new Vector2(1240f, 800f), 0.00062f, true, 30);
             _review = canvas.transform;
             canvas.gameObject.AddComponent<CanvasGroup>();
+            DraggablePanel.Attach(canvas); // the ensemble card can be dragged with the controller ray (client)
             var cyan = new Color(0.55f, 0.95f, 1f, 0.95f);
 
             // left: operator on a faint glass pane

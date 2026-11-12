@@ -160,28 +160,42 @@ namespace ChemicalSafety.Presentable
 
             _body = PresentableUi.Centered("Body", root, new Vector2(0f, BodyLift), new Vector2(W, H));
             // frame: cyan edge, deep blue rim, navy glass
-            _border = Box("Border", _body, Vector2.zero, Vector2.one, Cyan);
-            Box("Rim", _body, Vector2.zero, Vector2.one, new Color(0.05f, 0.24f, 0.46f, 1f), new Vector2(7f, 7f), new Vector2(-7f, -7f));
-            Box("Glass", _body, Vector2.zero, Vector2.one, new Color(0.015f, 0.055f, 0.115f, 0.97f), new Vector2(14f, 14f), new Vector2(-14f, -14f));
-            PresentableUi.Img(PresentableUi.Rect("TopSheen", _body, new Vector2(0.01f, 0.55f), new Vector2(0.99f, 0.985f), new Vector2(14f, 0f), new Vector2(-14f, -14f)),
-                _vGradient, new Color(0.45f, 0.85f, 1f, 0.07f));
-            PresentableUi.Img(PresentableUi.Rect("Vignette", _body, new Vector2(0.01f, 0.015f), new Vector2(0.99f, 0.30f), new Vector2(14f, 14f), new Vector2(-14f, 0f)),
-                _vGradient, new Color(0f, 0f, 0.05f, 0.35f));
-
-            // orange corner brackets (the same accent as the question card frames)
-            for (var c = 0; c < 4; c++)
+            if (_art.mcqFrame != null)
             {
-                var right = (c & 1) == 1;
-                var top = c >= 2;
-                var ax = right ? 1f : 0f;
-                var ay = top ? 1f : 0f;
-                var sx = right ? -1f : 1f;
-                var sy = top ? -1f : 1f;
-                var a = new Vector2(ax, ay);
-                var h = PresentableUi.Rect("BracketH" + c, _body, a, a, new Vector2(sx > 0 ? -6f : -150f, sy > 0 ? -6f : -2f), new Vector2(sx > 0 ? 150f : 6f, sy > 0 ? 2f : 6f));
-                PresentableUi.Img(h, _art.roundedSolid, Orange, sliced: true);
-                var v = PresentableUi.Rect("BracketV" + c, _body, a, a, new Vector2(sx > 0 ? -6f : -2f, sy > 0 ? -6f : -150f), new Vector2(sx > 0 ? 2f : 6f, sy > 0 ? 150f : 6f));
-                PresentableUi.Img(v, _art.roundedSolid, Orange, sliced: true);
+                // client: the callout looks exactly like the MCQ box - the same frame art and the same light dark-blue tint plate behind the text
+                _border = Box("Border", _body, Vector2.zero, Vector2.one, new Color(1f, 1f, 1f, 0f));
+                var frameRt = PresentableUi.Rect("McqFrame", _body, Vector2.zero, Vector2.one, new Vector2(-34f, -26f), new Vector2(34f, 26f));
+                PresentableUi.Img(frameRt, _art.mcqFrame, Color.white);
+                var plate = PresentableUi.Rect("ReadPlate", _body, new Vector2(0.03f, 0.05f), new Vector2(0.97f, 0.95f));
+                PresentableUi.Img(plate, _art.roundedSolid, new Color(0.03f, 0.10f, 0.22f, 0.30f), sliced: true);
+            }
+            else
+            {
+                _border = Box("Border", _body, Vector2.zero, Vector2.one, Cyan);
+                Box("Rim", _body, Vector2.zero, Vector2.one, new Color(0.05f, 0.24f, 0.46f, 0.5f), new Vector2(7f, 7f), new Vector2(-7f, -7f)); // client: see-through
+                Box("Glass", _body, Vector2.zero, Vector2.one, new Color(0.015f, 0.055f, 0.115f, 0.34f), new Vector2(14f, 14f), new Vector2(-14f, -14f)); // client: the scene shows through, text stays crisp
+                PresentableUi.Img(PresentableUi.Rect("TopSheen", _body, new Vector2(0.01f, 0.55f), new Vector2(0.99f, 0.985f), new Vector2(14f, 0f), new Vector2(-14f, -14f)),
+                    _vGradient, new Color(0.45f, 0.85f, 1f, 0.07f));
+                PresentableUi.Img(PresentableUi.Rect("Vignette", _body, new Vector2(0.01f, 0.015f), new Vector2(0.99f, 0.30f), new Vector2(14f, 14f), new Vector2(-14f, 0f)),
+                    _vGradient, new Color(0f, 0f, 0.05f, 0.10f));
+
+                // orange corner brackets (the same accent as the question card frames)
+                for (var c = 0; c < 4; c++)
+                {
+                    var right = (c & 1) == 1;
+                    var top = c >= 2;
+                    var ax = right ? 1f : 0f;
+                    var ay = top ? 1f : 0f;
+                    var sx = right ? -1f : 1f;
+                    var sy = top ? -1f : 1f;
+                    var a = new Vector2(ax, ay);
+                    var h = PresentableUi.Rect("BracketH" + c, _body, a, a, new Vector2(sx > 0 ? -6f : -150f, sy > 0 ? -6f : -2f), new Vector2(sx > 0 ? 150f : 6f, sy > 0 ? 2f : 6f));
+                    PresentableUi.Img(h, _art.roundedSolid, Orange, sliced: true);
+                    var v = PresentableUi.Rect("BracketV" + c, _body, a, a, new Vector2(sx > 0 ? -6f : -2f, sy > 0 ? -6f : -150f), new Vector2(sx > 0 ? 2f : 6f, sy > 0 ? 150f : 6f));
+                    PresentableUi.Img(v, _art.roundedSolid, Orange, sliced: true);
+                }
+
+
             }
 
             // left half: content (fades in after the frame)
@@ -225,7 +239,7 @@ namespace ChemicalSafety.Presentable
                 var num = PresentableUi.Text("Num", chipBg.rectTransform, Vector2.zero, Vector2.one, "0" + (i + 1), 26f, new Color(0.85f, 0.98f, 1f),
                     TextAlignmentOptions.Center, true, font);
                 num.enableAutoSizing = false;
-                _lines[i] = PresentableUi.Text("Text", row, new Vector2(0.21f, 0.04f), new Vector2(0.985f, 0.96f), string.Empty, 28f,
+                _lines[i] = PresentableUi.Text("Text", row, new Vector2(0.215f, 0.06f), new Vector2(0.955f, 0.94f), string.Empty, 28f,
                     new Color(0.93f, 0.98f, 1f), TextAlignmentOptions.MidlineLeft, false, font);
                 _lines[i].textWrappingMode = TextWrappingModes.Normal;
                 _lines[i].enableAutoSizing = true;
@@ -486,6 +500,9 @@ namespace ChemicalSafety.Presentable
         /// <summary>The whole callout takes the result colour: halo, travelling light, glossy sheen and a burst of sparks.</summary>
         public void ShowResult(bool correct)
         {
+            // client: no green / red light round the box (halo, comet, sheen, sparks); the answer boxes inside carry the result
+            return;
+#pragma warning disable CS0162
             if (!IsOpen)
                 return;
             _resultMode = true;
@@ -496,6 +513,7 @@ namespace ChemicalSafety.Presentable
             StartCoroutine(ResultLoop());
             StartCoroutine(ResultSheen());
             StartCoroutine(Sparks(correct));
+#pragma warning restore CS0162
         }
 
         private IEnumerator ResultLoop()
