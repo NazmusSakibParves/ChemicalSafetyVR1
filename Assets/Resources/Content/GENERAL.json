@@ -89,7 +89,9 @@
     { "key": "McqReason", "en": "Reason:", "bn": "কারণঃ" },
     { "key": "TimerLabel", "en": "TIME LEFT", "bn": "বাকি সময়" },
     { "key": "TimerFive", "en": "5 MINUTES LEFT", "bn": "আর ৫ মিনিট বাকি" },
-    { "key": "TimerOne", "en": "1 MINUTE LEFT", "bn": "আর ১ মিনিট বাকি" }
+    { "key": "TimerOne", "en": "1 MINUTE LEFT", "bn": "আর ১ মিনিট বাকি" },
+    { "key": "NavPrevious", "en": "Previous", "bn": "পূর্ববর্তী" },
+    { "key": "NavNext", "en": "Next", "bn": "পরবর্তী" }
   ],
   "arrays": [
   ],

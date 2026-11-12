@@ -446,7 +446,10 @@ namespace ChemicalSafety.Presentable
                 }
             }
 
-            SessionResults.OpenQuestion(qq.id, qq.prompt.Get(Loc.Current), shown, correctLetter);
+            // answered in an earlier visit (Previous / Next buttons): the first pick is shown locked with its reason, nothing is recorded again
+            var lockedBefore = SessionResults.TryGetAnswered(qq.id, out var lockedLetter, out _);
+            if (!lockedBefore)
+                SessionResults.OpenQuestion(qq.id, qq.prompt.Get(Loc.Current), shown, correctLetter);
 
             // fill the panel
             _title.text = qq.header.Get(Loc.Current);
@@ -487,6 +490,23 @@ namespace ChemicalSafety.Presentable
                 supervisor.Gesture();
             }
 
+            if (lockedBefore)
+            {
+                var lockedRow = lockedLetter[0] - 'A';
+                _silentSelect = true;
+                SelectOption(lockedRow);
+                _silentSelect = false;
+                flags[q] = lockedRow == correctRow;
+                _next = false;
+                _nextBtn.gameObject.SetActive(true);
+                yield return PopIn(_nextBtn, 1f);
+                while (!_next)
+                    yield return null;
+                SetSds(false, true);
+                yield return PresentableFx.Wait(0.2f);
+                yield break;
+            }
+
             var say = StartCoroutine(Say("Q" + (q + 1)));
             while (_answered < 0)
                 yield return null;
@@ -518,6 +538,8 @@ namespace ChemicalSafety.Presentable
 
         // finger / smoke API ------------------------------------------------
 
+        private bool _silentSelect;
+
         public void SelectOption(int row)
         {
             if (_locked || _main == null || !_main.gameObject.activeSelf || row < 0 || row > 3 || !_optBg[row].transform.parent.gameObject.activeSelf)
@@ -525,8 +547,12 @@ namespace ChemicalSafety.Presentable
             _locked = true;
             _answered = row;
             var right = row == _correctShown;
-            PresentableFx.Play(right ? PresentableFx.Success : PresentableFx.Error);
-            PresentableFx.Haptic(true, right ? 0.5f : 0.9f, 0.18f);
+            if (!_silentSelect)
+            {
+                PresentableFx.Play(right ? PresentableFx.Success : PresentableFx.Error);
+                PresentableFx.Haptic(true, right ? 0.5f : 0.9f, 0.18f);
+            }
+
             for (var i = 0; i < 4; i++)
             {
                 if (!_optBg[i].transform.parent.gameObject.activeSelf)

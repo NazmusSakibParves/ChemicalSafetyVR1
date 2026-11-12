@@ -316,6 +316,130 @@ namespace ChemicalSafety.Presentable
                 if (!_resultShown)
                     StartCoroutine(TimeUpThenResult());
             };
+            CreateNavHud();
+        }
+
+        /// <summary>Start of a scene that was loaded by a Previous / Next jump: the session (marks, clock, language) is already running.</summary>
+        private void ResumeSession()
+        {
+            if (clipboard != null)
+                clipboard.SetSuspended(false);
+            var hud = SessionHud.Create(_cam);
+            hud.TimeUp += () =>
+            {
+                if (!_resultShown)
+                    StartCoroutine(TimeUpThenResult());
+            };
+            CreateNavHud();
+        }
+
+        // ------------------------------------------------------------------ Previous / Next scenario buttons
+
+        private bool _jumping;
+
+        private void CreateNavHud()
+        {
+            if (!ScenarioNav.Enabled)
+                return;
+            ScenarioNavHud.Create(_cam, null, null); // plain arrows (the art icons are a circular arrow and a tick, they do not read as Previous / Next)
+            ScenarioNav.JumpRequested -= OnJumpRequested;
+            ScenarioNav.JumpRequested += OnJumpRequested;
+        }
+
+        private void OnDestroy()
+        {
+            ScenarioNav.JumpRequested -= OnJumpRequested;
+        }
+
+        private void OnJumpRequested(int target)
+        {
+            if (_jumping || _resultShown || SessionClock.Expired || target < 1 || target > ScenarioNav.Count)
+                return;
+            StartCoroutine(JumpRoutine(target));
+        }
+
+        /// <summary>
+        /// Leaves the running scenario at once and starts scenario <paramref name="target"/> from its beginning. The scene is reloaded (a clean
+        /// slate: no stale events, props, voices or locks), the marks / clock / language are statics and stay, answers already given are shown locked.
+        /// </summary>
+        private IEnumerator JumpRoutine(int target)
+        {
+            _jumping = true;
+            if (ScenarioNavHud.Instance != null)
+                ScenarioNavHud.Instance.SetBusy(true);
+            ScenarioNav.JumpTarget = target;
+            if (_flow != null)
+                StopCoroutine(_flow);
+            _flow = null;
+            StopAllVoiceCoroutines();
+            StopVoice();
+            subtitle.Hide();
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.4f);
+            ReloadScene();
+        }
+
+        private static void ReloadScene()
+        {
+            PresentableInput.ActiveScenario = 0;
+            FingerPokeSystem.ClearAll();
+            DraggablePanel.All.Clear();
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.buildIndex >= 0)
+                UnityEngine.SceneManagement.SceneManager.LoadScene(scene.buildIndex);
+#if UNITY_EDITOR
+            else
+                UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scene.path,
+                    new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+#endif
+        }
+
+        private IEnumerator SwitchOffOtherRooms(GameObject keep)
+        {
+            var waited = 0f;
+            while (keep != null && !keep.activeInHierarchy && waited < 30f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck })
+                if (e != null && e != keep)
+                    e.SetActive(false);
+        }
+
+        // the scenario by its number: the chain of each scenario carries on with the next ones by itself, as in the normal flow
+        private IEnumerator RunScenarioByNumber(int n)
+        {
+            if (n <= 2)
+            {
+                yield return RunScenario1And2(n == 2);
+                yield break;
+            }
+
+            // a fresh scene starts with the first room on. It stays (it holds the floor the learner stands on: without a floor the rig falls) until the
+            // room of the scenario is on, then every other room is switched off (each scenario hides the rooms before it, never the first one)
+            var targetRoom = n == 3 ? envSc03 : n == 4 ? envSc04 : n == 5 ? envSc05 : n == 6 ? envSc06 : n == 7 ? envSc07 : n == 8 ? envSc08
+                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : envScCheck;
+            StartCoroutine(SwitchOffOtherRooms(targetRoom));
+            PresentableInput.ActiveScenario = n;
+            switch (n)
+            {
+                case 3: if (envSc03 != null) yield return RunScenario3(); break;
+                case 4: if (envSc04 != null) yield return RunScenario4(); break;
+                case 5: if (envSc05 != null) yield return RunScenario5(); break;
+                case 6: if (envSc06 != null) yield return RunScenario6(); break;
+                case 7: if (envSc07 != null) yield return RunScenario7(); break;
+                case 8: if (envSc08 != null) yield return RunScenario8(); break;
+                case 9: if (envSc09 != null) yield return RunScenario9(); break;
+                case 10: if (envSc10 != null) yield return RunScenario10(); break;
+                case 11: if (envSc11 != null) yield return RunScenario11(); break;
+                case 12: if (envSc12 != null) yield return RunScenario12(); break;
+                default:
+                    if (n >= 13 && n <= 18 && envScCheck != null && scCheck != null)
+                        yield return RunScenarioCheck(n);
+                    break;
+            }
         }
 
         private IEnumerator TimeUpThenResult()
@@ -353,6 +477,8 @@ namespace ChemicalSafety.Presentable
             SessionResults.CompleteAll(SessionClock.ElapsedMs, timedOut);
             if (SessionHud.Instance != null)
                 SessionHud.Instance.SetVisible(false);
+            if (ScenarioNavHud.Instance != null)
+                ScenarioNavHud.Instance.SetVisible(false);
             if (PresentableInput.ActiveScenario < 1)
                 PresentableInput.ActiveScenario = 1; // the card is pressed with the controller ray
             Stage("result");
@@ -463,7 +589,21 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 #endif
-            if (loginScreen != null)
+            // a scene loaded by the Previous / Next buttons: no login, the session already runs
+            var jump = ScenarioNav.Enabled ? ScenarioNav.TakeJump() : 0;
+#if UNITY_EDITOR
+            // developer test (EditorPref ChemSafetyNavJump = scenario number): starts a session without the login and goes straight to that scenario
+            if (jump == 0 && ScenarioNav.Enabled && UnityEditor.EditorPrefs.GetInt("ChemSafetyNavJump", 0) > 0)
+            {
+                jump = UnityEditor.EditorPrefs.GetInt("ChemSafetyNavJump", 0);
+                UnityEditor.EditorPrefs.SetInt("ChemSafetyNavJump", 0);
+                SessionResults.StartSession("Nav Test", "nav@test.local", "+8801712345678", "en");
+                SessionClock.Begin();
+            }
+#endif
+            if (jump > 0)
+                ResumeSession();
+            else if (loginScreen != null)
             {
                 Stage("login");
                 if (clipboard != null)
@@ -485,10 +625,20 @@ namespace ChemicalSafety.Presentable
                 BeginSession(); // the 40-minute clock and the timer / pause button start after the login
             }
 
+            ScenarioNav.Current = jump > 0 ? jump : 1;
+            yield return RunScenarioByNumber(jump > 0 ? jump : 1);
+            yield return FinishAllScenarios();
+        }
+
+        // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
+        private IEnumerator RunScenario1And2(bool skipSc01)
+        {
             // Scenario 1 may run on the controller ray (PresentableInput). The fingertip flow below stays as it was.
             PresentableInput.ActiveScenario = 1;
-            instructionPanel.SetGlass(sc01GlassCard); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
             var rayFlow = PresentableInput.RayActive;
+            if (!skipSc01)
+            {
+            instructionPanel.SetGlass(sc01GlassCard); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
             if (rayFlow)
             {
                 LockLocomotion(true);
@@ -589,6 +739,7 @@ namespace ChemicalSafety.Presentable
                 yield return FadeReposition(hotspotSc01.transform, Vector3.Slerp(viewFwd, toDrums, 0.6f), mcqSc01);
                 yield return RunQuestion(mcqSc01, BuildSc01Question(), true);
             }
+            }
 
             Stage("sc02");
             instructionPanel.SetGlass(false); // the other scenarios keep their own frame
@@ -681,7 +832,11 @@ namespace ChemicalSafety.Presentable
 
             if (envSc03 != null)
                 yield return RunScenario3();
+        }
 
+        // after the last scenario of this build: the closing line, then the result card (the same card as after a time-out)
+        private IEnumerator FinishAllScenarios()
+        {
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
             var doneLine = envScCheck != null ? Loc.T("SC18", "ModuleComplete")
@@ -3166,7 +3321,16 @@ namespace ChemicalSafety.Presentable
             var shown = new List<OptionPair>();
             for (var i = 0; i < q.options.Length; i++)
                 shown.Add(new OptionPair { key = ((char)('A' + i)).ToString(), text = OptionText(q.options[i].label), optionId = order[i].ToString() });
-            SessionResults.OpenQuestion(questionId, q.prompt, shown, ((char)('A' + q.correctIndex)).ToString());
+            // answered in an earlier visit (Previous / Next buttons): the first pick is shown locked, nothing is recorded again
+            var lockedBefore = SessionResults.TryGetAnswered(questionId, out var lockedLetter, out var lockedCorrect);
+            if (!lockedBefore)
+                SessionResults.OpenQuestion(questionId, q.prompt, shown, ((char)('A' + q.correctIndex)).ToString());
+            else
+            {
+                _sc02AnswerCorrect = lockedCorrect;
+                if (last && lockedCorrect)
+                    StartCoroutine(Sc02PlaceChemical(chem));
+            }
 
             var revealed = false;
             var nextPressed = false;
@@ -3193,7 +3357,10 @@ namespace ChemicalSafety.Presentable
             panel.PopupShown += OnPopupShown;
             panel.Revealed += OnRevealed;
             panel.NextPressed += OnNext;
-            panel.Show(q);
+            if (lockedBefore)
+                panel.ShowAnswered(q, lockedLetter[0] - 'A');
+            else
+                panel.Show(q);
             if (last)
             {
                 while (!nextPressed)
@@ -4079,6 +4246,38 @@ namespace ChemicalSafety.Presentable
             var order = ShuffleOptions(q, questionId);
             q.sourceOrder = order;
             SessionResults.BeginScenario(lessonId, Loc.Suffix());
+            if (SessionResults.TryGetAnswered(questionId, out var lockedLetter, out _))
+            {
+                // answered in an earlier visit (Previous / Next buttons): the first pick is shown locked with its reasons, nothing is recorded again
+                var li = lockedLetter[0] - 'A';
+                if (useDrums && li >= 0 && li < order.Length)
+                {
+                    var lockedDrum = order[li];
+                    if (lockedDrum < drums.Length && drums[lockedDrum] != null)
+                        drums[lockedDrum].Highlight(li == q.correctIndex ? PresentableUi.Green : PresentableUi.Red, true);
+                    var rightDrum = order[q.correctIndex];
+                    if (li != q.correctIndex && rightDrum < drums.Length && drums[rightDrum] != null)
+                        drums[rightDrum].Highlight(PresentableUi.Green, true);
+                }
+
+                void OnNextLocked() => _nextPressed = true;
+                panel.NextPressed += OnNextLocked;
+                panel.ShowAnswered(q, li);
+                while (!_nextPressed)
+                    yield return null;
+                panel.NextPressed -= OnNextLocked;
+                if (useDrums)
+                {
+                    foreach (var d in drums)
+                        d?.ClearHighlight();
+                }
+
+                SessionResults.EndScenario();
+                panel.Hide();
+                yield return PresentableFx.Wait(0.35f);
+                yield break;
+            }
+
             var shown = new List<OptionPair>();
             for (var i = 0; i < q.options.Length; i++)
                 shown.Add(new OptionPair { key = ((char)('A' + i)).ToString(), text = OptionText(q.options[i].label), optionId = order[i].ToString() });
@@ -4296,6 +4495,14 @@ namespace ChemicalSafety.Presentable
         private void Stage(string name)
         {
             CurrentStage = name;
+            // "sc07", "sc07Intro", "sc13Done" ...: the scenario the learner is in (Previous / Next buttons)
+            if (name.Length >= 4 && name[0] == 's' && name[1] == 'c' && char.IsDigit(name[2]) && char.IsDigit(name[3]))
+            {
+                var sn = (name[2] - '0') * 10 + (name[3] - '0');
+                if (sn >= 1 && sn <= ScenarioNav.Count)
+                    ScenarioNav.Current = sn;
+            }
+
             Debug.Log("[Presentable] Stage: " + name + " t=" + Time.time.ToString("0.0"));
         }
 
@@ -5681,6 +5888,34 @@ namespace ChemicalSafety.Presentable
             }
 
             SessionResults.BeginScenario("SC12", Loc.Suffix());
+            // answered in an earlier visit (Previous / Next buttons): the first submit is shown locked with every reason, nothing is recorded again
+            string lockedLetters = null;
+            var lockedBefore = ray && SessionResults.TryGetAnswered("SC12.Q1", out lockedLetters, out _);
+            if (lockedBefore)
+            {
+                var lockedTicks = new bool[n];
+                foreach (var part in lockedLetters.Split(','))
+                {
+                    if (part.Length == 1 && part[0] - 'A' >= 0 && part[0] - 'A' < n)
+                        lockedTicks[part[0] - 'A'] = true;
+                }
+
+                Sc04PopupPose(-1.1f, 0.06f, 1.8f, out var lqPos, out var lqRot);
+                assessmentSc12.SetWorldScale(1.4f);
+                assessmentSc12.transform.SetPositionAndRotation(lqPos, lqRot);
+                _nextPressed = false;
+                void OnNextLocked() => _nextPressed = true;
+                assessmentSc12.NextPressed += OnNextLocked;
+                assessmentSc12.ShowAnswered(q, lockedTicks);
+                while (!_nextPressed)
+                    yield return null;
+                assessmentSc12.NextPressed -= OnNextLocked;
+                SessionResults.EndScenario();
+                assessmentSc12.Hide();
+                yield return PresentableFx.Wait(0.35f);
+                yield break;
+            }
+
             SessionResults.OpenQuestion("SC12.Q1", q.prompt, shown, string.Join(",", correctLetters));
 
             void OnSubmitted(bool[] ticked, bool correct)

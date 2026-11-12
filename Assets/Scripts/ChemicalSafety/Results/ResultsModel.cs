@@ -158,14 +158,50 @@ namespace ChemicalSafety.Results
 
         public static void BeginScenario(string lessonId, string language)
         {
+            // a scenario that is entered again (Previous / Next buttons) continues its own record: no second attempt, no second max score
+            _attempt = Current.attempts.Find(a => a.lesson_id == lessonId);
+            _answer = null;
+            if (_attempt != null)
+                return;
             _attempt = new AttemptRecord { lesson_id = lessonId, language = language, started_at = Now() };
             Current.attempts.Add(_attempt);
+        }
+
+        /// <summary>
+        /// True when the question was already answered (a pick exists) in an earlier visit of this scenario. The pick is final: the caller shows it
+        /// locked and must NOT call OpenQuestion / RecordTry for it. <paramref name="shownLetter"/> is the slot letter the learner saw.
+        /// </summary>
+        public static bool TryGetAnswered(string questionId, out string shownLetter, out bool correct)
+        {
+            shownLetter = null;
+            correct = false;
+            if (_attempt == null)
+                return false;
+            var a = _attempt.answers.Find(x => x.question_id == questionId);
+            if (a == null || string.IsNullOrEmpty(a.selected_option))
+                return false;
+            shownLetter = a.selected_option;
+            correct = a.is_correct;
+            _answer = null; // nothing may be recorded for this question any more
+            return true;
         }
 
         public static void OpenQuestion(string questionId, string text, List<OptionPair> shown, string correctLetter)
         {
             if (_attempt == null)
                 return;
+            var old = _attempt.answers.Find(x => x.question_id == questionId);
+            if (old != null)
+            {
+                // asked before but never answered (left with Next): the same record is used again, max score is not counted twice
+                old.option_list = shown;
+                old.correct_option = correctLetter;
+                _answer = old;
+                _questionOpenedAt = Time.realtimeSinceStartup;
+                _pausedAtOpen = ChemicalSafety.Presentable.SessionClock.PausedTotal;
+                return;
+            }
+
             _answer = new AnswerRecord
             {
                 question_id = questionId,
@@ -211,11 +247,17 @@ namespace ChemicalSafety.Results
             Current.completed_at = Now();
             Current.elapsed_ms = elapsedMs;
             Current.timed_out = timedOut;
-            if (_attempt != null && string.IsNullOrEmpty(_attempt.ended_at))
+            // every scenario that was left unfinished (time-out in the middle, or skipped with the Next button): keep what was answered, do not count it as completed
+            foreach (var a in Current.attempts)
             {
-                _attempt.interrupted = true; // time-out in the middle of a scenario: keep what was answered, do not count it as completed
-                EndScenario();
+                if (!string.IsNullOrEmpty(a.ended_at))
+                    continue;
+                a.interrupted = true;
+                a.ended_at = Now();
+                a.passed = false;
             }
+
+            _answer = null;
             Current.RecomputeTotals();
             _sink.Save(Current);
         }

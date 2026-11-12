@@ -73,7 +73,7 @@ namespace ChemicalSafety.Presentable
                 _timerGroup.blocksRaycasts = visible;
         }
 
-        private static Sprite PlaySprite()
+        internal static Sprite PlaySprite()
         {
             const int n = 64;
             var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
@@ -274,7 +274,7 @@ namespace ChemicalSafety.Presentable
         // ---- procedural sprites (no assets): rounded capsule (9-sliced), ring, disc
         private static Sprite _capsule, _ringSprite, _disc;
 
-        private static Sprite CapsuleSprite()
+        internal static Sprite CapsuleSprite()
         {
             if (_capsule != null)
                 return _capsule;
@@ -297,7 +297,7 @@ namespace ChemicalSafety.Presentable
         private static Sprite _edgeSprite;
 
         // hollow rounded outline (4 px) so only the neon border is solid and the inside stays see-through
-        private static Sprite EdgeSprite()
+        internal static Sprite EdgeSprite()
         {
             if (_edgeSprite != null)
                 return _edgeSprite;

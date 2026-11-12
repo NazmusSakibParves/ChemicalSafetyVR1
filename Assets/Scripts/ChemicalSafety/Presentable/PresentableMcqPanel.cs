@@ -458,18 +458,34 @@ namespace ChemicalSafety.Presentable
                 _frame.color = c;
         }
 
-        private IEnumerator ShowInline(int index, bool correct)
+        /// <summary>
+        /// A question that was already answered in an earlier visit of the scenario (Previous / Next buttons): shown again with the first pick
+        /// selected, the right and wrong rows marked and every reason visible. It is locked: no click changes it, nothing is recorded, no sound.
+        /// </summary>
+        public void ShowAnswered(Question question, int index)
         {
-            PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
-            PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
+            question.inlineReveal = true;
+            Show(question);
+            _locked = true;
+            if (index >= 0 && index < question.options.Length)
+                StartCoroutine(ShowInline(index, index == question.correctIndex, true));
+        }
+
+        private IEnumerator ShowInline(int index, bool correct, bool silent = false)
+        {
+            if (!silent)
+            {
+                PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
+                PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
+            }
             _header.color = Skin ? SkinTitle : Color.white;
             if (_embedded)
             {
-                if (_fx != null)
+                if (_fx != null && !silent)
                     _fx.OnResult(correct, index, true, true);
                 EmbeddedResult?.Invoke(correct);
             }
-            else if (_fx != null)
+            else if (_fx != null && !silent)
             {
                 _fx.OnResult(correct, index, true);
             }
@@ -528,22 +544,24 @@ namespace ChemicalSafety.Presentable
                 r.root.GetComponent<CanvasGroup>().alpha = isRight || isPick ? 1f : 0.85f;
             }
 
-            if (!correct)
+            if (!correct && !silent)
                 StartCoroutine(Shake(_rows[index].root));
-            yield return PresentableFx.Wait(0.6f);
+            yield return PresentableFx.Wait(silent ? 0.25f : 0.6f);
 
             // right answer: the drum goes onto the trolley first (the director holds NEXT until that has finished)
-            while (_question.holdNext != null && _question.holdNext())
+            while (!silent && _question.holdNext != null && _question.holdNext())
                 yield return null;
             if (_question.hideNext)
             {
-                PopupShown?.Invoke(correct);
+                if (!silent)
+                    PopupShown?.Invoke(correct); // (it starts the answer voice: a repeated answer is silent)
                 Revealed?.Invoke(correct);
                 yield break;
             }
 
             _inlineNextLabel.text = _question.nextLabel;
-            PopupShown?.Invoke(correct);
+            if (!silent)
+                PopupShown?.Invoke(correct);
             yield return PopupIn(_inlineNext);
             // the button breathes so it reads as the thing to press
             while (_inlineNext.gameObject.activeInHierarchy)

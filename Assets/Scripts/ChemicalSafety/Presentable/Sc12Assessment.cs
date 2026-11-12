@@ -191,6 +191,34 @@ namespace ChemicalSafety.Presentable
             _inlineNextRt.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Answered in an earlier visit (Previous / Next buttons): the ticks of the first submit are shown again, every row with its verdict and
+        /// reason. Locked, no sound, nothing is recorded. Only the ray (inline) look is used.
+        /// </summary>
+        public void ShowAnswered(Question q, bool[] ticked)
+        {
+            q.inlineReveal = true;
+            Show(q);
+            var allRight = true;
+            var wrongTicked = false;
+            for (var i = 0; i < RowCount; i++)
+            {
+                _on[i] = ticked != null && i < ticked.Length && ticked[i];
+                if (_on[i] != q.correct[i])
+                    allRight = false;
+                if (_on[i] && !q.correct[i])
+                    wrongTicked = true;
+            }
+
+            _locked = true;
+            _won = allRight;
+            _silentReveal = true;
+            Reveal(allRight, wrongTicked);
+            _silentReveal = false;
+        }
+
+        private bool _silentReveal;
+
         // ray version: no popup. Every row shows its verdict tag and reason, the ticked rows get a green tick / red cross, then NEXT.
         private void Reveal(bool allRight, bool wrongTicked)
         {
@@ -227,6 +255,8 @@ namespace ChemicalSafety.Presentable
             _prompt.color = allRight ? new Color(0.45f, 1f, 0.62f) : new Color(1f, 0.55f, 0.50f);
             _submit.gameObject.SetActive(false);
             _inlineNextRt.gameObject.SetActive(true);
+            if (_silentReveal)
+                return;
             PresentableFx.Play(allRight ? PresentableFx.Success : PresentableFx.Error, 0.6f);
             PresentableFx.Haptic(true, allRight ? 0.5f : 0.8f, 0.15f);
         }
