@@ -19,6 +19,9 @@ namespace ChemicalSafety.Editor
     public static partial class PresentableSceneBuilder
     {
         private const bool ScCheckUseFactory = true;
+        /// <summary>2026-11-12: the designer's glb models of nitric acid / chlorine gas / hydrogen peroxide (SC14-17), the new printed HCl label (SC13) and
+        /// bleaching powder label (SC18). <c>false</c> + Build Presentable Scene = the earlier self-made props and label plates.</summary>
+        private const bool ScCheckUseDesignerModels = true;
         private static GameObject _scCheckHall;
 
         /// <summary>Called once, right after the Scenario 6 room is built: keeps a hidden copy of it for the Scenario 13-18 hall.</summary>
@@ -136,16 +139,24 @@ namespace ChemicalSafety.Editor
             var g = new GameObject("Chem_SC" + n);
             g.transform.SetParent(parent, true);
             g.transform.position = baseAt;
-            if (n == 15)
+            // the designer's own models of nitric acid (14), chlorine gas (15) and hydrogen peroxide (16, 17); a missing file falls back to the old props
+            var designer = ScCheckUseDesignerModels && n >= 14 && n <= 17 && ScBuildDesignerChemical(n, g.transform, baseAt);
+            if (designer)
+            {
+                // nothing else: the model is already standing on the table, label towards the learner
+            }
+            else if (n == 15)
                 ScBuildCylinder(g.transform, baseAt);
             else if (n == 18)
                 ScBuildSack(g.transform, baseAt);
             else
             {
-                // the designer's HCl bottle (also the body of nitric acid and hydrogen peroxide, which get their own label)
+                // the designer's HCl bottle (also the body of nitric acid and hydrogen peroxide when the designer models are switched off)
                 var ok = Sc04HclModel(g.transform, baseAt.y, baseAt.x, baseAt.z);
                 if (!ok)
                     Debug.LogWarning("[ScCheck] HCl bottle model missing");
+                else if (n == 13 && ScCheckUseDesignerModels)
+                    ScStickHclLabel(g.transform);
                 else if (n != 13)
                     ScRelabel(g.transform, n);
                 g.transform.localScale = Vector3.one * 1.3f; // about 0.42 m tall: all six chemicals read at the same, believable size
@@ -245,6 +256,242 @@ namespace ChemicalSafety.Editor
             ScLabelText(plate, note, 0.32f, ink, w * 0.08f, -h * 0.4f, w * 0.9f);
         }
 
+        // ------------------------------------------------------------------ designer models and glued-on labels (2026-11-12)
+
+        // a printed label texture: cut-out edge, clamped, mip-mapped, sharp at an angle
+        private static Texture2D ScLabelTexture(string path)
+        {
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>(path) == null)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti != null && (!ti.alphaIsTransparency || ti.wrapMode != TextureWrapMode.Clamp || !ti.mipmapEnabled || ti.maxTextureSize != 1024))
+            {
+                ti.alphaIsTransparency = true;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.mipmapEnabled = true;
+                ti.anisoLevel = 8;
+                ti.maxTextureSize = 1024;
+                ti.textureCompression = TextureImporterCompression.CompressedHQ;
+                ti.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        // A sticker that follows the surface: a grid of vertices, each one on the real surface of the body (ray from the front against the mesh,
+        // temporary mesh colliders), lifted 1 mm. The picture is shown as printed on the object, never as a flat card in front of it.
+        private static GameObject ScConformSticker(Transform parent, List<MeshFilter> bodies, Texture2D tex, string matName, float lw, float cx, float cy,
+            float frontZ, string objName)
+        {
+            // the picture's true proportions (an imported texture may be stretched to a power of two)
+            var aspect = (float)tex.height / tex.width;
+            if (AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) is TextureImporter si)
+            {
+                si.GetSourceTextureWidthAndHeight(out var sw, out var sh);
+                if (sw > 0 && sh > 0)
+                    aspect = (float)sh / sw;
+            }
+
+            var lh = lw * aspect;
+            const int cols = 28;
+            const int rows = 14;
+            var added = new List<MeshCollider>();
+            foreach (var mf in bodies)
+            {
+                if (mf == null || mf.sharedMesh == null || mf.GetComponent<MeshCollider>() != null)
+                    continue;
+                var mc = mf.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+                added.Add(mc);
+            }
+
+            Physics.SyncTransforms();
+            var verts = new Vector3[(cols + 1) * (rows + 1)];
+            var norms = new Vector3[verts.Length];
+            var uvs = new Vector2[verts.Length];
+            var hits = 0;
+            for (var j = 0; j <= rows; j++)
+            {
+                var y = cy - lh * 0.5f + lh * j / rows;
+                for (var i = 0; i <= cols; i++)
+                {
+                    var x = cx - lw * 0.5f + lw * i / cols; // x grows with i; the picture's left is +X (seen from the front), so u falls with i
+                    var p = new Vector3(x, y, frontZ);
+                    var nrm = Vector3.forward;
+                    var best = float.MaxValue;
+                    foreach (var h in Physics.RaycastAll(new Vector3(x, y, frontZ + 0.25f), Vector3.back, 0.7f))
+                    {
+                        var mc = h.collider as MeshCollider;
+                        if (mc != null && added.Contains(mc) && h.distance < best)
+                        {
+                            best = h.distance;
+                            p = h.point;
+                            nrm = h.normal;
+                        }
+                    }
+
+                    if (best < float.MaxValue)
+                        hits++;
+                    var idx = j * (cols + 1) + i;
+                    verts[idx] = p + nrm * 0.0012f;
+                    norms[idx] = nrm;
+                    uvs[idx] = new Vector2(1f - i / (float)cols, j / (float)rows);
+                }
+            }
+
+            foreach (var mc in added)
+                Object.DestroyImmediate(mc);
+            var tris = new List<int>();
+            for (var j = 0; j < rows; j++)
+            {
+                for (var i = 0; i < cols; i++)
+                {
+                    var v00 = j * (cols + 1) + i;
+                    var v10 = v00 + 1;
+                    var v01 = v00 + (cols + 1);
+                    var v11 = v01 + 1;
+                    tris.AddRange(new[] { v00, v10, v01, v01, v10, v11 });
+                }
+            }
+
+            var mesh = new Mesh { name = objName + "Mesh" };
+            mesh.SetVertices(verts);
+            mesh.SetNormals(norms);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            var mat = Mat(matName, Color.white, 0.25f, 0f, tex, null, false, true);
+            mat.SetFloat("_Cull", 2f);
+            var go = new GameObject(objName);
+            go.transform.SetParent(parent, true);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Debug.Log("[ScCheck] " + objName + ": " + hits + " of " + verts.Length + " vertices lie on the surface, size " + lw.ToString("0.000") + " x " + lh.ToString("0.000"));
+            if (hits < verts.Length / 2)
+                Debug.LogWarning("[ScCheck] " + objName + ": most of the label found no surface to sit on");
+            return go;
+        }
+
+        // Scenario 13: the designer's HCl bottle keeps its body, cap and water; its own printed label (the "Logo" sub-mesh) is replaced by the client's
+        // 05_hydrochloric_acid label, glued onto the glass. (Scenario 4 uses the same bottle through its own call and is not touched.)
+        private static void ScStickHclLabel(Transform bottle)
+        {
+            var tex = ScLabelTexture("Assets/Resources/ScCheck/HclLabel.png");
+            if (tex == null)
+                return;
+            var has = false;
+            var lb = new Bounds();
+            var k = 0;
+            foreach (var mf in bottle.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                if (mr != null && mf.sharedMesh != null && Sc06SubBounds(mf, mr, "Logo", out var b))
+                {
+                    lb = b;
+                    has = true;
+                    Sc06DropSubmeshes(mf, mr, "ScChemHclNoLogo" + k++, "Logo");
+                }
+            }
+
+            var wb = BoundsOfTree(bottle);
+            var bodies = new List<MeshFilter>();
+            foreach (var mf in bottle.GetComponentsInChildren<MeshFilter>(false))
+            {
+                if (Sc06BodyVertex(mf))
+                    bodies.Add(mf);
+            }
+
+            var lw = Mathf.Min(wb.size.x * 0.74f, 0.2f);
+            var cy = has ? lb.center.y : wb.min.y + wb.size.y * 0.45f;
+            ScConformSticker(bottle, bodies, tex, "ScCheckHclLabelPaper", lw, wb.center.x, cy, wb.max.z, "HclLabelNew");
+        }
+
+        // SC14 / 15 / 16 / 17: the designer's glb. Stray parts are removed, the model stands on the table with its label towards the learner (+Z).
+        private static bool ScBuildDesignerChemical(int n, Transform g, Vector3 baseAt)
+        {
+            string file, labelMat;
+            float height;
+            string[] drop;
+            if (n == 14) { file = "NitricAcid.glb"; labelMat = "Material.005"; height = 0.42f; drop = new[] { "pTorus3.001" }; }
+            else if (n == 15) { file = "ChlorineGas.glb"; labelMat = "plastic01"; height = 0.5f; drop = new string[0]; }
+            else { file = "HydrogenPeroxide.glb"; labelMat = "Material.004"; height = 0.44f; drop = new[] { "pTorus3.001" }; }
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ArtRoot + "/3D/ScCheck/" + file);
+            if (asset == null)
+            {
+                Debug.LogWarning("[ScCheck] designer model missing: " + file);
+                return false;
+            }
+
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            go.name = "Designer_" + System.IO.Path.GetFileNameWithoutExtension(file);
+            go.transform.SetParent(g, false);
+            Sc04NoColliders(go);
+            foreach (var t in go.GetComponentsInChildren<Transform>(true))
+            {
+                if (t != null && t != go.transform && System.Array.IndexOf(drop, t.name) >= 0)
+                    Object.DestroyImmediate(t.gameObject);
+            }
+
+            // turn the label towards the learner: it is the sub-mesh with the glb material labelMat
+            var b = BoundsOfTree(go.transform);
+            var has = false;
+            var labelAt = Vector3.zero;
+            foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mr = mf.GetComponent<MeshRenderer>();
+                if (mr != null && mf.sharedMesh != null && Sc06SubBounds(mf, mr, labelMat, out var lb))
+                {
+                    labelAt = lb.center;
+                    has = true;
+                }
+            }
+
+            if (has)
+            {
+                var dir = new Vector3(labelAt.x - b.center.x, 0f, labelAt.z - b.center.z);
+                if (dir.sqrMagnitude > 1e-6f)
+                    go.transform.RotateAround(b.center, Vector3.up, Vector3.SignedAngle(dir, Vector3.forward, Vector3.up));
+            }
+
+            b = BoundsOfTree(go.transform);
+            if (b.size.y > 0.01f)
+                go.transform.localScale *= height / b.size.y;
+            b = BoundsOfTree(go.transform);
+            go.transform.position += new Vector3(baseAt.x - b.center.x, baseAt.y - b.min.y, baseAt.z - b.center.z);
+            // the chlorine foot ring carries a "Metal rust" texture that shows as a red / black swirl: a plain dark steel instead
+            var foot = Mat("ScCheckCylFoot", new Color(0.1f, 0.2f, 0.12f), 0.45f, 0.5f);
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var ms = r.sharedMaterials;
+                var swap = false;
+                for (var k = 0; k < ms.Length; k++)
+                {
+                    if (n == 15 && ms[k] != null && ms[k].name == "Metal rust")
+                    {
+                        ms[k] = foot;
+                        swap = true;
+                    }
+                }
+
+                if (swap)
+                    r.sharedMaterials = ms;
+            }
+
+            b = BoundsOfTree(go.transform);
+            // contact shadow (QuadObj takes LOCAL values, so it is made without a parent and then put under g keeping its world pose)
+            var blobTex = ScTex("ScCheck_Blob");
+            var blobMat = MatAlpha("ScCheckBlob", blobTex, new Color(0f, 0f, 0f, 0.5f), false);
+            var blob = QuadObj("Blob", null, new Vector3(b.center.x, baseAt.y + 0.004f, b.center.z), new Vector3(90f, 0f, 0f),
+                new Vector2(b.size.x * 1.35f, b.size.z * 1.35f), blobMat);
+            blob.transform.SetParent(g, true);
+            Debug.Log("[ScCheck] SC" + n + " designer model " + file + " size " + b.size.ToString("F3") + ", label found = " + has);
+            return true;
+        }
+
         // chlorine: a green steel gas cylinder with a valve, tag plate and a yellow band
         private static void ScBuildCylinder(Transform g, Vector3 baseAt)
         {
@@ -275,9 +522,19 @@ namespace ChemicalSafety.Editor
         {
             var sack = Mat("ScCheckSack", new Color(0.88f, 0.89f, 0.86f), 0.25f, 0f);
             var body = ScRoundedBox("ScChemSack", new Vector3(0.22f, 0.32f, 0.12f), 0.03f);
-            ScMeshObj("Sack", g, body, sack, baseAt + new Vector3(0f, 0.16f, 0f), Vector3.zero, false);
+            var sackGo = ScMeshObj("Sack", g, body, sack, baseAt + new Vector3(0f, 0.16f, 0f), Vector3.zero, false);
             var top = ScRoundedBox("ScChemSackTop", new Vector3(0.23f, 0.03f, 0.06f), 0.012f);
             ScMeshObj("SackTop", g, top, sack, baseAt + new Vector3(0f, 0.335f, 0f), Vector3.zero, false);
+            // the client's printed label (BleachingLabel.png), glued onto the sack: every vertex lies on the sack's real surface, so it hugs the rounded front
+            var labelTex = ScCheckUseDesignerModels ? ScLabelTexture("Assets/Resources/ScCheck/BleachingLabel.png") : null;
+            if (labelTex != null)
+            {
+                ScConformSticker(g, new List<MeshFilter> { sackGo.GetComponent<MeshFilter>() }, labelTex, "ScCheckBleachLabelPaper", 0.176f,
+                    baseAt.x, baseAt.y + 0.17f, baseAt.z + 0.06f, "SackLabel");
+                g.localScale = Vector3.one * 1.15f;
+                return;
+            }
+
             var plate = ScPlate("SackLabel", g, baseAt + new Vector3(0f, 0.17f, 0.0615f), new Vector2(0.19f, 0.23f), Color.white, new Color(0.85f, 0.15f, 0.1f), true);
             ScLabelText(plate, "BLEACHING POWDER", 0.5f, new Color(0.08f, 0.08f, 0.1f), 0f, 0.03f, 0.18f);
             ScLabelText(plate, "Ca(ClO)2", 0.7f, new Color(0.7f, 0.1f, 0.1f), 0.03f, -0.01f, 0.12f);
