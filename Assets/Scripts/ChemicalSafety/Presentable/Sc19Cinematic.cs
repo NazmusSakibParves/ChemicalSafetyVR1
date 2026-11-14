@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.IO;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 namespace ChemicalSafety.Presentable
 {
@@ -35,6 +38,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private AnimationClip[] clips;
         [SerializeField] private ParticleSystem[] smoke;
         [SerializeField] private bool useScreen;
+        /// <summary>true (default) = the glb clips are played through PlayableGraphs (works in a player build, where AnimationClip.SampleAnimation on
+        /// non-legacy clips moves nothing on the Quest); false = the old SampleAnimation path (editor only).</summary>
+        [SerializeField] private bool usePlayables = true;
         [SerializeField] private Camera filmCam;
         [SerializeField] private Transform screen;      // the quad that shows the film camera
         [SerializeField] private Renderer screenRenderer;
@@ -56,6 +62,15 @@ namespace ChemicalSafety.Presentable
         private bool _screenOn;
         private Transform _rig, _head;
         private bool _rigDrive;
+        // baked film (Sc19FilmBake.bytes): the motion of every animated transform, applied by code (the Animation system moves nothing in the Quest build)
+        private Transform[] _bTr;
+        private byte[] _bFlags;
+        private float[][] _bData;
+        private int _bFrames;
+        private float _bFps = 24f;
+        private int _camIdx = -1;
+        private PlayableGraph[] _graphs;
+        private AnimationClipPlayable[] _playables;
 
         /// <summary>The film camera node (the view of the animator's video).</summary>
         public Transform CameraNode => _cam;
@@ -74,6 +89,9 @@ namespace ChemicalSafety.Presentable
             if (_inited || filmRoot == null)
                 return;
             _inited = true;
+            LoadBake();
+            if (_bTr == null && usePlayables)
+                BuildGraphs();
             _cam = filmRoot.Find("Camera");
             var rig2 = FindRig("rig.002");
             foreach (var t in filmRoot.GetComponentsInChildren<Transform>(true))
@@ -101,6 +119,7 @@ namespace ChemicalSafety.Presentable
 
         private void OnDestroy()
         {
+            DestroyGraphs();
             if (_rt != null)
                 _rt.Release();
         }
@@ -151,6 +170,138 @@ namespace ChemicalSafety.Presentable
             }
         }
 
+        private void LoadBake()
+        {
+            var ta = Resources.Load<TextAsset>("Sc19/Sc19FilmBake");
+            if (ta == null || filmRoot == null)
+                return;
+            try
+            {
+                using (var r = new BinaryReader(new MemoryStream(ta.bytes)))
+                {
+                    if (r.ReadInt32() != 0x53433139)
+                        return;
+                    _bFrames = r.ReadInt32();
+                    _bFps = r.ReadSingle();
+                    var n = r.ReadInt32();
+                    var tr = new Transform[n];
+                    var fl = new byte[n];
+                    var data = new float[n][];
+                    for (var i = 0; i < n; i++)
+                    {
+                        var path = r.ReadString();
+                        fl[i] = r.ReadByte();
+                        var stride = ((fl[i] & 1) != 0 ? 3 : 0) + ((fl[i] & 2) != 0 ? 4 : 0) + ((fl[i] & 4) != 0 ? 3 : 0);
+                        var d = new float[stride * _bFrames];
+                        for (var k = 0; k < d.Length; k++)
+                            d[k] = r.ReadSingle();
+                        data[i] = d;
+                        tr[i] = filmRoot.Find(path);
+                        if (path == "Camera")
+                            _camIdx = i;
+                    }
+
+                    _bTr = tr;
+                    _bFlags = fl;
+                    _bData = data;
+                    Debug.Log("[Sc19] baked film loaded: " + n + " animated transforms, " + _bFrames + " frames");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[Sc19] baked film unreadable: " + e.Message);
+                _bTr = null;
+            }
+        }
+
+        private void ApplyBake(float t)
+        {
+            var f = Mathf.Clamp(t * _bFps, 0f, _bFrames - 1);
+            var i0 = Mathf.Min((int)f, _bFrames - 1);
+            var i1 = Mathf.Min(i0 + 1, _bFrames - 1);
+            var a = f - i0;
+            for (var i = 0; i < _bTr.Length; i++)
+            {
+                var tr = _bTr[i];
+                if (tr == null)
+                    continue;
+                var fl = _bFlags[i];
+                var d = _bData[i];
+                var stride = ((fl & 1) != 0 ? 3 : 0) + ((fl & 2) != 0 ? 4 : 0) + ((fl & 4) != 0 ? 3 : 0);
+                var o0 = i0 * stride;
+                var o1 = i1 * stride;
+                var aa = a;
+                if (i == _camIdx && (fl & 1) != 0)
+                {
+                    // a camera cut is a jump between two frames: never blend across it
+                    var dx = d[o1] - d[o0];
+                    var dy = d[o1 + 1] - d[o0 + 1];
+                    var dz = d[o1 + 2] - d[o0 + 2];
+                    if (dx * dx + dy * dy + dz * dz > 4f)
+                        aa = a < 0.5f ? 0f : 1f;
+                }
+
+                var k = 0;
+                if ((fl & 1) != 0)
+                {
+                    tr.localPosition = new Vector3(Mathf.Lerp(d[o0], d[o1], aa), Mathf.Lerp(d[o0 + 1], d[o1 + 1], aa), Mathf.Lerp(d[o0 + 2], d[o1 + 2], aa));
+                    k = 3;
+                }
+
+                if ((fl & 2) != 0)
+                {
+                    var q0 = new Quaternion(d[o0 + k], d[o0 + k + 1], d[o0 + k + 2], d[o0 + k + 3]);
+                    var q1 = new Quaternion(d[o1 + k], d[o1 + k + 1], d[o1 + k + 2], d[o1 + k + 3]);
+                    tr.localRotation = Quaternion.Slerp(q0, q1, aa);
+                    k += 4;
+                }
+
+                if ((fl & 4) != 0)
+                    tr.localScale = new Vector3(Mathf.Lerp(d[o0 + k], d[o1 + k], aa), Mathf.Lerp(d[o0 + k + 1], d[o1 + k + 1], aa), Mathf.Lerp(d[o0 + k + 2], d[o1 + k + 2], aa));
+            }
+        }
+
+        /// <summary>One manual PlayableGraph per clip on a controller-less Animator of the film root: each graph writes only the transforms its clip animates.</summary>
+        private void BuildGraphs()
+        {
+            if (clips == null || filmRoot == null)
+                return;
+            var an = filmRoot.GetComponent<Animator>();
+            if (an == null)
+                an = filmRoot.gameObject.AddComponent<Animator>();
+            an.runtimeAnimatorController = null;
+            an.applyRootMotion = false;
+            an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            _graphs = new PlayableGraph[clips.Length];
+            _playables = new AnimationClipPlayable[clips.Length];
+            for (var i = 0; i < clips.Length; i++)
+            {
+                if (clips[i] == null)
+                    continue;
+                var g = PlayableGraph.Create("Sc19Clip" + i);
+                g.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                var cp = AnimationClipPlayable.Create(g, clips[i]);
+                cp.SetApplyFootIK(false);
+                cp.SetApplyPlayableIK(false);
+                var o = AnimationPlayableOutput.Create(g, "o" + i, an);
+                o.SetSourcePlayable(cp);
+                g.Play();
+                cp.Pause();
+                _graphs[i] = g;
+                _playables[i] = cp;
+            }
+        }
+
+        private void DestroyGraphs()
+        {
+            if (_graphs == null)
+                return;
+            foreach (var g in _graphs)
+                if (g.IsValid())
+                    g.Destroy();
+            _graphs = null;
+        }
+
         private Transform FindRig(string n)
         {
             foreach (var t in filmRoot.GetComponentsInChildren<Transform>(true))
@@ -164,8 +315,27 @@ namespace ChemicalSafety.Presentable
         public void ApplyTime(float t)
         {
             _t = Mathf.Clamp(t, 0f, Duration);
+            if (_bTr != null)
+            {
+                ApplyBake(_t);
+                return;
+            }
+
             if (clips == null || filmRoot == null)
                 return;
+            if (usePlayables && _graphs != null)
+            {
+                for (var i = 0; i < _graphs.Length; i++)
+                {
+                    if (!_graphs[i].IsValid() || clips[i] == null)
+                        continue;
+                    _playables[i].SetTime(Mathf.Min(_t, clips[i].length));
+                    _graphs[i].Evaluate(0f);
+                }
+
+                return;
+            }
+
             var go = filmRoot.gameObject;
             foreach (var c in clips)
                 if (c != null)
@@ -190,15 +360,14 @@ namespace ChemicalSafety.Presentable
             Init();
             shot = Mathf.Clamp(shot, 0, CutFrames.Length - 1);
             var t = (CutFrames[shot] - 1) / Fps + 0.25f;
-            if (_camClip != null && filmRoot != null)
-                _camClip.SampleAnimation(filmRoot.gameObject, t);
+            var keep = _t;
+            ApplyTime(t);
             head = _cam != null ? _cam.position : filmRoot.position + Vector3.up * 2f;
             // the glTF camera looks along the node's -Z
             var f = _cam != null ? -_cam.forward : Vector3.forward;
             f.y = 0f;
             forward = f.sqrMagnitude > 1e-4f ? f.normalized : Vector3.forward;
-            if (_camClip != null && filmRoot != null)
-                _camClip.SampleAnimation(filmRoot.gameObject, Mathf.Min(_t, _camClip.length));
+            ApplyTime(keep);
         }
 
         private void SmokeOn(bool on, bool clear = false)
@@ -241,6 +410,7 @@ namespace ChemicalSafety.Presentable
             };
             var cue = 0;
             var t = 0f;
+            var head0 = HeadPos();
             while (t < Duration)
             {
                 ApplyTime(t);
@@ -261,6 +431,7 @@ namespace ChemicalSafety.Presentable
             }
 
             ApplyTime(Duration);
+            Debug.Log("[Sc19] film done: entrant head moved " + (HeadPos() - head0).magnitude.ToString("F2") + " units, baked=" + (_bTr != null) + " playables=" + (usePlayables && _graphs != null));
             if (loopSource != null)
                 loopSource.Stop();
         }
