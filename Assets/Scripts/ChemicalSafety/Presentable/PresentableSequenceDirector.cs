@@ -5984,7 +5984,16 @@ namespace ChemicalSafety.Presentable
                 sc10Ambience.End();
             envScCheck.SetActive(true);
             clipboard.SetVisible(false);
-            clipboard.SetSuspended(true); // Scenarios 13-18 show the SDS beside the options; the X button belongs to that panel
+            if (ScCheckRunner.ClipboardOnX)
+            {
+                // Scenarios 13-18: the SDS beside the question AND the clipboard in the left hand (left X button, like every other scenario)
+                clipboard.SetSuspended(false);
+                scCheck.SheetChanged = s => clipboard.SetSheet(s);
+            }
+            else
+            {
+                clipboard.SetSuspended(true); // the SDS is only beside the options; the X button belongs to that panel
+            }
             if (n > 13 && scCheck.ViewStand != null)
                 PlaceRig(scCheck.ViewStand.position, scCheck.ViewStand.forward); // no instruction again: straight in front of the table
             else

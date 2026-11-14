@@ -51,7 +51,7 @@ def lines(n):
     add("Instruction", s["InstructionEnglish"]["en"], s["InstructionEnglish"]["bn"])
     add("StartCard", s["StartCard"]["en"], s["StartCard"]["bn"])
     add("BottleName", s["BottleTitle"]["en"], s["BottleTitle"]["bn"])
-    for i, q in enumerate(data["questions"], 1):
+    for i, q in enumerate([x for x in data["questions"] if not x["id"].endswith(".old")], 1):  # ".old" = a question kept only to be restorable
         add("Q%d" % i, q["prompt"]["en"], q["prompt"]["bn"])
     for key in ("Right", "Wrong", "ResultGood", "ResultLow", "ResultGoodLast", "ResultLowLast"):
         add(key, s[key]["en"], s[key]["bn"])

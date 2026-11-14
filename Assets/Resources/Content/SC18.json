@@ -272,6 +272,109 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
+        "en": "Which of the following is NOT a GHS pictogram for bleaching powder?",
+        "bn": "ব্লিচিং পাউডারের GHS পিক্টোগ্রাম নয় কোনটি?"
+      },
+      "pickMembers": 3,
+      "pickOutsiders": 1,
+      "options": [
+        {
+          "id": "P1",
+          "text": {
+            "en": "Exclamation mark (Harmful / Irritant)",
+            "bn": "বিস্ময়চিহ্ন (ক্ষতিকর / উত্তেজক)"
+          },
+          "image": "ScCheck/SC18/pict_exclamation",
+          "outsider": false,
+          "reasonWrong": {
+            "en": "This IS a GHS pictogram of bleaching powder: the exclamation mark means harmful if swallowed and an irritant. Look for the one that does NOT belong.",
+            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: বিস্ময়চিহ্ন মানে গিলে ফেললে ক্ষতিকর এবং উত্তেজক। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
+          }
+        },
+        {
+          "id": "P2",
+          "text": {
+            "en": "Environment (Aquatic toxicity)",
+            "bn": "পরিবেশ (জলজ বিষাক্ততা)"
+          },
+          "image": "ScCheck/SC18/pict_environment",
+          "outsider": false,
+          "reasonWrong": {
+            "en": "This IS a GHS pictogram of bleaching powder: the environment pictogram means very toxic to aquatic life. Look for the one that does NOT belong.",
+            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: পরিবেশ পিক্টোগ্রাম মানে জলজ জীবনের জন্য অত্যন্ত বিষাক্ত। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
+          }
+        },
+        {
+          "id": "P3",
+          "text": {
+            "en": "Flame over circle (Oxidizer)",
+            "bn": "শিখা-বৃত্ত (অক্সিডাইজার)"
+          },
+          "image": "ScCheck/SC18/pict_oxidizer",
+          "outsider": false,
+          "reasonWrong": {
+            "en": "This IS a GHS pictogram of bleaching powder: the flame over circle means oxidizer; it makes a fire burn harder. Look for the one that does NOT belong.",
+            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: শিখা-বৃত্ত মানে অক্সিডাইজার; এটি আগুনকে আরও তীব্র করে। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
+          }
+        },
+        {
+          "id": "P4",
+          "text": {
+            "en": "Corrosion",
+            "bn": "ক্ষয়কারী (Corrosion)"
+          },
+          "image": "ScCheck/SC18/pict_corrosion",
+          "outsider": false,
+          "reasonWrong": {
+            "en": "This IS a GHS pictogram of bleaching powder: the corrosion pictogram means severe skin burns and eye damage. Look for the one that does NOT belong.",
+            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: ক্ষয়কারী পিক্টোগ্রাম মানে ত্বকে মারাত্মক পোড়া ও চোখের ক্ষতি। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
+          }
+        },
+        {
+          "id": "P5",
+          "text": {
+            "en": "Health hazard (Carcinogen)",
+            "bn": "স্বাস্থ্য বিপদ (ক্যান্সারজনক)"
+          },
+          "image": "ScCheck/SC18/pict_health",
+          "outsider": true,
+          "reasonRight": {
+            "en": "Correct! The health hazard pictogram (serious long-term effects such as cancer) is NOT a GHS pictogram of bleaching powder. SDS Section 2 shows the oxidizer, corrosion, exclamation mark and environment pictograms.",
+            "bn": "সঠিক! স্বাস্থ্য বিপদ (ক্যান্সারের মতো দীর্ঘমেয়াদি ক্ষতি) পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়। SDS-এর ২ নম্বর অংশে শিখা-বৃত্ত, ক্ষয়কারী, বিস্ময়চিহ্ন ও পরিবেশ পিক্টোগ্রাম রয়েছে।"
+          }
+        },
+        {
+          "id": "P6",
+          "text": {
+            "en": "Skull and crossbones (Acute toxicity)",
+            "bn": "মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা)"
+          },
+          "image": "ScCheck/SC18/pict_skull",
+          "outsider": true,
+          "reasonRight": {
+            "en": "Correct! The skull and crossbones pictogram (acute toxicity) is NOT a GHS pictogram of bleaching powder. SDS Section 2 shows the oxidizer, corrosion, exclamation mark and environment pictograms.",
+            "bn": "সঠিক! মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা) পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়। SDS-এর ২ নম্বর অংশে শিখা-বৃত্ত, ক্ষয়কারী, বিস্ময়চিহ্ন ও পরিবেশ পিক্টোগ্রাম রয়েছে।"
+          }
+        }
+      ],
+      "correct": "",
+      "shuffle": true,
+      "reasonCorrect": {
+        "en": "Correct! This pictogram does not belong to bleaching powder.",
+        "bn": "সঠিক! এই পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়।"
+      },
+      "reasonWrong": {
+        "en": "This pictogram does belong to bleaching powder. Look for the one that does not.",
+        "bn": "এই পিক্টোগ্রামটি ব্লিচিং পাউডারের। যেটি নয়, সেটি খুঁজুন।"
+      }
+    },
+    {
+      "id": "SC18.Q2.old",
+      "header": {
+        "en": "CHEMICAL SAFETY ASSESSMENT TEST",
+        "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
+      },
+      "prompt": {
         "en": "Now — what are the GHS hazard pictograms for Bleaching Powder?",
         "bn": "এবার বলুন, ব্লিচিং পাউডারের GHS পিক্টোগ্রামগুলো কী কী?"
       },

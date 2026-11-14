@@ -38,6 +38,14 @@ namespace ChemicalSafety.Localization
         public LText text;
         public LText feedback;
         public LText wrongTitle;
+        [Tooltip("Resources path of a picture shown in the option card instead of its text (Scenario 18 question 2 pictograms).")]
+        public string image;
+        [Tooltip("Picture questions: true = this option does NOT belong to the set (it is the right answer when it is chosen).")]
+        public bool outsider;
+        [Tooltip("Picture questions: the reason shown when THIS option is picked and is the right answer.")]
+        public LText reasonRight;
+        [Tooltip("Picture questions: the reason shown when THIS option is picked and is wrong.")]
+        public LText reasonWrong;
     }
 
     [Serializable]
@@ -56,6 +64,10 @@ namespace ChemicalSafety.Localization
         public bool shuffle = true;
         public LText reasonCorrect;
         public LText reasonWrong;
+        [Tooltip("Picture question with a pool of options: how many options that belong to the set are drawn (0 = no pool, all options are used).")]
+        public int pickMembers;
+        [Tooltip("Picture question with a pool of options: how many outsiders are drawn (the right answer is the outsider).")]
+        public int pickOutsiders;
     }
 
     [Serializable]

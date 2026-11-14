@@ -51,6 +51,36 @@ namespace ChemicalSafety.Presentable
         private readonly TextMeshProUGUI[] _optText = new TextMeshProUGUI[4];
         private readonly TextMeshProUGUI[] _optLetter = new TextMeshProUGUI[4];
         private readonly Image[] _optBg = new Image[4];
+        private readonly Image[] _optImg = new Image[4]; // picture questions (Scenario 18 pictograms): a picture instead of the text
+        private LOption[] _shownOptions = new LOption[4]; // the option shown in each card (slot order)
+
+        /// <summary>
+        /// 2026-11-14: Scenario 18 question 2 is "which pictogram is NOT a bleaching powder pictogram", with pictures in the option cards:
+        /// 3 of the 4 pictograms of the chemical + 1 of the 2 that do not belong, drawn per session. <c>false</c> = the earlier text question
+        /// (SC18.Q2.old in SC18.json).
+        /// </summary>
+        public const bool PictogramQuestion = true;
+
+        /// <summary>
+        /// 2026-11-14 (client): the reference SDS beside the question is bigger and clearer: the canvas is 2500 x 1000 px (was 2200 x 860), the question
+        /// panel keeps its size (1050 x 641 px), the SDS panel grows from 1111 x 860 to 1400 x 1000 px. <c>false</c> = the earlier sizes.
+        /// </summary>
+        public const bool BigSds = true;
+
+        /// <summary>
+        /// 2026-11-14 (client): the SDS is in two places in Scenarios 13-18: the panel beside the question (as it was, opens by itself, its own
+        /// HIDE / SHOW SDS button) AND the clipboard in the learner's left hand like in the other scenarios (left X button raises / lowers it).
+        /// <c>true</c>: X belongs to the clipboard (the director gives it the sheet of the question through <see cref="SheetChanged"/>);
+        /// <c>false</c>: X works the side panel, the clipboard is off, as before.
+        /// </summary>
+        public const bool ClipboardOnX = true;
+
+        /// <summary>Raised with the sheet of the current question (the director puts it on the left-hand clipboard).</summary>
+        public Action<Sprite> SheetChanged;
+        private static float CanvasW => BigSds ? 2500f : 2200f;
+        private static float CanvasH => BigSds ? 1000f : 860f;
+
+        private static readonly Dictionary<string, Sprite> PictureCache = new Dictionary<string, Sprite>();
         private RectTransform _nextBtn, _sdsPanel, _sdsContent, _roundBtn;
         private ScrollRect _sdsScroll;
         private ScrollZone _sdsZone;
@@ -95,6 +125,17 @@ namespace ChemicalSafety.Presentable
         // the left controller's X button opens / hides the reference SDS in every scenario; here it does the same for the SDS panel beside the question
         private void OnEnable()
         {
+            if (!ClipboardOnX)
+                EnableSdsKey();
+            // the thumbsticks scroll the sheet up and down (the sheet is taller than its window)
+            _sdsStick = new InputAction("ScCheckSdsScroll", InputActionType.Value);
+            _sdsStick.AddBinding("<XRController>{RightHand}/thumbstick");
+            _sdsStick.AddBinding("<XRController>{LeftHand}/thumbstick");
+            _sdsStick.Enable();
+        }
+
+        private void EnableSdsKey()
+        {
             _sdsKey = new InputAction("ScCheckSds", InputActionType.Button);
             _sdsKey.AddBinding("<XRController>{LeftHand}/primaryButton");
             _sdsKey.AddBinding("<Keyboard>/c");
@@ -104,11 +145,6 @@ namespace ChemicalSafety.Presentable
                     ToggleSds();
             };
             _sdsKey.Enable();
-            // the thumbsticks scroll the sheet up and down (the sheet is taller than its window)
-            _sdsStick = new InputAction("ScCheckSdsScroll", InputActionType.Value);
-            _sdsStick.AddBinding("<XRController>{RightHand}/thumbstick");
-            _sdsStick.AddBinding("<XRController>{LeftHand}/thumbstick");
-            _sdsStick.Enable();
         }
 
         private InputAction _sdsStick;
@@ -140,6 +176,16 @@ namespace ChemicalSafety.Presentable
         private string Str(string key) => Loc.T(_sc, key);
 
         private static Sprite LoadSprite(string path) => Resources.Load<Sprite>(path);
+
+        // the same page on the wooden clipboard with the binder clip (Tools/prepare_sc13_18_clipboard.py): what the left X button raises
+        private Sprite ClipSprite(int q)
+        {
+            var key = "clip_sds" + (q + 1);
+            var s = LoadPicture("ScCheck/" + _sc + "/" + key);
+            if (s == null)
+                s = LoadPicture("ScCheck/" + key);
+            return s != null ? s : SdsSprite(q);
+        }
 
         private Sprite SdsSprite(int q)
         {
@@ -209,6 +255,7 @@ namespace ChemicalSafety.Presentable
                         chemProps[i].SetActive(i == n - 13);
             ApplyArt();
             Build();
+            SheetChanged?.Invoke(ClipSprite(0)); // the clipboard holds this scenario's sheet from the start
             _refTitle.text = Str("RefSds");
             _nextText.text = Str("Next");
             if (supervisor != null)
@@ -303,7 +350,10 @@ namespace ChemicalSafety.Presentable
         {
             if (_main == null || chemAnchor == null || _mainRight == Vector3.zero)
                 return;
-            _main.transform.position = _mainBase + _mainRight * (_sdsOpen ? 0f : 0.46f);
+            // the gap between the question panel and the SDS panel stands over the chemical; SDS hidden: the question panel does
+            var openShift = BigSds ? 0.14f : 0f;
+            var closedShift = BigSds ? 0.58f : 0.46f;
+            _main.transform.position = _mainBase + _mainRight * (_sdsOpen ? openShift : closedShift);
         }
 
         private void Place(Transform t, float distance, float drop, float side = 0f)
@@ -425,9 +475,90 @@ namespace ChemicalSafety.Presentable
 
         // ------------------------------------------------------------------ one question
 
+        // a picture of the content (Resources path); the png may be imported as a texture, then a sprite is made from it
+        private static Sprite LoadPicture(string path)
+        {
+            if (PictureCache.TryGetValue(path, out var cached) && cached != null)
+                return cached;
+            var sp = Resources.Load<Sprite>(path);
+            if (sp == null)
+            {
+                var tex = Resources.Load<Texture2D>(path);
+                if (tex != null)
+                    sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+            }
+
+            if (sp != null)
+                PictureCache[path] = sp;
+            else
+                Debug.LogWarning("[ScCheck] picture missing: " + path);
+            return sp;
+        }
+
+        private static uint StableHash(string s)
+        {
+            var h = 2166136261u;
+            foreach (var c in s)
+                h = (h ^ c) * 16777619u;
+            return h;
+        }
+
+        // Picture question with a pool: pickMembers of the options that belong + pickOutsiders of the outsiders, drawn with a generator seeded by the
+        // session and the question id, so a question shown again (Previous button) has the very same four pictures. The outsider is the right answer.
+        private static LQuestion DrawPool(LQuestion src)
+        {
+            var rng = new System.Random((int)(StableHash(SessionResults.ShuffleSeed + "|" + src.id + "|pool") & 0x7fffffff));
+            var members = new List<LOption>();
+            var outsiders = new List<LOption>();
+            foreach (var o in src.options)
+                (o.outsider ? outsiders : members).Add(o);
+            for (var i = members.Count - 1; i > 0; i--)
+            {
+                var j = rng.Next(i + 1);
+                (members[i], members[j]) = (members[j], members[i]);
+            }
+
+            for (var i = outsiders.Count - 1; i > 0; i--)
+            {
+                var j = rng.Next(i + 1);
+                (outsiders[i], outsiders[j]) = (outsiders[j], outsiders[i]);
+            }
+
+            var picked = new List<LOption>();
+            for (var i = 0; i < src.pickMembers && i < members.Count; i++)
+                picked.Add(members[i]);
+            string correct = null;
+            for (var i = 0; i < src.pickOutsiders && i < outsiders.Count; i++)
+            {
+                picked.Add(outsiders[i]);
+                if (correct == null)
+                    correct = outsiders[i].id;
+            }
+
+            return new LQuestion
+            {
+                id = src.id,
+                header = src.header,
+                prompt = src.prompt,
+                options = picked.ToArray(),
+                correct = correct,
+                correctTitle = src.correctTitle,
+                wrongTitle = src.wrongTitle,
+                nextLabel = src.nextLabel,
+                shuffle = src.shuffle,
+                reasonCorrect = src.reasonCorrect,
+                reasonWrong = src.reasonWrong
+            };
+        }
+
         private IEnumerator Question(int n, int q, bool[] flags)
         {
-            var qq = Loc.Question(_sc, _sc + ".Q" + (q + 1));
+            var qid = _sc + ".Q" + (q + 1);
+            if (!PictogramQuestion && qid == "SC18.Q2")
+                qid += ".old";
+            var qq = Loc.Question(_sc, qid);
+            if (PictogramQuestion && qq != null && qq.pickMembers > 0)
+                qq = DrawPool(qq);
             _currentQuestion = qq;
             var count = Mathf.Min(4, qq.options.Length);
             var order = OptionShuffle.Order(count, SessionResults.ShuffleSeed, qq.id, qq.shuffle);
@@ -437,6 +568,7 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < count; i++)
             {
                 var opt = qq.options[order[i]];
+                _shownOptions[i] = opt;
                 var letter = ((char)('A' + i)).ToString();
                 shown.Add(new OptionPair { key = letter, text = opt.text.Get(Loc.Current), optionId = opt.id });
                 if (opt.id == qq.correct)
@@ -463,6 +595,10 @@ namespace ChemicalSafety.Presentable
                 if (i >= count)
                     continue;
                 _optText[i].text = shown[i].text;
+                var pic = !string.IsNullOrEmpty(_shownOptions[i].image) ? LoadPicture(_shownOptions[i].image) : null;
+                _optImg[i].sprite = pic;
+                _optImg[i].gameObject.SetActive(pic != null);
+                _optText[i].gameObject.SetActive(pic == null);
                 _optBg[i].color = new Color(0.45f, 0.78f, 1f, 0.30f);
                 _optLetter[i].color = HoloWhite;
             }
@@ -472,6 +608,7 @@ namespace ChemicalSafety.Presentable
             if (_reason != null) _reason.text = string.Empty;
             _nextBtn.gameObject.SetActive(false);
             _sdsSheet.sprite = SdsSprite(q);
+            SheetChanged?.Invoke(ClipSprite(q));
             SetSdsSheetSize();
             SetSds(true, true); // the SDS opens by itself beside the question and scrolls slowly so it can be read
             if (_autoScroll != null)
@@ -482,7 +619,7 @@ namespace ChemicalSafety.Presentable
             _locked = false;
             _correctShown = correctRow;
 
-            PlaceAbove(_main.transform, 0.688f);
+            PlaceAbove(_main.transform, CanvasH * Scale);
             ShowMain();
             if (supervisor != null)
             {
@@ -571,7 +708,17 @@ namespace ChemicalSafety.Presentable
             if (_reason != null && _currentQuestion != null)
             {
                 var rField = right ? _currentQuestion.reasonCorrect : _currentQuestion.reasonWrong;
-                _reason.text = rField != null ? rField.Get(Localization.Loc.Current) : string.Empty;
+                var rText = rField != null ? rField.Get(Localization.Loc.Current) : string.Empty;
+                var own = row < _shownOptions.Length ? _shownOptions[row] : null;
+                if (own != null)
+                {
+                    var ownField = right ? own.reasonRight : own.reasonWrong; // picture questions: a reason for this very picture
+                    var ownText = ownField != null ? ownField.Get(Localization.Loc.Current) : string.Empty;
+                    if (!string.IsNullOrEmpty(ownText))
+                        rText = ownText;
+                }
+
+                _reason.text = rText;
                 _reason.color = right ? new Color(0.7f, 1f, 0.8f) : new Color(1f, 0.8f, 0.75f);
             }
         }
@@ -838,10 +985,12 @@ namespace ChemicalSafety.Presentable
             _card.gameObject.SetActive(false);
 
             // ---- question panel (left) + SDS panel (right) on one canvas
-            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(2200f, 860f), Scale, true, 30);
+            _main = PresentableUi.WorldCanvas("ScCheckMain", transform, new Vector2(CanvasW, CanvasH), Scale, true, 30);
             _mainGroup = _main.gameObject.AddComponent<CanvasGroup>();
             DraggablePanel.Attach(_main);
-            var panel = PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.255f), new Vector2(0.4773f, 1f));
+            var panel = BigSds
+                ? PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.359f), new Vector2(0.42f, 1f)) // same 1050 x 641 px as before
+                : PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.255f), new Vector2(0.4773f, 1f));
             var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
             PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
             PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.004f, 0.004f), new Vector2(0.996f, 0.996f)), art.roundedSolid, new Color(0.02f, 0.07f, 0.15f, 0.80f), true);
@@ -868,6 +1017,10 @@ namespace ChemicalSafety.Presentable
                 _optText[i] = T("Text", card, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.83f), 42f, HoloWhite, TextAlignmentOptions.Center, false, 22f);
                 _optText[i].fontSizeMin = 14f; // the longest answers (Scenarios 17 / 18) must still fit the narrow card
                 _optText[i].textWrappingMode = TextWrappingModes.Normal;
+                // picture questions: the pictogram fills the card below the letter, transparent so the glass card shows around the diamond
+                var imgRt = PresentableUi.Rect("Picture", card, new Vector2(0.06f, 0.05f), new Vector2(0.94f, 0.86f));
+                _optImg[i] = PresentableUi.Img(imgRt, null, Color.white, false, false, true);
+                _optImg[i].gameObject.SetActive(false);
             }
 
             // verdict strip inside the panel: its own padded band between the cards and the bottom edge
@@ -877,20 +1030,23 @@ namespace ChemicalSafety.Presentable
             _reason = T("Reason", strip, new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.52f), 20f, HoloWhite, TextAlignmentOptions.Center, false, 10f);
             _reason.textWrappingMode = TextWrappingModes.Normal;
 
-            _nextBtn = PresentableUi.Rect("Next", _main.transform, new Vector2(0.166f, 0.0f), new Vector2(0.311f, 0.097f));
+            _nextBtn = BigSds
+                ? PresentableUi.Rect("Next", _main.transform, new Vector2(0.146f, 0.0f), new Vector2(0.2736f, 0.083f))
+                : PresentableUi.Rect("Next", _main.transform, new Vector2(0.166f, 0.0f), new Vector2(0.311f, 0.097f));
             _nextBtn.gameObject.AddComponent<CanvasGroup>();
             var nextImg = PresentableUi.Img(_nextBtn, nextSp, Color.white, false, true, true);
             _nextText = T("Label", _nextBtn, new Vector2(0.12f, 0.15f), new Vector2(0.88f, 0.85f), 46f, HoloWhite, TextAlignmentOptions.Center, true, 18f);
             MakeButton("NextBtn", _main.transform, _nextBtn, nextImg, PressNext);
 
             // SDS side panel: the frame picture (584x924, glow padding inside the file) is shown unsliced; everything sits inside its visible edge
-            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(0.495f, 0f), new Vector2(1f, 1f));
+            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(BigSds ? 0.44f : 0.495f, 0f), new Vector2(1f, 1f));
             _sdsPanel.gameObject.AddComponent<CanvasGroup>();
             var sdsBg = PresentableUi.Img(_sdsPanel, sdsFrame, new Color(0.82f, 0.9f, 1f, 0.97f), false);
             sdsBg.type = Image.Type.Simple;
             sdsBg.raycastTarget = true;
             _refTitle = T("RefTitle", _sdsPanel, new Vector2(0.15f, 0.87f), new Vector2(0.90f, 0.94f), 36f, HoloWhite, TextAlignmentOptions.Center, true, 14f);
-            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.08f, 0.15f), new Vector2(0.93f, 0.86f));
+            // inside the frame picture's visible edge (its left glow edge is at 0.09-0.11 of the width, the right one at 0.955): the sheet must not stick out of the box
+            var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.118f, 0.15f), new Vector2(0.955f, 0.86f));
             PresentableUi.Img(viewport, null, new Color(0f, 0f, 0f, 0.01f), false, true);
             viewport.gameObject.AddComponent<RectMask2D>();
             _sdsContent = PresentableUi.Rect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f));
