@@ -72,7 +72,11 @@ namespace ChemicalSafety.Editor
             var tripodMat = Mat("Sc19Tripod", new Color(0.88f, 0.40f, 0.07f), 0.38f, 0.45f);
             var railMat = Mat("Sc19Railing", new Color(0.80f, 0.82f, 0.84f), 0.55f, 0.65f);
             var boxMat = Mat("Sc19PpeBox", new Color(0.60f, 0.62f, 0.63f), 0.40f, 0.15f);
-            var permitMat = Mat("Sc19Permit", Color.white, 0.12f, 0f, AssetDatabase.LoadAssetAtPath<Texture2D>(Sc19Dir + "/Tex/Sc19_Permit.png"));
+            var permitMat = Mat("Sc19Permit", Color.white, 0.02f, 0f, AssetDatabase.LoadAssetAtPath<Texture2D>(Sc19Dir + "/Tex/Sc19_Permit.png"));
+            // the picture is a photo of the whole clipboard on a blurred background (1510 x 1041); the paper quad (UV 0..1) must show only the white page, and
+            // the glb's UVs run the other way up (the page was upside down): page = pixels x 380..1130, y 137..963 of the picture
+            permitMat.SetTextureScale("_BaseMap", new Vector2(0.4967f, -0.7935f));
+            permitMat.SetTextureOffset("_BaseMap", new Vector2(0.2517f, 0.8684f));
             // the glb has no colour picture for the entrant's overall, face, vest and harness (Blender node groups the exporter cannot read): the client's own
             // pictures are put back by material name
             Texture2D Pic(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>(Sc19Dir + "/Tex/" + n + ".jpg");
@@ -107,6 +111,22 @@ namespace ChemicalSafety.Editor
             Sc04NoColliders(film);
             foreach (var sk in film.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 sk.updateWhenOffscreen = true; // the bones are moved by code each frame: the bind-pose bounds would cull the characters
+            // the animator's own tank wall picture (white metal with long rust streaks): the outside keeps the workflow concrete, the INSIDE of the tank,
+            // the old rusted lid and nothing else use this one
+            Texture streakTex = null;
+            foreach (var r0 in film.GetComponentsInChildren<Renderer>(true))
+                foreach (var m0 in r0.sharedMaterials)
+                    if (m0 != null && m0.name == "Material.004" && r0.name == "Cube.001" && streakTex == null)
+                        streakTex = m0.HasProperty("baseColorTexture") ? m0.GetTexture("baseColorTexture") : m0.mainTexture;
+            // the lid's own UVs are tiny: a rust-brown noise picture tinted grey reads as an old, rusted dome from any distance
+            var lidMat = Mat("Sc19Lid", new Color(0.74f, 0.60f, 0.50f), 0.08f, 0.2f, Sc19Tex("Sc19_CoverRust"));
+            lidMat.SetTextureScale("_BaseMap", new Vector2(1f, 1f));
+            var domeMat = Mat("Sc19Dome", new Color(0.90f, 0.78f, 0.68f), 0.12f, 0.1f, streakTex);
+            domeMat.SetTextureScale("_BaseMap", new Vector2(1.3f, 1.3f));
+            var innerMat = Mat("Sc19TankInner", new Color(0.92f, 0.88f, 0.84f), 0.10f, 0.05f, streakTex);
+            innerMat.SetFloat("_Cull", 2f); // back faces culled: the wall is a one-way inside skin
+            innerMat.SetTextureScale("_BaseMap", new Vector2(1f, 1f));
+
             foreach (var r in film.GetComponentsInChildren<Renderer>(true))
             {
                 var ms = r.sharedMaterials;
@@ -120,9 +140,9 @@ namespace ChemicalSafety.Editor
                     if (m.name == "Corroded Painted Steel")
                         swap = roofMat;
                     else if (m.name == "Material.004")
-                        swap = r.name == "Cube.004" ? caseMat : wallMat;
-                    else if (m.name == "Material_0.001")
-                        swap = coverMat;
+                        swap = r.name == "Cube.004" ? domeMat : wallMat; // Cube.004 is the round lid on the roof (the animator: white metal, rust blotches)
+                    else if ((m.name == "Material" || m.name == "Brass") && r.name == "_gltfNode_4")
+                        swap = lidMat; // the dome lid on the roof: old, rusty (the toolbox "Material_0.001" keeps its own blue picture)
                     else if (m.name == "GrayTile")
                         swap = groundMat;
                     else if (m.name == "Material.006")
@@ -164,6 +184,60 @@ namespace ChemicalSafety.Editor
 
                 if (changed)
                     r.sharedMaterials = ms;
+            }
+
+            // the entrant's red vest mesh of the glb is not bound to the body (it is stretched over the whole yard as a red scrap): never drawn
+            foreach (var sk in film.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if (sk.name == "_gltfNode_6.002")
+                    sk.enabled = false;
+
+            // ---- the inside of the tank: the glb tank is a one-sided shell, from inside / through the manhole the yard floor showed. A rusted wall and floor
+            // (the animator's own streaked picture) close it. Film units: wall radius 3.8, centre (0, -0.3), roof underside 7.14.
+            {
+                var inside = new GameObject("Sc19TankInside").transform;
+                inside.SetParent(film.transform, false);
+                inside.localPosition = new Vector3(0f, 0f, -0.3f);
+                const int seg = 48;
+                const float rad = 3.70f, y0 = 0.05f, y1 = 7.25f;
+                var vs = new Vector3[(seg + 1) * 2];
+                var uv = new Vector2[vs.Length];
+                var nm = new Vector3[vs.Length];
+                for (var i = 0; i <= seg; i++)
+                {
+                    var a2 = Mathf.PI * 2f * i / seg;
+                    var dir = new Vector3(Mathf.Cos(a2), 0f, Mathf.Sin(a2));
+                    vs[i * 2] = dir * rad + Vector3.up * y0;
+                    vs[i * 2 + 1] = dir * rad + Vector3.up * y1;
+                    uv[i * 2] = new Vector2(i * 4.4f / seg, 0f);
+                    uv[i * 2 + 1] = new Vector2(i * 4.4f / seg, 1.6f);
+                    nm[i * 2] = nm[i * 2 + 1] = -dir;
+                }
+
+                var tris = new int[seg * 6];
+                for (var i = 0; i < seg; i++)
+                {
+                    var q = i * 2;
+                    tris[i * 6] = q; tris[i * 6 + 1] = q + 2; tris[i * 6 + 2] = q + 1; // front faces look to the axis: drawn from inside only, never over the outside of the tank
+                    tris[i * 6 + 3] = q + 1; tris[i * 6 + 4] = q + 2; tris[i * 6 + 5] = q + 3;
+                }
+
+                var tube = new Mesh { name = "Sc19TankInsideWall", vertices = vs, uv = uv, normals = nm, triangles = tris };
+                tube.RecalculateBounds();
+                var wallGo = new GameObject("Wall");
+                wallGo.transform.SetParent(inside, false);
+                wallGo.AddComponent<MeshFilter>().sharedMesh = tube;
+                var wr = wallGo.AddComponent<MeshRenderer>();
+                wr.sharedMaterial = innerMat;
+                wr.shadowCastingMode = ShadowCastingMode.Off;
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                floor.name = "Floor";
+                floor.transform.SetParent(inside, false);
+                floor.transform.localPosition = new Vector3(0f, y0 + 0.01f, 0f);
+                floor.transform.localScale = new Vector3(rad * 2f, 0.01f, rad * 2f);
+                Object.DestroyImmediate(floor.GetComponent<Collider>());
+                var fr = floor.GetComponent<MeshRenderer>();
+                fr.sharedMaterial = innerMat;
+                fr.shadowCastingMode = ShadowCastingMode.Off;
             }
 
             // ---- DANGER signs on the railing (workflow pictures: "Danger - Confined space - entry permit required")
@@ -279,6 +353,30 @@ namespace ChemicalSafety.Editor
                     imp.filterMode = FilterMode.Trilinear;
                     imp.maxTextureSize = 2048;
                     imp.SaveAndReimport();
+                }
+            }
+
+            // the entry permit (1510 x 1041, the animator's own picture): "To Nearest" squeezed it to 1024 x 1024 and plain compression blurred the small print.
+            // Keep its real size and use the best ASTC on the Quest (this one texture only).
+            var permit = AssetImporter.GetAtPath(Sc19Dir + "/Tex/Sc19_Permit.png") as TextureImporter;
+            if (permit != null)
+            {
+                var android = permit.GetPlatformTextureSettings("Android");
+                if (permit.npotScale != TextureImporterNPOTScale.None || !android.overridden || android.format != TextureImporterFormat.ASTC_4x4 ||
+                    android.compressionQuality != 100)
+                {
+                    permit.npotScale = TextureImporterNPOTScale.None;
+                    permit.maxTextureSize = 2048;
+                    permit.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                    {
+                        name = "Android",
+                        overridden = true,
+                        maxTextureSize = 2048,
+                        format = TextureImporterFormat.ASTC_4x4,
+                        textureCompression = TextureImporterCompression.CompressedHQ,
+                        compressionQuality = 100,
+                    });
+                    permit.SaveAndReimport();
                 }
             }
         }
