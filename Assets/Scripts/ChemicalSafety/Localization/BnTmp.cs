@@ -232,6 +232,9 @@ namespace ChemicalSafety.Localization
         /// the box and the biggest result wins; on a tie the wider rung (fewer lines) wins. So a long reason line next to free space
         /// becomes one line instead of two tiny ones, and a tall box still gets its multi-line image at full size.
         /// </summary>
+        /// <summary>Skip the rungs whose image the import cut to 2048 px (their text would come out too small).</summary>
+        public bool AvoidCapped;
+
         private Sprite FindBest(string bn, float fallbackPx)
         {
             var box = rectTransform.rect.size;
@@ -262,6 +265,10 @@ namespace ChemicalSafety.Localization
                 if (sp == null)
                     continue;
                 var shrink = Mathf.Min(1f, box.x / Mathf.Max(1f, sp.rect.width * baseScale), box.y / Mathf.Max(1f, sp.rect.height * baseScale));
+                // the 3600 / 5200 px rungs are cut down to 2048 px by the texture import (x0.57 / x0.39): their real glyphs are much smaller than the size
+                // BnTmp assumes, so where asked (the dynamic MCQ box) they are skipped when a narrower rung exists (2400 is only x0.85, fine)
+                if (AvoidCapped && b >= 3000 && buckets.Length > 1)
+                    continue;
                 if (best == null || shrink >= bestShrink - 0.01f)
                 {
                     best = sp;

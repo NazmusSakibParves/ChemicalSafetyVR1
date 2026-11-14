@@ -70,6 +70,8 @@ def font_index(fonts, ch):
     """0 = Bengali font, 1 = Latin font (letters, degree, @ ...), 2 = symbol font. Digits, space and Bengali stay Bengali."""
     if "\u0980" <= ch <= "\u09ff" or ch == " " or ch.isdigit():
         return 0
+    if "\u2190" <= ch <= "\u21ff":
+        return 1  # arrows: the Bengali font only has a look-alike box for them (a tofu in the 'A -> B -> C' answers)
     for idx, f in ((0, fonts.bn), (1, fonts.lat), (2, fonts.sym)):
         if _has_glyph(f, ch) and not (idx == 0 and (("A" <= ch <= "Z") or ("a" <= ch <= "z"))):
             return idx

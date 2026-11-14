@@ -129,6 +129,297 @@ namespace ChemicalSafety.Presentable
         private RectTransform _nextButton;
         private TextMeshProUGUI _nextLabel;
         private RectTransform _inlineNext;
+
+        // ---- dynamic box (new skin, fewer than 4 options): the box is as tall as the question and the options need, not four slots high.
+        // Everything is laid out in the old 4-slot units (0..1 = the old canvas height) and DY() converts to the cropped canvas.
+        /// <summary>The dark square plate that used to sit inside the glass (client: not in the design). 0 = off; 0.30 brings it back.</summary>
+        private const float SkinReadPlateAlpha = 0f;
+        private bool _dyn;
+        private float _dynF = 1f, _dynB;
+        private readonly float[] _dTop = new float[4], _dRowH = new float[4], _dReasonH = new float[4];
+        private float _dNextTop, _dNextBottom;
+        private RectTransform _frameRt, _qBadgeRt, _qMarkRt;
+        private Sprite _slicedFrame;
+
+        private float DY(float y) => _dyn ? (y - _dynB) / _dynF : y;
+
+        /// <summary>Bangla text is an image picked by size (BnTmp never enlarges it, and takes the one-line image when everything fits): in the dynamic box the
+        /// size caps are raised so the multi-line images are chosen and the Bangla reads as large as the English.</summary>
+        private void SetDynFonts(bool on)
+        {
+            if (_header is ChemicalSafety.Localization.BnTmp hb)
+                hb.AvoidCapped = on;
+            foreach (var r in _rows)
+            {
+                if (r.label is ChemicalSafety.Localization.BnTmp lb)
+                    lb.AvoidCapped = on;
+                if (r.reason is ChemicalSafety.Localization.BnTmp rb)
+                    rb.AvoidCapped = on;
+            }
+        }
+
+        /// <summary>Dynamic box: the reasons wrap over their taller space and are as large as it allows (the 4-slot box keeps one shrunken line).</summary>
+        private void SetReasonWrap(bool wrap)
+        {
+            foreach (var r in _rows)
+            {
+                if (r.reason == null)
+                    continue;
+                r.reason.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+                r.reason.overflowMode = wrap ? TextOverflowModes.Truncate : TextOverflowModes.Ellipsis;
+                r.reason.fontSizeMax = wrap ? 24f : 22f;
+                r.reason.fontSizeMin = wrap ? 12f : 14f;
+            }
+        }
+
+        private void SetA(RectTransform r, float x0, float y0, float x1, float y1)
+        {
+            r.anchorMin = new Vector2(x0, DY(y0));
+            r.anchorMax = new Vector2(x1, DY(y1));
+        }
+
+        private static int TextLines(string text, int perLine)
+        {
+            if (string.IsNullOrEmpty(text))
+                return 1;
+            var lines = 0;
+            foreach (var part in text.Split('\n'))
+                lines += Mathf.Max(1, Mathf.CeilToInt(part.Length / (float)perLine));
+            return lines;
+        }
+
+        /// <summary>Header, Q badge, ? mark and the (optional) plate on the current canvas (old units, converted by DY).</summary>
+        private void LayoutChrome()
+        {
+            if (!Skin)
+                return;
+            if (_dyn)
+            {
+                // the frame is cut into a 9-slice and its header pane is at a fixed pixel position: the title, the Q and the ? sit on the pane's middle
+                var yc = 1f - PaneCenterPx(_dynF) / (_dynF * sizePx.y) - 0.012f; // a hair below the middle: clear of the bezel arcs
+                void Band(RectTransform r, float x0, float x1, float halfOld)
+                {
+                    r.anchorMin = new Vector2(x0, yc - halfOld / _dynF);
+                    r.anchorMax = new Vector2(x1, yc + halfOld / _dynF);
+                }
+
+                Band(_header.rectTransform, 0.17f, 0.89f, 0.062f); // as tall as the pane's inside: a long (Bangla) title shrinks to fit it, it never spills out
+                if (_qBadgeRt != null)
+                    Band(_qBadgeRt, 0.075f, 0.16f, 0.0575f);
+                if (_qMarkRt != null)
+                    Band(_qMarkRt, 0.9f, 0.95f, 0.035f);
+                SetA(_readPlate, 0.045f, 0.075f, 0.955f, 0.925f);
+                return;
+            }
+
+            SetA(_header.rectTransform, 0.17f, 0.785f, 0.89f, 0.955f);
+            if (_qBadgeRt != null)
+                SetA(_qBadgeRt, 0.075f, 0.84f, 0.16f, 0.955f);
+            if (_qMarkRt != null)
+                SetA(_qMarkRt, 0.9f, 0.87f, 0.95f, 0.94f);
+            SetA(_readPlate, 0.045f, 0.075f, 0.955f, 0.925f);
+        }
+
+        private void SetFrameSliced(bool on)
+        {
+            if (_frame == null || art.mcqFrame == null)
+                return;
+            if (!on)
+            {
+                _frame.sprite = art.mcqFrame;
+                _frame.type = Image.Type.Simple;
+                _frame.pixelsPerUnitMultiplier = 1f;
+                return;
+            }
+
+            if (_slicedFrame == null)
+            {
+                var src = art.mcqFrame;
+                var r = src.rect;
+                // the glass between the top pane and the bottom ornament can stretch; the bezel, the header pane and the bottom tab keep their size
+                _slicedFrame = Sprite.Create(src.texture, r, new Vector2(0.5f, 0.5f), src.pixelsPerUnit, 0, SpriteMeshType.FullRect,
+                    new Vector4(r.width * 0.075f, r.height * 0.10f, r.width * 0.075f, r.height * 0.22f));
+                _slicedFrame.name = "McqFrameSliced";
+            }
+
+            _frame.sprite = _slicedFrame;
+            _frame.type = Image.Type.Sliced;
+            var cv = _frame.canvas;
+            var refPpu = cv != null ? cv.referencePixelsPerUnit : 100f;
+            _frame.pixelsPerUnitMultiplier = refPpu / _slicedFrame.pixelsPerUnit * (_slicedFrame.rect.width / (sizePx.x * 1.1f));
+        }
+
+        // The two stages of the dynamic box: the QUESTION (the options close together, the box as small as they need) and the REVEAL (room for
+        // a reason under every option and the NEXT button). The box grows from one to the other in a quarter of a second when an answer is picked.
+        private sealed class DynLayout
+        {
+            public float f, b, nextTop, nextBottom;
+            public readonly float[] top = new float[4], rowH = new float[4], reasonH = new float[4];
+        }
+
+        private DynLayout _dynQ, _dynR;
+        private int _dynN;
+
+        /// <summary>Pixels (old canvas units) from the TOP of the frame art to the bottom of its header pane, and to the middle of the pane.</summary>
+        private float PaneBottomPx(float f)
+        {
+            var src = art.mcqFrame;
+            var s = sizePx.x * 1.1f / src.rect.width; // the sliced frame scales its borders uniformly with the width
+            return 0.205f * src.rect.height * s - 0.05f * f * sizePx.y;
+        }
+
+        private float PaneCenterPx(float f)
+        {
+            var src = art.mcqFrame;
+            var s = sizePx.x * 1.1f / src.rect.width;
+            return 0.125f * src.rect.height * s - 0.05f * f * sizePx.y;
+        }
+
+        private DynLayout BuildDyn(Question q, bool reveal)
+        {
+            var n = q.options.Length;
+            var bn = ChemicalSafety.Localization.Loc.IsBangla;
+            var capLabel = bn ? 30 : 56;   // characters per line of an answer at a readable size
+            var capReason = bn ? 34 : 84;  // the reason is smaller (Bangla needs more, shorter lines)
+            var rowLine = bn ? 0.044f : 0.036f;
+            var reasonLine = bn ? 0.042f : 0.032f;
+            var maxLabelLines = bn ? 5 : 4;
+            var maxReasonLines = bn ? 6 : 4;
+            var gap = reveal ? 0.018f : 0.030f;
+            const float nextH = 0.094f, nextGap = 0.010f, bottomPad = 0.075f;
+            var L = new DynLayout();
+            var rowH = new float[4];
+            var reasonH = new float[4];
+            var total = 0f;
+            for (var i = 0; i < n; i++)
+            {
+                rowH[i] = 0.066f + rowLine * Mathf.Min(maxLabelLines, TextLines(q.options[i].label, capLabel));
+                reasonH[i] = reveal ? 0.020f + reasonLine * Mathf.Min(maxReasonLines, TextLines(q.options[i].reason, capReason)) : 0f;
+                total += rowH[i] + reasonH[i] + gap;
+            }
+
+            var f = 0.85f;
+            for (var pass = 0; pass < 2; pass++)
+            {
+                // the first answer keeps the same distance below the header pane as in the 4-slot box (53 px)
+                var start = 1f - (PaneBottomPx(f) + 53f) / sizePx.y;
+                var tail = reveal ? nextH + nextGap + bottomPad : bottomPad;
+                var budget = start - tail;
+                var k = total > budget ? budget / total : 1f;
+                var cursor = start;
+                for (var i = 0; i < n; i++)
+                {
+                    L.rowH[i] = rowH[i] * k;
+                    L.reasonH[i] = reasonH[i] * k;
+                    L.top[i] = cursor;
+                    cursor -= L.rowH[i] + L.reasonH[i] + gap * k;
+                }
+
+                if (reveal)
+                {
+                    L.nextTop = cursor - nextGap;
+                    L.nextBottom = L.nextTop - nextH;
+                    L.b = L.nextBottom - bottomPad;
+                }
+                else
+                {
+                    L.nextTop = L.nextBottom = cursor;
+                    L.b = cursor - bottomPad + gap * k;
+                }
+
+                f = Mathf.Clamp(1f - L.b, 0.45f, 1f);
+            }
+
+            L.f = f;
+            L.b = 1f - f;
+            return L;
+        }
+
+        private void SetDyn(float t)
+        {
+            var qL = _dynQ;
+            var rL = _dynR;
+            _dynF = Mathf.Lerp(qL.f, rL.f, t);
+            _dynB = 1f - _dynF;
+            for (var i = 0; i < _dynN; i++)
+            {
+                _dTop[i] = Mathf.Lerp(qL.top[i], rL.top[i], t);
+                _dRowH[i] = Mathf.Lerp(qL.rowH[i], rL.rowH[i], t);
+                _dReasonH[i] = Mathf.Lerp(qL.reasonH[i], rL.reasonH[i], t);
+            }
+
+            _dNextTop = Mathf.Lerp(qL.nextTop, rL.nextTop, t);
+            _dNextBottom = Mathf.Lerp(qL.nextBottom, rL.nextBottom, t);
+            PlaceDyn();
+        }
+
+        /// <summary>Canvas, frame, header and every row / reason / NEXT of the dynamic box at the current blend.</summary>
+        private void PlaceDyn()
+        {
+            CanvasRect.sizeDelta = new Vector2(sizePx.x, sizePx.y * _dynF);
+            _frameRt.sizeDelta = new Vector2(sizePx.x * 1.1f, sizePx.y * _dynF * 1.1f);
+            LayoutChrome();
+            for (var i = 0; i < _dynN && i < _rows.Count; i++)
+            {
+                var r = _rows[i];
+                r.root.anchorMin = new Vector2(0.05f, DY(_dTop[i] - _dRowH[i]));
+                r.root.anchorMax = new Vector2(0.95f, DY(_dTop[i]));
+                var top = _dTop[i] - _dRowH[i];
+                var space = Mathf.Max(0.01f, _dReasonH[i] - 0.006f);
+                r.reason.rectTransform.anchorMin = new Vector2(0.205f, DY(top - space - 0.002f));
+                r.reason.rectTransform.anchorMax = new Vector2(0.94f, DY(top - 0.004f));
+                r.reasonTag.rectTransform.anchorMin = new Vector2(0.105f, DY(top - space - 0.002f));
+                r.reasonTag.rectTransform.anchorMax = new Vector2(0.2f, DY(top - 0.004f));
+            }
+
+            SetA(_inlineNext, 0.32f, _dNextBottom, 0.68f, _dNextTop);
+        }
+
+        private IEnumerator DynBlend(float from, float to, float seconds)
+        {
+            var t = 0f;
+            while (t < seconds)
+            {
+                t += Time.unscaledDeltaTime;
+                SetDyn(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / seconds))));
+                yield return null;
+            }
+
+            SetDyn(to);
+        }
+
+        /// <summary>Called by Show: fits the box to the question (new skin with 1-3 options) or restores the 4-slot box.</summary>
+        private void ApplyDynamicLayout(Question q)
+        {
+            var n = q.options != null ? q.options.Length : 0;
+            var want = Skin && !_embedded && n >= 1 && n < 4;
+            if (!want)
+            {
+                if (_dyn)
+                {
+                    _dyn = false;
+                    _dynF = 1f;
+                    _dynB = 0f;
+                    CanvasRect.sizeDelta = sizePx;
+                    _frameRt.sizeDelta = sizePx * 1.1f;
+                    SetFrameSliced(false);
+                    SetReasonWrap(false);
+                    SetDynFonts(false);
+                    LayoutChrome();
+                }
+
+                return;
+            }
+
+            _dynN = n;
+            _dynQ = BuildDyn(q, false);
+            _dynR = BuildDyn(q, true);
+            _dyn = true;
+            SetFrameSliced(true);
+            SetReasonWrap(true);
+            SetDynFonts(true);
+            SetDyn(0f); // the question stage; the reveal stage is blended in by LayoutReveal
+        }
         private TextMeshProUGUI _inlineNextLabel;
         private Image _inlineNextGlow;
         private bool _locked;
@@ -228,6 +519,7 @@ namespace ChemicalSafety.Presentable
                 }
             }
 
+            ApplyDynamicLayout(question);
             ApplyNormalState();
             ResetInline();
             _correctPopup.gameObject.SetActive(false);
@@ -353,24 +645,39 @@ namespace ChemicalSafety.Presentable
         /// <summary>Normal question layout again (prompt visible, rows in their slots) and the reveal pieces hidden.</summary>
         private void ResetInline()
         {
-            _readPlate.anchorMin = Skin ? new Vector2(0.045f, 0.075f) : new Vector2(0.06f, 0.10f);
-            _readPlate.anchorMax = Skin ? new Vector2(0.955f, 0.925f) : new Vector2(0.94f, 0.83f);
+            if (Skin)
+            {
+                SetA(_readPlate, 0.045f, 0.075f, 0.955f, 0.925f);
+            }
+            else
+            {
+                _readPlate.anchorMin = new Vector2(0.06f, 0.10f);
+                _readPlate.anchorMax = new Vector2(0.94f, 0.83f);
+            }
+
             _prompt.gameObject.SetActive(!Skin);
             _inlineNext.gameObject.SetActive(false);
             if (Skin)
             {
                 var nr = _inlineNext;
-                nr.anchorMin = new Vector2(0.32f, 0.012f);
-                nr.anchorMax = new Vector2(0.68f, 0.108f);
+                if (_dyn)
+                {
+                    SetA(nr, 0.32f, _dNextBottom, 0.68f, _dNextTop); // inside the box, clear of the bottom ornament
+                }
+                else
+                {
+                    nr.anchorMin = new Vector2(0.32f, 0.012f);
+                    nr.anchorMax = new Vector2(0.68f, 0.108f);
+                }
             }
 
             for (var i = 0; i < _rows.Count; i++)
             {
-                var top = Skin ? SkinTop(i) : 0.655f - i * (RowH + RowGap);
-                var rowH = Skin ? SkinRowHNow : RowH;
+                var top = Skin ? (_dyn ? _dTop[i] : SkinTop(i)) : 0.655f - i * (RowH + RowGap);
+                var rowH = Skin ? (_dyn ? _dRowH[i] : SkinRowHNow) : RowH;
                 var r = _rows[i];
-                r.root.anchorMin = new Vector2(0.05f, top - rowH);
-                r.root.anchorMax = new Vector2(0.95f, top);
+                r.root.anchorMin = new Vector2(0.05f, DY(top - rowH));
+                r.root.anchorMax = new Vector2(0.95f, DY(top));
                 r.verdict.gameObject.SetActive(false);
                 r.bloom.gameObject.SetActive(false);
                 r.wash.gameObject.SetActive(false);
@@ -387,19 +694,25 @@ namespace ChemicalSafety.Presentable
         // Rows move up (the question line is gone) so every option has a one-line reason under it, and NEXT fits below.
         private void LayoutReveal()
         {
+            if (Skin && _dyn)
+            {
+                StartCoroutine(DynBlend(0f, 1f, 0.28f)); // the box grows: room for the reasons and NEXT
+                return;
+            }
+
             if (Skin)
             {
                 // rows stay where they are (the question stays on top); only the reason lines appear under them
                 for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
                 {
                     var rr = _rows[i].reason.rectTransform;
-                    var top = SkinTop(i) - SkinRowHNow;
-                    var space = SkinSlot - SkinRowHNow - 0.008f; // the whole gap down to the next answer box
-                    rr.anchorMin = new Vector2(0.205f, top - space - 0.002f);
-                    rr.anchorMax = new Vector2(0.94f, top - 0.004f);
+                    var top = _dyn ? _dTop[i] - _dRowH[i] : SkinTop(i) - SkinRowHNow;
+                    var space = _dyn ? _dReasonH[i] - 0.006f : SkinSlot - SkinRowHNow - 0.008f; // the whole gap down to the next answer box
+                    rr.anchorMin = new Vector2(0.205f, DY(top - space - 0.002f));
+                    rr.anchorMax = new Vector2(0.94f, DY(top - 0.004f));
                     var tg = _rows[i].reasonTag.rectTransform;
-                    tg.anchorMin = new Vector2(0.105f, top - space - 0.002f);
-                    tg.anchorMax = new Vector2(0.2f, top - 0.004f);
+                    tg.anchorMin = new Vector2(0.105f, DY(top - space - 0.002f));
+                    tg.anchorMax = new Vector2(0.2f, DY(top - 0.004f));
                 }
 
                 return;
@@ -796,6 +1109,7 @@ namespace ChemicalSafety.Presentable
             if (Skin)
             {
                 var skinRt = PresentableUi.Centered("Frame", root, Vector2.zero, sizePx * 1.1f);
+                _frameRt = skinRt;
                 _frame = PresentableUi.Img(skinRt, art.mcqFrame, Color.white);
             }
             else if (art.frameWide != null)
@@ -814,7 +1128,7 @@ namespace ChemicalSafety.Presentable
 
             // Dark plate behind the words so they stay readable on the translucent blue glass.
             _readPlate = PresentableUi.Rect("ReadPlate", panel, new Vector2(0.06f, 0.10f), new Vector2(0.94f, 0.83f));
-            PresentableUi.Img(_readPlate, art.roundedSolid, Skin ? new Color(0.03f, 0.10f, 0.22f, 0.30f) : new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
+            PresentableUi.Img(_readPlate, art.roundedSolid, Skin ? new Color(0.03f, 0.10f, 0.22f, SkinReadPlateAlpha) : new Color(0.02f, 0.05f, 0.09f, 0.82f), sliced: true);
             _header = HeaderTitle(PresentableUi.Text("Header", panel, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.93f),
                 string.Empty, 24f, Color.white, bold: true, font: font));
             _header.fontSizeMin = 18f;
@@ -838,6 +1152,8 @@ namespace ChemicalSafety.Presentable
                 qm.enableAutoSizing = false;
                 _skinDecor.Add(q.gameObject);
                 _skinDecor.Add(qm.gameObject);
+                _qBadgeRt = q.rectTransform;
+                _qMarkRt = qm.rectTransform;
             }
             _prompt = FitInside(PresentableUi.Text("Prompt", panel, new Vector2(0.08f, 0.675f), new Vector2(0.92f, 0.825f),
                 string.Empty, 28f, new Color(0.94f, 0.97f, 1f), font: font), 20f, 32f);

@@ -1,0 +1,143 @@
+{
+  "scenario": "SC19",
+  "strings": [
+    {
+      "key": "RayInstruction",
+      "en": "A worker is about to enter this empty chemical container. What is the mandatory safety step before entry?",
+      "bn": "একজন শ্রমিক একটি খালি রাসায়নিক ট্যাংকের ভেতরে প্রবেশ করতে যাচ্ছেন। প্রবেশের আগে বাধ্যতামূলকভাবে কোন নিরাপত্তামূলক ব্যবস্থা নিতে হবে?"
+    },
+    {
+      "key": "GateTitle",
+      "en": "TANK ENTRY INSPECTION COMPLETE.",
+      "bn": "ট্যাংকে প্রবেশ পরিদর্শন সম্পন্ন।"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice question (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to watch the whole process again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর পুরো প্রক্রিয়া আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "RayQuestionHeader",
+      "en": "MCQ: Confined Space Entry",
+      "bn": "MCQ: বদ্ধ স্থানে প্রবেশ"
+    },
+    {
+      "key": "RayQuestionPrompt",
+      "en": "A worker is about to enter this empty chemical container. What is the mandatory safety step before entry?",
+      "bn": "একজন শ্রমিক একটি খালি রাসায়নিক ট্যাংকের ভেতরে প্রবেশ করতে যাচ্ছেন। প্রবেশের আগে বাধ্যতামূলকভাবে কোন নিরাপত্তামূলক ব্যবস্থা নিতে হবে?"
+    },
+    {
+      "key": "RayCorrectTitle",
+      "en": "RIGHT ANSWER",
+      "bn": "সঠিক উত্তর"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "TagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "TagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Module complete. Well done!",
+      "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    },
+    {
+      "key": "CapDangerTitle",
+      "en": "UNSAFE ENTRY",
+      "bn": "বিপজ্জনক প্রবেশ"
+    },
+    {
+      "key": "CapSafeTitle",
+      "en": "SAFE ENTRY PROCEDURE",
+      "bn": "নিরাপদ প্রবেশ পদ্ধতি"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read the Safety Data Sheet first: the atmosphere limits and the confined space entry protocol.",
+      "bn": "প্রথমে নিরাপত্তা তথ্যপত্র (SDS) পড়ুন: বাতাসের নিরাপদ সীমা ও বদ্ধ স্থানে প্রবেশের ধাপগুলো।"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "RayOptionLabels",
+      "en": [
+        "Arrive at the site → Inspect the tank → Enter the tank.",
+        "Test the atmosphere inside the tank → Obtain an entry permit → Wear the appropriate PPE → Set up the tripod → Assign an attendant outside the tank → Enter only after all safety requirements are met."
+      ],
+      "bn": [
+        "সাইটে আসুন → ট্যাংকটি পর্যবেক্ষণ করুন → ভেতরে প্রবেশ করুন।",
+        "বাতাসের নিরাপত্তা পরীক্ষা করুন → প্রবেশের অনুমতিপত্র নিন → উপযুক্ত PPE পরুন → ট্রাইপড স্থাপন করুন → বাইরে একজন সহকারী রাখুন → তারপর প্রবেশ করুন।"
+      ]
+    },
+    {
+      "key": "RayOptionReasons",
+      "en": [
+        "Even an empty tank may hold toxic gas or chemical residue, and the oxygen may be low. A tank that only looks safe is not safe to enter.",
+        "Before entering a confined space the atmosphere must be tested, a permit obtained, PPE worn, the tripod and rescue equipment prepared, and a trained attendant kept outside. Enter only after all of it."
+      ],
+      "bn": [
+        "খালি ট্যাংকেও বিষাক্ত গ্যাস বা রাসায়নিকের অবশিষ্টাংশ থাকতে পারে এবং অক্সিজেন কম থাকতে পারে। শুধু দেখে নিরাপদ মনে হলেই ভেতরে ঢোকা নিরাপদ নয়।",
+        "বদ্ধ জায়গায় ঢোকার আগে বাতাস পরীক্ষা, প্রবেশের অনুমতিপত্র, উপযুক্ত PPE, ট্রাইপড ও উদ্ধার সরঞ্জাম এবং বাইরে একজন প্রশিক্ষিত সহকারী নিশ্চিত করতে হবে। সব ব্যবস্থা নেওয়ার পরই প্রবেশ করা যাবে।"
+      ]
+    },
+    {
+      "key": "RayOptionWrongTitle",
+      "en": [
+        "WRONG PROCEDURE",
+        ""
+      ],
+      "bn": [
+        "ভুল পদ্ধতি",
+        ""
+      ]
+    },
+    {
+      "key": "CapWrong",
+      "en": [
+        "Step 1: Observes the tank. No air test is done.",
+        "Step 2: Climbs down with no harness, no ventilation, no attendant.",
+        "Step 3: Toxic gas. The worker faints and no one can rescue him."
+      ],
+      "bn": [
+        "ধাপ ১: ট্যাংক পর্যবেক্ষণ। কোনো বাতাস পরীক্ষা করা হয়নি।",
+        "ধাপ ২: হারনেস, বায়ু চলাচল বা সহকারী ছাড়াই নামছেন।",
+        "ধাপ ৩: বিষাক্ত গ্যাস। শ্রমিক অজ্ঞান, উদ্ধার করার কেউ নেই।"
+      ]
+    },
+    {
+      "key": "CapRight",
+      "en": [
+        "1. Observe the tank from outside.",
+        "2. Test the atmosphere with the gas detector.",
+        "3. Switch on the ventilation blower.",
+        "4. Get the entry permit from the supervisor.",
+        "5. Collect and wear the PPE and harness.",
+        "6. Set up the tripod. The attendant stays outside. Entry permitted."
+      ],
+      "bn": [
+        "১. ট্যাংকের বাইরে থেকে পর্যবেক্ষণ করুন।",
+        "২. গ্যাস ডিটেক্টর দিয়ে বাতাস পরীক্ষা করুন।",
+        "৩. ভেন্টিলেশন ব্লোয়ার চালু করুন।",
+        "৪. সুপারভাইজারের কাছ থেকে প্রবেশের অনুমতিপত্র নিন।",
+        "৫. PPE ও হারনেস সংগ্রহ করে পরুন।",
+        "৬. ট্রাইপড বসান। সহকারী বাইরে থাকবেন। প্রবেশের অনুমতি।"
+      ]
+    }
+  ],
+  "questions": []
+}

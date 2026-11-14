@@ -227,6 +227,11 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform sc12CardAnchor;
         [SerializeField] private GameObject envScCheck;
         [SerializeField] private Transform spawnScCheck;
+        [SerializeField] private GameObject envSc19;
+        [SerializeField] private Sc19Cinematic sc19Cine;
+        [SerializeField] private Transform sc19Viewing;
+        [SerializeField] private Sc06Gate sc19Gate;
+        [SerializeField] private PresentableMcqPanel mcqSc19;
         [SerializeField] private ScCheckRunner scCheck;
 
         [Header("Timing")]
@@ -304,6 +309,8 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(sc10RayGate);
             DraggablePanel.Attach(sc11Gate);
             DraggablePanel.Attach(sc12Gate);
+            DraggablePanel.Attach(sc19Gate);
+            DraggablePanel.Attach(mcqSc19);
             DraggablePanel.Attach(assessmentSc12); // Scenario 12 multi-select question card
         }
 
@@ -403,7 +410,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck })
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19 })
                 if (e != null && e != keep)
                     e.SetActive(false);
         }
@@ -420,7 +427,7 @@ namespace ChemicalSafety.Presentable
             // a fresh scene starts with the first room on. It stays (it holds the floor the learner stands on: without a floor the rig falls) until the
             // room of the scenario is on, then every other room is switched off (each scenario hides the rooms before it, never the first one)
             var targetRoom = n == 3 ? envSc03 : n == 4 ? envSc04 : n == 5 ? envSc05 : n == 6 ? envSc06 : n == 7 ? envSc07 : n == 8 ? envSc08
-                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : envScCheck;
+                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : envScCheck;
             StartCoroutine(SwitchOffOtherRooms(targetRoom));
             PresentableInput.ActiveScenario = n;
             switch (n)
@@ -435,6 +442,7 @@ namespace ChemicalSafety.Presentable
                 case 10: if (envSc10 != null) yield return RunScenario10(); break;
                 case 11: if (envSc11 != null) yield return RunScenario11(); break;
                 case 12: if (envSc12 != null) yield return RunScenario12(); break;
+                case 19: if (envSc19 != null && sc19Cine != null) yield return RunScenario19(); break;
                 default:
                     if (n >= 13 && n <= 18 && envScCheck != null && scCheck != null)
                         yield return RunScenarioCheck(n);
@@ -597,7 +605,9 @@ namespace ChemicalSafety.Presentable
             {
                 jump = UnityEditor.EditorPrefs.GetInt("ChemSafetyNavJump", 0);
                 UnityEditor.EditorPrefs.SetInt("ChemSafetyNavJump", 0);
-                SessionResults.StartSession("Nav Test", "nav@test.local", "+8801712345678", "en");
+                var navBangla = UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false);
+                Loc.SetLanguage(navBangla ? Lang.Bn : Lang.En);
+                SessionResults.StartSession("Nav Test", "nav@test.local", "+8801712345678", navBangla ? "bn" : "en");
                 SessionClock.Begin();
             }
 #endif
@@ -839,7 +849,8 @@ namespace ChemicalSafety.Presentable
         {
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envScCheck != null ? Loc.T("SC18", "ModuleComplete")
+            var doneLine = envSc19 != null && sc19Cine != null ? Sc19Content.ModuleComplete
+                : envScCheck != null ? Loc.T("SC18", "ModuleComplete")
                 : envSc12 != null ? Sc12Content.ModuleComplete
                 : envSc11 != null ? Sc11Content.ModuleComplete
                 : envSc10 != null ? Sc10Content.ModuleComplete
@@ -991,8 +1002,10 @@ namespace ChemicalSafety.Presentable
         // Popups float at the learner's own eye height (a seated learner is not looking up, a standing one not down).
         private float Sc03ViewHeight()
         {
-            var eye = _cam != null ? _cam.position.y : 1.6f;
-            return Mathf.Clamp(eye - 0.05f, 1.05f, 1.7f);
+            // relative to the rig's floor: Scenario 19 puts the learner on a roof / high platform, every other scenario has the rig at 0
+            var floor = rig != null ? rig.position.y : 0f;
+            var eye = _cam != null ? _cam.position.y - floor : 1.6f;
+            return floor + Mathf.Clamp(eye - 0.05f, 1.05f, 1.7f);
         }
 
         // Where a popup goes: beside the drum (to the learner's right, towards the aisle), at eye height, facing the learner.
@@ -4369,6 +4382,13 @@ namespace ChemicalSafety.Presentable
                     yield return null;
             StopVoice();
             subtitle.Hide();
+            if (scenario == 19)
+            {
+                // the client's own explanation lines, already in the selected language
+                yield return PlayVoiceAsIs(Sc19Vo(correct ? "Right" : "Wrong"));
+                yield break;
+            }
+
             var wrongClip = scenario == 3 && art.voSc03Wrong != null ? art.voSc03Wrong : art.voWrong;
             var correctClip = art.voCorrect;
             if (scenario == 1)
@@ -5736,6 +5756,220 @@ namespace ChemicalSafety.Presentable
             yield return Sc12Question(true);
         }
 
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC19: confined-space entry of an empty chemical tank (controller ray). Glass instruction card on the tank roof; on Continue the safety
+        // data sheet opens, then the film (the unsafe entry, then the correct procedure, seen from above), the "inspection complete" card
+        // (BACK plays the film again), the question with a reason under both options, the client's explanation lines.
+        // ------------------------------------------------------------------------------------------------------------------------
+        /// <summary>Scenario 19 shows no subtitles (client, 2026-11-14): the voice-over alone. true brings the captions back.</summary>
+        private const bool Sc19Subtitles = false;
+
+        private AudioClip Sc19Vo(string key) => Resources.Load<AudioClip>("Sc19Vo/" + Loc.Suffix() + "/" + key);
+
+        private IEnumerator Sc19Voice(string text, AudioClip clip)
+        {
+            var token = ++_subtitleToken;
+            if (Sc19Subtitles && !string.IsNullOrEmpty(text))
+                subtitle.Show(null, text);
+            if (clip != null)
+                yield return PlayVoiceAsIs(clip);
+            else
+                yield return PresentableFx.Wait(2.5f);
+            if (token == _subtitleToken)
+                subtitle.Hide();
+        }
+
+        /// <summary>A hard cut of the film softened: black in an instant, back in a quarter of a second.</summary>
+        private IEnumerator Sc19CutFade()
+        {
+            fader.SetImmediate(1f);
+            yield return fader.FadeTo(0f, 0.28f);
+        }
+
+        private IEnumerator RunScenario19()
+        {
+            PresentableInput.ActiveScenario = 19;
+            Stage("sc19");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc19.SetActive(true);
+            clipboard.SetVisible(false);
+            sc19Cine.ResetAll(); // the film stands at its first picture while the card and the data sheet are read
+            sc19Cine.SetScreen(false);
+            if (sc19Viewing != null)
+                PlaceRig(sc19Viewing.position, sc19Viewing.forward); // on the ground in front of the tank
+            yield return fader.FadeTo(0f, 0.9f);
+
+            // 1. the instruction card (glass, eye level, draggable) with its voice, the click on Continue starts the play
+            Stage("sc19Intro");
+            _instructionClip = Sc19Vo("Instruction");
+            instructionPanel.SetContent(Sc19Content.RayInstruction, art.bnSc19RayInstructionPanel);
+            LockLocomotion(true);
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(0f, 0f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoiceAsIs(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue();
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            // 2. the safety data sheet: it opens by itself and closes again
+            Stage("sc19Sds");
+            var sds = Resources.Load<Sprite>("Sc19/Sc19_Sds");
+            if (sds != null)
+            {
+                clipboard.SetSheet(sds);
+                StartCoroutine(Sc19Voice(Loc.T("SC19", "SdsHint"), Sc19Vo("Sds")));
+                clipboard.SetVisible(true);
+                var wait = 0f;
+                while (clipboard.IsVisible && wait < 10f)
+                {
+                    wait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                clipboard.SetVisible(false);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+                yield return PresentableFx.Wait(0.4f);
+            }
+
+            // 3. the film, then the card; BACK plays it again
+            var hooks = new Sc19Cinematic.Hooks
+            {
+                Cut = shot => { if (shot > 0 && !sc19Cine.UseScreen) StartCoroutine(Sc19CutFade()); },
+                SayAsync = key => StartCoroutine(Sc19Voice(Sc19Content.Caption(key), Sc19Vo(key)))
+            };
+            var again = true;
+            while (again)
+            {
+                Stage("sc19Film");
+                // the film screen floats in front of the learner at eye level (the animator's own camera cuts, his framing)
+                if (sc19Cine.UseScreen)
+                {
+                    Sc04PopupPose(0f, 0.06f, 2.7f, out var screenPos, out var screenRot);
+                    sc19Cine.PlaceScreen(screenPos, screenRot);
+                    yield return sc19Cine.Play(hooks);
+                    yield return PresentableFx.Wait(1.0f);
+                    sc19Cine.SetScreen(false);
+                }
+                else
+                {
+                    // the learner's own camera is carried along the animator's film camera (Sc19Cinematic), then put back in front of the tank
+                    var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
+                    var ccWas = cc != null && cc.enabled;
+                    if (cc != null)
+                        cc.enabled = false;
+                    var restoreAt = _cam != null ? new Vector3(_cam.position.x, 0f, _cam.position.z) : Vector3.zero;
+                    var restoreFwd = _cam != null ? Flat(_cam.forward) : Vector3.forward;
+                    var restoreY = rig != null ? rig.position.y : 0f;
+                    sc19Cine.BeginRigDrive(rig, _cam);
+                    yield return sc19Cine.Play(hooks);
+                    yield return PresentableFx.Wait(0.6f);
+                    yield return fader.FadeTo(1f, 0.35f);
+                    sc19Cine.EndRigDrive();
+                    rig.rotation = Quaternion.identity; // upright again, then in front of the tank as before the film
+                    rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                    if (sc19Viewing != null)
+                        PlaceRig(sc19Viewing.position, sc19Viewing.forward);
+                    else
+                        PlaceRig(restoreAt, restoreFwd);
+                    rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                    Physics.SyncTransforms();
+                    if (cc != null)
+                        cc.enabled = ccWas;
+                    yield return fader.FadeTo(0f, 0.35f);
+                }
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+
+                Stage("sc19Gate");
+                yield return PresentableFx.Wait(0.4f);
+                Sc04PopupPose(0f, 0.08f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc19Gate.Back += OnBack;
+                sc19Gate.Next += OnNext;
+                sc19Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoiceAsIs(Sc19Vo("Gate")));
+                while (choice == 0)
+                    yield return null;
+                sc19Gate.Back -= OnBack;
+                sc19Gate.Next -= OnNext;
+                sc19Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+                if (again)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc19Cine.ResetAll();
+                    sc19Cine.SetScreen(false);
+                    yield return fader.FadeTo(0f, 0.3f);
+                }
+            }
+
+            // 4. the question
+            Stage("sc19Question");
+            Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc19.SetWorldScale(sc06PopupScale);
+            mcqSc19.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc19, BuildSc19Question(), false, 19);
+            LockLocomotion(false);
+            sc19Cine.ResetAll();
+            Stage("sc19Done");
+            yield return PresentableFx.Wait(0.3f); // the stage is visible for a moment (the smoke test and the nav read it)
+        }
+
+        private static PresentableMcqPanel.Question BuildSc19Question()
+        {
+            var labels = Sc19Content.OptionLabels;
+            var reasons = Sc19Content.OptionReasons;
+            var titles = Sc19Content.OptionWrongTitle;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = titles != null && i < titles.Length ? titles[i] : string.Empty,
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc19Content.QuestionHeader,
+                prompt = Sc19Content.QuestionPrompt,
+                correctIndex = Sc19Content.CorrectIndex,
+                correctTitle = Sc19Content.CorrectTitle,
+                nextLabel = Sc19Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc19Content.TagCorrect,
+                tagWrong = Sc19Content.TagWrong
+            };
+        }
+
         // SC13-SC18: the Supervisor Pre-Task Safety Check. One hall and one runner, the scenario number only selects the content
         // (Resources/Content/SCnn.json). The round results button moves on to the next number; after SC18 the module is complete.
         private IEnumerator RunScenarioCheck(int n)
@@ -5743,7 +5977,7 @@ namespace ChemicalSafety.Presentable
             Stage("sc" + n);
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
             yield return fader.FadeTo(1f, 0.45f);
-            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12 })
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envSc19 })
                 if (e != null)
                     e.SetActive(false);
             if (sc10Ambience != null)
@@ -5762,7 +5996,11 @@ namespace ChemicalSafety.Presentable
             if (n < 18)
                 yield return RunScenarioCheck(n + 1);
             else
+            {
                 clipboard.SetSuspended(false);
+                if (envSc19 != null && sc19Cine != null)
+                    yield return RunScenario19();
+            }
         }
 
         private IEnumerator Sc12Round()

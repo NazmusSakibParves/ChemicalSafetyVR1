@@ -2842,6 +2842,115 @@ namespace ChemicalSafety.Presentable
             Destroy(tex);
         }
 
+        // SC19 (confined-space tank entry): instruction card, data sheet, the whole film with a picture every few seconds, the gate card
+        // (BACK once: the film must play again from the start), then the question (answered wrong on purpose) and the explanation voice.
+        private IEnumerator Sc19Smoke(AudioSource voiceSrc)
+        {
+            var gate = Get<Sc06Gate>(_director, "sc19Gate");
+            var mcq = Get<PresentableMcqPanel>(_director, "mcqSc19");
+            var cine = Get<Sc19Cinematic>(_director, "sc19Cine");
+            if (gate == null || mcq == null || cine == null)
+            {
+                Debug.LogError("[SMOKE] SC19: director references missing");
+                yield break;
+            }
+
+            yield return WaitStage("sc19Intro", 120f);
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("190_sc19_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC19 instruction card", ip.transform);
+            yield return RayIntroContinue("SC19");
+
+            yield return WaitStage("sc19Sds", 30f);
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("191_sc19_sds");
+
+            yield return WaitStage("sc19Film", 40f);
+            var shot = 0;
+            var t = 0f;
+            while (!(_director.CurrentStage == "sc19Gate") && t < 170f)
+            {
+                yield return new WaitForSeconds(1f);
+                t += 1f;
+                if ((_director.CurrentStage == "sc19Gate"))
+                    break;
+                yield return Shot("192_sc19_film_" + shot.ToString("00"));
+                yield return Sc19FilmView("192c_sc19_filmcam_" + shot.ToString("00"));
+                shot++;
+            }
+
+            Say("SC19 film: " + shot + " pictures, film time about " + t.ToString("F0") + " s, head = " + Camera.main.transform.position.ToString("F2"));
+            yield return WaitStage("sc19Gate", 60f);
+            yield return Sc10Wait(() => gate.Visible, 20f);
+            yield return new WaitForSeconds(1.3f);
+            Say("SC19 gate card visible = " + gate.Visible + " (expected True)");
+            LayoutCheck("SC19 gate card", gate.Card);
+            yield return Shot("193_sc19_gate");
+
+            // BACK: the film plays again from the start
+            Click(gate.Card, "BackButton");
+            yield return WaitStage("sc19Film", 20f);
+            yield return new WaitForSeconds(4f);
+            yield return Shot("194_sc19_replay");
+            yield return WaitStage("sc19Gate", 170f);
+            yield return Sc10Wait(() => gate.Visible, 20f);
+            yield return new WaitForSeconds(0.8f);
+            Click(gate.Card, "NextButton");
+
+            yield return WaitStage("sc19Question", 20f);
+            yield return Sc10Wait(() => mcq.IsOpen, 8f);
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("195_sc19_question");
+            LayoutCheck("SC19 MCQ", mcq.transform);
+            var cur = mcq.Current;
+            Say("SC19 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.4f);
+            Say("SC19 answer voice (wrong pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected Wrong)");
+            yield return Shot("196_sc19_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            Say("SC19 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC19 MCQ reveal", mcq.transform);
+            Click(mcq.transform, "NextButton");
+            yield return WaitStage("sc19Done", 20f);
+        }
+
+        // a picture through the film camera (the animator's own shot, the same view as his video) at this moment of the film
+        private IEnumerator Sc19FilmView(string name)
+        {
+            var cine = Get<Sc19Cinematic>(_director, "sc19Cine");
+            if (cine == null || cine.CameraNode == null)
+                yield break;
+            yield return new WaitForEndOfFrame();
+            var camGo = new GameObject("Sc19FilmCam");
+            var cam = camGo.AddComponent<Camera>();
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 300f;
+            cam.fieldOfView = 32.2f; // Blender: 35 mm lens, 16:9
+            cam.clearFlags = CameraClearFlags.Skybox;
+            var rt = new RenderTexture(1280, 720, 24);
+            cam.targetTexture = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            var n = cine.CameraNode;
+            cam.transform.SetPositionAndRotation(n.position, Quaternion.LookRotation(-n.forward, n.up));
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(_dir, name + ".png"), tex.EncodeToPNG());
+            Destroy(camGo);
+            Destroy(rt);
+            Destroy(tex);
+        }
+
         private IEnumerator ScCheckSmoke()
         {
             var runner = Get<ScCheckRunner>(_director, "scCheck");
@@ -3312,6 +3421,17 @@ namespace ChemicalSafety.Presentable
             var voiceSrc = Get<AudioSource>(_director, "voice");
 #if UNITY_EDITOR
             // menu "Dev: start at Scenario 7": the director starts straight in Scenario 7, so only that part is tested
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc19Only", false))
+            {
+                // dev start (ChemSafetyNavJump = 19 starts the session at Scenario 19 without the login)
+                Say("SC19-only run (dev start)");
+                yield return Sc19Smoke(voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetyScCheckOnly", false))
             {
                 Say("ScCheck-only run (dev start)");
@@ -4532,6 +4652,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc11Smoke(panel, voiceSrc);
             yield return Sc12Smoke(panel, voiceSrc);
             yield return ScCheckSmoke();
+            yield return Sc19Smoke(voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");
