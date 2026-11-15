@@ -232,6 +232,11 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform sc19Viewing;
         [SerializeField] private Sc06Gate sc19Gate;
         [SerializeField] private PresentableMcqPanel mcqSc19;
+        [SerializeField] private GameObject envSc20;
+        [SerializeField] private Sc20Cinematic sc20Cine;
+        [SerializeField] private Transform sc20Viewing;
+        [SerializeField] private Sc06Gate sc20Gate;
+        [SerializeField] private PresentableMcqPanel mcqSc20;
         [SerializeField] private ScCheckRunner scCheck;
 
         [Header("Timing")]
@@ -311,6 +316,8 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(sc12Gate);
             DraggablePanel.Attach(sc19Gate);
             DraggablePanel.Attach(mcqSc19);
+            DraggablePanel.Attach(sc20Gate);
+            DraggablePanel.Attach(mcqSc20);
             DraggablePanel.Attach(assessmentSc12); // Scenario 12 multi-select question card
         }
 
@@ -410,7 +417,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19 })
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19, envSc20 })
                 if (e != null && e != keep)
                     e.SetActive(false);
         }
@@ -427,7 +434,7 @@ namespace ChemicalSafety.Presentable
             // a fresh scene starts with the first room on. It stays (it holds the floor the learner stands on: without a floor the rig falls) until the
             // room of the scenario is on, then every other room is switched off (each scenario hides the rooms before it, never the first one)
             var targetRoom = n == 3 ? envSc03 : n == 4 ? envSc04 : n == 5 ? envSc05 : n == 6 ? envSc06 : n == 7 ? envSc07 : n == 8 ? envSc08
-                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : envScCheck;
+                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : n == 20 ? envSc20 : envScCheck;
             StartCoroutine(SwitchOffOtherRooms(targetRoom));
             PresentableInput.ActiveScenario = n;
             switch (n)
@@ -443,6 +450,7 @@ namespace ChemicalSafety.Presentable
                 case 11: if (envSc11 != null) yield return RunScenario11(); break;
                 case 12: if (envSc12 != null) yield return RunScenario12(); break;
                 case 19: if (envSc19 != null && sc19Cine != null) yield return RunScenario19(); break;
+                case 20: if (envSc20 != null && sc20Cine != null) yield return RunScenario20(); break;
                 default:
                     if (n >= 13 && n <= 18 && envScCheck != null && scCheck != null)
                         yield return RunScenarioCheck(n);
@@ -849,7 +857,8 @@ namespace ChemicalSafety.Presentable
         {
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
-            var doneLine = envSc19 != null && sc19Cine != null ? Sc19Content.ModuleComplete
+            var doneLine = envSc20 != null && sc20Cine != null ? Sc20Content.ModuleComplete
+                : envSc19 != null && sc19Cine != null ? Sc19Content.ModuleComplete
                 : envScCheck != null ? Loc.T("SC18", "ModuleComplete")
                 : envSc12 != null ? Sc12Content.ModuleComplete
                 : envSc11 != null ? Sc11Content.ModuleComplete
@@ -4386,6 +4395,28 @@ namespace ChemicalSafety.Presentable
             {
                 // the client's own explanation lines, already in the selected language
                 yield return PlayVoiceAsIs(Sc19Vo(correct ? "Right" : "Wrong"));
+                // the same ending as every other scenario: "... click Next to go to Scenario twenty" (missing clip = silence, as before)
+                var sc19Next = Sc19Vo(correct ? "Complete" : "WrongNext");
+                if (sc19Next != null)
+                {
+                    yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                    yield return PlayVoiceAsIs(sc19Next);
+                }
+
+                yield break;
+            }
+
+            if (scenario == 20)
+            {
+                // the client's own explanation lines, already in the selected language, then the same ending as every other scenario
+                yield return PlayVoiceAsIs(Sc20Vo(correct ? "Right" : "Wrong"));
+                var sc20Next = Sc20Vo(correct ? "Complete" : "WrongNext");
+                if (sc20Next != null)
+                {
+                    yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                    yield return PlayVoiceAsIs(sc20Next);
+                }
+
                 yield break;
             }
 
@@ -5935,6 +5966,9 @@ namespace ChemicalSafety.Presentable
             sc19Cine.ResetAll();
             Stage("sc19Done");
             yield return PresentableFx.Wait(0.3f); // the stage is visible for a moment (the smoke test and the nav read it)
+            // NEXT after the question (or the Next button of the scenario bar) goes on to Scenario 20
+            if (envSc20 != null && sc20Cine != null)
+                yield return RunScenario20();
         }
 
         private static PresentableMcqPanel.Question BuildSc19Question()
@@ -5967,6 +6001,203 @@ namespace ChemicalSafety.Presentable
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc19Content.TagCorrect,
                 tagWrong = Sc19Content.TagWrong
+            };
+        }
+
+        // ------------------------------------------------------------------------------------------------------------------------
+        // SC20: chemical splash on a worker, the emergency shower, the report to the supervisor (controller ray). Same flow as SC19: glass
+        // instruction card, the Scenario 20 safety data sheet, the animator's film (the learner's own camera follows the film camera), the
+        // "decontamination complete" card (BACK plays the film again), the question with a reason under every option, the client's lines.
+        // ------------------------------------------------------------------------------------------------------------------------
+        private AudioClip Sc20Vo(string key) => Resources.Load<AudioClip>("Sc20Vo/" + Loc.Suffix() + "/" + key);
+
+        private IEnumerator Sc20Voice(string text, AudioClip clip)
+        {
+            var token = ++_subtitleToken;
+            if (Sc19Subtitles && !string.IsNullOrEmpty(text))
+                subtitle.Show(null, text);
+            if (clip != null)
+                yield return PlayVoiceAsIs(clip);
+            else
+                yield return PresentableFx.Wait(2.5f);
+            if (token == _subtitleToken)
+                subtitle.Hide();
+        }
+
+        private IEnumerator RunScenario20()
+        {
+            PresentableInput.ActiveScenario = 20;
+            Stage("sc20");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc20.SetActive(true);
+            clipboard.SetVisible(false);
+            sc20Cine.ResetAll(); // the film stands at its first picture while the card and the data sheet are read
+            if (sc20Viewing != null)
+                PlaceRig(sc20Viewing.position, sc20Viewing.forward); // at the back of the hall, looking along the walk
+            yield return fader.FadeTo(0f, 0.9f);
+
+            // 1. the instruction card (glass, eye level, draggable) with its voice, the click on Continue starts the play
+            Stage("sc20Intro");
+            _instructionClip = Sc20Vo("Instruction");
+            instructionPanel.SetContent(Sc20Content.RayInstruction, art.bnSc20RayInstructionPanel);
+            LockLocomotion(true);
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(0f, 0f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoiceAsIs(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue();
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
+            Stage("sc20Sds");
+            var sds = Resources.Load<Sprite>("Sc20/Sc20_Sds");
+            if (sds != null)
+            {
+                clipboard.SetSheet(sds);
+                StartCoroutine(Sc20Voice(Loc.T("SC20", "SdsHint"), Sc20Vo("Sds")));
+                clipboard.SetVisible(true);
+                var wait = 0f;
+                while (clipboard.IsVisible && wait < 10f)
+                {
+                    wait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                clipboard.SetVisible(false);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+                yield return PresentableFx.Wait(0.4f);
+            }
+
+            // 3. the film, then the card; BACK plays it again
+            var hooks = new Sc20Cinematic.Hooks
+            {
+                Cut = shot => { if (shot > 0) StartCoroutine(Sc19CutFade()); },
+                SayAsync = key => StartCoroutine(Sc20Voice(Sc20Content.Caption(key), Sc20Vo(key)))
+            };
+            var again = true;
+            while (again)
+            {
+                Stage("sc20Film");
+                var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
+                var ccWas = cc != null && cc.enabled;
+                if (cc != null)
+                    cc.enabled = false;
+                var restoreAt = _cam != null ? new Vector3(_cam.position.x, 0f, _cam.position.z) : Vector3.zero;
+                var restoreFwd = _cam != null ? Flat(_cam.forward) : Vector3.forward;
+                var restoreY = rig != null ? rig.position.y : 0f;
+                // the film carries the head through its camera positions (close to a wall in the shower shots): no "head in a solid prop" fade meanwhile
+                var headGuard = GetComponent<HeadSolidGuard>();
+                if (headGuard != null)
+                    headGuard.enabled = false;
+                fader.SetExtra(0f);
+                sc20Cine.BeginRigDrive(rig, _cam);
+                yield return sc20Cine.Play(hooks);
+                yield return PresentableFx.Wait(0.6f);
+                yield return fader.FadeTo(1f, 0.35f);
+                sc20Cine.EndRigDrive();
+                if (headGuard != null)
+                    headGuard.enabled = true;
+                rig.rotation = Quaternion.identity; // upright again, then back at the back of the hall as before the film
+                rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                if (sc20Viewing != null)
+                    PlaceRig(sc20Viewing.position, sc20Viewing.forward);
+                else
+                    PlaceRig(restoreAt, restoreFwd);
+                rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                Physics.SyncTransforms();
+                if (cc != null)
+                    cc.enabled = ccWas;
+                yield return fader.FadeTo(0f, 0.35f);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+
+                Stage("sc20Gate");
+                yield return PresentableFx.Wait(0.4f);
+                Sc04PopupPose(0f, 0.08f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc20Gate.Back += OnBack;
+                sc20Gate.Next += OnNext;
+                sc20Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoiceAsIs(Sc20Vo("Gate")));
+                while (choice == 0)
+                    yield return null;
+                sc20Gate.Back -= OnBack;
+                sc20Gate.Next -= OnNext;
+                sc20Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+                if (again)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc20Cine.ResetAll();
+                    yield return fader.FadeTo(0f, 0.3f);
+                }
+            }
+
+            // 4. the question
+            Stage("sc20Question");
+            Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc20.SetWorldScale(sc06PopupScale);
+            mcqSc20.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            yield return RunQuestion(mcqSc20, BuildSc20Question(), false, 20);
+            LockLocomotion(false);
+            sc20Cine.ResetAll();
+            Stage("sc20Done");
+            yield return PresentableFx.Wait(0.3f); // the stage is visible for a moment (the smoke test and the nav read it)
+        }
+
+        private static PresentableMcqPanel.Question BuildSc20Question()
+        {
+            var labels = Sc20Content.OptionLabels;
+            var reasons = Sc20Content.OptionReasons;
+            var titles = Sc20Content.OptionWrongTitle;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = titles != null && i < titles.Length ? titles[i] : string.Empty,
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc20Content.QuestionHeader,
+                prompt = Sc20Content.QuestionPrompt,
+                longPrompt = true,
+                correctIndex = Sc20Content.CorrectIndex,
+                correctTitle = Sc20Content.CorrectTitle,
+                nextLabel = Sc20Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc20Content.TagCorrect,
+                tagWrong = Sc20Content.TagWrong
             };
         }
 

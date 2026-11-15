@@ -44,6 +44,8 @@ namespace ChemicalSafety.Presentable
             public bool fancy;
             [Tooltip("Scenario 1: no result popup. The answer is marked on the rows (green tick + border on the right one, red cross on a wrong pick) with a one-line reason under every option, then NEXT. A wrong answer also goes on to NEXT (no retry).")]
             public bool inlineReveal;
+            [Tooltip("A long question (3 lines): the title may shrink further to stay inside the header bar. Default false = every other scenario unchanged.")]
+            public bool longPrompt;
             [Tooltip("inlineReveal: no NEXT button after the reveal; the director carries on by itself (Revealed event). Scenario 2, questions 1-5.")]
             public bool hideNext;
             public string tagCorrect = "CORRECT";
@@ -482,6 +484,7 @@ namespace ChemicalSafety.Presentable
             _locked = false;
             IsOpen = true;
             _header.text = Skin && !string.IsNullOrEmpty(question.prompt) ? question.prompt : question.header;
+            _header.fontSizeMin = question.longPrompt ? 12f : 18f;
             _prompt.text = question.prompt;
 
             for (var i = 0; i < _rows.Count; i++)

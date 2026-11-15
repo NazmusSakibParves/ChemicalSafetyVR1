@@ -338,6 +338,7 @@ namespace ChemicalSafety.Presentable
         public Sprite bnSc12InstructionPanel;
         public Sprite bnSc12RayInstructionPanel;
         public Sprite bnSc19RayInstructionPanel;
+        public Sprite bnSc20RayInstructionPanel;
         public AudioClip voSc12RayInstruction;
         [Tooltip("Goggles, gloves, respirator, apron cut-outs (selection panel / review hologram)")]
         public Sprite[] iconSc12Ppe = new Sprite[4];

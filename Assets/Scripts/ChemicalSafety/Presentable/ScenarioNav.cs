@@ -15,7 +15,7 @@ namespace ChemicalSafety.Presentable
         public const bool Enabled = true;
 
         /// <summary>Number of scenarios the buttons can go through (the last built scenario).</summary>
-        public const int Count = 19;
+        public const int Count = 20;
 
         /// <summary>The scenario that is running now (1-based). Kept up to date by the director from its stage names.</summary>
         public static int Current { get; set; } = 1;

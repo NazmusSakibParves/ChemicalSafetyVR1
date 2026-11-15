@@ -3067,6 +3067,165 @@ namespace ChemicalSafety.Presentable
             Destroy(tex);
         }
 
+        // SC20 (chemical splash, emergency shower, report): instruction card, data sheet, the whole film with a picture every second (the player's head and
+        // the animator's film camera), the gate card (BACK once), the question (answered wrong on purpose) and the explanation voice, then NEXT.
+        private IEnumerator Sc20Smoke(AudioSource voiceSrc)
+        {
+            var gate = Get<Sc06Gate>(_director, "sc20Gate");
+            var mcq = Get<PresentableMcqPanel>(_director, "mcqSc20");
+            var cine = Get<Sc20Cinematic>(_director, "sc20Cine");
+            if (gate == null || mcq == null || cine == null)
+            {
+                Debug.LogError("[SMOKE] SC20: director references missing");
+                yield break;
+            }
+
+            yield return WaitStage("sc20Intro", 120f);
+            yield return new WaitForSeconds(2.2f);
+            yield return Shot("200_sc20_instruction");
+            var ip = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+            if (ip != null)
+                LayoutCheck("SC20 instruction card", ip.transform);
+            yield return RayIntroContinue("SC20");
+
+            yield return WaitStage("sc20Sds", 30f);
+            yield return new WaitForSeconds(1.6f);
+            yield return Shot("201_sc20_sds");
+
+            yield return WaitStage("sc20Film", 40f);
+            // close-ups of the spill: ten pictures a little over a tenth of a second apart, from the moment of the trip
+            var spillWait = 0f;
+            while (cine.FilmTime < 10.85f && spillWait < 30f)
+            {
+                spillWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            for (var sp = 0; sp < 12; sp++)
+            {
+                yield return Sc20Close("202v_sc20_spill_" + sp.ToString("00"));
+                yield return new WaitForSeconds(0.1f);
+            }
+
+            var shot = 0;
+            var t = 0f;
+            while (!(_director.CurrentStage == "sc20Gate") && t < 80f)
+            {
+                yield return new WaitForSeconds(1f);
+                t += 1f;
+                if ((_director.CurrentStage == "sc20Gate"))
+                    break;
+                if (shot == 23 || shot == 26)
+                {
+                    var sbL = new System.Text.StringBuilder("SC20 light probe @shot " + shot + ": ambient=" + UnityEngine.RenderSettings.ambientSkyColor + " refl=" + UnityEngine.RenderSettings.reflectionIntensity + " fogEnd=" + UnityEngine.RenderSettings.fogEndDistance + " fade=" + (FindFirstObjectByType<ScreenFader>() != null ? FindFirstObjectByType<ScreenFader>().Alpha.ToString("F2") : "?") + " lights:");
+                    foreach (var lg in FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                        sbL.Append(" [" + lg.name + " " + lg.type + " i=" + lg.intensity.ToString("F1") + " on=" + lg.enabled + "]");
+                    Say(sbL.ToString());
+                }
+                yield return Sc20FilmView("202c_sc20_filmcam_" + shot.ToString("00"));
+                if (shot % 2 == 0)
+                    yield return Shot("202_sc20_film_" + shot.ToString("00"));
+                shot++;
+            }
+
+            Say("SC20 film: " + shot + " pictures, film time about " + t.ToString("F0") + " s, baked = " + cine.Baked + ", head = " + Camera.main.transform.position.ToString("F2"));
+            yield return WaitStage("sc20Gate", 60f);
+            yield return Sc10Wait(() => gate.Visible, 20f);
+            yield return new WaitForSeconds(1.3f);
+            Say("SC20 gate card visible = " + gate.Visible + " (expected True)");
+            LayoutCheck("SC20 gate card", gate.Card);
+            yield return Shot("203_sc20_gate");
+
+            // BACK: the film plays again from the start
+            Click(gate.Card, "BackButton");
+            yield return WaitStage("sc20Film", 20f);
+            yield return new WaitForSeconds(4f);
+            yield return Shot("204_sc20_replay");
+            yield return WaitStage("sc20Gate", 80f);
+            yield return Sc10Wait(() => gate.Visible, 20f);
+            yield return new WaitForSeconds(0.8f);
+            Click(gate.Card, "NextButton");
+
+            yield return WaitStage("sc20Question", 20f);
+            yield return Sc10Wait(() => mcq.IsOpen, 8f);
+            yield return new WaitForSeconds(2.8f);
+            yield return Shot("205_sc20_question");
+            LayoutCheck("SC20 MCQ", mcq.transform);
+            var cur = mcq.Current;
+            Say("SC20 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
+            var row = FindDeep(mcq.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            if (row != null)
+                row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSeconds(2.4f);
+            Say("SC20 answer voice (wrong pick) = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected Wrong)");
+            yield return Shot("206_sc20_reveal");
+            var reasons = 0;
+            foreach (var tmp in mcq.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+                if (tmp.name.StartsWith("Reason") && tmp.gameObject.activeInHierarchy && tmp.text.Length > 0)
+                    reasons++;
+            Say("SC20 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
+            LayoutCheck("SC20 MCQ reveal", mcq.transform);
+            Click(mcq.transform, "NextButton");
+            yield return WaitStage("sc20Done", 20f);
+        }
+
+        private IEnumerator Sc20Close(string name)
+        {
+            var cine = Get<Sc20Cinematic>(_director, "sc20Cine");
+            if (cine == null || cine.CameraNode == null)
+                yield break;
+            yield return new WaitForEndOfFrame();
+            var camGo = new GameObject("Sc20CloseCam");
+            var cam = camGo.AddComponent<Camera>();
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 100f;
+            cam.fieldOfView = 16f;
+            var chest = cine.ChestWorld;
+            var n = cine.CameraNode;
+            cam.transform.position = n.position;
+            cam.transform.LookAt(chest);
+            var rt = new RenderTexture(960, 720, 24);
+            cam.targetTexture = rt;
+            var tex = new Texture2D(960, 720, TextureFormat.RGB24, false);
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, 960, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(_dir, name + ".png"), tex.EncodeToPNG());
+            Destroy(camGo);
+            Destroy(rt);
+            Destroy(tex);
+        }
+
+        private IEnumerator Sc20FilmView(string name)
+        {
+            var cine = Get<Sc20Cinematic>(_director, "sc20Cine");
+            if (cine == null || cine.CameraNode == null)
+                yield break;
+            yield return new WaitForEndOfFrame();
+            var camGo = new GameObject("Sc20FilmCam");
+            var cam = camGo.AddComponent<Camera>();
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 300f;
+            cam.fieldOfView = 32.2f; // Blender: 35 mm lens, 16:9
+            cam.clearFlags = CameraClearFlags.Skybox;
+            var rt = new RenderTexture(1280, 720, 24);
+            cam.targetTexture = rt;
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            var n = cine.CameraNode;
+            cam.transform.SetPositionAndRotation(n.position, Quaternion.LookRotation(-n.forward, Vector3.up));
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+            File.WriteAllBytes(Path.Combine(_dir, name + ".png"), tex.EncodeToPNG());
+            Destroy(camGo);
+            Destroy(rt);
+            Destroy(tex);
+        }
+
         private IEnumerator ScCheckSmoke()
         {
             var runner = Get<ScCheckRunner>(_director, "scCheck");
@@ -3542,6 +3701,17 @@ namespace ChemicalSafety.Presentable
                 // dev start (ChemSafetyNavJump = 19 starts the session at Scenario 19 without the login)
                 Say("SC19-only run (dev start)");
                 yield return Sc19Smoke(voiceSrc);
+                yield return new WaitForSeconds(1f);
+                Say("DONE runtime errors/exceptions = " + _errors);
+                UnityEditor.EditorApplication.isPlaying = false;
+                yield break;
+            }
+
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc20Only", false))
+            {
+                // dev start (ChemSafetyNavJump = 20 starts the session at Scenario 20 without the login)
+                Say("SC20-only run (dev start)");
+                yield return Sc20Smoke(voiceSrc);
                 yield return new WaitForSeconds(1f);
                 Say("DONE runtime errors/exceptions = " + _errors);
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -4770,6 +4940,7 @@ namespace ChemicalSafety.Presentable
             yield return Sc12Smoke(panel, voiceSrc);
             yield return ScCheckSmoke();
             yield return Sc19Smoke(voiceSrc);
+            yield return Sc20Smoke(voiceSrc);
             yield return WaitStage("complete", 30f);
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");

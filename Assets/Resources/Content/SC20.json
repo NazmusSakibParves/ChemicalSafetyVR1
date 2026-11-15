@@ -1,0 +1,132 @@
+{
+  "scenario": "SC20",
+  "strings": [
+    {
+      "key": "RayInstruction",
+      "en": "You work in the chemical storage area of a factory. If a corrosive chemical splashes onto your hands or clothing, immediately use the emergency shower. Remove contaminated clothing and footwear while rinsing. Flush the affected areas for the duration specified in the SDS and seek medical attention promptly.",
+      "bn": "আপনি কারখানার কেমিক্যাল স্টোরেজে কাজ করেন। করসিভ কেমিক্যাল হাত বা কাপড়ে ছিটকে পড়লে সঙ্গে সঙ্গে জরুরি শাওয়ার ব্যবহার করুন। পানি দিয়ে ধোয়ার সময় দূষিত কাপড় ও জুতা খুলে ফেলুন। SDS অনুযায়ী নির্ধারিত সময় ধরে আক্রান্ত স্থান ধুয়ে দ্রুত চিকিৎসা সহায়তা নিন।"
+    },
+    {
+      "key": "GateTitle",
+      "en": "EMERGENCY DECONTAMINATION COMPLETE.",
+      "bn": "জরুরি ডিকনটামিনেশন সম্পন্ন।"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice question (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to watch the whole process again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর পুরো প্রক্রিয়া আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "RayQuestionHeader",
+      "en": "MCQ: Chemical Splash",
+      "bn": "MCQ: রাসায়নিক ছিটকে পড়া"
+    },
+    {
+      "key": "RayQuestionPrompt",
+      "en": "You work in the chemical storage area of a factory. While handling a corrosive chemical, it splashes onto your hands and clothing. What should you do first?",
+      "bn": "আপনি কারখানার কেমিক্যাল স্টোরেজে কাজ করেন। করসিভ কেমিক্যাল বহন করার সময় তা আপনার হাত ও কাপড়ে ছিটকে পড়ল। এ অবস্থায় আপনার প্রথম কাজ কী হবে?"
+    },
+    {
+      "key": "RayCorrectTitle",
+      "en": "RIGHT ANSWER",
+      "bn": "সঠিক উত্তর"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "TagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "TagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Module complete. Well done!",
+      "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    },
+    {
+      "key": "CapStoryTitle",
+      "en": "CHEMICAL SPLASH AND EMERGENCY SHOWER",
+      "bn": "রাসায়নিক ছিটকে পড়া ও জরুরি শাওয়ার"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read the Safety Data Sheet first: the emergency shower standard protocol.",
+      "bn": "প্রথমে নিরাপত্তা তথ্যপত্র (SDS) পড়ুন: জরুরি শাওয়ারের স্ট্যান্ডার্ড নিয়ম।"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "RayOptionLabels",
+      "en": [
+        "Keeps contaminated clothing on while showering.",
+        "Delays using the emergency shower to finish the current task first.",
+        "Uses the emergency shower immediately, removes contaminated clothing, and flushes the affected areas for the required duration."
+      ],
+      "bn": [
+        "শাওয়ার ব্যবহার করার সময়ও দূষিত কাপড় পরে থাকা।",
+        "আগে চলমান কাজ শেষ করার জন্য জরুরি শাওয়ার ব্যবহার করতে দেরি করা।",
+        "সঙ্গে সঙ্গে জরুরি শাওয়ার ব্যবহার করা, দূষিত কাপড় খুলে ফেলা এবং নির্ধারিত সময় ধরে আক্রান্ত স্থান পানি দিয়ে ধুতে থাকা।"
+      ]
+    },
+    {
+      "key": "RayOptionReasons",
+      "en": [
+        "Contaminated clothing can keep chemicals in contact with the skin and cause further injury. Remove contaminated clothing while flushing with water.",
+        "Delaying the use of the emergency shower can make the injury worse. Do not wait to finish your work. Use the emergency shower immediately.",
+        "Correct! If a chemical splashes onto your body or clothing, use the emergency shower immediately. Remove contaminated clothing, shoes, and other items while flushing with water. Rinse the affected areas with plenty of water for the duration specified in the SDS and seek medical attention as needed."
+      ],
+      "bn": [
+        "পোশাকে রাসায়নিক পদার্থ লাগলে তা ত্বকের সংস্পর্শে থেকে ত্বকের ক্ষতি করতে পারে। তাই পানি দিয়ে ধোয়ার সময় রাসায়নিক পদার্থ লেগে থাকা কাপড় খুলে ফেলতে হবে।",
+        "শাওয়ার ব্যবহার করতে দেরি করলে ক্ষতির পরিমাণ আরও বাড়তে পারে। তাই কাজ শেষ করার জন্য অপেক্ষা না করে দ্রুত জরুরি শাওয়ার ব্যবহার করতে হবে।",
+        "সঠিক! রাসায়নিক পদার্থ শরীর বা কাপড়ে ছিটকে পড়লে দেরি না করে জরুরি শাওয়ার ব্যবহার করতে হবে। পানি দিয়ে ধোয়ার সময় দূষিত কাপড়, জুতা ও অন্যান্য সামগ্রী খুলে ফেলতে হবে। SDS অনুযায়ী নির্ধারিত সময় ধরে প্রচুর পানি দিয়ে আক্রান্ত স্থান ধুতে হবে এবং প্রয়োজন অনুযায়ী চিকিৎসা সহায়তা নিতে হবে।"
+      ]
+    },
+    {
+      "key": "RayOptionWrongTitle",
+      "en": [
+        "WRONG PROCEDURE",
+        "WRONG PROCEDURE",
+        ""
+      ],
+      "bn": [
+        "ভুল পদ্ধতি",
+        "ভুল পদ্ধতি",
+        ""
+      ]
+    },
+    {
+      "key": "CapStory",
+      "en": [
+        "A worker moves a chemical drum on a trolley in the chemical storage area.",
+        "He trips, and the chemical splashes onto his hands and clothing.",
+        "He runs straight to the emergency shower.",
+        "He pulls the shower handle.",
+        "Under the water he removes the contaminated clothing, one piece at a time.",
+        "He keeps rinsing for a full fifteen minutes.",
+        "Then he reports the incident to the supervisor."
+      ],
+      "bn": [
+        "একজন কর্মী কেমিক্যাল স্টোরেজে ট্রলিতে করে ড্রাম নিয়ে যাচ্ছেন।",
+        "হঠাৎ হোঁচট খেয়ে ড্রামের কেমিক্যাল তাঁর হাত ও কাপড়ে ছিটকে পড়ল।",
+        "তিনি সঙ্গে সঙ্গে দৌড়ে জরুরি শাওয়ারের কাছে গেলেন।",
+        "তিনি শাওয়ারের হ্যান্ডেল টেনে ধরলেন।",
+        "পানির নিচে দাঁড়িয়ে একে একে দূষিত কাপড় খুলতে লাগলেন।",
+        "পুরো পনেরো মিনিট ধরে শাওয়ার নিতে থাকলেন।",
+        "এরপর সুপারভাইজারকে ঘটনাটি জানালেন।"
+      ]
+    }
+  ]
+}

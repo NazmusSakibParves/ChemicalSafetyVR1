@@ -6,7 +6,7 @@
   - Scenario 1, 3-12: 1 MCQ each (Scenario 12 is multi-select: exact right set = 1).
   - Scenario 2: 6 MCQs = 6 marks.
   - Scenarios 13-18: 3 MCQs each = 3 marks.
-  - Scenarios 19-22 (not built yet): same rule, 1 mark per MCQ.
+  - Scenarios 19-20: 1 MCQ each = 1 mark. Scenarios 21-22 (not built yet): same rule, 1 mark per MCQ.
 - Scenarios not reached count 0 and their MCQs are shown as incorrect on the result card.
 - Same rule in Bangla and English (the language only changes the text, never the marks).
 - Stored in `persistentDataPath/results/<id>.json` (sample schema `Docs/Login/giz_vr_mcq_submission_sample.json`): per scenario `score` / `max_score`, per answer `is_correct`, `wrong_attempts`, `tries`; session totals `total_score`, `total_max_score`, `total_correct`, `total_incorrect`, `completed_scenarios`, `elapsed_ms`, `timed_out`.
