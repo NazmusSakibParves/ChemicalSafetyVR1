@@ -76,6 +76,11 @@ namespace ChemicalSafety.Presentable
         private readonly List<Transform> _rings = new List<Transform>();
         private float _enterT;
         private float _toggleX;
+        private RectTransform _hitBn;
+        private RectTransform _hitEn;
+        private float _touchLogAt;
+        private float _toggleV;
+        private float _pop;
 
         // focus mode: the card glides up and the keyboard rises under it while a field is being typed
         private Transform _panelT;
@@ -194,6 +199,7 @@ namespace ChemicalSafety.Presentable
             var g = canvas.gameObject.AddComponent<CanvasGroup>();
             g.alpha = 0f;
             _groups.Add(g);
+            FingerPokeSystem.RefreshGroup(canvas); // registered before the group existed: the faded keyboard must not block / steal the fingertip
             return canvas;
         }
 
@@ -303,10 +309,14 @@ namespace ChemicalSafety.Presentable
             _langBn.BindBanglaFixed(Scn, "lang_bn");
             _langEn = Label(bg, "LangEn", 198, 6, 388, 48, 394f, 54f, "lang_en", 28f, Color.white, true);
             _langEn.BindEnglishFixed("ENGLISH");
-            var hitBn = PresentableUi.Rect("HitBn", bg, new Vector2(0f, 0f), new Vector2(0.5f, 1f));
+            // the touch zones are taller (and reach a little outside) than the drawn toggle: it is only 54 px (about 4 cm) high at the bottom of the
+            // card, a fingertip on the headset easily misses it. The middle edge stays shared, START (above) is not touched.
+            var hitBn = PresentableUi.Rect("HitBn", bg, new Vector2(0f, 0f), new Vector2(0.5f, 1f), new Vector2(-14f, -18f), new Vector2(0f, 14f));
             MakeButton(hitBn, () => SetLanguage(Lang.Bn));
-            var hitEn = PresentableUi.Rect("HitEn", bg, new Vector2(0.5f, 0f), new Vector2(1f, 1f));
+            var hitEn = PresentableUi.Rect("HitEn", bg, new Vector2(0.5f, 0f), new Vector2(1f, 1f), new Vector2(0f, -18f), new Vector2(14f, 14f));
             MakeButton(hitEn, () => SetLanguage(Lang.En));
+            _hitBn = hitBn;
+            _hitEn = hitEn;
 
             // leave a clear gap after the toggle (ends x=512) before the credit label
             Chrome(Label(host, "DevBy", 540, 702, 690, 742, cw, ch, "developed_by", 28f, new Color(0.8f, 0.85f, 0.92f), true,
@@ -701,6 +711,8 @@ namespace ChemicalSafety.Presentable
                 return;
             Loc.SetLanguage(lang);
             PresentableFx.Play(PresentableFx.Tick, 0.8f);
+            PresentableFx.Haptic(true, 0.35f, 0.06f);
+            _pop = 1f; // the lit segment pops a little as it slides over
         }
 
         private void Focus(Field f)
@@ -967,6 +979,35 @@ namespace ChemicalSafety.Presentable
                 _rig.SetPositionAndRotation(_rigPos, _rigRot); // the head still turns freely; the body does not move
         }
 
+        // Quest diagnostics: while a fingertip is within 15 cm of the language toggle, log (twice a second) its depth in front of the button and whether
+        // it is inside the touch zone, so a "touch does not register" report can be read with adb logcat.
+        private void ProbeToggleTouch()
+        {
+            if (_hitBn == null || _hitEn == null || Time.unscaledTime < _touchLogAt)
+                return;
+            for (var h = 0; h < 2; h++)
+            {
+                var hand = h == 0 ? GlovedHandPose.Right : GlovedHandPose.Left;
+                if (hand == null || !hand.HasTip)
+                    continue;
+                var tip = hand.PressPoint;
+                foreach (var rt in new[] { _hitBn, _hitEn })
+                {
+                    var local = rt.InverseTransformPoint(tip);
+                    var depth = -local.z * rt.lossyScale.z;
+                    var r = rt.rect;
+                    var dx = Mathf.Max(r.xMin - local.x, 0f, local.x - r.xMax) * rt.lossyScale.x;
+                    var dy = Mathf.Max(r.yMin - local.y, 0f, local.y - r.yMax) * rt.lossyScale.y;
+                    if (depth > 0.15f || depth < -0.1f || dx > 0.15f || dy > 0.15f)
+                        continue;
+                    var b = rt.GetComponent<Button>();
+                    Debug.Log("[LoginTouch] " + (h == 0 ? "R" : "L") + " " + rt.name + " depth=" + depth.ToString("0.000") + " m, outside zone x=" + dx.ToString("0.000") +
+                        " y=" + dy.ToString("0.000") + " m, interactable=" + (b != null && b.IsInteractable()) + ", focus=" + _focus + ", rayActive=" + PresentableInput.RayActive);
+                    _touchLogAt = Time.unscaledTime + 0.5f;
+                }
+            }
+        }
+
         private void Update()
         {
             if (_root == null)
@@ -1010,10 +1051,14 @@ namespace ChemicalSafety.Presentable
 
             // language toggle: the lit segment slides to the chosen language
             var want = Loc.IsBangla ? -98f : 98f;
-            _toggleX = Mathf.Lerp(_toggleX, want, 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime));
+            _toggleX = Mathf.SmoothDamp(_toggleX, want, ref _toggleV, 0.11f, Mathf.Infinity, Time.unscaledDeltaTime); // eased slide, no snap
             _toggleOn.anchoredPosition = new Vector2(_toggleX, 0f);
+            _pop = Mathf.MoveTowards(_pop, 0f, Time.unscaledDeltaTime / 0.24f);
+            _toggleOn.localScale = Vector3.one * (1f + 0.07f * Mathf.Sin(_pop * Mathf.PI));
             _langBn.SetColor(Loc.IsBangla ? Color.white : new Color(0.55f, 0.65f, 0.75f));
             _langEn.SetColor(Loc.IsBangla ? new Color(0.55f, 0.65f, 0.75f) : Color.white);
+
+            ProbeToggleTouch();
 
             // START breathes
             var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.2f);

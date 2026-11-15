@@ -897,6 +897,122 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(0.9f);
         }
 
+        // Login: after typing both fields and pressing OK twice the language toggle and START must be touchable again (the finger picks the
+        // nearest interactable button of any registered canvas: replicate that pick for the toggle's two halves and START).
+        private IEnumerator LoginToggleCheck(LoginScreen login)
+        {
+            var focus = typeof(LoginScreen).GetMethod("Focus", BindingFlags.NonPublic | BindingFlags.Instance);
+            var onKey = typeof(LoginScreen).GetMethod("OnKey", BindingFlags.NonPublic | BindingFlags.Instance);
+            var fieldType = typeof(LoginScreen).GetNestedType("Field", BindingFlags.NonPublic);
+            focus.Invoke(login, new object[] { Enum.ToObject(fieldType, 1) });
+            foreach (var k in new[] { "r", "a", "h", "i", "m" })
+                onKey.Invoke(login, new object[] { k });
+            onKey.Invoke(login, new object[] { "DONE" }); // name -> contact
+            foreach (var k in new[] { "0", "1", "7", "1", "2", "3", "4", "5", "6", "7", "8" })
+                onKey.Invoke(login, new object[] { k });
+            onKey.Invoke(login, new object[] { "DONE" }); // contact -> closed
+            yield return new WaitForSeconds(1.6f);
+            Say("login toggle check: ray active = " + PresentableInput.RayActive + " (expected False), left poke = " + FingerPokeSystem.LeftPokeEnabled);
+            var panelT = Get<Transform>(login, "_panelT");
+            var canvases = new System.Collections.Generic.List<Canvas>();
+            FingerPokeSystem.CollectCanvases(canvases);
+            Say("login toggle check: registered canvases = " + canvases.Count);
+            // the closed (faded) keyboard must not push the glove away in front of the toggle
+            var bnRt = (RectTransform)null;
+            foreach (var t in panelT.GetComponentsInChildren<Transform>(true))
+                if (t.name == "HitBn")
+                    bnRt = (RectTransform)t;
+            if (bnRt != null)
+            {
+                var front = bnRt.TransformPoint(bnRt.rect.center) - bnRt.forward * 0.06f; // 6 cm in front of the Bangla button
+                var push = FingerPokeSystem.PanelPush(front, 0.02f);
+                Say("login toggle check: glove push 6 cm in front of the Bangla button = " + push.magnitude.ToString("0.000") + " m (expected 0: nothing invisible in front)");
+            }
+            foreach (var hitName in new[] { "HitBn", "HitEn", "Hit" })
+            {
+                var hits = new System.Collections.Generic.List<Transform>();
+                foreach (var t in panelT.GetComponentsInChildren<Transform>(true))
+                    if (t.name == hitName && t.GetComponent<UnityEngine.UI.Button>() != null)
+                        hits.Add(t);
+                foreach (var h in hits)
+                {
+                    var btn = h.GetComponent<UnityEngine.UI.Button>();
+                    var par = h.parent != null ? h.parent.name : "-";
+                    if (hitName == "Hit" && par != "Start")
+                        continue;
+                    var rt = (RectTransform)h;
+                    var centre = rt.TransformPoint(rt.rect.center);
+                    var tip = centre - rt.forward * 0.012f; // 12 mm in front of the button (canvases face -z)
+                    string winner = "none";
+                    var bestDepth = float.MaxValue;
+                    foreach (var c in canvases)
+                    {
+                        if (c == null || !c.gameObject.activeInHierarchy)
+                            continue;
+                        var g = c.GetComponent<CanvasGroup>();
+                        if (g != null && g.alpha < 0.6f)
+                            continue;
+                        foreach (var b in c.GetComponentsInChildren<UnityEngine.UI.Button>(false))
+                        {
+                            if (b == null || !b.IsInteractable() || !b.gameObject.activeInHierarchy)
+                                continue;
+                            var brt = (RectTransform)b.transform;
+                            var local = brt.InverseTransformPoint(tip);
+                            var depth = -local.z * brt.lossyScale.z;
+                            if (depth < -0.04f || depth > 0.09f)
+                                continue;
+                            var r = brt.rect;
+                            r.xMin -= 12f; r.xMax += 12f; r.yMin -= 12f; r.yMax += 12f;
+                            if (!r.Contains(new Vector2(local.x, local.y)))
+                                continue;
+                            if (depth < bestDepth)
+                            {
+                                bestDepth = depth;
+                                winner = c.name + "/" + b.name + " (parent " + (b.transform.parent != null ? b.transform.parent.name : "-") + ")";
+                            }
+                        }
+                    }
+
+                    Say("login toggle check: " + hitName + " (parent " + par + ") interactable = " + btn.IsInteractable() + ", active = " + h.gameObject.activeInHierarchy +
+                        ", finger 12 mm in front would press -> " + winner);
+                }
+            }
+
+            var toggleHits = new System.Collections.Generic.List<UnityEngine.UI.Button>();
+            foreach (var t in panelT.GetComponentsInChildren<Transform>(true))
+            {
+                var bt = t.GetComponent<UnityEngine.UI.Button>();
+                if (bt != null && (t.name == "HitBn" || t.name == "HitEn"))
+                    toggleHits.Add(bt);
+            }
+
+            foreach (var b in toggleHits)
+            {
+                if (b.name != "HitBn")
+                    continue;
+                b.onClick.Invoke();
+                yield return new WaitForSeconds(0.6f);
+                Say("login toggle check: onClick of HitBn -> language = " + ChemicalSafety.Localization.Loc.Current + " (expected Bn)");
+                yield return Shot("00_login_toggle_bn");
+            }
+
+            foreach (var b in toggleHits)
+            {
+                if (b.name != "HitEn")
+                    continue;
+                b.onClick.Invoke();
+                yield return new WaitForSeconds(0.6f);
+                Say("login toggle check: onClick of HitEn -> language = " + ChemicalSafety.Localization.Loc.Current + " (expected En)");
+            }
+
+            // leave the login exactly as the rest of the smoke expects it
+            onKey.Invoke(login, new object[] { "DONE" });
+            focus.Invoke(login, new object[] { Enum.ToObject(fieldType, 0) });
+            typeof(LoginScreen).GetField("_name", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(login, string.Empty);
+            typeof(LoginScreen).GetField("_contact", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(login, string.Empty);
+            yield return new WaitForSeconds(0.6f);
+        }
+
         // Scenarios 13-18: a finger drag on the open SDS sheet must move it, like a phone.
         private static void ScDragScrollCheck(string where, ScCheckRunner runner)
         {
@@ -3542,6 +3658,7 @@ namespace ChemicalSafety.Presentable
                 yield return new WaitForSeconds(1.5f);
                 yield return Shot("00_login_en");
                 yield return LoginErgoCheck(login);
+                yield return LoginToggleCheck(login);
                 Say("login: name with digits rejected = " + !login.SubmitForTest("Ra5im", "01712345678", ChemicalSafety.Localization.Lang.En));
                 Say("login: 10-digit phone rejected = " + !login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.En));
                 Say("login: 12-digit phone rejected = " + !login.SubmitForTest("Rahim", "017123456789", ChemicalSafety.Localization.Lang.En));

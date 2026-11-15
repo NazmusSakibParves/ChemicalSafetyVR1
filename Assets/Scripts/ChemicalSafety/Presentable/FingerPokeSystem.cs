@@ -55,6 +55,17 @@ namespace ChemicalSafety.Presentable
             Entries.Add(new Entry { canvas = canvas, group = canvas.GetComponent<CanvasGroup>() });
         }
 
+        /// <summary>
+        /// For a canvas whose CanvasGroup was added AFTER it was registered (the login keyboard): re-read the group, otherwise the poke system
+        /// treats the canvas as always visible (its faded-out buttons were pressed and its panel stopped the glove in front of other buttons).
+        /// </summary>
+        public static void RefreshGroup(Canvas canvas)
+        {
+            foreach (var e in Entries)
+                if (e.canvas == canvas)
+                    e.group = canvas.GetComponent<CanvasGroup>();
+        }
+
         /// <summary>Forgets every registered canvas (Back to Home reloads the scene; the old canvases are gone).</summary>
         public static void ClearAll() => Entries.Clear();
 
