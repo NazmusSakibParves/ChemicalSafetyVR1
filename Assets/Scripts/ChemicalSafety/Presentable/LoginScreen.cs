@@ -35,7 +35,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Material atomMat;
         [SerializeField] private Material glowMat;
 
-        private enum Field { None, Name, Contact }
+        private enum Field { None, TrainingId, Name, Contact }
 
         private static readonly Color TitleCol = new Color(0.75f, 0.85f, 1f);
         private static readonly Color SubCol = new Color(0.5f, 0.69f, 1f);
@@ -49,7 +49,13 @@ namespace ChemicalSafety.Presentable
         private bool _closing;
 
         private Field _focus = Field.None;
+        private string _trainingId = string.Empty;
         private string _name = string.Empty;
+        private TextMeshProUGUI _tidTmp;
+        private LocText _tidHint;
+        private GameObject _tidFocusImg;
+        private GameObject _tidErrImg;
+        private LocText _tidErr;
         private string _contact = string.Empty;
         private TextMeshProUGUI _nameTmp;
         private TextMeshProUGUI _contactTmp;
@@ -123,6 +129,7 @@ namespace ChemicalSafety.Presentable
             _closing = false;
             _focus = Field.None;
             _focusT = 0f;
+            _trainingId = string.Empty;
             _name = string.Empty;
             _contact = string.Empty;
             Loc.SetLanguage(Lang.En);
@@ -158,13 +165,17 @@ namespace ChemicalSafety.Presentable
         }
 
         /// <summary>Test hook (smoke test): fills the fields and presses START.</summary>
-        public bool SubmitForTest(string name, string contact, Lang lang)
+        public bool SubmitForTest(string name, string contact, Lang lang, string trainingId = "1")
         {
             Loc.SetLanguage(lang);
+            _trainingId = trainingId;
             _name = name;
             _contact = contact;
             Refresh();
-            return TrySubmit();
+            var ok = TrySubmit();
+            if (ok)
+                SessionResults.UploadAllowed = false; // a smoke test never reaches the server
+            return ok;
         }
 
         // ------------------------------------------------------------------ build
@@ -261,23 +272,45 @@ namespace ChemicalSafety.Presentable
             var content = PresentableUi.Rect("Content", host, Vector2.zero, Vector2.one);
             content.localScale = Vector3.one * 0.93f;
             host = content;
-            Label(host, "Title", 40, 52, 820, 126, cw, ch, "title", 62f, TitleCol, true);
-            Label(host, "Subtitle", 40, 126, 820, 178, cw, ch, "subtitle", 38f, SubCol, true);
-            Label(host, "Welcome", 40, 214, 820, 272, cw, ch, "welcome", 46f, new Color(0.78f, 0.8f, 0.9f), true);
+            Label(host, "Title", 40, 34, 820, 96, cw, ch, "title", 56f, TitleCol, true);
+            Label(host, "Subtitle", 40, 96, 820, 138, cw, ch, "subtitle", 34f, SubCol, true);
+            Label(host, "Welcome", 40, 142, 820, 186, cw, ch, "welcome", 40f, new Color(0.78f, 0.8f, 0.9f), true);
 
-            Pic(Place(host, "IconUser", 112, 296, 222, 406, cw, ch), "Login_IconUser");
-            Label(host, "NameLabel", 240, 290, 735, 328, cw, ch, "name_label", 28f, LabelCol, true, TextAlignmentOptions.Left);
-            BuildField(host, cw, ch, 330, Field.Name, "name_hint", out _nameTmp, out _nameHint, out _nameFocusImg, out _nameErrImg);
-            _nameErr = Label(host, "NameError", 240, 404, 820, 442, cw, ch, "err_name_empty", 28f, ErrCol, false,
+            // three blocks (Training ID, Name, Email / phone), 120 px apart
+            const float fh = 62f;
+            var tTop = 192f;
+            var idIcon = Place(host, "IconId", 124, tTop + 6, 208, tTop + 90, cw, ch);
+            Pic(idIcon, "Login_Key");
+            var idTxt = PresentableUi.Rect("T", idIcon, Vector2.zero, Vector2.one);
+            var idTmp = idTxt.gameObject.AddComponent<TextMeshProUGUI>();
+            if (art != null && art.englishFont != null)
+                idTmp.font = art.englishFont;
+            idTmp.text = "ID";
+            idTmp.fontSize = 40f;
+            idTmp.fontStyle = FontStyles.Bold;
+            idTmp.color = new Color(0.4f, 0.85f, 0.9f);
+            idTmp.alignment = TextAlignmentOptions.Center;
+            idTmp.raycastTarget = false;
+            Label(host, "TrainingIdLabel", 240, tTop, 735, tTop + 30, cw, ch, "training_id_label", 26f, LabelCol, true, TextAlignmentOptions.Left);
+            BuildField(host, cw, ch, tTop + 32f, Field.TrainingId, "training_id_hint", out _tidTmp, out _tidHint, out _tidFocusImg, out _tidErrImg, fh);
+            _tidErr = Label(host, "TrainingIdError", 240, tTop + 96f, 820, tTop + 118f, cw, ch, "err_tid_empty", 24f, ErrCol, false,
+                TextAlignmentOptions.Left);
+            _tidErr.gameObject.SetActive(false);
+
+            var nTop = tTop + 120f;
+            Pic(Place(host, "IconUser", 112, nTop, 208, nTop + 96, cw, ch), "Login_IconUser");
+            Label(host, "NameLabel", 240, nTop, 735, nTop + 30, cw, ch, "name_label", 26f, LabelCol, true, TextAlignmentOptions.Left);
+            BuildField(host, cw, ch, nTop + 32f, Field.Name, "name_hint", out _nameTmp, out _nameHint, out _nameFocusImg, out _nameErrImg, fh);
+            _nameErr = Label(host, "NameError", 240, nTop + 96f, 820, nTop + 118f, cw, ch, "err_name_empty", 24f, ErrCol, false,
                 TextAlignmentOptions.Left);
             _nameErr.gameObject.SetActive(false);
 
-            Pic(Place(host, "IconMail", 112, 456, 222, 540, cw, ch), "Login_IconMail");
-            Label(host, "ContactLabel", 240, 436, 735, 472, cw, ch, "contact_label", 28f, LabelCol, true, TextAlignmentOptions.Left);
-            BuildField(host, cw, ch, 472, Field.Contact, "contact_hint", out _contactTmp, out _contactHint, out _contactFocusImg,
-                out _contactErrImg);
-            // ~12 px below the field bottom (544); keep compact so footer stays inside the panel
-            _contactErr = Label(host, "ContactError", 240, 548, 820, 578, cw, ch, "err_contact_empty", 26f, ErrCol, false,
+            var cTop = nTop + 120f;
+            Pic(Place(host, "IconMail", 112, cTop, 208, cTop + 96, cw, ch), "Login_IconMail");
+            Label(host, "ContactLabel", 240, cTop, 735, cTop + 30, cw, ch, "contact_label", 26f, LabelCol, true, TextAlignmentOptions.Left);
+            BuildField(host, cw, ch, cTop + 32f, Field.Contact, "contact_hint", out _contactTmp, out _contactHint, out _contactFocusImg,
+                out _contactErrImg, fh);
+            _contactErr = Label(host, "ContactError", 240, cTop + 96f, 820, cTop + 118f, cw, ch, "err_contact_empty", 24f, ErrCol, false,
                 TextAlignmentOptions.Left);
             _contactErr.gameObject.SetActive(false);
 
@@ -336,15 +369,15 @@ namespace ChemicalSafety.Presentable
         }
 
         private void BuildField(Transform host, float cw, float ch, float top, Field which, string hintKey, out TextMeshProUGUI valueTmp,
-            out LocText hint, out GameObject focusImg, out GameObject errImg)
+            out LocText hint, out GameObject focusImg, out GameObject errImg, float height = 72f)
         {
-            var rt = Place(host, which + "Field", 240, top, 736, top + 72, cw, ch);
+            var rt = Place(host, which + "Field", 240, top, 736, top + height, cw, ch);
             Pic(rt, "Login_Field");
-            var f = PresentableUi.Centered("Focus", rt, Vector2.zero, new Vector2(556f, 132f));
+            var f = PresentableUi.Centered("Focus", rt, Vector2.zero, new Vector2(556f, 132f * 0.86f));
             Pic(f, "Login_FieldFocus");
             f.gameObject.SetActive(false);
             focusImg = f.gameObject;
-            var e = PresentableUi.Centered("Error", rt, Vector2.zero, new Vector2(556f, 132f));
+            var e = PresentableUi.Centered("Error", rt, Vector2.zero, new Vector2(556f, 132f * 0.86f));
             Pic(e, "Login_FieldError");
             e.gameObject.SetActive(false);
             errImg = e.gameObject;
@@ -747,7 +780,15 @@ namespace ChemicalSafety.Presentable
 
         private void Type(char c)
         {
-            if (_focus == Field.Name)
+            if (_focus == Field.TrainingId)
+            {
+                var d = c >= '০' && c <= '৯' ? (char)('0' + (c - '০')) : c;
+                if (d < '0' || d > '9' || _trainingId.Length >= LoginValidator.TrainingIdMaxDigits)
+                    return;
+                _trainingId += d;
+                ClearTidError();
+            }
+            else if (_focus == Field.Name)
             {
                 if (LoginValidator.IsDigit(c))
                 {
@@ -774,7 +815,9 @@ namespace ChemicalSafety.Presentable
 
         private void Backspace()
         {
-            if (_focus == Field.Name && _name.Length > 0)
+            if (_focus == Field.TrainingId && _trainingId.Length > 0)
+                _trainingId = _trainingId.Substring(0, _trainingId.Length - 1);
+            else if (_focus == Field.Name && _name.Length > 0)
                 _name = _name.Substring(0, _name.Length - 1);
             else if (_focus == Field.Contact && _contact.Length > 0)
                 _contact = _contact.Substring(0, _contact.Length - 1);
@@ -783,7 +826,7 @@ namespace ChemicalSafety.Presentable
 
         private void Done()
         {
-            _focus = _focus == Field.Name ? Field.Contact : Field.None;
+            _focus = _focus == Field.TrainingId ? Field.Name : _focus == Field.Name ? Field.Contact : Field.None;
             _shift = false;
             Refresh();
         }
@@ -794,10 +837,19 @@ namespace ChemicalSafety.Presentable
         {
             if (_closing)
                 return false;
+            var tidErr = LoginValidator.ValidateTrainingId(_trainingId, out var trainingId);
             var nameErr = LoginValidator.ValidateName(_name, out var cleanName);
             var contactErr = LoginValidator.ValidateContact(_contact, out var contact, out var isEmail, out _);
             ShowFieldErrors(nameErr, contactErr);
-            if (nameErr != LoginError.None || contactErr != LoginError.None)
+            if (tidErr != LoginError.None)
+            {
+                _tidErr.Bind(Scn, tidErr == LoginError.TrainingIdEmpty ? "err_tid_empty" : "err_tid_invalid");
+                _tidErr.gameObject.SetActive(true);
+                _tidErrImg.SetActive(true);
+            }
+            else
+                ClearTidError();
+            if (tidErr != LoginError.None || nameErr != LoginError.None || contactErr != LoginError.None)
             {
                 PresentableFx.Haptic(true, 0.5f, 0.12f);
                 return false;
@@ -807,7 +859,7 @@ namespace ChemicalSafety.Presentable
             _focus = Field.None;
             Refresh();
             SessionResults.StartSession(cleanName, isEmail ? contact.ToLowerInvariant() : string.Empty, isEmail ? string.Empty : contact,
-                Loc.Suffix());
+                Loc.Suffix(), trainingId);
             StartCoroutine(Finish());
             return true;
         }
@@ -877,6 +929,14 @@ namespace ChemicalSafety.Presentable
             _nameErrUntil = 0f;
         }
 
+        private void ClearTidError()
+        {
+            if (_tidErr == null)
+                return;
+            _tidErr.gameObject.SetActive(false);
+            _tidErrImg.SetActive(false);
+        }
+
         private void ClearContactError()
         {
             if (_contactErr == null)
@@ -892,6 +952,11 @@ namespace ChemicalSafety.Presentable
             var caret = Mathf.Repeat(Time.unscaledTime, 1f) < 0.5f ? "|" : " ";
             var nt = _name + (_focus == Field.Name ? caret : string.Empty);
             var ct = _contact + (_focus == Field.Contact ? caret : string.Empty);
+            var tt = _trainingId + (_focus == Field.TrainingId ? caret : string.Empty);
+            if (_tidTmp.text != tt)
+                _tidTmp.text = tt;
+            _tidHint.gameObject.SetActive(_trainingId.Length == 0 && _focus != Field.TrainingId);
+            _tidFocusImg.SetActive(_focus == Field.TrainingId);
             if (_nameTmp.text != nt)
                 _nameTmp.text = nt;
             if (_contactTmp.text != ct)
@@ -915,6 +980,18 @@ namespace ChemicalSafety.Presentable
                     var t = (up ? char.ToUpperInvariant(k.ch) : char.ToLowerInvariant(k.ch)).ToString();
                     if (k.label.text != t)
                         k.label.text = t;
+                }
+                if (k.ch != '\0' && !k.isDigit && !k.isLetter)
+                {
+                    var offSym = _focus == Field.TrainingId; // Training ID takes digits only
+                    k.button.interactable = !offSym;
+                    k.label.alpha = offSym ? 0.25f : 1f;
+                }
+                if (k.isLetter)
+                {
+                    var offL = _focus == Field.TrainingId;
+                    k.button.interactable = !offL;
+                    k.label.alpha = offL ? 0.25f : 1f;
                 }
                 if (k.isDigit)
                 {

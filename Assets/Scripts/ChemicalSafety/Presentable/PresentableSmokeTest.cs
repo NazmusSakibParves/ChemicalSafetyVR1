@@ -60,6 +60,23 @@ namespace ChemicalSafety.Presentable
             }
         }
 
+        /// <summary>EditorPref ChemSafetySmokeAllCorrect (default off): the test never answers wrong on purpose, so the session ends with full marks.</summary>
+        private static bool AllCorrect => UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeAllCorrect", false);
+
+        /// <summary>The row (0-based) the learner SEES for the right answer: the options are shuffled per session, content.correctIndex is not that row.</summary>
+        private static int ShownCorrectRow(int fallback)
+        {
+            // the session record of the OPEN question (last answer of the last attempt) holds the correct SHOWN letter; the panel's Current.correctIndex
+            // is the shown row in most scenarios but the raw content index in some (SC06 old path)
+            var at = ChemicalSafety.Results.SessionResults.Current.attempts;
+            if (at.Count == 0 || at[at.Count - 1].answers.Count == 0)
+                return fallback;
+            var an = at[at.Count - 1].answers[at[at.Count - 1].answers.Count - 1];
+            var row = !string.IsNullOrEmpty(an.correct_option) && an.correct_option.Length == 1 ? an.correct_option[0] - 'A' : fallback;
+            Say("all-correct pick: " + at[at.Count - 1].lesson_id + " " + an.question_id + " correct letter " + an.correct_option + " -> row " + (row + 1) + " (panel correctIndex " + fallback + ", selected so far [" + an.selected_option + "])");
+            return row;
+        }
+
         private static void Say(string s)
         {
             Debug.Log("[SMOKE] " + s);
@@ -248,7 +265,7 @@ namespace ChemicalSafety.Presentable
 #if UNITY_EDITOR
             wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Wrong", false);
 #endif
-            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
             Say("SC05 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
             var row = FindDeep(mcq5.transform, "Row" + (target + 1));
             if (row != null)
@@ -387,7 +404,7 @@ namespace ChemicalSafety.Presentable
 #if UNITY_EDITOR
             wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Wrong", false);
 #endif
-            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
             Say("SC06 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
             var row = FindDeep(mcq6.transform, "Row" + (target + 1));
             if (row != null)
@@ -552,7 +569,7 @@ namespace ChemicalSafety.Presentable
 #if UNITY_EDITOR
             wrong4 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc04Wrong", false);
 #endif
-            var target = wrong4 ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var target = wrong4 ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
             Say("SC04 answer = " + (wrong4 ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal);
             var row = FindDeep(mcq4.transform, "Row" + (target + 1));
             if (row != null)
@@ -606,7 +623,7 @@ namespace ChemicalSafety.Presentable
             wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc03Wrong", false);
 #endif
             var q = mcq3.Current;
-            var target = wrong ? (q.correctIndex + 1) % q.options.Length : q.correctIndex;
+            var target = wrong ? (q.correctIndex + 1) % q.options.Length : (AllCorrect ? ShownCorrectRow(q.correctIndex) : q.correctIndex);
             Say("SC03 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + q.inlineReveal);
             var row = FindDeep(mcq3.transform, "Row" + (target + 1));
             if (row != null)
@@ -673,9 +690,9 @@ namespace ChemicalSafety.Presentable
                 yield return new WaitForSeconds(2.8f);
                 yield return Shot("sc02_q" + n + "_open");
                 LayoutCheck("SC02 Q" + n, mcq.transform);
-                var wrong = n == 2;
+                var wrong = n == 2 && !AllCorrect;
                 var q = mcq.Current;
-                var target = wrong ? (q.correctIndex + 1) % q.options.Length : q.correctIndex;
+                var target = wrong ? (q.correctIndex + 1) % q.options.Length : (AllCorrect ? ShownCorrectRow(q.correctIndex) : q.correctIndex);
                 Say("SC02 Q" + n + " answer = " + (wrong ? "WRONG" : "CORRECT") + " prompt = " + q.prompt);
                 var row = FindDeep(mcq.transform, "Row" + (target + 1));
                 if (row != null)
@@ -1301,12 +1318,16 @@ namespace ChemicalSafety.Presentable
                 ", rows landed = " + (mcq6.Fx != null && mcq6.Fx.RowsLanded));
             LayoutCheck("SC06 MCQ", mcq6.transform);
             yield return Shot("57_sc06_question");
-            Click(mcq6.transform, "Row1");
-            yield return new WaitForSeconds(1.6f);
-            yield return Shot("58_sc06_wrong");
-            Click(mcq6.transform, "Close");
-            yield return new WaitForSeconds(1.2f);
-            Click(mcq6.transform, "Row3");
+            if (!AllCorrect)
+            {
+                Click(mcq6.transform, "Row1");
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot("58_sc06_wrong");
+                Click(mcq6.transform, "Close");
+                yield return new WaitForSeconds(1.2f);
+            }
+
+            Click(mcq6.transform, AllCorrect ? "Row" + (ShownCorrectRow(mcq6.Current.correctIndex) + 1) : "Row3");
             var heard = "";
             var h = 0f;
             while (h < 14f)
@@ -1638,7 +1659,7 @@ namespace ChemicalSafety.Presentable
 #if UNITY_EDITOR
             wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Wrong", false);
 #endif
-            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
             Say("SC07 answer = " + (wrong ? "WRONG" : "CORRECT") + " inline reveal = " + cur.inlineReveal + " fancy = " + mcq7.Fancy);
             var row = FindDeep(mcq7.transform, "Row" + (target + 1));
             if (row != null)
@@ -1858,7 +1879,7 @@ namespace ChemicalSafety.Presentable
 #if UNITY_EDITOR
             wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Wrong", false);
 #endif
-            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : cur.correctIndex;
+            var target = wrong ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
             var row = FindDeep(mcq8.transform, "Row" + (target + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
@@ -2207,7 +2228,7 @@ namespace ChemicalSafety.Presentable
             var cur = mcq9.Current;
             Say("SC09 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
             // a WRONG pick: the reasons show and the voice sends the learner on with NEXT (no "Try again")
-            var row = FindDeep(mcq9.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            var row = FindDeep(mcq9.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
@@ -2503,7 +2524,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC10 MCQ", mcq10.transform);
             var cur = mcq10.Current;
             Say("SC10 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq10.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            var row = FindDeep(mcq10.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
@@ -2766,7 +2787,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC11 MCQ", mcq11.transform);
             var cur = mcq11.Current;
             Say("SC11 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq11.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            var row = FindDeep(mcq11.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
@@ -3022,7 +3043,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC19 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC19 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3153,7 +3174,7 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC20 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC20 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((cur.correctIndex + 1) % cur.options.Length + 1));
+            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3299,7 +3320,7 @@ namespace ChemicalSafety.Presentable
                         else if (!answered)
                         {
                             answered = true;
-                            var wrong = st == "q2";
+                            var wrong = st == "q2" && !AllCorrect;
                             runner.SelectOption(wrong ? (runner.CorrectRow + 1) % 4 : runner.CorrectRow);
                             if (!wrong)
                                 score++;
@@ -3401,7 +3422,14 @@ namespace ChemicalSafety.Presentable
             for (var r = 0; r < assess.RowCount; r++)
                 if (RowText(assess.transform, "Row" + r) == labels[3])
                     boots = r;
-            assess.ToggleRow(boots); // only boots: wrong, but the reasons are shown and NEXT still comes (no retry, no popup)
+            if (AllCorrect)
+            {
+                for (var r = 0; r < assess.RowCount; r++)
+                    if (r != boots)
+                        assess.ToggleRow(r); // the exact right set
+            }
+            else
+                assess.ToggleRow(boots); // only boots: wrong, but the reasons are shown and NEXT still comes (no retry, no popup)
             assess.PressSubmit();
             yield return new WaitForSeconds(1.0f);
             Say("SC12 ray boots only: revealed = " + assess.Revealed + " (expected True), popup visible = " + assess.PopupVisible + " (expected False)");
@@ -3531,24 +3559,33 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("SC12 shown rows: boots at row " + boots + ", right rows " + good.Count + " (expected 3)");
-            // wrong 1: only boots ticked, wrong 2: one right item missing, then the exact set
-            assess.ToggleRow(boots);
-            assess.PressSubmit();
-            yield return new WaitForSeconds(1.2f);
-            Say("SC12 boots only: won = " + assess.Won + " (expected False)");
-            yield return Shot("140_sc12_wrong");
-            LayoutCheck("SC12 wrong popup", FindDeep(assess.transform, "Sc12AssessPopup"));
-            Say("SC12 wrong popup visible = " + assess.PopupVisible + " (expected True)");
-            Click(assess.transform, "Close");
-            yield return new WaitForSeconds(0.8f);
-            assess.ToggleRow(boots);
-            assess.ToggleRow(good[0]);
-            assess.ToggleRow(good[1]);
-            assess.PressSubmit();
-            yield return new WaitForSeconds(1.2f);
-            Say("SC12 two of three right items: won = " + assess.Won + " (expected False)");
-            Click(assess.transform, "Close");
-            yield return new WaitForSeconds(0.8f);
+            if (!AllCorrect)
+            {
+                // wrong 1: only boots ticked, wrong 2: one right item missing, then the exact set
+                assess.ToggleRow(boots);
+                assess.PressSubmit();
+                yield return new WaitForSeconds(1.2f);
+                Say("SC12 boots only: won = " + assess.Won + " (expected False)");
+                yield return Shot("140_sc12_wrong");
+                LayoutCheck("SC12 wrong popup", FindDeep(assess.transform, "Sc12AssessPopup"));
+                Say("SC12 wrong popup visible = " + assess.PopupVisible + " (expected True)");
+                Click(assess.transform, "Close");
+                yield return new WaitForSeconds(0.8f);
+                assess.ToggleRow(boots);
+                assess.ToggleRow(good[0]);
+                assess.ToggleRow(good[1]);
+                assess.PressSubmit();
+                yield return new WaitForSeconds(1.2f);
+                Say("SC12 two of three right items: won = " + assess.Won + " (expected False)");
+                Click(assess.transform, "Close");
+                yield return new WaitForSeconds(0.8f);
+            }
+            else
+            {
+                assess.ToggleRow(good[0]);
+                assess.ToggleRow(good[1]);
+            }
+
             assess.ToggleRow(good[2]);
             assess.PressSubmit();
             var heard = "";
@@ -4012,7 +4049,7 @@ namespace ChemicalSafety.Presentable
                         yield return PanelStopTest(popup);
                     }
 
-                    if (step == 0)
+                    if (step == 0 && !AllCorrect)
                     {
                         // wrong first on the first drum
                         var wrong = (i + 1) % 4;
@@ -4595,31 +4632,35 @@ namespace ChemicalSafety.Presentable
             Say("SC03 mcq open = " + mcq3.IsOpen);
             LayoutCheck("SC03 MCQ", mcq3.transform);
             yield return Shot("19_sc03_question");
-            Click(mcq3.transform, "Row1");
-            Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.25f - Camera.main.transform.position);
-            yield return new WaitForSeconds(0.2f);
-            yield return Shot("20a_blast_0");
-            yield return new WaitForSeconds(0.5f);
-            yield return Shot("20b_blast_1");
-            yield return new WaitForSeconds(1.2f);
-            Say("SC03 wrong answer: detonation active = " + det.IsActive + ", clip = " +
-                (voiceSrc.clip != null ? voiceSrc.clip.name : "none") + ", particles = " +
-                det.GetComponentsInChildren<ParticleSystem>().Length);
-            yield return Shot("20c_blast_2");
-            yield return new WaitForSeconds(2.0f);
-            yield return Shot("20d_blast_3");
-            LayoutCheck("SC03 MCQ wrong card", mcq3.transform);
-            Say("SC03 stats during the blast: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls);
-            Camera.main.transform.localRotation = camKeep3;
-            Click(mcq3.transform, "Close");
-            yield return new WaitForSeconds(0.8f);
-            Say("SC03 after closing the red card: detonation active = " + det.IsActive + " (expected False)");
-            Click(mcq3.transform, "Row3");
-            yield return new WaitForSeconds(1.4f);
-            Say("SC03 second wrong answer: detonation active = " + det.IsActive);
-            Click(mcq3.transform, "Close");
-            yield return new WaitForSeconds(0.8f);
-            Click(mcq3.transform, "Row2");
+            if (!AllCorrect)
+            {
+                Click(mcq3.transform, "Row1");
+                Camera.main.transform.rotation = Quaternion.LookRotation(labelAnchor3.position + Vector3.up * 0.25f - Camera.main.transform.position);
+                yield return new WaitForSeconds(0.2f);
+                yield return Shot("20a_blast_0");
+                yield return new WaitForSeconds(0.5f);
+                yield return Shot("20b_blast_1");
+                yield return new WaitForSeconds(1.2f);
+                Say("SC03 wrong answer: detonation active = " + det.IsActive + ", clip = " +
+                    (voiceSrc.clip != null ? voiceSrc.clip.name : "none") + ", particles = " +
+                    det.GetComponentsInChildren<ParticleSystem>().Length);
+                yield return Shot("20c_blast_2");
+                yield return new WaitForSeconds(2.0f);
+                yield return Shot("20d_blast_3");
+                LayoutCheck("SC03 MCQ wrong card", mcq3.transform);
+                Say("SC03 stats during the blast: tris=" + UnityStats.triangles + " drawCalls=" + UnityStats.drawCalls);
+                Camera.main.transform.localRotation = camKeep3;
+                Click(mcq3.transform, "Close");
+                yield return new WaitForSeconds(0.8f);
+                Say("SC03 after closing the red card: detonation active = " + det.IsActive + " (expected False)");
+                Click(mcq3.transform, "Row3");
+                yield return new WaitForSeconds(1.4f);
+                Say("SC03 second wrong answer: detonation active = " + det.IsActive);
+                Click(mcq3.transform, "Close");
+                yield return new WaitForSeconds(0.8f);
+            }
+
+            Click(mcq3.transform, AllCorrect ? "Row" + (ShownCorrectRow(mcq3.Current.correctIndex) + 1) : "Row2");
             var heard3 = "";
             var sawCorrect3 = false;
             var h3 = 0f;

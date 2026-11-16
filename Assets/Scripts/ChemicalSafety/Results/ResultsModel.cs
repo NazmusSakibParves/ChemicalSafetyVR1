@@ -49,6 +49,7 @@ namespace ChemicalSafety.Results
     public sealed class Submission
     {
         public string client_submission_id = Guid.NewGuid().ToString();
+        public int training_id; // typed on the login page; the API stores the upload under this LIVE training
         public string participant_name = string.Empty;
         public string participant_email = string.Empty;
         public string participant_phone = string.Empty;
@@ -141,10 +142,15 @@ namespace ChemicalSafety.Results
 
         public static void SetSink(ISubmissionSink sink) => _sink = sink ?? new FileSubmissionSink();
 
-        public static void StartSession(string name, string email, string phone, string language)
+        /// <summary>False for test sessions (smoke / nav jump): they must never reach the server.</summary>
+        public static bool UploadAllowed { get; set; } = true;
+
+        public static void StartSession(string name, string email, string phone, string language, int trainingId = 0)
         {
+            UploadAllowed = true;
             Current = new Submission
             {
+                training_id = trainingId,
                 participant_name = name ?? string.Empty,
                 participant_email = email ?? string.Empty,
                 participant_phone = phone ?? string.Empty,

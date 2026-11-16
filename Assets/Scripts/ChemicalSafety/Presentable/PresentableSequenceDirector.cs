@@ -491,6 +491,7 @@ namespace ChemicalSafety.Presentable
             _resultShown = true;
             SessionClock.Stop();
             SessionResults.CompleteAll(SessionClock.ElapsedMs, timedOut);
+            ResultUploader.Send(SessionResults.Current); // once per participant: all scenarios done OR time-out; never blocks the card
             if (SessionHud.Instance != null)
                 SessionHud.Instance.SetVisible(false);
             if (ScenarioNavHud.Instance != null)
@@ -530,6 +531,7 @@ namespace ChemicalSafety.Presentable
             fader.SetImmediate(1f);
             yield return null;
             yield return null;
+            ResultUploader.RetryPending(); // results that could not be sent last time (no network)
 
 #if UNITY_EDITOR
             // developer shortcut (EditorPref ChemSafetySc04Dev, set it from code / the console): starts at Scenario 4 and stops after it

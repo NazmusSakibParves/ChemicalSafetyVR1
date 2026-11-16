@@ -11,6 +11,7 @@ namespace ChemicalSafety.Presentable
     /// <summary>Numbers of the result card. Marks: 1 per MCQ, first try right = 1 (see Content/MARKING.json and Docs/MARKING_RULES.md).</summary>
     public struct ResultSummary
     {
+        public int trainingId;
         public string name;
         public string contact;
         public int completedScenarios;
@@ -65,6 +66,7 @@ namespace ChemicalSafety.Presentable
             var max = Mathf.Max(expected, sub.total_max);
             return new ResultSummary
             {
+                trainingId = sub.training_id,
                 name = sub.participant_name,
                 contact = !string.IsNullOrEmpty(sub.participant_phone) ? sub.participant_phone : sub.participant_email,
                 completedScenarios = sub.completed_scenarios,
@@ -149,12 +151,14 @@ namespace ChemicalSafety.Presentable
 
             // trainee rows: label left at x 553, value left at x 780 (scenarios value at 878), as in the design
             var contactIsPhone = !string.IsNullOrEmpty(SessionResults.Current.participant_phone);
-            TL(host, G("RsName"), 553, 325, 220, 44, 30, white, true);
-            TL(host, s.name, 780, 325, 380, 44, 30, white, true);
-            TL(host, contactIsPhone ? G("RsMobile") : G("RsEmail"), 553, 368, 220, 44, 30, white, true);
-            TL(host, s.contact, 780, 368, 380, 44, 30, white, true);
-            TL(host, G("RsCompleted"), 553, 412, 320, 44, 30, white, true);
-            TL(host, s.completedScenarios + " / " + s.totalScenarios, 878, 412, 200, 44, 30, white, true);
+            TL(host, G("RsTrainingId"), 553, 313, 220, 40, 28, white, true);
+            TL(host, s.trainingId > 0 ? s.trainingId.ToString() : "-", 780, 313, 380, 40, 28, white, true);
+            TL(host, G("RsName"), 553, 352, 220, 40, 28, white, true);
+            TL(host, s.name, 780, 352, 380, 40, 28, white, true);
+            TL(host, contactIsPhone ? G("RsMobile") : G("RsEmail"), 553, 391, 220, 40, 28, white, true);
+            TL(host, s.contact, 780, 391, 380, 40, 28, white, true);
+            TL(host, G("RsCompleted"), 553, 430, 320, 40, 28, white, true);
+            TL(host, s.completedScenarios + " / " + s.totalScenarios, 878, 430, 200, 40, 28, white, true);
 
             // obtained marks
             TL(host, G("RsMarks"), 593, 481, 300, 50, 32, white, true);

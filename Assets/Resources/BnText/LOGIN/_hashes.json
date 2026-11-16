@@ -20,5 +20,9 @@
  "err_phone_long": "fe92c4ea153ae26233abdf0bbfadf21da6295add",
  "err_phone": "2954e94eebd337a3d6e852ccd9c1975135816f35",
  "kb_done": "33e7e29b6a7dfc16749a092142a9a0422a6a3ca7",
- "kb_digits_off": "9cd2c28260452e5c2643fbf89d2c13214005ec91"
+ "kb_digits_off": "9cd2c28260452e5c2643fbf89d2c13214005ec91",
+ "training_id_label": "08ce8d1402a73f744822873ff6a56fda012a5ce5",
+ "training_id_hint": "a15dbffe39200c55e00478d9356102df3c440f8e",
+ "err_tid_empty": "205fcac6c10d99f1b31b12ceadd67f00ef3508b3",
+ "err_tid_invalid": "8e6268825f610b5044f153e473fb5f7ae0d497e1"
 }

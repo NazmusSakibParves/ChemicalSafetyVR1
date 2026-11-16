@@ -14,7 +14,9 @@ namespace ChemicalSafety.Localization
         EmailInvalid,
         PhoneTooShort,
         PhoneTooLong,
-        PhoneInvalid
+        PhoneInvalid,
+        TrainingIdEmpty,
+        TrainingIdInvalid
     }
 
     /// <summary>Pure functions, no Unity types. Used by the login screen and by EditMode tests.</summary>
@@ -26,6 +28,24 @@ namespace ChemicalSafety.Localization
 
         public static bool IsDigit(char c) => (c >= '0' && c <= '9') || (c >= '০' && c <= '৯') ||
                                               (c >= '٠' && c <= '٩') || (c >= '۰' && c <= '۹');
+
+        public const int TrainingIdMaxDigits = 6;
+
+        /// <summary>Training ID: 1 to 6 digits (Bangla digits accepted), greater than 0.</summary>
+        public static LoginError ValidateTrainingId(string raw, out int id)
+        {
+            id = 0;
+            var s = NormalizeDigits((raw ?? string.Empty).Trim());
+            if (s.Length == 0)
+                return LoginError.TrainingIdEmpty;
+            if (s.Length > TrainingIdMaxDigits || !int.TryParse(s, out id) || id <= 0)
+            {
+                id = 0;
+                return LoginError.TrainingIdInvalid;
+            }
+
+            return LoginError.None;
+        }
 
         public static LoginError ValidateName(string raw, out string cleaned)
         {
