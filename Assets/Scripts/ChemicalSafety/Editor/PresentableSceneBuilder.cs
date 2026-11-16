@@ -129,6 +129,9 @@ namespace ChemicalSafety.Editor
             var env20 = new GameObject("Environment_SC20").transform;
             var sc20 = BuildSc20Room(env20, art);
             env20.gameObject.SetActive(false);
+            var env21 = new GameObject("Environment_SC21").transform;
+            var sc21 = BuildSc21Room(env21, art);
+            env21.gameObject.SetActive(false);
 
             var rig = BuildRig(art, out var leftController);
             var systems = new GameObject("Systems").transform;
@@ -221,6 +224,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq19, "art", art);
             var mcq20 = Child("McqPanel_SC20", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq20, "art", art);
+            var mcq21 = Child("McqPanel_SC21", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq21, "art", art);
 
             var fader = Child("ScreenFader", flow).AddComponent<ScreenFader>();
             var subtitle = Child("Subtitle", flow).AddComponent<WorldSubtitle>();
@@ -433,6 +438,11 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc20Viewing").objectReferenceValue = sc20.viewing;
             so.FindProperty("sc20Gate").objectReferenceValue = sc20.gate;
             so.FindProperty("mcqSc20").objectReferenceValue = mcq20;
+            so.FindProperty("envSc21").objectReferenceValue = Sc21Enabled ? env21.gameObject : null;
+            so.FindProperty("sc21Cine").objectReferenceValue = sc21.cine;
+            so.FindProperty("sc21Viewing").objectReferenceValue = sc21.viewing;
+            so.FindProperty("sc21Gate").objectReferenceValue = sc21.gate;
+            so.FindProperty("mcqSc21").objectReferenceValue = mcq21;
             SetRef(sc10.ambience, "voice", voice);
             SetRef(sc6.ambience, "voice", voice);
             so.FindProperty("chart").objectReferenceValue = chart;
@@ -760,6 +770,7 @@ namespace ChemicalSafety.Editor
             art.bnSc12RayInstructionPanel = B("BN_Sc12RayInstructionPanel");
             art.bnSc19RayInstructionPanel = B("BN_Sc19RayInstructionPanel");
             art.bnSc20RayInstructionPanel = B("BN_Sc20RayInstructionPanel");
+            art.bnSc21RayInstructionPanel = B("BN_Sc21RayInstructionPanel");
             art.iconSc12Ppe = new[]
             {
                 LoadSprite("2D/Sc12/Sc12_IconGoggles"), LoadSprite("2D/Sc12/Sc12_IconGloves"),

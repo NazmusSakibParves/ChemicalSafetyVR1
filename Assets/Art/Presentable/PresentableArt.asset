@@ -327,6 +327,7 @@ MonoBehaviour:
   bnSc12RayInstructionPanel: {fileID: 21300000, guid: 0c4ac0c9983c2a54f87b87a62038a248, type: 3}
   bnSc19RayInstructionPanel: {fileID: 21300000, guid: c2d776592cfbdcc4aa70ebcb1cb24e67, type: 3}
   bnSc20RayInstructionPanel: {fileID: 21300000, guid: 11924b89299beca42a0442f58605e58a, type: 3}
+  bnSc21RayInstructionPanel: {fileID: 21300000, guid: 04c2e06acb2cf904797a9342b241f7ce, type: 3}
   voSc12RayInstruction: {fileID: 8300000, guid: 46d92133989a6714a82faf18024f560c, type: 3}
   iconSc12Ppe:
   - {fileID: 21300000, guid: a757374eb9240c846ac8ad266b0c3cbe, type: 3}

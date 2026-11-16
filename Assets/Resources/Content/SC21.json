@@ -1,0 +1,136 @@
+{
+  "scenario": "SC21",
+  "strings": [
+    {
+      "key": "RayInstruction",
+      "en": "You have been assigned a chemical coating task in a poorly ventilated area, but no JHA has been prepared for the job. Read Section 2 of the SDS carefully before starting work and choose the correct action.",
+      "bn": "আপনাকে কম বায়ু চলাচল রয়েছে এমন একটি স্থানে রাসায়নিক কোটিংয়ের কাজ করতে বলা হয়েছে, কিন্তু এই কাজের জন্য কোনো JHA তৈরি করা হয়নি। কাজ শুরুর আগে SDS এর সেকশন ২ এর নির্দেশনা পড়ুন ও সঠিক পদক্ষেপটি নির্বাচন করুন।"
+    },
+    {
+      "key": "GateTitle",
+      "en": "SAFE WORK PLAN COMPLETE.",
+      "bn": "নিরাপদ কাজের পরিকল্পনা সম্পন্ন।"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice question (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to watch the whole process again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর পুরো প্রক্রিয়া আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "RayQuestionHeader",
+      "en": "MCQ: Missing JHA",
+      "bn": "MCQ: JHA নেই"
+    },
+    {
+      "key": "RayQuestionPrompt",
+      "en": "A supervisor assigns you a task to apply a chemical coating in a poorly ventilated area, but no Job Hazard Analysis (JHA) is available. What should you do before starting work?",
+      "bn": "একজন সুপারভাইজার আপনাকে কম বাতাস চলাচল করে এমন একটি জায়গায় রাসায়নিক প্রলেপ দেওয়ার কাজ দিয়েছেন। কিন্তু কাজটির জন্য কোনো Job Hazard Analysis (JHA) পাওয়া যাচ্ছে না। কাজ শুরু করার আগে আপনার কী করা উচিত?"
+    },
+    {
+      "key": "RayCorrectTitle",
+      "en": "RIGHT ANSWER",
+      "bn": "সঠিক উত্তর"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "NEXT",
+      "bn": "নেক্সট"
+    },
+    {
+      "key": "TagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "TagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Module complete. Well done!",
+      "bn": "মডিউল সম্পন্ন। চমৎকার কাজ!"
+    },
+    {
+      "key": "CapStoryTitle",
+      "en": "NO JHA, POOR VENTILATION",
+      "bn": "JHA নেই, বাতাস চলাচল কম"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read Section 2 of the Safety Data Sheet first: the hierarchy of controls.",
+      "bn": "প্রথমে নিরাপত্তা তথ্যপত্র (SDS) এর সেকশন ২ পড়ুন: নিয়ন্ত্রণ ব্যবস্থার ক্রম।"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "RayOptionLabels",
+      "en": [
+        "Proceed immediately with the chemical coating application as ordered by the supervisor.",
+        "Locate the missing physical JHA binder in the workshop office before starting the job",
+        "Halt all work until a detailed Job Hazard Analysis (JHA) is completed, approved, and controls are implemented.",
+        "Ask another worker how they previously completed the coating application and follow their method."
+      ],
+      "bn": [
+        "সুপারভাইজারের নির্দেশ অনুযায়ী কোনো দেরি না করে রাসায়নিক প্রলেপ দেওয়ার কাজ শুরু করা।",
+        "কাজ শুরু করার আগে ওয়ার্কশপ অফিসে গিয়ে হারিয়ে যাওয়া JHA ফাইলটি খুঁজে বের করা।",
+        "বিস্তারিত JHA তৈরি ও অনুমোদন না হওয়া এবং প্রয়োজনীয় নিরাপত্তা ব্যবস্থা কার্যকর না হওয়া পর্যন্ত কাজ বন্ধ রাখা।",
+        "অন্য একজন শ্রমিককে জিজ্ঞাসা করে তিনি আগে কীভাবে কাজটি করেছেন, সেই পদ্ধতি অনুসরণ করা।"
+      ]
+    },
+    {
+      "key": "RayOptionReasons",
+      "en": [
+        "Applying chemical coatings in poorly ventilated areas can allow harmful vapors to accumulate, creating risks of breathing difficulties, poisoning, or fire. Do not rely only on the supervisor's instructions.",
+        "Do not rely on searching for a JHA binder. Work must remain on hold until the hazards are assessed, the JHA is approved, and the necessary safety controls are implemented.",
+        "Correct! Before applying a chemical coating, a Job Hazard Analysis (JHA) must be completed and approved. Special attention must be given to the risk of harmful vapor accumulation in poorly ventilated areas. Work must not begin until adequate ventilation, appropriate PPE, and all other necessary safety controls are in place.",
+        "Do not rely on previous work experience. Work must remain on hold until the hazards are assessed, the JHA is approved, and the necessary safety controls are implemented."
+      ],
+      "bn": [
+        "কম বাতাস চলাচল করে এমন জায়গায় রাসায়নিক প্রলেপ দেওয়ার সময় ক্ষতিকর বাষ্প জমে থাকতে পারে। এতে শ্বাসকষ্ট, বিষক্রিয়া বা আগুনের ঝুঁকি তৈরি হতে পারে। শুধু সুপারভাইজারের নির্দেশের ওপর নির্ভর করে কাজ শুরু করা যাবে না।",
+        "JHA ফাইল খোঁজার ওপর নির্ভর করে কাজ শুরু করা যাবে না। কাজের ঝুঁকি মূল্যায়ন, অনুমোদন এবং প্রয়োজনীয় নিরাপত্তা ব্যবস্থা নিশ্চিত না হওয়া পর্যন্ত কাজ বন্ধ রাখতে হবে।",
+        "সঠিক! রাসায়নিক প্রলেপ দেওয়ার আগে কাজের ঝুঁকি মূল্যায়ন (JHA) তৈরি ও অনুমোদন করতে হবে। বিশেষ করে কম বাতাস চলাচল করে এমন জায়গায় ক্ষতিকর বাষ্প জমার ঝুঁকি বিবেচনা করতে হবে। প্রয়োজনীয় বায়ু চলাচলের ব্যবস্থা, উপযুক্ত PPE এবং অন্যান্য নিরাপত্তা ব্যবস্থা নিশ্চিত না হওয়া পর্যন্ত কাজ শুরু করা যাবে না।",
+        "পুরোনো কাজের অভিজ্ঞতার ওপর নির্ভর করে কাজ শুরু করা যাবে না। কাজের ঝুঁকি মূল্যায়ন, অনুমোদন এবং প্রয়োজনীয় নিরাপত্তা ব্যবস্থা নিশ্চিত না হওয়া পর্যন্ত কাজ বন্ধ রাখতে হবে।"
+      ]
+    },
+    {
+      "key": "RayOptionWrongTitle",
+      "en": [
+        "WRONG PROCEDURE",
+        "WRONG PROCEDURE",
+        "",
+        "WRONG PROCEDURE"
+      ],
+      "bn": [
+        "ভুল পদ্ধতি",
+        "ভুল পদ্ধতি",
+        "",
+        "ভুল পদ্ধতি"
+      ]
+    },
+    {
+      "key": "CapStory",
+      "en": [
+        "A supervisor orders the worker to start a chemical coating job in a poorly ventilated room.",
+        "The worker asks for the Job Hazard Analysis. The form is blank: no JHA has been prepared.",
+        "He refuses to start. Work without safety controls is not allowed.",
+        "Together they prepare the JHA: hazards, risks and controls.",
+        "The completed JHA lists ventilation, a respirator, gloves and an apron.",
+        "Safety controls are in place. Only now does the work begin."
+      ],
+      "bn": [
+        "একজন সুপারভাইজার কম বাতাস চলাচল করে এমন ঘরে রাসায়নিক প্রলেপের কাজ শুরু করতে বলছেন।",
+        "কর্মী JHA দেখতে চাইলেন। ফরমটি খালি: কাজের জন্য কোনো JHA তৈরি করা হয়নি।",
+        "তিনি কাজ শুরু করতে রাজি হলেন না। নিরাপত্তা ব্যবস্থা ছাড়া কাজ করা যাবে না।",
+        "দুজনে মিলে JHA তৈরি করলেন: ঝুঁকি, বিপদ ও নিয়ন্ত্রণ ব্যবস্থা।",
+        "সম্পূর্ণ JHA-তে বায়ু চলাচল, রেসপিরেটর, গ্লাভস ও অ্যাপ্রনের কথা আছে।",
+        "নিরাপত্তা ব্যবস্থা নিশ্চিত হলো। এখন কাজ শুরু।"
+      ]
+    }
+  ]
+}
