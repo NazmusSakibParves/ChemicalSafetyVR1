@@ -25,6 +25,7 @@ namespace ChemicalSafety.Presentable
         public const float Duration = 28.3f;
         private const float Fps = 24f;
         private static readonly int[] CutFrames = { 0, 228, 267, 349, 373, 505, 590 };
+        private const int MaskCutFrame = 505;   // the worker has the respirator from this cut on
         /// <summary>Film time (s) of the voice-over lines.</summary>
         private static readonly (float t, string id)[] Cues =
         {
@@ -32,7 +33,8 @@ namespace ChemicalSafety.Presentable
         };
 
         [SerializeField] private Transform filmRoot;
-        [SerializeField] private GameObject safeExtras;   // what the safe-work picture adds (extraction arm, shelf, floor markings, sign): from the last cut
+        [SerializeField] private GameObject safeShower;   // the emergency shower: it comes when the worker gets the respirator (the cut at 21.0 s)
+        [SerializeField] private GameObject safeExtras;   // what the safe-work picture adds (extraction arm, shelf, table additions): from the mask cut, together with the shower
         [SerializeField] private AudioSource fxSource;
         [SerializeField] private AudioSource loopSource;
 
@@ -258,9 +260,16 @@ namespace ChemicalSafety.Presentable
             _t = Mathf.Clamp(t, 0f, Duration);
             if (_bTr != null)
                 ApplyBake(_t);
+            if (safeShower != null)
+            {
+                var on = _t >= MaskCutFrame / Fps - 0.02f;
+                if (safeShower.activeSelf != on)
+                    safeShower.SetActive(on);
+            }
+
             if (safeExtras != null)
             {
-                var on = _t >= CutFrames[CutFrames.Length - 1] / Fps - 0.02f;
+                var on = _t >= MaskCutFrame / Fps - 0.02f;   // the LEV arm, shelf and table additions come with the respirator and the shower
                 if (safeExtras.activeSelf != on)
                     safeExtras.SetActive(on);
             }

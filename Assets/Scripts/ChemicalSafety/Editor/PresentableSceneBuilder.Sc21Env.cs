@@ -54,9 +54,9 @@ namespace ChemicalSafety.Editor
             // dim indoor mood: one fluorescent tube, grey haze (the shared lighting is bright)
             var mood = env.gameObject.AddComponent<Sc03Mood>();
             var mso = new SerializedObject(mood);
-            mso.FindProperty("ambientSky").colorValue = new Color(0.42f, 0.43f, 0.44f);
-            mso.FindProperty("ambientEquator").colorValue = new Color(0.36f, 0.36f, 0.35f);
-            mso.FindProperty("ambientGround").colorValue = new Color(0.17f, 0.17f, 0.17f);
+            mso.FindProperty("ambientSky").colorValue = new Color(0.51f, 0.52f, 0.53f);
+            mso.FindProperty("ambientEquator").colorValue = new Color(0.44f, 0.44f, 0.44f);
+            mso.FindProperty("ambientGround").colorValue = new Color(0.22f, 0.22f, 0.22f);
             mso.FindProperty("fogColor").colorValue = new Color(0.30f, 0.32f, 0.33f);
             mso.FindProperty("fogStart").floatValue = 7f;
             mso.FindProperty("fogEnd").floatValue = 42f;
@@ -65,22 +65,22 @@ namespace ChemicalSafety.Editor
             mso.ApplyModifiedPropertiesWithoutUndo();
 
             // ---- materials (the client's reference picture: sage-grey grimy concrete, dark floor, rust-brown brick)
-            var wallBack = Mat("Sc21WallBack", new Color(1.08f, 1.08f, 1.05f), 0.08f, 0f, Sc21Tex("Sc21_WallAged"));
+            var wallBack = Mat("Sc21WallBack", new Color(1.26f, 1.26f, 1.25f), 0.08f, 0f, Sc21Tex("Sc21_WallAged"));
             wallBack.SetTextureScale("_BaseMap", new Vector2(2.2f, 1f));
-            var wallSide = Mat("Sc21WallSide", new Color(1.0f, 1.0f, 0.97f), 0.08f, 0f, Sc21Tex("Sc21_WallAged"));
+            var wallSide = Mat("Sc21WallSide", new Color(1.22f, 1.22f, 1.21f), 0.08f, 0f, Sc21Tex("Sc21_WallAged"));
             wallSide.SetTextureScale("_BaseMap", new Vector2(2.8f, 1f));
             var wallFar = Mat("Sc21WallFar", new Color(0.55f, 0.56f, 0.57f), 0.12f, 0f, Sc21Tex("Sc21_Wall"));
             wallFar.SetTextureScale("_BaseMap", new Vector2(3f, 1.5f));
             var floorMat = Mat("Sc21Floor", Color.white, 0.30f, 0f, Sc21Tex("Sc21_Floor"));
             floorMat.SetTextureScale("_BaseMap", new Vector2(4.5f, 4.5f));
-            var ceilMat = Mat("Sc21Ceiling", new Color(0.95f, 0.95f, 0.93f), 0.06f, 0f, Sc21Tex("Sc21_Ceiling"));
+            var ceilMat = Mat("Sc21Ceiling", Color.white, 0.08f, 0f, Sc21Tex("Sc21_CeilingLight"));
             ceilMat.SetTextureScale("_BaseMap", new Vector2(4f, 4f));
             var brickMat = Mat("Sc21Brick", Color.white, 0.05f, 0f, Sc21Tex("Sc21_Brick"));
             var boardMat = Mat("Sc21Board", Color.white, 0.04f, 0f, Sc21Tex("Sc21_Board"));
             var hallBg = Mat("Sc21HallBg", new Color(0.62f, 0.64f, 0.68f), 0f, 0f, Sc21Tex("Sc21_HallBG"), null, true);
             var tableMat = Mat("Sc21Table", new Color(1.45f, 1.42f, 1.36f), 0.12f, 0f, Sc21Tex("Sc21_TableTop"));
             tableMat.SetTextureScale("_BaseMap", new Vector2(1.5f, 1f));
-            var tubeMat = Mat("Sc21Tube", new Color(0.95f, 0.97f, 1f), 0.5f, 0f, null, new Color(2.6f, 2.7f, 2.9f));
+            var tubeMat = Mat("Sc21Tube", new Color(0.95f, 0.97f, 1f), 0.5f, 0f, null, new Color(4.2f, 4.4f, 4.7f));
             var greyMetal = Mat("Sc21GreyMetal", new Color(0.50f, 0.52f, 0.54f), 0.45f, 0.65f);
             var darkMetal = Mat("Sc21DarkMetal", new Color(0.16f, 0.17f, 0.18f), 0.40f, 0.6f);
             var conduit = Mat("Sc21Conduit", new Color(0.46f, 0.47f, 0.47f), 0.35f, 0.5f);
@@ -113,6 +113,16 @@ namespace ChemicalSafety.Editor
             Wall("Sc21WallBackR", Sc21P((Sc21DoorX0 + 2.6f + Sc21X1) * 0.5f, Sc21H * 0.5f, Sc21Zb - 0.1f), new Vector3(Sc21X1 - Sc21DoorX0 - 2.6f, Sc21H, 0.2f), wallBack);
             Wall("Sc21Lintel", Sc21P((Sc21DoorX0 + Sc21X1) * 0.5f, (Sc21DoorH + Sc21H) * 0.5f, Sc21Zb - 0.1f), new Vector3(Sc21X1 - Sc21DoorX0, Sc21H - Sc21DoorH, 0.2f), wallBack);
 
+            // black skirting / dado, 22 cm high, along the walls of the room (client picture: dark border at the foot of the walls)
+            var skirtMat = Mat("Sc21Skirting", new Color(0.055f, 0.055f, 0.058f), 0.18f, 0f);
+            const float skH = 0.22f, skT = 0.014f;
+            Wall("Sc21SkirtBack", Sc21P((Sc21X0 + pierX0) * 0.5f, skH * 0.5f, Sc21Zb + skT * 0.5f), new Vector3(pierX0 - Sc21X0, skH, skT), skirtMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SkirtBackR", Sc21P((Sc21DoorX0 + 2.6f + Sc21X1) * 0.5f, skH * 0.5f, Sc21Zb + skT * 0.5f), new Vector3(Sc21X1 - Sc21DoorX0 - 2.6f, skH, skT), skirtMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SkirtLeft", Sc21P(Sc21X0 + skT * 0.5f, skH * 0.5f, (Sc21Zb + Sc21Zf) * 0.5f), new Vector3(skT, skH, Sc21Zf - Sc21Zb), skirtMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SkirtRight", Sc21P(Sc21X1 - skT * 0.5f, skH * 0.5f, (Sc21Zb + Sc21Zf) * 0.5f), new Vector3(skT, skH, Sc21Zf - Sc21Zb), skirtMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SkirtFront", Sc21P(0f, skH * 0.5f, Sc21Zf - skT * 0.5f), new Vector3(Sc21X1 - Sc21X0, skH, skT), skirtMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SkirtPier", Sc21P((pierX0 + Sc21DoorX0) * 0.5f, skH * 0.5f, Sc21Zb + 0.16f + skT * 0.5f), new Vector3(Sc21DoorX0 - pierX0, skH, skT), skirtMat).GetComponent<Collider>().enabled = false;
+
             // ---- the factory hall behind the doorway (the client's picture on the far wall, a few machines for depth, the fluorescent run along the ceiling)
             var hallZ1 = -14.5f;
             Wall("Sc21HallFloor", Sc21P(7.3f, -0.1f, (Sc21Zb + hallZ1) * 0.5f), new Vector3(12.4f, 0.2f, Sc21Zb - hallZ1), hallFloor);
@@ -135,30 +145,158 @@ namespace ChemicalSafety.Editor
             }
 
             // ---- the left part of the back wall: the notice board (the client's picture), a conduit run with a socket, the hanging fluorescent tube
-            var board = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            board.name = "Sc21NoticeBoard";
-            board.transform.SetParent(room, false);
-            board.transform.position = Sc21P(-3.15f, 1.72f, Sc21Zb + 0.02f);
-            board.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-            board.transform.localScale = new Vector3(1.75f, 1.52f, 1f);
-            Object.DestroyImmediate(board.GetComponent<Collider>());
-            board.GetComponent<MeshRenderer>().sharedMaterial = boardMat;
+            // notice board built in layers (it looked like a flat picture): aluminium frame with depth, cork, loose papers with tilt and soft contact shadows, pins
+            var boardRoot = new GameObject("Sc21NoticeBoard").transform;
+            boardRoot.SetParent(room, false);
+            boardRoot.position = Sc21P(-3.15f, 1.72f, Sc21Zb + 0.02f);
+            boardRoot.rotation = Quaternion.Euler(0f, 180f, 0f);        // local +x = the viewer's right, local -z = towards the viewer
+            const float bw = 1.75f, bh = 1.52f;
+            var corkMat = Mat("Sc21Cork", new Color(0.74f, 0.72f, 0.70f), 0f, 0f, Sc21Tex("Sc21_Cork"));
+            corkMat.SetFloat("_SpecularHighlights", 0f);
+            corkMat.SetFloat("_EnvironmentReflections", 0f);
+            corkMat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            corkMat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            var frameMat = Mat("Sc21BoardFrame", new Color(0.62f, 0.64f, 0.66f), 0.40f, 0.6f);
+            var shadowMat = MatAlpha("Sc21PaperShadow", Sc21Tex("Sc21_Smudge"), new Color(0f, 0f, 0f, 0.55f), false);
+            GameObject BQuad(string n, Vector3 local, Vector2 size, Material m, Vector3 euler)
+            {
+                var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                q.name = n;
+                Object.DestroyImmediate(q.GetComponent<Collider>());
+                q.transform.SetParent(boardRoot, false);
+                q.transform.localPosition = local;
+                q.transform.localRotation = Quaternion.Euler(euler);
+                q.transform.localScale = new Vector3(size.x, size.y, 1f);
+                var mr = q.GetComponent<MeshRenderer>();
+                mr.sharedMaterial = m;
+                if (m == shadowMat)
+                    mr.shadowCastingMode = ShadowCastingMode.Off;
+                return q;
+            }
 
-            var pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pipe.name = "Sc21Conduit";
-            pipe.transform.SetParent(room, false);
-            pipe.transform.position = Sc21P(-3.1f, 1.0f, Sc21Zb + 0.05f);
-            pipe.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
-            pipe.transform.localScale = new Vector3(0.05f, 1.45f, 0.05f);
-            Object.DestroyImmediate(pipe.GetComponent<Collider>());
-            pipe.GetComponent<MeshRenderer>().sharedMaterial = conduit;
-            Wall("Sc21Socket", Sc21P(-1.7f, 1.0f, Sc21Zb + 0.04f), new Vector3(0.12f, 0.12f, 0.07f), darkMetal).GetComponent<Collider>().enabled = false;
+            GameObject BBox(string n, Vector3 local, Vector3 size, Material m)
+            {
+                var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                g.name = n;
+                Object.DestroyImmediate(g.GetComponent<Collider>());
+                g.transform.SetParent(boardRoot, false);
+                g.transform.localPosition = local;
+                g.transform.localScale = size;
+                g.GetComponent<MeshRenderer>().sharedMaterial = m;
+                return g;
+            }
+
+            BQuad("Cork", new Vector3(0f, 0f, -0.006f), new Vector2(bw, bh), corkMat, Vector3.zero);
+            BBox("FrameTop", new Vector3(0f, bh * 0.5f + 0.012f, -0.014f), new Vector3(bw + 0.056f, 0.036f, 0.034f), frameMat);
+            BBox("FrameBottom", new Vector3(0f, -bh * 0.5f - 0.012f, -0.014f), new Vector3(bw + 0.056f, 0.036f, 0.034f), frameMat);
+            BBox("FrameLeft", new Vector3(-bw * 0.5f - 0.012f, 0f, -0.014f), new Vector3(0.036f, bh + 0.056f, 0.034f), frameMat);
+            BBox("FrameRight", new Vector3(bw * 0.5f + 0.012f, 0f, -0.014f), new Vector3(0.036f, bh + 0.056f, 0.034f), frameMat);
+            BBox("BackBoard", new Vector3(0f, 0f, 0.006f), new Vector3(bw + 0.05f, bh + 0.05f, 0.012f), Mat("Sc21BoardBack", new Color(0.35f, 0.25f, 0.15f), 0.1f, 0f));
+            var pinCols = new[] { new Color(0.75f, 0.10f, 0.08f), new Color(0.10f, 0.25f, 0.65f), new Color(0.85f, 0.70f, 0.08f) };
+            // name, texture, pixel box on the 2048 x 1780 layout of the client picture, tilt (degrees)
+            var papers = new (string n, string tex, float x0, float y0, float x1, float y1, float tilt)[]
+            {
+                ("A", "Sc21_PaperA", 120, 190, 640, 1120, 0.8f), ("B", "Sc21_PaperB", 700, 200, 1190, 1130, -0.6f), ("C", "Sc21_PaperC", 1240, 200, 1800, 470, 1.0f),
+                ("D", "Sc21_PaperD", 1330, 560, 1760, 1110, -0.8f), ("E", "Sc21_PaperE", 140, 1210, 640, 1500, -1.2f), ("F", "Sc21_PaperF", 720, 1300, 1170, 1660, 0.9f)
+            };
+            for (var pi = 0; pi < papers.Length; pi++)
+            {
+                var pp = papers[pi];
+                var cx = ((pp.x0 + pp.x1) * 0.5f / 2048f - 0.5f) * bw;
+                var cy = (0.5f - (pp.y0 + pp.y1) * 0.5f / 1780f) * bh;
+                var pw = (pp.x1 - pp.x0) / 2048f * bw;
+                var ph = (pp.y1 - pp.y0) / 1780f * bh;
+                var zz = -0.016f - 0.005f * pi;   // generous gaps between the layers: no depth fighting (shimmer) at a distance
+                BQuad("Shadow" + pp.n, new Vector3(cx + 0.010f, cy - 0.014f, zz + 0.0045f), new Vector2(pw * 1.22f, ph * 1.18f), shadowMat, new Vector3(0f, 0f, -pp.tilt));
+                var paperMat = Mat("Sc21" + pp.tex, new Color(0.78f, 0.78f, 0.77f), 0f, 0f, Sc21Tex(pp.tex));
+                paperMat.SetFloat("_SpecularHighlights", 0f);
+                paperMat.SetFloat("_EnvironmentReflections", 0f);
+                paperMat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+                paperMat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+                BQuad("Paper" + pp.n, new Vector3(cx, cy, zz), new Vector2(pw, ph), paperMat, new Vector3(0f, 0f, -pp.tilt));
+                var pin = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                pin.name = "Pin" + pp.n;
+                Object.DestroyImmediate(pin.GetComponent<Collider>());
+                pin.transform.SetParent(boardRoot, false);
+                pin.transform.localPosition = new Vector3(cx, cy + ph * 0.5f - 0.035f, zz - 0.012f);
+                pin.transform.localScale = new Vector3(0.026f, 0.026f, 0.020f);
+                pin.GetComponent<MeshRenderer>().sharedMaterial = Mat("Sc21Pin" + (pi % 3), pinCols[pi % 3], 0.8f, 0.2f);
+            }
+
+            // electrical wiring in galvanised conduit pipes with clamps: along the back wall under the board, up the corner and along the ceiling, a branch to the
+            // tube light, along the left wall; a junction box with a socket and a cable hanging from it (as in the client's picture)
+            var galv = Mat("Sc21ConduitGalv", new Color(0.64f, 0.66f, 0.67f), 0.5f, 0.75f);
+            var clampMat = Mat("Sc21Clamp", new Color(0.30f, 0.31f, 0.32f), 0.4f, 0.6f);
+            var cableMat = Mat("Sc21CableBlack", new Color(0.03f, 0.03f, 0.03f), 0.35f, 0f);
+            void Conduit(string n, Vector3 a0, Vector3 b0, float r, int clamps, Material m)
+            {
+                var g = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                g.name = n;
+                Object.DestroyImmediate(g.GetComponent<Collider>());
+                g.transform.SetParent(room, false);
+                var dir = b0 - a0;
+                g.transform.position = (a0 + b0) * 0.5f;
+                g.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir.normalized);
+                g.transform.localScale = new Vector3(r * 2f, dir.magnitude * 0.5f, r * 2f);
+                g.GetComponent<MeshRenderer>().sharedMaterial = m;
+                for (var ci = 1; ci <= clamps; ci++)
+                {
+                    var c = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    c.name = n + "Clamp" + ci;
+                    Object.DestroyImmediate(c.GetComponent<Collider>());
+                    c.transform.SetParent(room, false);
+                    c.transform.position = Vector3.Lerp(a0, b0, ci / (float)(clamps + 1));
+                    c.transform.rotation = g.transform.rotation;
+                    c.transform.localScale = new Vector3(r * 3.1f, 0.016f, r * 3.1f);
+                    c.GetComponent<MeshRenderer>().sharedMaterial = clampMat;
+                }
+            }
+
+            var wz = Sc21Zb + 0.05f;
+            Conduit("Sc21ConduitBack", Sc21P(-4.5f, 1.0f, wz), Sc21P(0.95f, 1.0f, wz), 0.022f, 11, galv);
+            Conduit("Sc21ConduitRiser", Sc21P(-4.3f, 1.0f, wz), Sc21P(-4.3f, 2.97f, wz), 0.022f, 4, galv);
+            Conduit("Sc21ConduitCeiling", Sc21P(-4.3f, 2.95f, wz + 0.01f), Sc21P(0.95f, 2.95f, wz + 0.01f), 0.022f, 10, galv);
+            Conduit("Sc21ConduitTubeBranch", Sc21P(-0.1f, 2.95f, wz + 0.01f), Sc21P(-0.1f, 2.95f, -1.35f), 0.020f, 3, galv);
+            Conduit("Sc21ConduitLeftWall", Sc21P(-4.47f, 1.0f, Sc21Zb + 0.12f), Sc21P(-4.47f, 1.0f, 3.6f), 0.022f, 12, galv);
+            Conduit("Sc21ConduitLeftDrop", Sc21P(-4.47f, 1.0f, 3.6f), Sc21P(-4.47f, 0.2f, 3.6f), 0.022f, 2, galv);
+            // junction box + socket plate on the back conduit, and a cable hanging from it with a plug box
+            Wall("Sc21JunctionBox", Sc21P(-1.7f, 1.0f, wz + 0.02f), new Vector3(0.17f, 0.13f, 0.085f), clampMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SocketPlate", Sc21P(-1.7f, 1.0f, wz + 0.067f), new Vector3(0.105f, 0.105f, 0.012f), Mat("Sc21SocketWhite", new Color(0.86f, 0.86f, 0.82f), 0.4f, 0f)).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SocketHole1", Sc21P(-1.73f, 1.0f, wz + 0.075f), new Vector3(0.012f, 0.03f, 0.006f), cableMat).GetComponent<Collider>().enabled = false;
+            Wall("Sc21SocketHole2", Sc21P(-1.67f, 1.0f, wz + 0.075f), new Vector3(0.012f, 0.03f, 0.006f), cableMat).GetComponent<Collider>().enabled = false;
+            Conduit("Sc21CableDropA", Sc21P(-1.7f, 0.93f, wz + 0.05f), Sc21P(-1.64f, 0.62f, wz + 0.11f), 0.009f, 0, cableMat);
+            Conduit("Sc21CableDropB", Sc21P(-1.64f, 0.62f, wz + 0.11f), Sc21P(-1.58f, 0.36f, wz + 0.15f), 0.009f, 0, cableMat);
+            Wall("Sc21PlugBox", Sc21P(-1.57f, 0.30f, wz + 0.16f), new Vector3(0.07f, 0.11f, 0.05f), cableMat).GetComponent<Collider>().enabled = false;
+            // a second box with a switch near the doorway pier
+            Wall("Sc21SwitchBox", Sc21P(0.62f, 1.3f, wz + 0.02f), new Vector3(0.10f, 0.14f, 0.06f), clampMat).GetComponent<Collider>().enabled = false;
+            Conduit("Sc21ConduitSwitch", Sc21P(0.62f, 1.0f, wz), Sc21P(0.62f, 1.3f, wz), 0.020f, 0, galv);
 
             var tube = Wall("Sc21Tube", Sc21P(-0.1f, 2.78f, -1.4f), new Vector3(1.9f, 0.07f, 0.2f), tubeMat);
             tube.GetComponent<Collider>().enabled = false;
             Wall("Sc21TubeHousing", Sc21P(-0.1f, 2.84f, -1.4f), new Vector3(1.95f, 0.06f, 0.26f), darkMetal).GetComponent<Collider>().enabled = false;
             foreach (var dx in new[] { -0.8f, 0.8f })
                 Wall("Sc21TubeWire", Sc21P(-0.1f + dx, 2.92f, -1.4f), new Vector3(0.015f, 0.2f, 0.015f), darkMetal).GetComponent<Collider>().enabled = false;
+
+            // glow halo of the burning tube: one sprite across the picture side, one below (what the learner sees looking up); additive, no shadow, lights nothing
+            var glowMat = MatAlpha("Sc21TubeGlow", Sc21SoftDot(), new Color(0.72f, 0.85f, 1f, 0.55f), true);
+            void Glow(string n, Vector3 at, Vector3 euler, Vector2 size)
+            {
+                var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                q.name = n;
+                q.transform.SetParent(room, false);
+                q.transform.position = at;
+                q.transform.rotation = Quaternion.Euler(euler);
+                q.transform.localScale = new Vector3(size.x, size.y, 1f);
+                Object.DestroyImmediate(q.GetComponent<Collider>());
+                var mr = q.GetComponent<MeshRenderer>();
+                mr.sharedMaterial = glowMat;
+                mr.shadowCastingMode = ShadowCastingMode.Off;
+                mr.receiveShadows = false;
+            }
+
+            Glow("Sc21TubeGlowFront", Sc21P(-0.1f, 2.78f, -1.28f), new Vector3(0f, 180f, 0f), new Vector2(3.4f, 0.75f));
+            Glow("Sc21TubeGlowBack", Sc21P(-0.1f, 2.78f, -1.52f), new Vector3(0f, 0f, 0f), new Vector2(3.4f, 0.75f));
+            Glow("Sc21TubeGlowDown", Sc21P(-0.1f, 2.735f, -1.4f), new Vector3(90f, 0f, 0f), new Vector2(3.0f, 0.95f));
 
             // ---- lights: the tube is the key (cool white), a weak warm bounce on the table, a dim cool fill in the hall
             void Lamp(string n, Vector3 at, float range, float intensity, Color col, LightType type = LightType.Point, float spot = 100f)
@@ -179,10 +317,10 @@ namespace ChemicalSafety.Editor
                 }
             }
 
-            Lamp("Sc21LampKey", Sc21P(-0.1f, 2.6f, -1.4f), 10f, 11f, new Color(0.88f, 0.94f, 1f), LightType.Spot, 140f);
-            Lamp("Sc21LampTable", Sc21P(-0.3f, 1.9f, 1.4f), 6f, 3.6f, new Color(1f, 0.93f, 0.82f));
-            Lamp("Sc21LampBoard", Sc21P(-3.1f, 2.2f, -1.8f), 5f, 3.6f, new Color(1f, 0.97f, 0.9f));
-            Lamp("Sc21LampFront", Sc21P(1.2f, 2.2f, 3.9f), 9f, 4.5f, new Color(0.95f, 0.96f, 1f));
+            Lamp("Sc21LampKey", Sc21P(-0.1f, 2.6f, -1.4f), 10f, 12.5f, new Color(0.88f, 0.94f, 1f), LightType.Spot, 140f);
+            Lamp("Sc21LampTable", Sc21P(-0.3f, 1.9f, 1.4f), 6f, 4.3f, new Color(0.96f, 0.97f, 1f));
+            Lamp("Sc21LampBoard", Sc21P(-3.1f, 2.0f, -0.6f), 4f, 1.6f, new Color(0.97f, 0.98f, 1f));
+            Lamp("Sc21LampFront", Sc21P(1.2f, 2.2f, 3.9f), 9f, 5.6f, new Color(0.95f, 0.96f, 1f));
             for (var li = 0; li < 5; li++)
             {
                 Lamp("Sc21HallLampA" + li, Sc21P(3.0f, 3.0f, -5.0f - li * 2.2f), 9f, 9f, new Color(0.86f, 0.93f, 1f));
@@ -240,56 +378,147 @@ namespace ChemicalSafety.Editor
             Decal("Sc21SmudgeBoard", Sc21P(-3.15f, 0.82f, Sc21Zb + 0.015f), new Vector3(0f, 180f, 0f), new Vector2(3.2f, 1.1f), smudge);
             Decal("Sc21SmudgeCorner", Sc21P(-4.45f, 1.5f, 0.0f), new Vector3(0f, 90f, 0f), new Vector2(4.5f, 3.2f), smudge);
             Decal("Sc21SmudgeBackLow", Sc21P(0.2f, 0.45f, Sc21Zb + 0.015f), new Vector3(0f, 180f, 0f), new Vector2(4.2f, 1.2f), smudge);
-            Decal("Sc21BrickPatch", Sc21P(-1.55f, 2.28f, Sc21Zb + 0.012f), new Vector3(0f, 180f, 0f), new Vector2(0.62f, 0.5f), Mat("Sc21BrickPatch", Color.white, 0.04f, 0f, Sc21Tex("Sc21_Brick")));
-            // cables from the socket and along the ceiling, a hanging pipe run
-            for (var ci = 0; ci < 3; ci++)
-            {
-                var cab = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                cab.name = "Sc21Cable" + ci;
-                cab.transform.SetParent(room, false);
-                cab.transform.position = Sc21P(-1.2f + ci * 1.1f, 2.93f - ci * 0.02f, Sc21Zb + 0.14f);
-                cab.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
-                cab.transform.localScale = new Vector3(0.025f, 1.6f, 0.025f);
-                Object.DestroyImmediate(cab.GetComponent<Collider>());
-                cab.GetComponent<MeshRenderer>().sharedMaterial = darkMetal;
-            }
-
-            // ---- the crowded table of the client picture: white jerrycans, glass jars and bottles on the left end of the table
-            var jug = Mat("Sc21Jug", new Color(0.88f, 0.89f, 0.88f), 0.45f, 0f);
-            var bottleBlue = Mat("Sc21BottleBlue", new Color(0.10f, 0.25f, 0.55f), 0.7f, 0f);
-            var bottleGreen = Mat("Sc21BottleGreen", new Color(0.18f, 0.40f, 0.28f), 0.7f, 0f);
-            var jarDark = Mat("Sc21JarDark", new Color(0.18f, 0.10f, 0.07f), 0.6f, 0f);
-            var jarWhite = Mat("Sc21JarWhite", new Color(0.92f, 0.90f, 0.86f), 0.45f, 0f);
-            var capRed = Mat("Sc21CapRed", new Color(0.62f, 0.10f, 0.08f), 0.4f, 0f);
+            // broken plaster with the bricks showing (client: 2-3 places on the walls), each an irregular patch
+            Material PatchMat(string n) { var m = MatAlpha("Sc21" + n, Sc21Tex("Sc21_" + n), Color.white, false); return m; }
+            Decal("Sc21BrokenBrickA", Sc21P(-4.18f, 2.25f, Sc21Zb + 0.013f), new Vector3(0f, 180f, 0f), new Vector2(0.95f, 0.85f), PatchMat("BrickPatchA"));
+            Decal("Sc21BrokenBrickB", Sc21P(-1.25f, 2.35f, Sc21Zb + 0.013f), new Vector3(0f, 180f, 0f), new Vector2(0.80f, 0.60f), PatchMat("BrickPatchB"));
+            Decal("Sc21BrokenBrickC", Sc21P(-4.485f, 1.85f, 1.2f), new Vector3(0f, 90f, 0f), new Vector2(1.15f, 0.95f), PatchMat("BrickPatchC"));
+            Decal("Sc21BrokenBrickD", Sc21P(0.9f, 0.55f, Sc21Zb + 0.013f), new Vector3(0f, 180f, 0f), new Vector2(0.80f, 0.65f), PatchMat("BrickPatchA"));
+            Decal("Sc21BrokenBrickE", Sc21P(4.485f, 1.55f, 1.8f), new Vector3(0f, -90f, 0f), new Vector2(1.0f, 0.85f), PatchMat("BrickPatchB"));
+            // ---- the table of the client picture (third picture): steel trays with bottles and jars with labels, a brush rack, rusty tins, a grey bucket
             var tableAdd = new GameObject("Sc21TableAdditions").transform;
             tableAdd.SetParent(room, false);
-            void Prop(string n, PrimitiveType type, Vector3 at, Vector3 size, Material m, float yaw = 0f)
+            var ty = 0.90f;                       // table top height (film cube 1.8 x 0.5)
+            var tx = -0.35f;                      // table centre x in the mirrored room frame
+            var labelTex = Sc21Tex("Sc21_Label");
+            var rustTex = Sc21Tex("Sc21_Rust");
+            var wood = Mat("Sc21Wood", new Color(0.55f, 0.36f, 0.18f), 0.25f, 0f);
+            var trayMat = Mat("Sc21Tray", new Color(0.66f, 0.68f, 0.70f), 0.6f, 0.75f);
+            var hdpeBlue = Mat("Sc21HdpeBlue", new Color(0.07f, 0.20f, 0.52f), 0.55f, 0f);
+            var hdpeWhite = Mat("Sc21HdpeWhite", new Color(0.90f, 0.91f, 0.90f), 0.40f, 0f);
+            var glassGreen = Mat("Sc21GlassGreen", new Color(0.16f, 0.36f, 0.24f, 1f), 0.9f, 0f);
+            var glassBrown = Mat("Sc21GlassBrown", new Color(0.20f, 0.09f, 0.04f), 0.88f, 0f);
+            var creamJar = Mat("Sc21CreamJar", new Color(0.90f, 0.88f, 0.80f), 0.40f, 0f);
+            var lidRed = Mat("Sc21LidRed", new Color(0.66f, 0.10f, 0.08f), 0.45f, 0f);
+            var lidBlack = Mat("Sc21LidBlack", new Color(0.05f, 0.05f, 0.05f), 0.5f, 0f);
+            var capWhite = Mat("Sc21CapWhite", new Color(0.93f, 0.93f, 0.92f), 0.5f, 0f);
+            var tinMat = Mat("Sc21TinRust", Color.white, 0.30f, 0.55f, rustTex);
+            var bucketMat = Mat("Sc21Bucket", new Color(0.46f, 0.52f, 0.48f), 0.45f, 0.6f);
+            var labelMat = Mat("Sc21LabelMat", Color.white, 0.25f, 0f, labelTex);
+            var inkDark = Mat("Sc21TinInside", new Color(0.03f, 0.02f, 0.02f), 0.2f, 0f);
+
+            void Place(string n, Mesh mesh, Material m, Vector3 at, float yaw = 0f, float scale = 1f)
             {
-                var g = GameObject.CreatePrimitive(type);
-                g.name = n;
+                var g = new GameObject(n);
                 g.transform.SetParent(tableAdd, false);
                 g.transform.position = at;
                 g.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-                g.transform.localScale = size;
+                g.transform.localScale = Vector3.one * scale;
+                g.AddComponent<MeshFilter>().sharedMesh = mesh;
+                g.AddComponent<MeshRenderer>().sharedMaterial = m;
+            }
+
+            void Box3(string n, Vector3 at, Vector3 size, Material m, float yaw = 0f, float tilt = 0f)
+            {
+                var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                g.name = n;
                 Object.DestroyImmediate(g.GetComponent<Collider>());
+                g.transform.SetParent(tableAdd, false);
+                g.transform.position = at;
+                g.transform.rotation = Quaternion.Euler(tilt, yaw, 0f);
+                g.transform.localScale = size;
                 g.GetComponent<MeshRenderer>().sharedMaterial = m;
             }
 
-            var ty = 0.90f;                       // table top height (film cube 1.8 x 0.5)
-            var tx = -0.35f;                      // table centre x in the mirrored room frame
-            // steel trays under the bottles (the picture has two)
-            var trayMat = Mat("Sc21Tray", new Color(0.62f, 0.64f, 0.66f), 0.55f, 0.7f);
-            Prop("Sc21Tray1", PrimitiveType.Cube, Sc21P(tx + 0.50f, ty + 0.012f, 0.50f), new Vector3(0.52f, 0.025f, 0.30f), trayMat, 4f);
-            Prop("Sc21Tray2", PrimitiveType.Cube, Sc21P(tx + 0.22f, ty + 0.012f, 0.62f), new Vector3(0.34f, 0.025f, 0.24f), trayMat, -6f);
-            // wooden brush rack with brushes
-            var wood = Mat("Sc21Wood", new Color(0.55f, 0.36f, 0.18f), 0.25f, 0f);
-            Prop("Sc21RackBox", PrimitiveType.Cube, Sc21P(tx - 0.12f, ty + 0.045f, 0.62f), new Vector3(0.20f, 0.09f, 0.10f), wood, 3f);
+            void Cyl(string n, Vector3 at, float radius, float height, Material m, float yaw = 0f)
+            {
+                var g = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                g.name = n;
+                Object.DestroyImmediate(g.GetComponent<Collider>());
+                g.transform.SetParent(tableAdd, false);
+                g.transform.position = at + Vector3.up * height * 0.5f;
+                g.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                g.transform.localScale = new Vector3(radius * 2f, height * 0.5f, radius * 2f);
+                g.GetComponent<MeshRenderer>().sharedMaterial = m;
+            }
+
+            Vector3 T(float dx, float dz, float lift = 0f) => Sc21P(tx + dx, ty + lift, dz);
+            // profiles: radius, height pairs from the bottom centre round to the top centre
+            var bottleProf = new[] { 0f, 0f, 0.030f, 0f, 0.034f, 0.008f, 0.034f, 0.115f, 0.029f, 0.148f, 0.013f, 0.166f, 0.013f, 0.184f, 0f, 0.184f };
+            var jarProf = new[] { 0f, 0f, 0.039f, 0f, 0.043f, 0.008f, 0.043f, 0.080f, 0.038f, 0.090f, 0.031f, 0.094f, 0f, 0.094f };
+            var bigJarProf = new[] { 0f, 0f, 0.062f, 0f, 0.067f, 0.012f, 0.067f, 0.120f, 0.060f, 0.135f, 0.050f, 0.141f, 0f, 0.141f };
+            var tinProf = new[] { 0f, 0f, 0.044f, 0f, 0.047f, 0.008f, 0.047f, 0.112f, 0.051f, 0.117f, 0.051f, 0.122f, 0.045f, 0.122f, 0.043f, 0.108f, 0f, 0.108f };
+            var bucketProf = new[] { 0f, 0f, 0.072f, 0f, 0.088f, 0.17f, 0.092f, 0.176f, 0.085f, 0.176f, 0.071f, 0.012f, 0f, 0.012f };
+            var bottleMesh = Sc21Lathe("Sc21Bottle", bottleProf, 28);
+            var jarMesh = Sc21Lathe("Sc21Jar", jarProf, 28);
+            var bigJarMesh = Sc21Lathe("Sc21BigJar", bigJarProf, 28);
+            var tinMesh = Sc21Lathe("Sc21Tin", tinProf, 28);
+            var bucketMesh = Sc21Lathe("Sc21BucketMesh", bucketProf, 32);
+
+            void Labelled(string n, float r, float baseY, float h, Vector3 at, float yaw)
+            {
+                Cyl(n + "Label", at + Vector3.up * baseY, r * 1.012f, h, labelMat, yaw);
+            }
+
+            // two steel trays with raised edges
+            void Tray(string n, float dx, float dz, float w, float d, float yaw)
+            {
+                var c = T(dx, dz);
+                Box3(n + "Base", c + Vector3.up * 0.006f, new Vector3(w, 0.012f, d), trayMat, yaw);
+                var rot = Quaternion.Euler(0f, yaw, 0f);
+                Box3(n + "EdgeF", c + rot * new Vector3(0f, 0.022f, d * 0.5f), new Vector3(w, 0.04f, 0.012f), trayMat, yaw);
+                Box3(n + "EdgeB", c + rot * new Vector3(0f, 0.022f, -d * 0.5f), new Vector3(w, 0.04f, 0.012f), trayMat, yaw);
+                Box3(n + "EdgeL", c + rot * new Vector3(-w * 0.5f, 0.022f, 0f), new Vector3(0.012f, 0.04f, d), trayMat, yaw);
+                Box3(n + "EdgeR", c + rot * new Vector3(w * 0.5f, 0.022f, 0f), new Vector3(0.012f, 0.04f, d), trayMat, yaw);
+            }
+
+            Tray("Sc21TrayA", 0.24f, 0.50f, 0.50f, 0.28f, 3f);
+            Tray("Sc21TrayB", 0.40f, 0.18f, 0.30f, 0.20f, -8f);
+            // bottles and jars in the first tray (blue HDPE bottle, cream jar with a red lid, glass bottle, two brown jars)
+            Place("Sc21BottleBlue", bottleMesh, hdpeBlue, T(0.10f, 0.52f, 0.012f), 20f);
+            Cyl("Sc21BottleBlueCap", T(0.10f, 0.52f, 0.012f + 0.184f), 0.0165f, 0.02f, capWhite);
+            Place("Sc21CreamJar", bigJarMesh, creamJar, T(0.26f, 0.57f, 0.012f), 0f);
+            Cyl("Sc21CreamJarLid", T(0.26f, 0.57f, 0.012f + 0.141f), 0.052f, 0.026f, lidRed);
+            Labelled("Sc21CreamJar", 0.067f, 0.012f + 0.03f, 0.075f, T(0.26f, 0.57f), 200f);
+            Place("Sc21GlassBottle", bottleMesh, glassGreen, T(0.17f, 0.40f, 0.012f), 0f, 0.82f);
+            Cyl("Sc21GlassBottleCap", T(0.17f, 0.40f, 0.012f + 0.151f), 0.0135f, 0.016f, lidBlack);
+            for (var ji = 0; ji < 2; ji++)
+            {
+                var jx = ji == 0 ? 0.37f : 0.34f;
+                var jz = ji == 0 ? 0.44f : 0.60f;
+                Place("Sc21BrownJar" + ji, jarMesh, glassBrown, T(jx, jz, 0.012f), ji * 50f);
+                Cyl("Sc21BrownJarLid" + ji, T(jx, jz, 0.012f + 0.094f), 0.034f, 0.018f, lidBlack);
+                Labelled("Sc21BrownJar" + ji, 0.043f, 0.012f + 0.022f, 0.05f, T(jx, jz), 90f + ji * 120f);
+            }
+
+            // white jerrycans (HDPE, handle, neck and blue cap, label) behind the tray
+            void Jerry(string n, float dx, float dz, float yaw, float sc)
+            {
+                var at = T(dx, dz);
+                var rot = Quaternion.Euler(0f, yaw, 0f);
+                Box3(n + "Body", at + Vector3.up * 0.115f * sc, new Vector3(0.150f, 0.215f, 0.090f) * sc, hdpeWhite, yaw);
+                Box3(n + "Shoulder", at + rot * new Vector3(0.035f * sc, 0.235f * sc, 0f), new Vector3(0.075f, 0.03f, 0.09f) * sc, hdpeWhite, yaw, 0f);
+                Cyl(n + "Neck", at + rot * new Vector3(0.050f * sc, 0.245f * sc, 0f), 0.022f * sc, 0.03f * sc, hdpeWhite, yaw);
+                Cyl(n + "Cap", at + rot * new Vector3(0.050f * sc, 0.275f * sc, 0f), 0.026f * sc, 0.014f * sc, hdpeBlue, yaw);
+                Box3(n + "HandleA", at + rot * new Vector3(-0.045f * sc, 0.235f * sc, 0f), new Vector3(0.05f, 0.012f, 0.07f) * sc, hdpeWhite, yaw);
+                Box3(n + "HandleB", at + rot * new Vector3(-0.045f * sc, 0.262f * sc, 0f), new Vector3(0.05f, 0.014f, 0.07f) * sc, hdpeWhite, yaw);
+                Box3(n + "Label", at + rot * new Vector3(0f, 0.12f * sc, -0.0455f * sc), new Vector3(0.10f, 0.08f, 0.003f) * sc, creamJar, yaw);
+            }
+
+            // rusty tins, a stirring cup and the grey bucket on the other side (as in the picture)
+            Place("Sc21TinA", tinMesh, tinMat, T(-0.04f, 0.38f, 0f), 0f);
+            Place("Sc21TinB", tinMesh, tinMat, T(0.05f, 0.26f, 0f), 40f, 0.95f);
+            Place("Sc21TinC", tinMesh, tinMat, T(-0.12f, 0.24f, 0f), 80f, 0.9f);
+            Place("Sc21BucketGrey", bucketMesh, bucketMat, T(-0.24f, 0.46f, 0f), 0f);
+            Cyl("Sc21BucketPaint", T(-0.24f, 0.46f, 0.138f), 0.074f, 0.004f, inkDark);
+            // wooden rack with brushes standing in it
+            Box3("Sc21RackBox", T(-0.12f, 0.64f, 0.045f), new Vector3(0.20f, 0.09f, 0.10f), wood, 3f);
             for (var bi = 0; bi < 5; bi++)
-                Prop("Sc21RackBrush" + bi, PrimitiveType.Cylinder, Sc21P(tx - 0.19f + bi * 0.035f, ty + 0.14f, 0.62f), new Vector3(0.012f, 0.085f, 0.012f), wood, 0f);
-            Prop("Sc21BottleB1", PrimitiveType.Cylinder, Sc21P(tx + 0.34f, ty + 0.13f, 0.34f), new Vector3(0.08f, 0.13f, 0.08f), bottleBlue);
-            Prop("Sc21BottleG1", PrimitiveType.Cylinder, Sc21P(tx + 0.26f, ty + 0.12f, 0.50f), new Vector3(0.07f, 0.12f, 0.07f), bottleGreen);
-            Prop("Sc21JarD1", PrimitiveType.Cylinder, Sc21P(tx + 0.62f, ty + 0.08f, 0.62f), new Vector3(0.10f, 0.08f, 0.10f), jarDark);
-            Prop("Sc21JarD2", PrimitiveType.Cylinder, Sc21P(tx + 0.74f, ty + 0.07f, 0.44f), new Vector3(0.09f, 0.07f, 0.09f), jarDark);
+            {
+                var bx = -0.19f + bi * 0.035f;
+                Cyl("Sc21RackBrushH" + bi, T(bx, 0.64f, 0.09f), 0.006f, 0.10f, wood);
+                Cyl("Sc21RackBrushB" + bi, T(bx, 0.64f, 0.19f), 0.010f, 0.035f, Mat("Sc21Bristle", new Color(0.20f, 0.13f, 0.08f), 0.2f, 0f));
+            }
 
             // paint brushes and wooden stirrers laid on the table front (the client picture)
             var bristle = Mat("Sc21Bristle", new Color(0.20f, 0.13f, 0.08f), 0.2f, 0f);
@@ -319,7 +548,7 @@ namespace ChemicalSafety.Editor
             Brush("Sc21Brush2", 0.40f, 0.78f, 100f);
             Brush("Sc21Brush3", 0.62f, 0.72f, 84f);
             foreach (var st in new[] { new Vector3(0.05f, 0.68f, 18f), new Vector3(0.10f, 0.80f, 28f), new Vector3(0.00f, 0.86f, 12f) })
-                Prop("Sc21Stirrer", PrimitiveType.Cube, Sc21P(tx + st.x, ty + 0.008f, st.y), new Vector3(0.022f, 0.012f, 0.36f), wood, st.z);
+                Box3("Sc21Stirrer", Sc21P(tx + st.x, ty + 0.008f, st.y), new Vector3(0.022f, 0.012f, 0.36f), wood, st.z);
 
             // ---- the factory hall: machines on the far side and along the end, people working at them and walking between them (workflow picture)
             Sc21BuildHallLife(room, greyMetal, darkMetal, machineMat);
@@ -380,7 +609,13 @@ namespace ChemicalSafety.Editor
             var extras = new GameObject("Sc21SafeExtras").transform;
             extras.SetParent(room, false);
             Sc21BuildExtras(extras, room, greyMetal, conduit);
-            Sc21BuildShower(extras, greyMetal);
+            // the shelf with the bottles is part of the room from the start (client): only the rest of the safe-work picture comes later
+            foreach (var ch in new List<Transform>(extras.GetComponentsInChildren<Transform>(true)))
+                if (ch != null && ch.parent == extras && (ch.name == "ShelfBoard" || ch.name == "ShelfPost" || ch.name == "Bottle"))
+                    ch.SetParent(room, true);
+            var showerRoot = Sc21BuildShower(room, greyMetal);
+            showerRoot.gameObject.SetActive(false);
+            cso.FindProperty("safeShower").objectReferenceValue = showerRoot.gameObject;
             tableAdd.SetParent(extras, true);
             extras.gameObject.SetActive(false);
             cso.FindProperty("safeExtras").objectReferenceValue = extras.gameObject;
@@ -414,7 +649,7 @@ namespace ChemicalSafety.Editor
 
         /// <summary>Emergency shower in the green of the workflow picture against the left wall (pole, arm, shower head, pull rod with triangle handle, eye-wash
         /// bowl), a green floor mat with a yellow border, a floor drain with a grating under the head, the safety-shower sign on the wall.</summary>
-        private static void Sc21BuildShower(Transform parent, Material steel0)
+        private static Transform Sc21BuildShower(Transform parent, Material steel0)
         {
             var root = new GameObject("Sc21SafetyShower").transform;
             root.SetParent(parent, false);
@@ -491,6 +726,7 @@ namespace ChemicalSafety.Editor
             l.intensity = 2.4f;
             l.color = new Color(0.95f, 1f, 0.98f);
             l.shadows = LightShadows.None;
+            return root;
         }
 
         /// <summary>Machines (frames, rollers, hoppers, cabinets) and a conveyor in the hall behind the doorway; they are RUNNING (rollers spin, bodies tremble, lamps blink, boxes travel). No people (client).</summary>
@@ -623,7 +859,7 @@ namespace ChemicalSafety.Editor
                 if (reach.sqrMagnitude > 1e-4f)
                     lev.transform.RotateAround(baseP, Vector3.up, Vector3.SignedAngle(reach, Vector3.left, Vector3.up));
                 Measure();
-                var wantBase = Sc21P(-2.95f, 0f, -2.45f);
+                var wantBase = Sc21P(-3.40f, 0f, -2.45f);
                 const float levBaseY = 1.30f;
                 var levShift = new Vector3(wantBase.x - baseP.x, levBaseY - minYv, wantBase.z - baseP.z);
                 lev.transform.position += levShift;
@@ -658,18 +894,6 @@ namespace ChemicalSafety.Editor
                             topPos = w2;
                         }
                     }
-                }
-
-                // the clear funnel hood of the picture, hanging from the nozzle over the table
-                var hoodGlass = Mat("Sc21HoodGlass", new Color(0.82f, 0.92f, 0.96f, 0.28f), 0.95f, 0f);
-                Sc21Transparent(hoodGlass);
-                if (nozB.size.sqrMagnitude > 1e-6f)
-                {
-                    var hood = new GameObject("Sc21Hood");
-                    hood.transform.SetParent(extras, false);
-                    hood.transform.position = new Vector3(nozB.center.x, nozB.min.y, nozB.center.z);
-                    hood.AddComponent<MeshFilter>().sharedMesh = Sc21Cone(0.07f, 0.27f, 0.24f);
-                    hood.AddComponent<MeshRenderer>().sharedMaterial = hoodGlass;
                 }
 
                 var h = Sc21H - topY;
@@ -708,8 +932,6 @@ namespace ChemicalSafety.Editor
                 Part("MatGreen", PrimitiveType.Cube, c + Vector3.up * 0.008f, Vector3.zero, new Vector3(w - 0.16f, 0.006f, d - 0.16f), green);
             }
 
-            Mat2(Sc21P(2.3f, 0f, -1.4f), 1.5f, 2.1f);
-            Mat2(Sc21P(4.2f, 0f, -6.0f), 2.4f, 2.6f);
         }
 
         /// <summary>Open cone (top radius r0 at y = 0, bottom radius r1 at y = -h), both sides drawn.</summary>
@@ -735,6 +957,55 @@ namespace ChemicalSafety.Editor
             m.SetVertices(vs);
             m.SetTriangles(ts, 0);
             m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        /// <summary>Surface of revolution from a profile of (radius, height) pairs, drawn on both sides (open tins show their inside).</summary>
+        private static Mesh Sc21Lathe(string name, float[] prof, int seg)
+        {
+            var n = prof.Length / 2;
+            var vs = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            for (var i = 0; i < n; i++)
+                for (var k = 0; k <= seg; k++)
+                {
+                    var a = k / (float)seg * Mathf.PI * 2f;
+                    vs.Add(new Vector3(Mathf.Cos(a) * prof[i * 2], prof[i * 2 + 1], Mathf.Sin(a) * prof[i * 2]));
+                    uvs.Add(new Vector2(k / (float)seg, i / (float)(n - 1)));
+                }
+
+            var ts = new List<int>();
+            for (var i = 0; i < n - 1; i++)
+                for (var k = 0; k < seg; k++)
+                {
+                    int a0 = i * (seg + 1) + k, a1 = a0 + 1, b0 = (i + 1) * (seg + 1) + k, b1 = b0 + 1;
+                    ts.AddRange(new[] { a0, b0, a1, a1, b0, b1 });
+                }
+
+            var m1 = new Mesh();
+            m1.SetVertices(vs);
+            m1.SetUVs(0, uvs);
+            m1.SetTriangles(ts, 0);
+            m1.RecalculateNormals();
+            var nrm = m1.normals;
+            // second copy with flipped normals and winding: both sides lit correctly
+            var vs2 = new List<Vector3>(vs);
+            var uv2 = new List<Vector2>(uvs);
+            var nr2 = new List<Vector3>(nrm);
+            for (var i = 0; i < nrm.Length; i++)
+                nr2.Add(-nrm[i]);
+            vs2.AddRange(vs);
+            uv2.AddRange(uvs);
+            var ts2 = new List<int>(ts);
+            for (var i = 0; i + 2 < ts.Count; i += 3)
+                ts2.AddRange(new[] { ts[i] + vs.Count, ts[i + 2] + vs.Count, ts[i + 1] + vs.Count });
+            Object.DestroyImmediate(m1);
+            var m = new Mesh { name = name };
+            m.SetVertices(vs2);
+            m.SetUVs(0, uv2);
+            m.SetNormals(nr2);
+            m.SetTriangles(ts2, 0);
             m.RecalculateBounds();
             return m;
         }

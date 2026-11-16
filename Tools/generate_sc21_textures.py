@@ -129,7 +129,7 @@ def aged_wall(src_name="Sc21_Wall"):
     lum = base.mean(axis=2)
     low = np.asarray(Image.fromarray(np.clip(lum, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(70)), dtype=np.float32) + 1.0
     flat = np.clip(lum / low, 0.35, 1.6)          # stains and texture without the photo's big light / dark patches (no visible tile quadrants)
-    base = np.clip(flat[..., None] * np.array([206, 203, 194], np.float32), 0, 255)
+    base = np.clip(flat[..., None] * np.array([238, 236, 230], np.float32), 0, 255)
     yy = np.linspace(0, 1, S, dtype=np.float32)[:, None]                  # 0 top .. 1 bottom
     damp = np.clip((yy - 0.45) / 0.55, 0, 1) ** 1.4                         # rising damp / grime near the floor
     st = streaks(S)
@@ -305,3 +305,176 @@ board_sharp()
 # brick: no dark right strip
 b2 = bg.crop((932, 52, 1030, 232)).resize((392, 720), Image.LANCZOS)
 save("Sc21_Brick", np.asarray(b2, dtype=np.float32))
+
+
+# ================= realistic props: label, rust, broken-brick patches =================
+def label_tex():
+    W, H = 256, 128
+    a = np.ones((H, W, 3), np.float32) * np.array([238, 237, 230], np.float32)
+    a *= (0.93 + 0.12 * noise(W, 16)[:H, :W, None])
+    a[:H // 4, :] = np.array([176, 34, 30], np.float32)
+    im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+    d = ImageDraw.Draw(im)
+    f = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 15)
+    d.text((10, 5), "CAUTION  CORROSIVE", fill=(245, 245, 245), font=f)
+    for i in range(6):
+        d.rectangle([12, 46 + i * 13, 150 + (i % 3) * 30, 50 + i * 13], fill=(70, 70, 76))
+    d.polygon([(214, 50), (240, 78), (214, 106), (188, 78)], outline=(20, 20, 20), width=3)
+    d.rectangle([211, 62, 217, 84], fill=(20, 20, 20))
+    im.save(os.path.join(OUT, "Sc21_Label.png"))
+
+
+def rust_tex():
+    S = 512
+    f = fbm(S, (3, 6, 12, 24, 48))
+    g = fbm(S, (2, 4, 8))
+    base = np.ones((S, S, 3), np.float32) * np.array([92, 46, 26], np.float32)
+    base = base * (0.65 + 0.7 * f[..., None])
+    orange = np.clip((g - 0.44) * 3.0, 0, 1)[..., None]
+    base = base * (1 - 0.7 * orange) + orange * 0.7 * np.array([178, 92, 40], np.float32)
+    st = streaks(S, (6, 40), 20)
+    base *= (1.0 - 0.10 * np.clip((st - 0.55) * 4, 0, 1))[..., None]
+    Image.fromarray(np.clip(base, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "Sc21_Rust.png"))
+
+
+def brick_patch(name, seed):
+    r = np.random.default_rng(seed)
+    S = 512
+    img = np.zeros((S, S, 3), np.float32)
+    row_h, brick_w = 44, 98
+    img[:] = np.array([128, 120, 110], np.float32)   # mortar
+    for row in range(0, S // row_h + 1):
+        off = (row % 2) * (brick_w // 2) - r.integers(0, 12)
+        for col in range(-1, S // brick_w + 2):
+            x0 = col * brick_w + off + 3
+            y0 = row * row_h + 3
+            base = np.array([150, 78, 54], np.float32) * (0.78 + 0.45 * r.random())
+            base += r.normal(0, 7, 3)
+            x1, y1 = min(S, x0 + brick_w - 6), min(S, y0 + row_h - 6)
+            if x1 > max(0, x0) and y1 > y0:
+                img[y0:y1, max(0, x0):x1] = base
+    img *= (0.88 + 0.22 * fbm(S, (8, 16, 32, 64))[..., None])
+    yy, xx = np.mgrid[0:S, 0:S]
+    rr = np.hypot((xx - S / 2) / (S / 2), (yy - S / 2) / (S / 2))
+    jag = fbm(S, (3, 6, 12, 24, 48))
+    m = np.clip(((1.0 - rr) * 0.9 + (jag - 0.5) * 1.1 - 0.12) * 9.0, 0, 1)
+    edge = np.clip(m - np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(5)), dtype=np.float32) / 255.0, 0, 1)[..., None]
+    img = img * (1 - 0.5 * edge) + edge * 0.6 * np.array([210, 205, 195], np.float32)    # crumbled plaster rim
+    out = np.dstack([np.clip(img, 0, 255).astype(np.uint8), (m * 255).astype(np.uint8)])
+    Image.fromarray(out, "RGBA").save(os.path.join(OUT, name + ".png"))
+
+
+label_tex()
+rust_tex()
+for nm, sd in (("Sc21_BrickPatchA", 11), ("Sc21_BrickPatchB", 23), ("Sc21_BrickPatchC", 37)):
+    brick_patch(nm, sd)
+print("props textures ok")
+
+
+# ================= dirty light floor of the room (client: not black; dirty white) =================
+def floor_light():
+    S = 1024
+    f = fbm(S, (3, 6, 12, 24, 48, 96))
+    base = np.ones((S, S, 3), np.float32) * np.array([176, 174, 168], np.float32)
+    base *= (0.80 + 0.40 * f[..., None])
+    oil = np.clip((fbm(S, (2, 3, 5, 9)) - 0.50) * 3.0, 0, 1)
+    oil = np.asarray(Image.fromarray((oil * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(10)), dtype=np.float32)[..., None] / 255.0
+    base = base * (1 - 0.60 * oil) + oil * 0.20 * np.array([60, 52, 40], np.float32)         # oily brown-grey stains
+    paint = np.clip((fbm(S, (4, 7, 13)) - 0.66) * 6.0, 0, 1)[..., None]
+    base = base * (1 - 0.45 * paint) + paint * 0.45 * np.array([92, 120, 150], np.float32)  # dried blue paint drops
+    scuff = np.clip((streaks(S, (6, 30), 20) - 0.60) * 3.0, 0, 1)[..., None]
+    base = base * (1 - 0.03 * scuff)
+    for _ in range(12):
+        x, y = rng.integers(0, S, 2)
+        for _ in range(rng.integers(100, 340)):
+            x = int(np.clip(x + rng.integers(-2, 3), 0, S - 1))
+            y = int(np.clip(y + rng.integers(-1, 3), 0, S - 1))
+            base[y, x] *= 0.35
+    base = np.asarray(Image.fromarray(np.clip(base, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.6)), dtype=np.float32)
+    save("Sc21_FloorLight", tileable(base))
+
+
+floor_light()
+
+
+# ================= 3D notice board parts: bare cork, six separate papers, a lighter ceiling =================
+def cork_only():
+    W, H = 1024, 890
+    nz = np.asarray(Image.fromarray((rng.random((H // 5, W // 5)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), dtype=np.float32) / 255.0
+    nz2 = np.asarray(Image.fromarray((rng.random((H // 2, W // 2)) * 255).astype(np.uint8)).resize((W, H), Image.BILINEAR), dtype=np.float32) / 255.0
+    pits = np.asarray(Image.fromarray((rng.random((H, W)) * 255).astype(np.uint8)), dtype=np.float32) / 255.0
+    cork = np.ones((H, W, 3), np.float32) * np.array([178, 138, 94], np.float32) * (0.74 + 0.26 * nz[..., None] + 0.18 * (nz2[..., None] - 0.5))
+    cork *= (0.85 + 0.30 * (pits[..., None] > 0.12))          # little dark pits
+    Image.fromarray(np.clip(cork, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "Sc21_Cork.png"))
+
+
+def paper_file(name, w, h, color, kind):
+    im = Image.new("RGB", (w, h), color)
+    d = ImageDraw.Draw(im)
+    a = np.asarray(im, dtype=np.float32) * (0.95 + 0.07 * noise(max(w, h), 12)[:h, :w, None])
+    im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+    d = ImageDraw.Draw(im)
+
+    def font(names, size):
+        for n in names:
+            try:
+                return ImageFont.truetype("C:/Windows/Fonts/" + n, size)
+            except Exception:
+                pass
+        return ImageFont.load_default()
+
+    hand = ["segoeprb.ttf", "arialbd.ttf", "inkfree.ttf", "arial.ttf"]
+    ink = (22, 22, 28)
+    if kind == "lines":
+        d.rectangle([w * 0.18, h * 0.055, w * 0.82, h * 0.068], fill=ink)
+        d.rectangle([w * 0.28, h * 0.082, w * 0.72, h * 0.093], fill=ink)
+        n = 30
+        for i in range(n):
+            yy = h * 0.14 + i * (h * 0.82 / n)
+            ln = w * (0.80 if i % 7 != 6 else 0.38)
+            d.rectangle([w * 0.10, yy, w * 0.10 + ln, yy + max(4, h * 0.0075)], fill=(52, 52, 60))
+    elif kind == "shift":
+        f1 = font(hand, int(h * 0.21))
+        d.text((w * 0.04, h * 0.05), "SHIFT SCHEDULE", fill=ink, font=f1)
+        f2 = font(hand, int(h * 0.19))
+        d.text((w * 0.04, h * 0.38), "3:00 - 8:00", fill=ink, font=f2)
+        d.text((w * 0.04, h * 0.65), "8:00 - 8:00 PM", fill=ink, font=f2)
+    elif kind == "warn":
+        f1 = font(hand, int(h * 0.125))
+        d.text((w * 0.08, h * 0.06), "SAFETY", fill=ink, font=f1)
+        d.text((w * 0.08, h * 0.25), "WARNING", fill=ink, font=f1)
+        d.line([w * 0.12, h * 0.56, w * 0.30, h * 0.60], fill=(40, 40, 46), width=6)
+        d.line([w * 0.30, h * 0.60, w * 0.80, h * 0.50], fill=(40, 40, 46), width=6)
+        for i in range(3):
+            d.rectangle([w * 0.08, h * 0.72 + i * h * 0.07, w * 0.88 - (i % 2) * w * 0.2, h * 0.725 + i * h * 0.07], fill=(120, 110, 90))
+    elif kind == "roster":
+        f1 = font(hand, int(h * 0.21))
+        for i, wd in enumerate(("SSNIFT", "FANSMLY", "SCHEDULE")):
+            d.text((w * 0.08, h * 0.05 + i * h * 0.29), wd, fill=ink, font=f1)
+    elif kind == "process":
+        f1 = font(hand, int(h * 0.135))
+        for i, wd in enumerate(("PROCESS", "INSTRUCTION", "ON BOARDS")):
+            d.text((w * 0.05, h * 0.08 + i * h * 0.29), wd, fill=ink, font=f1)
+    im.save(os.path.join(OUT, name + ".png"))
+
+
+def ceiling_light():
+    S = 1024
+    g = fbm(S, (3, 6, 12, 24, 48, 96))
+    base = np.ones((S, S, 3), np.float32) * np.array([152, 150, 144], np.float32) * (0.80 + 0.40 * g[..., None])
+    stain = np.asarray(Image.fromarray((np.clip((fbm(S, (2, 3, 5)) - 0.52) * 2.6, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(20)), dtype=np.float32)[..., None] / 255.0
+    base = base * (1 - 0.30 * stain) + stain * 0.2 * np.array([6, 2, -6], np.float32)       # old water marks
+    run = np.clip((streaks(S, (6, 40), 20) - 0.58) * 3.0, 0, 1)[..., None]
+    base = base * (1 - 0.07 * run)
+    save("Sc21_CeilingLight", tileable(base))
+
+
+cork_only()
+paper_file("Sc21_PaperA", 520, 930, (243, 242, 236), "lines")
+paper_file("Sc21_PaperB", 490, 930, (246, 245, 240), "lines")
+paper_file("Sc21_PaperC", 560, 270, (247, 246, 238), "shift")
+paper_file("Sc21_PaperD", 430, 550, (243, 232, 188), "warn")
+paper_file("Sc21_PaperE", 500, 290, (243, 242, 236), "roster")
+paper_file("Sc21_PaperF", 450, 360, (246, 245, 240), "process")
+ceiling_light()
+print("board parts ok")
