@@ -5114,6 +5114,49 @@ namespace ChemicalSafety.Presentable
             yield return new WaitForSeconds(1f);
             yield return Shot("12_complete");
 
+            // top control bar (BACK | NEXT | PAUSE | timer): running and paused
+            yield return Shot("bar_running");
+            SessionClock.SetPaused(true);
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("bar_paused");
+            SessionClock.SetPaused(false);
+
+            // scorecard + the result upload (a real POST only when the developer set EditorPref ChemSafetySmokeUpload with a test Training ID)
+            yield return WaitStage("result", 60f);
+            yield return new WaitForSeconds(4.5f); // charts fill up
+            yield return Shot("scorecard");
+            var wantUpload = EditorPrefs.GetBool("ChemSafetySmokeUpload", false);
+            var cur = ChemicalSafety.Results.SessionResults.Current;
+            var jsonPath = ChemicalSafety.Results.ResultPaths.For(cur);
+            Say("RESULT file = " + jsonPath + " (exists " + System.IO.File.Exists(jsonPath) + "), training id " + cur.training_id + ", upload allowed " + ChemicalSafety.Results.SessionResults.UploadAllowed);
+            if (wantUpload)
+            {
+                var w = 0f;
+                while (w < 60f && ChemicalSafety.Results.ResultUploader.StatusOf(cur) != ChemicalSafety.Results.UploadStatus.Sent)
+                {
+                    w += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                var st = ChemicalSafety.Results.ResultUploader.StatusOf(cur);
+                Say("RESULT upload status after " + w.ToString("0.0") + " s = " + st + " (expected Sent)");
+                if (st != ChemicalSafety.Results.UploadStatus.Sent)
+                    Debug.LogError("[SMOKE] result was not accepted by the server (status " + st + ")");
+                yield return Shot("scorecard_sent");
+                // the same submission id sent a second time must be answered 200 (nothing stored twice)
+                System.IO.File.Delete(jsonPath + ".sent");
+                ChemicalSafety.Results.ResultUploader.Send(cur);
+                w = 0f;
+                while (w < 45f && ChemicalSafety.Results.ResultUploader.StatusOf(cur) != ChemicalSafety.Results.UploadStatus.Sent)
+                {
+                    w += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                Say("RESULT repeat of the same id: status " + ChemicalSafety.Results.ResultUploader.StatusOf(cur) + " (the log line [Upload] OK 200 means the server saw a repeat)");
+            }
+
+            EditorPrefs.SetBool("ChemSafetySmokeUpload", false);
             Say("DONE runtime errors/exceptions = " + _errors);
             EditorApplication.isPlaying = false;
         }

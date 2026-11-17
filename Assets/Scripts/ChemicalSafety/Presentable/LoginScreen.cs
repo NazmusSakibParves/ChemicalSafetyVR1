@@ -174,7 +174,16 @@ namespace ChemicalSafety.Presentable
             Refresh();
             var ok = TrySubmit();
             if (ok)
-                SessionResults.UploadAllowed = false; // a smoke test never reaches the server
+            {
+                // a smoke test never reaches the server, except when the developer asks for ONE real upload with a test Training ID
+                // (EditorPref ChemSafetySmokeUpload, default off, switched off again by the smoke test when it is done)
+                var realUpload = false;
+#if UNITY_EDITOR
+                realUpload = UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeUpload", false);
+#endif
+                SessionResults.UploadAllowed = realUpload;
+            }
+
             return ok;
         }
 

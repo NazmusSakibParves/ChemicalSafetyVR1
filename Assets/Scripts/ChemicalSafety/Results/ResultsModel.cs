@@ -69,6 +69,9 @@ namespace ChemicalSafety.Results
         public bool timed_out;
         public List<AttemptRecord> attempts = new List<AttemptRecord>();
 
+        /// <summary>Local start time of the session: names the device folder and file (not part of any JSON).</summary>
+        [NonSerialized] public DateTime startedLocal = DateTime.Now;
+
         /// <summary>Recomputes the totals from the attempts. Scenarios never reached count in neither score nor answered.</summary>
         public void RecomputeTotals()
         {
@@ -102,19 +105,14 @@ namespace ChemicalSafety.Results
 
     public sealed class FileSubmissionSink : ISubmissionSink
     {
-        public static string Folder => Path.Combine(Application.persistentDataPath, "results");
+        public static string Folder => ResultPaths.Root;
 
         public void Save(Submission submission)
         {
             try
             {
-                Directory.CreateDirectory(Folder);
-                var path = Path.Combine(Folder, submission.client_submission_id + ".json");
-                // the file in the sample schema of the server API (what gets uploaded / reported)
-                File.WriteAllText(path + ".tmp", SubmissionExport.ToJson(submission), new System.Text.UTF8Encoding(false));
-                if (File.Exists(path))
-                    File.Delete(path);
-                File.Move(path + ".tmp", path);
+                // results/<TrainingID>/<yyyy-MM-dd>/<Name>_<yyyyMMdd-HHmmss>.json, written atomically (tmp file, then move)
+                ResultPaths.WriteAtomic(ResultPaths.For(submission), SubmissionExport.ToJson(submission));
             }
             catch (Exception e)
             {
@@ -150,6 +148,7 @@ namespace ChemicalSafety.Results
             UploadAllowed = true;
             Current = new Submission
             {
+                startedLocal = DateTime.Now,
                 training_id = trainingId,
                 participant_name = name ?? string.Empty,
                 participant_email = email ?? string.Empty,
@@ -266,6 +265,7 @@ namespace ChemicalSafety.Results
             _answer = null;
             Current.RecomputeTotals();
             _sink.Save(Current);
+            ResultUploader.Stage(Current); // the API body is on disk now: a crash before Send still gets it sent at the next start
         }
     }
 }
