@@ -8,34 +8,42 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// Client request: after the login a glass timer capsule sits fixed in the lower LEFT of the view (it follows the head, so it
-    /// stays in the same place when the learner turns), with a pause / resume button next to it. Also hosts the "time is up" toast
-    /// (screen centre, with voice-over). The clock itself is <see cref="SessionClock"/>; this only draws and ticks it.
+    /// Client design "BACK | NEXT | PAUSE | timer": one glass control bar fixed at the TOP-CENTRE of the view (it follows the head, so it stays
+    /// in the same place when the learner turns, sits or stands; a little above the eye line so no head tilt is needed). The learner can
+    /// drag it with the controller ray (hold the trigger on the bar, not on a button); the new place is kept for the session.
+    /// Back / Next go to <see cref="ScenarioNav"/>, Pause / Resume to <see cref="SessionClock"/>. Also hosts the milestone flash and the
+    /// "time is up" toast (screen centre, with voice-over). The clock itself is <see cref="SessionClock"/>; this only draws and ticks it.
     /// </summary>
     public sealed class SessionHud : MonoBehaviour
     {
-        // metres in the view: right, down, forward of the head
-        private static readonly Vector3 TimerOffset = new Vector3(-0.30f, -0.27f, 0.9f); // lower LEFT of the view, turns with the head
+        // metres in the view: right, up, forward of the head. Default = top centre, ~10 degrees above the eye line.
+        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.17f, 0.9f);
+        private static Vector3 _barOffset = DefaultBarOffset; // survives a re-created bar (jump), reset by ResetBarPosition
         private static readonly Vector3 ToastOffset = new Vector3(0f, 0.02f, 1.5f);
 
         public static SessionHud Instance { get; private set; }
 
         public event Action TimeUp;
 
+        private const float BarW = 960f;
+        private const float BarH = 120f;
+        private const float BarScale = 0.00085f; // 0.82 m wide at 0.9 m, ~50 degrees
+
         private Transform _cam;
         private Transform _timerRoot;
         private Transform _toastRoot;
         private TextMeshProUGUI _time;
-        private Image _pauseA;
-        private Image _pauseB;
-        private Image _play;
-        private Image _plate;
-        private Image _ring;
-        private Image _glow;
-        private Image _edge;
-        private TextMeshProUGUI _label;
+        private TextMeshProUGUI _pauseText;
+        private Image _pauseIcon;
+        private Image _pauseFrame;
+        private Image _timerFrame;
+        private Sprite _pauseSprite;
+        private Sprite _playSprite;
         private TextMeshProUGUI _flash;
         private CanvasGroup _flashGroup;
+        private RectTransform _backRt;
+        private CanvasGroup _backGroup;
+        private CanvasGroup _nextGroup;
         private float _born;
         private int _lastWholeSecond = -1;
         private bool _five, _one;
@@ -45,6 +53,8 @@ namespace ChemicalSafety.Presentable
         private bool _fired;
         private bool _snapped;
         private bool _visible = true;
+        private bool _busy;
+        private bool _lastPaused;
 
         public static SessionHud Create(Transform cam)
         {
@@ -64,14 +74,21 @@ namespace ChemicalSafety.Presentable
                 Instance = null;
         }
 
+        /// <summary>Puts the bar back to the default top-centre place.</summary>
+        public static void ResetBarPosition() => _barOffset = DefaultBarOffset;
+
         public void SetVisible(bool visible)
         {
             _visible = visible;
             if (_timerGroup != null)
+            {
                 _timerGroup.alpha = visible ? 1f : 0f;
-            if (_timerGroup != null)
                 _timerGroup.blocksRaycasts = visible;
+            }
         }
+
+        /// <summary>True while a scenario jump is running: Back / Next ignore presses (no double jump).</summary>
+        public void SetBusy(bool busy) => _busy = busy;
 
         internal static Sprite PlaySprite()
         {
@@ -90,73 +107,87 @@ namespace ChemicalSafety.Presentable
             return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        // one button of the bar: the client's frame, the icon on one side and the label in the rest, all inset from the frame edge
+        private RectTransform MakeButton(RectTransform host, string name, float x, float w, Sprite icon, bool iconLeft, string label,
+            UnityEngine.Events.UnityAction onClick, out TextMeshProUGUI text, out Image iconImg, out Image frame)
+        {
+            const float h = 74f;
+            var rt = PresentableUi.Centered(name, host, new Vector2(x, 0f), new Vector2(w, h));
+            frame = PresentableUi.Img(rt, HudArt.Get(name == "Pause" ? "Ui/Hud/04_pause_button_frame" : name == "Back" ? "Ui/Hud/02_back_button_frame"
+                : "Ui/Hud/03_next_button_frame"), new Color(1f, 1f, 1f, 0.92f), raycast: true);
+            const float pad = 26f; // inside the frame's own border
+            const float iconSize = 34f;
+            var iconX = iconLeft ? -w * 0.5f + pad + iconSize * 0.5f : w * 0.5f - pad - iconSize * 0.5f;
+            var iconRt = PresentableUi.Centered("Icon", rt, new Vector2(iconX, 0f), new Vector2(iconSize, iconSize));
+            iconImg = PresentableUi.Img(iconRt, icon, new Color(0.9f, 0.98f, 1f, 1f), preserveAspect: true);
+            // label fills the space beside the icon with a margin on both sides
+            var labelW = w - pad * 2f - iconSize - 14f;
+            var labelX = iconLeft ? (iconSize + 14f) * 0.5f : -(iconSize + 14f) * 0.5f;
+            var labelRt = PresentableUi.Centered("Label", rt, new Vector2(labelX, 1f), new Vector2(labelW, 46f));
+            text = PresentableUi.Text(labelRt, label, 34f, Color.white, TextAlignmentOptions.Center, true);
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.enableAutoSizing = true;
+            text.fontSizeMax = 34f;
+            text.fontSizeMin = 18f;
+            var button = rt.gameObject.AddComponent<Button>();
+            button.targetGraphic = frame;
+            button.transition = Selectable.Transition.None;
+            var lift = rt.gameObject.AddComponent<HoverLift>();
+            lift.Init(rt);
+            button.onClick.AddListener(lift.Press);
+            button.onClick.AddListener(onClick);
+            return rt;
+        }
+
         private void Build()
         {
-            // ---- timer: glass capsule, progress ring with the pause button inside, label + big digits. 460 x 150 px, 0.001 m / px
-            var tr = new GameObject("Timer");
+            var tr = new GameObject("Bar");
             tr.transform.SetParent(transform, false);
             _timerRoot = tr.transform;
-            var canvas = PresentableUi.WorldCanvas("TimerCanvas", _timerRoot, new Vector2(460f, 150f), 0.001f, true, 30);
+            var canvas = PresentableUi.WorldCanvas("BarCanvas", _timerRoot, new Vector2(BarW, BarH), BarScale, true, 30);
             _timerGroup = canvas.gameObject.AddComponent<CanvasGroup>();
+            FingerPokeSystem.RefreshGroup(canvas);
             var host = (RectTransform)canvas.transform;
-            var cap = CapsuleSprite();
-            var neon = new Color(0.35f, 0.85f, 1f, 1f);
 
-            _glow = PresentableUi.Img(PresentableUi.Rect("Glow", host, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(-8f, -8f), new Vector2(8f, 8f)), EdgeSprite(),
-                new Color(neon.r, neon.g, neon.b, 0.28f), sliced: true);
-            _edge = PresentableUi.Img(PresentableUi.Rect("Edge", host, Vector2.zero, Vector2.one), EdgeSprite(), neon, sliced: true);
-            _plate = PresentableUi.Img(PresentableUi.Rect("Plate", host, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f)), cap,
-                new Color(0.02f, 0.08f, 0.17f, 0.36f), sliced: true); // see-through: the scene stays visible behind the timer
+            // glass base: the client's panel, see-through so the room stays visible behind it
+            PresentableUi.Img(PresentableUi.Rect("Glass", host, Vector2.zero, Vector2.one), HudArt.Get("Ui/Hud/01_blank_popup_panel"),
+                new Color(1f, 1f, 1f, 0.55f), raycast: true);
 
-            // ring (left): dark track + radial fill that drains with the remaining time
-            var ringHost = PresentableUi.Centered("Ring", host, new Vector2(-165f, 0f), new Vector2(118f, 118f));
-            PresentableUi.Img(PresentableUi.Rect("Track", ringHost, Vector2.zero, Vector2.one), RingSprite(), new Color(0.2f, 0.4f, 0.6f, 0.35f));
-            _ring = PresentableUi.Img(PresentableUi.Rect("Fill", ringHost, Vector2.zero, Vector2.one), RingSprite(), new Color(0.4f, 1f, 0.7f, 1f));
-            _ring.type = Image.Type.Filled;
-            _ring.fillMethod = Image.FillMethod.Radial360;
-            _ring.fillOrigin = (int)Image.Origin360.Top;
-            _ring.fillClockwise = false;
-            _ring.fillAmount = 1f;
+            // buttons, left to right as in the design (centres measured from the bar centre)
+            _backRt = MakeButton(host, "Back", -362f, 196f, HudArt.Get("Ui/Hud/06_back_chevrons_icon"), true, Loc.T("GENERAL", "BarBack"),
+                () => { if (!_busy && _visible) ScenarioNav.RequestPrevious(); }, out _, out _, out _);
+            _backGroup = _backRt.gameObject.AddComponent<CanvasGroup>();
+            var nextRt = MakeButton(host, "Next", -150f, 200f, HudArt.Get("Ui/Hud/07_next_chevrons_icon"), false, Loc.T("GENERAL", "BarNext"),
+                () => { if (!_busy && _visible) ScenarioNav.RequestNext(); }, out _, out _, out _);
+            _nextGroup = nextRt.gameObject.AddComponent<CanvasGroup>();
+            _pauseSprite = HudArt.Get("Ui/Hud/08_pause_icon");
+            _playSprite = PlaySprite();
+            MakeButton(host, "Pause", 107f, 232f, _pauseSprite, false, Loc.T("GENERAL", "BarPause"), TogglePause, out _pauseText, out _pauseIcon, out _pauseFrame);
 
-            // pause / resume button inside the ring
-            var btnRt = PresentableUi.Centered("PauseButton", ringHost, Vector2.zero, new Vector2(78f, 78f));
-            var btnImg = PresentableUi.Img(btnRt, DiscSprite(), new Color(0.1f, 0.3f, 0.5f, 0.5f), raycast: true);
-            var a1 = PresentableUi.Centered("BarA", btnRt, new Vector2(-9f, 0f), new Vector2(11f, 32f));
-            _pauseA = PresentableUi.Img(a1, null, Color.white);
-            var b1 = PresentableUi.Centered("BarB", btnRt, new Vector2(9f, 0f), new Vector2(11f, 32f));
-            _pauseB = PresentableUi.Img(b1, null, Color.white);
-            var p1 = PresentableUi.Centered("Play", btnRt, new Vector2(3f, 0f), new Vector2(30f, 36f));
-            _play = PresentableUi.Img(p1, PlaySprite(), Color.white);
-            _play.gameObject.SetActive(false);
-            var btn = btnRt.gameObject.AddComponent<Button>();
-            btn.targetGraphic = btnImg;
-            btn.onClick.AddListener(TogglePause);
-
-            // label + digits (right of the ring)
-            // label: soft translucent gold, readable over grey floors and white walls, no backing strip
-            var lab = PresentableUi.Centered("Label", host, new Vector2(20f, 38f), new Vector2(190f, 34f));
-            _label = PresentableUi.Text(lab, Loc.T("GENERAL", "TimerLabel"), 26f, new Color(1f, 0.82f, 0.36f, 0.92f), TextAlignmentOptions.Center, true);
-            _label.textWrappingMode = TextWrappingModes.NoWrap;
-            var clockText = PresentableUi.Centered("Time", host, new Vector2(55f, -14f), new Vector2(270f, 84f));
-            _time = PresentableUi.Text(clockText, SessionClock.Format(SessionClock.LimitSeconds), 74f, new Color(0.75f, 1f, 0.9f, 1f),
-                TextAlignmentOptions.Left, true);
+            // timer
+            var timerRt = PresentableUi.Centered("Timer", host, new Vector2(369f, 0f), new Vector2(172f, 74f));
+            _timerFrame = PresentableUi.Img(timerRt, HudArt.Get("Ui/Hud/05_timer_display_frame"), new Color(1f, 1f, 1f, 0.95f));
+            var clockRt = PresentableUi.Centered("Time", timerRt, new Vector2(0f, 1f), new Vector2(124f, 50f));
+            _time = PresentableUi.Text(clockRt, SessionClock.Format(SessionClock.LimitSeconds), 52f, Color.white, TextAlignmentOptions.Center, true);
             _time.textWrappingMode = TextWrappingModes.NoWrap;
+            _time.enableAutoSizing = true;
+            _time.fontSizeMax = 52f;
+            _time.fontSizeMin = 28f;
 
-            // milestone flash above the capsule ("5 MINUTES LEFT")
-            var fl = PresentableUi.Centered("Flash", host, new Vector2(0f, 112f), new Vector2(460f, 60f));
+            // milestone flash below the bar ("5 MINUTES LEFT")
+            var fl = PresentableUi.Centered("Flash", host, new Vector2(0f, -96f), new Vector2(700f, 60f));
             _flashGroup = fl.gameObject.AddComponent<CanvasGroup>();
             _flashGroup.alpha = 0f;
             _flash = PresentableUi.Text(fl, " ", 40f, new Color(1f, 0.85f, 0.3f, 1f), TextAlignmentOptions.Center, true);
             _flash.textWrappingMode = TextWrappingModes.NoWrap;
             PresentableUi.AlwaysOnTop(canvas);
-            // client: "TIME LEFT" bolder at the same font size (thicker strokes on the SDF face)
-            if (_label != null && _label.fontSharedMaterial != null)
-            {
-                _label.fontSharedMaterial.SetFloat("_FaceDilate", 0.32f);
-                _label.fontSharedMaterial.SetFloat("_OutlineWidth", 0.08f);
-                _label.fontSharedMaterial.SetColor("_OutlineColor", new Color(0.12f, 0.08f, 0.02f, 0.9f));
-            }
 
+            // drag the whole bar with the ray (a press on a button still clicks it)
+            var drag = DraggablePanel.Attach(this);
+            drag.OnHeadOffset = o =>
+            {
+                _barOffset = new Vector3(Mathf.Clamp(o.x, -0.7f, 0.7f), Mathf.Clamp(o.y, -0.45f, 0.5f), Mathf.Clamp(o.z, 0.6f, 1.4f));
+            };
             _born = Time.unscaledTime;
 
             // ---- toast: 1000 x 280 px
@@ -194,13 +225,11 @@ namespace ChemicalSafety.Presentable
             {
                 var remaining = SessionClock.Remaining;
                 var paused = SessionClock.Paused;
-                var frac = Mathf.Clamp01(remaining / Mathf.Max(1f, SessionClock.LimitSeconds));
                 _time.text = SessionClock.Format(remaining);
-                _ring.fillAmount = frac;
 
-                var calm = new Color(0.4f, 1f, 0.7f, 1f);
-                var warn = new Color(1f, 0.8f, 0.25f, 1f);
-                var danger = new Color(1f, 0.3f, 0.28f, 1f);
+                var calm = Color.white;
+                var warn = new Color(1f, 0.82f, 0.4f, 1f);
+                var danger = new Color(1f, 0.45f, 0.4f, 1f);
                 var col = remaining <= 60f ? danger : remaining <= 300f ? warn : calm;
                 var pulse = 0f;
                 var whole = Mathf.CeilToInt(remaining);
@@ -211,27 +240,30 @@ namespace ChemicalSafety.Presentable
                 _lastWholeSecond = whole;
 
                 if (paused)
-                    col = new Color(1f, 0.8f, 0.3f, 1f);
+                    col = warn;
                 var blink = !paused || Mathf.Repeat(Time.unscaledTime, 1.2f) < 0.8f;
-                _ring.color = col;
-                _time.color = new Color(Mathf.Lerp(col.r, 1f, 0.55f), Mathf.Lerp(col.g, 1f, 0.55f), Mathf.Lerp(col.b, 1f, 0.55f), blink ? 1f : 0.35f);
-                var edge = Color.Lerp(new Color(0.35f, 0.85f, 1f, 1f), col, remaining <= 300f || paused ? 0.85f : 0f);
-                _edge.color = edge;
-                _glow.color = new Color(edge.r, edge.g, edge.b, 0.22f + 0.35f * pulse);
-                var labelKey = paused ? "TimerPaused" : "TimerLabel";
-                if (_labelKey != labelKey)
+                _time.color = new Color(col.r, col.g, col.b, blink ? 1f : 0.35f);
+                // timer frame tint: calm = the blue of the design, then amber / red when time runs short
+                _timerFrame.color = Color.Lerp(new Color(1f, 1f, 1f, 0.95f), new Color(col.r, col.g * 0.8f, col.b * 0.7f, 1f),
+                    (remaining <= 300f || paused ? 0.55f : 0f) + 0.3f * pulse);
+
+                if (paused != _lastPaused)
                 {
-                    _labelKey = labelKey;
-                    _label.text = Loc.T("GENERAL", labelKey);
+                    _lastPaused = paused;
+                    _pauseText.text = Loc.T("GENERAL", paused ? "BarResume" : "BarPause");
+                    _pauseIcon.sprite = paused ? _playSprite : _pauseSprite;
                 }
 
-                _pauseA.gameObject.SetActive(!paused);
-                _pauseB.gameObject.SetActive(!paused);
-                _play.gameObject.SetActive(paused);
+                // Back: not there at the first scenario (client); Back / Next dim while a jump runs or at the limits
+                var showPrev = ScenarioNav.CanPrevious;
+                if (_backRt.gameObject.activeSelf != showPrev)
+                    _backRt.gameObject.SetActive(showPrev);
+                _backGroup.alpha = ScenarioNav.CanPrevious && !_busy ? 1f : 0.4f;
+                _nextGroup.alpha = ScenarioNav.CanNext && !_busy ? 1f : 0.4f;
 
-                // entrance: grow in with a small overshoot, then a gentle breathing while running
+                // entrance: grow in with a small overshoot, then a gentle pulse only when the time is short
                 var age = Time.unscaledTime - _born;
-                var sc = age < 0.7f ? PresentableFx.EaseOutBack(Mathf.Clamp01(age / 0.7f)) : 1f + 0.012f * Mathf.Sin(Time.unscaledTime * 1.6f) + 0.03f * pulse;
+                var sc = age < 0.7f ? PresentableFx.EaseOutBack(Mathf.Clamp01(age / 0.7f)) : 1f;
                 _timerRoot.localScale = Vector3.one * sc;
 
                 if (!_five && remaining <= 300f && remaining > 290f)
@@ -254,8 +286,6 @@ namespace ChemicalSafety.Presentable
             }
         }
 
-        private string _labelKey = "TimerLabel";
-
         private IEnumerator FlashRoutine(string text)
         {
             _flash.text = text;
@@ -271,101 +301,13 @@ namespace ChemicalSafety.Presentable
             _flashGroup.alpha = 0f;
         }
 
-        // ---- procedural sprites (no assets): rounded capsule (9-sliced), ring, disc
-        private static Sprite _capsule, _ringSprite, _disc;
-
-        internal static Sprite CapsuleSprite()
-        {
-            if (_capsule != null)
-                return _capsule;
-            const int n = 96;
-            const float r = 44f;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            for (var y = 0; y < n; y++)
-            for (var x = 0; x < n; x++)
-            {
-                var dx = Mathf.Max(0f, Mathf.Max(r - x - 0.5f, x + 0.5f - (n - r)));
-                var dy = Mathf.Max(0f, Mathf.Max(r - y - 0.5f, y + 0.5f - (n - r)));
-                tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(r - Mathf.Sqrt(dx * dx + dy * dy) + 0.5f)));
-            }
-
-            tex.Apply();
-            _capsule = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(r, r, r, r));
-            return _capsule;
-        }
-
-        private static Sprite _edgeSprite;
-
-        // hollow rounded outline (4 px) so only the neon border is solid and the inside stays see-through
-        internal static Sprite EdgeSprite()
-        {
-            if (_edgeSprite != null)
-                return _edgeSprite;
-            const int n = 96;
-            const float r = 44f;
-            const float w = 4f;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            for (var y = 0; y < n; y++)
-            for (var x = 0; x < n; x++)
-            {
-                var dx = Mathf.Max(0f, Mathf.Max(r - x - 0.5f, x + 0.5f - (n - r)));
-                var dy = Mathf.Max(0f, Mathf.Max(r - y - 0.5f, y + 0.5f - (n - r)));
-                var d = Mathf.Sqrt(dx * dx + dy * dy); // distance past the straight edge, in the corner area
-                var outer = Mathf.Clamp01(r - d + 0.5f);
-                var edgeDist = Mathf.Min(Mathf.Min(x + 0.5f, n - x - 0.5f), Mathf.Min(y + 0.5f, n - y - 0.5f));
-                var inner = d > 0f ? Mathf.Clamp01(d - (r - w) + 0.5f) : Mathf.Clamp01(w - edgeDist + 0.5f);
-                tex.SetPixel(x, y, new Color(1f, 1f, 1f, outer * inner));
-            }
-
-            tex.Apply();
-            _edgeSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(r, r, r, r));
-            return _edgeSprite;
-        }
-
-        private static Sprite RingSprite()
-        {
-            if (_ringSprite != null)
-                return _ringSprite;
-            const int n = 256;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            for (var y = 0; y < n; y++)
-            for (var x = 0; x < n; x++)
-            {
-                var d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n * 0.5f, n * 0.5f));
-                var a = Mathf.Clamp01(n * 0.5f - d) * Mathf.Clamp01(d - (n * 0.5f - 22f));
-                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
-            }
-
-            tex.Apply();
-            _ringSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
-            return _ringSprite;
-        }
-
-        private static Sprite DiscSprite()
-        {
-            if (_disc != null)
-                return _disc;
-            const int n = 128;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            for (var y = 0; y < n; y++)
-            for (var x = 0; x < n; x++)
-            {
-                var d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n * 0.5f, n * 0.5f));
-                tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(n * 0.5f - d)));
-            }
-
-            tex.Apply();
-            _disc = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
-            return _disc;
-        }
-
         private void LateUpdate()
         {
             if (_cam == null)
                 return;
             // fixed in the view: the whole offset rotates with the head, with a short smoothing so it does not jitter
             var k = _snapped ? 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime) : 1f;
-            Place(_timerRoot, TimerOffset, k);
+            Place(_timerRoot, _barOffset, k);
             if (_toastRoot.gameObject.activeSelf)
                 Place(_toastRoot, ToastOffset, k);
             _snapped = true;

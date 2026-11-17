@@ -105,8 +105,16 @@ namespace ChemicalSafety.Presentable
                 _handle.gameObject.SetActive(Shown());
         }
 
+        /// <summary>
+        /// Head-locked panels (the top control bar) place themselves from a head-relative offset every frame. When this is set the drag only
+        /// reports the new offset (right, up, forward of the head) and never moves the transform or applies the push-out itself.
+        /// </summary>
+        public System.Action<Vector3> OnHeadOffset;
+
         private void LateUpdate()
         {
+            if (OnHeadOffset != null)
+                return;
             if (_moved)
             {
                 transform.SetPositionAndRotation(_pos, _rot);
@@ -247,6 +255,14 @@ namespace ChemicalSafety.Presentable
             if (!Dragging)
                 return;
             var target = origin + dir * _grabDist + _grabOffset;
+            if (OnHeadOffset != null)
+            {
+                var cam = Camera.main;
+                if (cam != null)
+                    OnHeadOffset(Quaternion.Inverse(cam.transform.rotation) * (target - cam.transform.position));
+                return;
+            }
+
             var toHead = new Vector3(target.x - head.x, 0f, target.z - head.z);
             if (toHead.magnitude < 0.8f) // never into the face
                 target = new Vector3(head.x, target.y, head.z) + (toHead.sqrMagnitude < 0.0001f ? Vector3.forward : toHead.normalized) * 0.8f;
