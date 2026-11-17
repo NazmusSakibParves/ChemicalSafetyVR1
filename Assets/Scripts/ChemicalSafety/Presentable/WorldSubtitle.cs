@@ -65,6 +65,13 @@ namespace ChemicalSafety.Presentable
 
         public void Show(Sprite bangla, string english, float seconds = 0f)
         {
+            // Scenario 21 and 22: no subtitles at all (client, 2026-11-17)
+            if (PresentableInput.ActiveScenario == 21 || PresentableInput.ActiveScenario == 22)
+            {
+                StartFade(0f, 0.01f, 0f);
+                return;
+            }
+
             if (HiddenInScenarios1And2 && (PresentableInput.ActiveScenario == 1 || PresentableInput.ActiveScenario == 2 || PresentableInput.ActiveScenario == 3 ||
                                           ((PresentableInput.ActiveScenario == 4 || PresentableInput.ActiveScenario == 5 || PresentableInput.ActiveScenario == 8 || PresentableInput.ActiveScenario == 9) && PresentableInput.RayActive)))
             {

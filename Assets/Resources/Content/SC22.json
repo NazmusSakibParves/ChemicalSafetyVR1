@@ -1,0 +1,131 @@
+{
+  "scenario": "SC22",
+  "strings": [
+    {
+      "key": "RayInstruction",
+      "en": "You notice a coworker transferring solvent from a drum into an empty drinking-water bottle to carry it to another room. Storing or carrying chemicals in drinking-water bottles is dangerous and may lead to accidental ingestion. Follow the SDS and workplace safety procedures, and advise your coworker to take the appropriate corrective action.",
+      "bn": "আপনি দেখছেন, একজন সহকর্মী ড্রাম থেকে রাসায়নিক পদার্থ একটি খালি পানির বোতলে ঢালছেন। পানির বোতলে রাসায়নিক রাখা বা বহন করা বিপজ্জনক। এতে ভুল করে পান করার ঝুঁকি তৈরি হতে পারে। সঠিক পদক্ষেপ জানতে SDS এর সেকশন ৭ (Handling and Storage) পড়ুন এবং নিরাপত্তা নির্দেশনা অনুসরণ করুন।"
+    },
+    {
+      "key": "GateTitle",
+      "en": "SOLVENT TRANSFER REVIEWED.",
+      "bn": "রাসায়নিক স্থানান্তর পর্যালোচনা সম্পন্ন।"
+    },
+    {
+      "key": "GateQuestion",
+      "en": "Are you ready for the multiple choice question (MCQ)?",
+      "bn": "আপনি কি বহুনির্বাচনি প্রশ্নের (MCQ) জন্য প্রস্তুত?"
+    },
+    {
+      "key": "GateBody",
+      "en": "If yes, click NEXT to proceed, or if you want to watch the whole process again, click BACK.",
+      "bn": "হ্যাঁ হলে এগিয়ে যেতে নেক্সট-এ ক্লিক করুন, আর পুরো প্রক্রিয়া আবার দেখতে চাইলে ব্যাক-এ ক্লিক করুন।"
+    },
+    {
+      "key": "RayQuestionHeader",
+      "en": "MCQ: Solvent in a Water Bottle",
+      "bn": "MCQ: পানির বোতলে সলভেন্ট"
+    },
+    {
+      "key": "RayQuestionPrompt",
+      "en": "A worker is transferring solvent from a drum into an empty drinking-water bottle. What should you advise the worker to do?",
+      "bn": "একজন শ্রমিক একটি ড্রাম থেকে সলভেন্ট (দ্রাবক রাসায়নিক) একটি খালি পানির বোতলে ঢালছেন। কর্মীকে আপনি কী পরামর্শ দিবেন?"
+    },
+    {
+      "key": "RayCorrectTitle",
+      "en": "RIGHT ANSWER",
+      "bn": "সঠিক উত্তর"
+    },
+    {
+      "key": "FinishLabel",
+      "en": "FINISH",
+      "bn": "ফিনিশ"
+    },
+    {
+      "key": "TagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "TagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
+    },
+    {
+      "key": "ModuleComplete",
+      "en": "Congratulations! You have completed all the scenarios. Click Finish to see your result.",
+      "bn": "অভিনন্দন! আপনি সবগুলো সিনারিও সম্পন্ন করেছেন। ফলাফল দেখতে ফিনিশ বাটনে ক্লিক করুন।"
+    },
+    {
+      "key": "SdsHint",
+      "en": "Read Section 7 of the Safety Data Sheet first: Handling and Storage.",
+      "bn": "প্রথমে নিরাপত্তা তথ্যপত্র (SDS) এর সেকশন ৭ পড়ুন: হ্যান্ডলিং ও স্টোরেজ।"
+    },
+    {
+      "key": "CautionTitle",
+      "en": "CAUTION, DO NOT CARRY SOLVENT IN A DRINKING WATER BOTTLE.",
+      "bn": "সতর্কতা, পানির বোতলে সলভেন্ট বহন করবেন না।"
+    },
+    {
+      "key": "CautionClose",
+      "en": "Close",
+      "bn": "বন্ধ"
+    }
+  ],
+  "arrays": [
+    {
+      "key": "RayOptionLabels",
+      "en": [
+        "Let him finish, then remind him to label the bottle and rinse it out afterward.",
+        "Pour the solvent back into the drum, keep using the water bottle for the short trip, and tell them to carry it carefully.",
+        "Stop the decanting immediately, use only an approved labeled chemical container, and follow the required PPE, ventilation, and spill precautions for transferring the solvent.",
+        "Continue the transfer but put the water bottle in a secondary tray and tell them not to drink from it."
+      ],
+      "bn": [
+        "তাকে কাজটি শেষ করতে দিন। এরপর বোতলে লেবেল লাগাতে এবং ব্যবহারের পর বোতলটি ধুয়ে ফেলতে বলুন।",
+        "সলভেন্ট আবার ড্রামে ঢেলে দিন। অল্প দূরত্বের জন্য পানির বোতলটি ব্যবহার করতে দিন এবং সাবধানে বহন করতে বলুন।",
+        "সঙ্গে সঙ্গে রাসায়নিক ঢালার কাজ বন্ধ করুন। শুধু অনুমোদিত ও সঠিক লেবেলযুক্ত রাসায়নিক পাত্র ব্যবহার করতে বলুন এবং স্থানান্তরের সময় প্রয়োজনীয় PPE, বায়ু চলাচল ও রাসায়নিক ছড়িয়ে পড়া রোধের ব্যবস্থা নিশ্চিত করুন।",
+        "পানির বোতলে রাসায়নিক ঢালার কাজ চালিয়ে যেতে দিন। শুধু বোতলটি একটি অতিরিক্ত ট্রেতে রাখুন এবং এটি পান না করতে বলুন।"
+      ]
+    },
+    {
+      "key": "RayOptionReasons",
+      "en": [
+        "Drinking-water bottles are not designed for storing or carrying chemicals. Adding a label or placing it in a secondary tray does not eliminate this risk.",
+        "If solvent is placed in one, someone may accidentally drink it. Since the bottle looks like a drinking-water container, it can cause serious poisoning or accidents.",
+        "Correct! Never store or carry chemicals in drinking-water bottles or food containers. Always use an approved, properly labeled container for chemical transfer. Also ensure appropriate PPE, adequate ventilation, and spill-prevention measures according to the SDS.",
+        "Adding a label or placing it in a secondary tray does not eliminate this risk. Always use an approved, properly labeled container for transferring solvents."
+      ],
+      "bn": [
+        "পানির বোতল রাসায়নিক সংরক্ষণ বা বহনের জন্য তৈরি নয়। শুধু লেবেল লাগানো বা অতিরিক্ত ট্রেতে রাখলেই এই ঝুঁকি দূর হয় না।",
+        "এতে সলভেন্ট রাখলে কেউ ভুল করে পান করতে পারে। বোতলটি দেখতে পানির বোতলের মতো হওয়ায় মারাত্মক বিষক্রিয়া বা দুর্ঘটনা ঘটতে পারে।",
+        "সঠিক! পানির বোতল বা খাবারের পাত্রে কখনো রাসায়নিক রাখা বা বহন করা যাবে না। রাসায়নিক স্থানান্তরের আগে কাজটি নিরাপদভাবে করার জন্য অনুমোদিত ও সঠিক লেবেলযুক্ত পাত্র ব্যবহার করতে হবে। পাশাপাশি SDS অনুযায়ী উপযুক্ত PPE, পর্যাপ্ত বায়ু চলাচল এবং রাসায়নিক ছড়িয়ে পড়া রোধের ব্যবস্থা নিশ্চিত করতে হবে।",
+        "শুধু লেবেল লাগানো বা অতিরিক্ত ট্রেতে রাখলেই এই ঝুঁকি দূর হয় না। রাসায়নিক স্থানান্তরের জন্য সবসময় অনুমোদিত ও সঠিকভাবে লেবেলযুক্ত পাত্র ব্যবহার করতে হবে।"
+      ]
+    },
+    {
+      "key": "RayOptionWrongTitle",
+      "en": [
+        "WRONG PROCEDURE",
+        "WRONG PROCEDURE",
+        "",
+        "WRONG PROCEDURE"
+      ],
+      "bn": [
+        "ভুল পদ্ধতি",
+        "ভুল পদ্ধতি",
+        "",
+        "ভুল পদ্ধতি"
+      ]
+    },
+    {
+      "key": "CapStory",
+      "en": [
+        ""
+      ],
+      "bn": [
+        ""
+      ]
+    }
+  ]
+}

@@ -6,11 +6,11 @@
   - Scenario 1, 3-12: 1 MCQ each (Scenario 12 is multi-select: exact right set = 1).
   - Scenario 2: 6 MCQs = 6 marks.
   - Scenarios 13-18: 3 MCQs each = 3 marks.
-  - Scenarios 19-21: 1 MCQ each = 1 mark. Scenario 22 (not built yet): same rule, 1 mark per MCQ.
+  - Scenarios 19-22: 1 MCQ each = 1 mark (Scenario 22, the last one, ends with a FINISH button that opens the scorecard).
 - Scenarios not reached count 0 and their MCQs are shown as incorrect on the result card.
 - Same rule in Bangla and English (the language only changes the text, never the marks).
 - Stored in `persistentDataPath/results/<id>.json` (sample schema `Docs/Login/giz_vr_mcq_submission_sample.json`): per scenario `score` / `max_score`, per answer `is_correct`, `wrong_attempts`, `tries`; session totals `total_score`, `total_max_score`, `total_correct`, `total_incorrect`, `completed_scenarios`, `elapsed_ms`, `timed_out`.
-- Expected MCQ count per scenario: `Assets/Resources/Content/MARKING.json` (SC19-SC21 are in, add SC22 when it is built; the result card is shown where the director's chain ends, after the last built scenario).
+- Expected MCQ count per scenario: `Assets/Resources/Content/MARKING.json` (SC19-SC22 are in; the result card is shown where the director's chain ends, after Scenario 22).
 
 ## বাংলা
 - মোট ২২টি সিনারিও, **সব মিলিয়ে ৪০ মিনিট**। লগইনের পর ঘড়ি শুরু হয়, পজ বাটনে ঘড়ি থামে। ০০:০০ হলে "সময় শেষ" টোস্ট ও ভয়েস-ওভার আসে, তারপর রেজাল্ট কার্ড।

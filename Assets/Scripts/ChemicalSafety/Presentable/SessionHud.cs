@@ -16,8 +16,9 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public sealed class SessionHud : MonoBehaviour
     {
-        // metres in the view: right, up, forward of the head. Default = top centre, ~10 degrees above the eye line.
-        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.17f, 0.9f);
+        // metres in the view: right, up, forward of the head. Default = top centre, ~24 degrees above (it was 29 and fell outside a normal game view) the eye line (2026-11-17: it used to sit at ~10 degrees
+        // and ran through every instruction card / MCQ box / popup, whose top edges reach 17-31 degrees). Quest vertical field of view is about +-48 degrees.
+        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.40f, 0.9f);
         private static Vector3 _barOffset = DefaultBarOffset; // survives a re-created bar (jump), reset by ResetBarPosition
         private static readonly Vector3 ToastOffset = new Vector3(0f, 0.02f, 1.5f);
 
@@ -186,7 +187,7 @@ namespace ChemicalSafety.Presentable
             var drag = DraggablePanel.Attach(this);
             drag.OnHeadOffset = o =>
             {
-                _barOffset = new Vector3(Mathf.Clamp(o.x, -0.7f, 0.7f), Mathf.Clamp(o.y, -0.45f, 0.5f), Mathf.Clamp(o.z, 0.6f, 1.4f));
+                _barOffset = new Vector3(Mathf.Clamp(o.x, -0.7f, 0.7f), Mathf.Clamp(o.y, -0.45f, 0.9f), Mathf.Clamp(o.z, 0.6f, 1.4f));
             };
             _born = Time.unscaledTime;
 

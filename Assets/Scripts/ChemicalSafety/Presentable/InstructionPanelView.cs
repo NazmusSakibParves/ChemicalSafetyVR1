@@ -391,19 +391,30 @@ namespace ChemicalSafety.Presentable
         }
 
         // Glass card: title centred at the top, speaker in the top right corner, the words centred below, Continue under the card.
+        /// <summary>Scenario 22 (client 2026-11-17: the long text touched the frame): a bigger glass card with more air around the words. Off for every other scenario.</summary>
+        public void SetRoomy(bool on)
+        {
+            if (_roomy == on)
+                return;
+            _roomy = on;
+            Reflow();
+        }
+
+        private bool _roomy;
+
         private void ReflowGlass()
         {
             // (client: the box a little bigger and the words one size larger: card 1000 -> 1100, words 840 -> 940 wide, 40 -> 44 pt)
-            const float cardW = 1100f;
-            const float textW = 940f;
+            var cardW = _roomy ? 1400f : 1100f;
+            var textW = _roomy ? 1090f : 940f;
             _english.enableAutoSizing = false;
-            _english.fontSize = _clear ? 48f : 44f;
+            _english.fontSize = _roomy ? 42f : (_clear ? 48f : 44f);
             _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
             var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
             _english.gameObject.SetActive(!useBn);
             _bangla.gameObject.SetActive(useBn);
             _english.ForceMeshUpdate();
-            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, 420f);
+            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, 560f);
 
             var aspect = 6f;
             if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
@@ -417,15 +428,15 @@ namespace ChemicalSafety.Presentable
             const float headerLineY = padTop + titleH + 8f;      // underline of the heading
             const float bodyTop = headerLineY + lineH + 6f;
             const float footBand = 74f;                          // footer line + the margin under it
-            const float bodyPad = 30f;
+            var bodyPad = _roomy ? 64f : 30f;
             var body = useBn ? bnH : englishH;
             var h = Mathf.Max(430f, bodyTop + bodyPad + body + bodyPad + footBand);
             _canvasRt.sizeDelta = new Vector2(cardW, h);
 
             Band(_titleRt, padTop, titleH, 720f);
             Band(_cap, 3f, 26f, 420f);
-            Band(_divHeader, headerLineY, lineH, 980f);
-            Band(_divFooter, h - footBand + 6f, lineH, 980f);
+            Band(_divHeader, headerLineY, lineH, _roomy ? 1240f : 980f);
+            Band(_divFooter, h - footBand + 6f, lineH, _roomy ? 1240f : 980f);
             var speakerZ = _speaker.localPosition.z;
             _speaker.anchorMin = _speaker.anchorMax = new Vector2(1f, 1f);
             _speaker.pivot = new Vector2(1f, 1f);

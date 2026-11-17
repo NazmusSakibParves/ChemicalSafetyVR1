@@ -242,6 +242,12 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Transform sc21Viewing;
         [SerializeField] private Sc06Gate sc21Gate;
         [SerializeField] private PresentableMcqPanel mcqSc21;
+        [SerializeField] private GameObject envSc22;
+        [SerializeField] private Sc22Cinematic sc22Cine;
+        [SerializeField] private Transform sc22Viewing;
+        [SerializeField] private Sc06Gate sc22Gate;
+        [SerializeField] private PresentableMcqPanel mcqSc22;
+        [SerializeField] private Sc22CautionPopup sc22Caution;
         [SerializeField] private ScCheckRunner scCheck;
 
         [Header("Timing")]
@@ -325,6 +331,8 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(mcqSc20);
             DraggablePanel.Attach(sc21Gate);
             DraggablePanel.Attach(mcqSc21);
+            DraggablePanel.Attach(sc22Gate);
+            DraggablePanel.Attach(mcqSc22);
             DraggablePanel.Attach(assessmentSc12); // Scenario 12 multi-select question card
         }
 
@@ -424,7 +432,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19, envSc20, envSc21 })
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19, envSc20, envSc21, envSc22 })
                 if (e != null && e != keep)
                     e.SetActive(false);
         }
@@ -441,7 +449,7 @@ namespace ChemicalSafety.Presentable
             // a fresh scene starts with the first room on. It stays (it holds the floor the learner stands on: without a floor the rig falls) until the
             // room of the scenario is on, then every other room is switched off (each scenario hides the rooms before it, never the first one)
             var targetRoom = n == 3 ? envSc03 : n == 4 ? envSc04 : n == 5 ? envSc05 : n == 6 ? envSc06 : n == 7 ? envSc07 : n == 8 ? envSc08
-                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : n == 20 ? envSc20 : n == 21 ? envSc21 : envScCheck;
+                : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : n == 20 ? envSc20 : n == 21 ? envSc21 : n == 22 ? envSc22 : envScCheck;
             StartCoroutine(SwitchOffOtherRooms(targetRoom));
             PresentableInput.ActiveScenario = n;
             switch (n)
@@ -459,6 +467,7 @@ namespace ChemicalSafety.Presentable
                 case 19: if (envSc19 != null && sc19Cine != null) yield return RunScenario19(); break;
                 case 20: if (envSc20 != null && sc20Cine != null) yield return RunScenario20(); break;
                 case 21: if (envSc21 != null && sc21Cine != null) yield return RunScenario21(); break;
+                case 22: if (envSc22 != null && sc22Cine != null) yield return RunScenario22(); break;
                 default:
                     if (n >= 13 && n <= 18 && envScCheck != null && scCheck != null)
                         yield return RunScenarioCheck(n);
@@ -867,6 +876,14 @@ namespace ChemicalSafety.Presentable
         {
             Stage("complete");
             PresentableFx.Play(PresentableFx.Success);
+            if (envSc22 != null && sc22Cine != null)
+            {
+                // Scenario 22 is the last one: FINISH on its question was the click, the congratulation voice already told the learner; no subtitle, no wait
+                if (SessionClock.Running && !_resultShown)
+                    yield return ShowResultCard(false);
+                yield break;
+            }
+
             var doneLine = envSc21 != null && sc21Cine != null ? Sc21Content.ModuleComplete
                 : envSc20 != null && sc20Cine != null ? Sc20Content.ModuleComplete
                 : envSc19 != null && sc19Cine != null ? Sc19Content.ModuleComplete
@@ -4446,6 +4463,21 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 
+            if (scenario == 22)
+            {
+                // the client's explanation line, then the congratulation: "Click Finish to see the scorecard" (the same line after a wrong answer)
+                StopVoice();
+                yield return PlayVoiceAsIs(Sc22Vo(correct ? "Right" : "Wrong"));
+                var sc22End = Sc22Vo("Congrats");
+                if (sc22End != null)
+                {
+                    yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                    yield return PlayVoiceAsIs(sc22End);
+                }
+
+                yield break;
+            }
+
             var wrongClip = scenario == 3 && art.voSc03Wrong != null ? art.voSc03Wrong : art.voWrong;
             var correctClip = art.voCorrect;
             if (scenario == 1)
@@ -6429,7 +6461,9 @@ namespace ChemicalSafety.Presentable
             sc21Cine.ResetAll();
             Stage("sc21Done");
             yield return PresentableFx.Wait(0.3f); // the stage is visible for a moment (the smoke test and the nav read it)
-            // Scenario 22 is not built yet: NEXT after the question ends the module (result card)
+            // NEXT after the question (or the Next button of the scenario bar) goes on to Scenario 22, the last one
+            if (envSc22 != null && sc22Cine != null)
+                yield return RunScenario22();
         }
 
         private static PresentableMcqPanel.Question BuildSc21Question()
@@ -6463,6 +6497,229 @@ namespace ChemicalSafety.Presentable
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc21Content.TagCorrect,
                 tagWrong = Sc21Content.TagWrong
+            };
+        }
+
+        private AudioClip Sc22Vo(string key) => Resources.Load<AudioClip>("Sc22Vo/" + Loc.Suffix() + "/" + key);
+
+        private IEnumerator Sc22Voice(string text, AudioClip clip)
+        {
+            var token = ++_subtitleToken;
+            if (Sc19Subtitles && !string.IsNullOrEmpty(text))
+                subtitle.Show(null, text);
+            if (clip != null)
+                yield return PlayVoiceAsIs(clip);
+            else
+                yield return PresentableFx.Wait(2.5f);
+            if (token == _subtitleToken)
+                subtitle.Hide();
+        }
+
+        /// <summary>The film stands still while the caution popup is on screen with its voice-over; it hides by itself when the voice is done.</summary>
+        private IEnumerator Sc22Pause(string id)
+        {
+            Stage("sc22Caution");
+            if (sc22Caution != null)
+            {
+                // in front of the head wherever it looks right now: the film camera is 2.4 m high and looks down, so the usual eye-level pose would be wrong
+                var head = _cam != null ? _cam : Camera.main.transform;
+                var pos = head.position + head.forward * 1.5f;
+                var rot = Quaternion.LookRotation(pos - head.position, Vector3.up);
+                sc22Caution.Show(pos, rot, sc06PopupScale * 0.85f);
+            }
+
+            yield return PresentableFx.Wait(0.45f);
+            var clip = Sc22Vo("Caution");
+            if (clip != null)
+                yield return PlayVoiceAsIs(clip);
+            else
+                yield return PresentableFx.Wait(3f);
+            yield return PresentableFx.Wait(0.35f);
+            if (sc22Caution != null)
+                yield return sc22Caution.HideFade();
+            StopVoice();
+            Stage("sc22Film");
+        }
+
+        private IEnumerator RunScenario22()
+        {
+            PresentableInput.ActiveScenario = 22;
+            Stage("sc22");
+            PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
+            yield return fader.FadeTo(1f, 0.45f);
+            foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19, envSc20, envSc21 })
+                if (e != null)
+                    e.SetActive(false);
+            if (sc10Ambience != null)
+                sc10Ambience.End();
+            envSc22.SetActive(true);
+            clipboard.SetVisible(false);
+            sc22Cine.ResetAll(); // the film stands at its first picture while the card and the data sheet are read
+            if (sc22Viewing != null)
+                PlaceRig(sc22Viewing.position, sc22Viewing.forward); // looking at the drums
+            yield return fader.FadeTo(0f, 0.9f);
+
+            // 1. the instruction card (glass, eye level, draggable) with its voice, the click on Continue starts the play
+            Stage("sc22Intro");
+            _instructionClip = Sc22Vo("Instruction");
+            instructionPanel.SetContent(Sc22Content.RayInstruction, art.bnSc22RayInstructionPanel);
+            LockLocomotion(true);
+            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetGlass(sc04GlassCard);
+            instructionPanel.SetRoomy(true);   // the long Scenario 22 text needs a bigger card
+            instructionPanel.SetClearLook(true);
+            BeginEyeInstruction();
+            Sc05AsideInstruction(0f, 0f);
+            yield return instructionPanel.Show();
+            instructionPanel.SetSpeaking(true);
+            subtitle.Hide();
+            yield return PlayVoiceAsIs(_instructionClip);
+            instructionPanel.SetSpeaking(false);
+            yield return RayInstructionContinue();
+            yield return instructionPanel.Hide();
+            EndEyeInstruction();
+            instructionPanel.SetRoomy(false);
+            instructionPanel.SetGlass(false);
+            instructionPanel.SetCompact(false);
+
+            // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
+            Stage("sc22Sds");
+            var sds = Resources.Load<Sprite>("Sc22/Sc22_Sds");
+            if (sds != null)
+            {
+                clipboard.SetSheet(sds);
+                StartCoroutine(Sc22Voice(Loc.T("SC22", "SdsHint"), Sc22Vo("Sds")));
+                clipboard.SetVisible(true);
+                var wait = 0f;
+                while (clipboard.IsVisible && wait < 10f)
+                {
+                    wait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                clipboard.SetVisible(false);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+                yield return PresentableFx.Wait(0.4f);
+            }
+
+            // 3. the film, then the card; BACK plays it again
+            var hooks = new Sc22Cinematic.Hooks
+            {
+                Cut = shot => { if (shot > 0) StartCoroutine(Sc19CutFade()); },
+                SayAsync = key => StartCoroutine(Sc22Voice(string.Empty, Sc22Vo(key))),
+                Pause = id => Sc22Pause(id)
+            };
+            var again = true;
+            while (again)
+            {
+                Stage("sc22Film");
+                var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
+                var ccWas = cc != null && cc.enabled;
+                if (cc != null)
+                    cc.enabled = false;
+                var restoreAt = _cam != null ? new Vector3(_cam.position.x, 0f, _cam.position.z) : Vector3.zero;
+                var restoreFwd = _cam != null ? Flat(_cam.forward) : Vector3.forward;
+                var restoreY = rig != null ? rig.position.y : 0f;
+                // the film carries the head through its camera positions (close to a wall in the shower shots): no "head in a solid prop" fade meanwhile
+                var headGuard = GetComponent<HeadSolidGuard>();
+                if (headGuard != null)
+                    headGuard.enabled = false;
+                fader.SetExtra(0f);
+                sc22Cine.BeginRigDrive(rig, _cam);
+                yield return sc22Cine.Play(hooks);
+                yield return PresentableFx.Wait(0.6f);
+                yield return fader.FadeTo(1f, 0.35f);
+                sc22Cine.EndRigDrive();
+                if (headGuard != null)
+                    headGuard.enabled = true;
+                rig.rotation = Quaternion.identity; // upright again, then back at the back of the hall as before the film
+                rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                if (sc22Viewing != null)
+                    PlaceRig(sc22Viewing.position, sc22Viewing.forward);
+                else
+                    PlaceRig(restoreAt, restoreFwd);
+                rig.position = new Vector3(rig.position.x, restoreY, rig.position.z);
+                Physics.SyncTransforms();
+                if (cc != null)
+                    cc.enabled = ccWas;
+                yield return fader.FadeTo(0f, 0.35f);
+                StopAllVoiceCoroutines();
+                StopVoice();
+                subtitle.Hide();
+
+                Stage("sc22Gate");
+                yield return PresentableFx.Wait(0.4f);
+                Sc04PopupPose(0f, 0.08f, 1.6f, out var gatePos, out var gateRot);
+                var choice = 0; // 1 = BACK, 2 = NEXT
+                void OnBack() => choice = 1;
+                void OnNext() => choice = 2;
+                sc22Gate.Back += OnBack;
+                sc22Gate.Next += OnNext;
+                sc22Gate.Show(gatePos, gateRot, sc06PopupScale);
+                StartCoroutine(PlayVoiceAsIs(Sc22Vo("Gate")));
+                while (choice == 0)
+                    yield return null;
+                sc22Gate.Back -= OnBack;
+                sc22Gate.Next -= OnNext;
+                sc22Gate.Hide();
+                StopAllVoiceCoroutines();
+                StopVoice();
+                again = choice == 1;
+                if (again)
+                {
+                    yield return fader.FadeTo(1f, 0.4f);
+                    sc22Cine.ResetAll();
+                    yield return fader.FadeTo(0f, 0.3f);
+                }
+            }
+
+            // 4. the question
+            Stage("sc22Question");
+            Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
+            mcqSc22.SetWorldScale(sc06PopupScale);
+            mcqSc22.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            StartCoroutine(PlayVoiceAsIs(Sc22Vo("Question")));
+            yield return RunQuestion(mcqSc22, BuildSc22Question(), false, 22);
+            LockLocomotion(false);
+            sc22Cine.ResetAll();
+            Stage("sc22Done");
+            yield return PresentableFx.Wait(0.3f); // the stage is visible for a moment (the smoke test and the nav read it)
+            // the last scenario: FINISH on the question ends the module (FinishAllScenarios shows the scorecard)
+        }
+
+        private static PresentableMcqPanel.Question BuildSc22Question()
+        {
+            var labels = Sc22Content.OptionLabels;
+            var reasons = Sc22Content.OptionReasons;
+            var titles = Sc22Content.OptionWrongTitle;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = titles != null && i < titles.Length ? titles[i] : string.Empty,
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc22Content.QuestionHeader,
+                prompt = Sc22Content.QuestionPrompt,
+                longPrompt = true,
+                correctIndex = Sc22Content.CorrectIndex,
+                correctTitle = Sc22Content.CorrectTitle,
+                nextLabel = Sc22Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc22Content.TagCorrect,
+                tagWrong = Sc22Content.TagWrong
             };
         }
 
