@@ -52,6 +52,10 @@ namespace ChemicalSafety.Presentable
             public bool growBox;
             [Tooltip("Scenarios 1 and 2 (client 2026-11-18): the question is one size larger and bold, the answers are larger and never shrink below a readable size. Default false = every other scenario unchanged.")]
             public bool largeText;
+            [Tooltip("Scenario 5 (client 2026-11-19): the frame's bezel and header strip are this much larger (1 = unchanged) so a two-line question stays clear of the header border.")]
+            public float headerScale = 1f;
+            [Tooltip("Scenario 5 (client 2026-11-19): the question stays pure white (not the light-blue title colour) at every stage.")]
+            public bool whiteHeader;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -346,7 +350,7 @@ namespace ChemicalSafety.Presentable
                     r.anchorMax = new Vector2(x1, yc + halfOld / _dynF);
                 }
 
-                Band(_header.rectTransform, 0.17f, 0.89f, 0.062f); // as tall as the pane's inside: a long (Bangla) title shrinks to fit it, it never spills out
+                Band(_header.rectTransform, 0.17f, 0.89f, 0.062f * HeaderScale); // as tall as the pane's inside: a long (Bangla) title shrinks to fit it, it never spills out
                 if (_qBadgeRt != null)
                     Band(_qBadgeRt, 0.075f, 0.16f, 0.0575f);
                 if (_qMarkRt != null)
@@ -392,8 +396,13 @@ namespace ChemicalSafety.Presentable
             _frame.type = Image.Type.Sliced;
             var cv = _frame.canvas;
             var refPpu = cv != null ? cv.referencePixelsPerUnit : 100f;
-            _frame.pixelsPerUnitMultiplier = refPpu / _slicedFrame.pixelsPerUnit * (_slicedFrame.rect.width / (sizePx.x * 1.1f));
+            _frame.pixelsPerUnitMultiplier = refPpu / _slicedFrame.pixelsPerUnit * (_slicedFrame.rect.width / (sizePx.x * 1.1f)) / HeaderScale;
         }
+
+        // a larger header strip (Scenario 5 only; every other box keeps 1): the sliced frame's borders, including the header pane, grow by this factor
+        private float HeaderScale => _question != null && _question.headerScale > 1f ? _question.headerScale : 1f;
+
+        private Color HeaderColour() => _question != null && _question.whiteHeader ? Color.white : (Skin ? SkinTitle : Color.white);
 
         // The two stages of the dynamic box: the QUESTION (the options close together, the box as small as they need) and the REVEAL (room for
         // a reason under every option and the NEXT button). The box grows from one to the other in a quarter of a second when an answer is picked.
@@ -415,14 +424,14 @@ namespace ChemicalSafety.Presentable
         private float PaneBottomPx(float f)
         {
             var src = art.mcqFrame;
-            var s = sizePx.x * 1.1f / src.rect.width; // the sliced frame scales its borders uniformly with the width
+            var s = sizePx.x * 1.1f / src.rect.width * HeaderScale; // the sliced frame scales its borders uniformly with the width
             return 0.205f * src.rect.height * s - 0.05f * f * sizePx.y;
         }
 
         private float PaneCenterPx(float f)
         {
             var src = art.mcqFrame;
-            var s = sizePx.x * 1.1f / src.rect.width;
+            var s = sizePx.x * 1.1f / src.rect.width * HeaderScale;
             return 0.125f * src.rect.height * s - 0.05f * f * sizePx.y;
         }
 
@@ -794,7 +803,7 @@ namespace ChemicalSafety.Presentable
                     _wk = k;
                     _dynR = BuildDyn(q, true);
                     // the question must fit the header strip in at most two lines at this width
-                    var headFits = _header == null || MeasureTextPx(_header, _header.text, 0.72f * 1240f * k - 12f) <= 0.124f * sizePx.y - (Bn ? 22f : 2f);
+                    var headFits = _header == null || MeasureTextPx(_header, _header.text, 0.72f * 1240f * k - 12f) <= 0.124f * sizePx.y * HeaderScale - (Bn ? 22f : 2f);
                     if (headFits && 1240f * k / (900f * _dynR.f) >= 1.3f)
                         break;
                 }
@@ -1219,7 +1228,7 @@ namespace ChemicalSafety.Presentable
                 PresentableFx.Play(correct ? PresentableFx.Success : PresentableFx.Error);
                 PresentableFx.Haptic(true, correct ? 0.6f : 0.9f, correct ? 0.15f : 0.25f);
             }
-            _header.color = Skin ? SkinTitle : Color.white;
+            _header.color = HeaderColour();
             if (_embedded)
             {
                 if (_fx != null && !silent)
@@ -1373,7 +1382,7 @@ namespace ChemicalSafety.Presentable
                 SetPanelColors(PresentableUi.FlatBorder, PresentableUi.FlatFill);
             else if (_frame != null)
                 _frame.color = Color.white;
-            _header.color = Skin ? SkinTitle : Color.white;
+            _header.color = HeaderColour();
             foreach (var r in _rows)
             {
                 PaintRow(r, false, Color.white);
