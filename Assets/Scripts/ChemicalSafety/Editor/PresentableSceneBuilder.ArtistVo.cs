@@ -33,6 +33,24 @@ namespace ChemicalSafety.Editor
             Keep("VO_SC01_Instruction_bn.mp3", c => art.artistSc01Instruction = c);
             Keep("VO_Sc01Complete_bn.mp3", c => art.artistSc01Complete = c);
             Keep("VO_Sc01WrongNext_bn.mp3", c => art.artistSc01WrongNext = c);
+            Keep("VO_Sc01Question_bn.mp3", c => art.artistSc01Question = c);
+            Keep("VO_Sc01RightWhy_bn.mp3", c => art.artistSc01RightWhy = c);
+            Keep("VO_Sc01WrongWhy_bn.mp3", c => art.artistSc01WrongWhy = c);
+            art.artistSc02Question = new AudioClip[6];
+            for (var q = 0; q < 6; q++)
+            {
+                var qi = q;
+                Keep("VO_Sc02Q" + (q + 1) + "_bn.mp3", c => art.artistSc02Question[qi] = c);
+            }
+
+            Keep("VO_Sc02RightWhy_bn.mp3", c => art.artistSc02RightWhy = c);
+            Keep("VO_Sc02WrongWhy_bn.mp3", c => art.artistSc02WrongWhy = c);
+            Keep("VO_Sc03Question_bn.mp3", c => art.artistSc03Question = c);
+            Keep("VO_Sc03RightWhy_bn.mp3", c => art.artistSc03RightWhy = c);
+            Keep("VO_Sc03WrongWhy_bn.mp3", c => art.artistSc03WrongWhy = c);
+            Keep("VO_Sc04Question_bn.mp3", c => art.artistSc04Question = c);
+            Keep("VO_Sc04RightWhy_bn.mp3", c => art.artistSc04RightWhy = c);
+            Keep("VO_Sc04WrongWhy_bn.mp3", c => art.artistSc04WrongWhy = c);
             Keep("VO_ContinueHint_bn.mp3", c => art.artistContinueHint = c);
             Keep("VO_Correct_bn.mp3", c => art.artistCorrect = c);
             Keep("VO_Wrong_bn.mp3", c => art.artistWrong = c);

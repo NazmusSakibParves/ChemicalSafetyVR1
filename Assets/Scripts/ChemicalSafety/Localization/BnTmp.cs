@@ -235,9 +235,100 @@ namespace ChemicalSafety.Localization
         /// <summary>Skip the rungs whose image the import cut to 2048 px (their text would come out too small).</summary>
         public bool AvoidCapped;
 
+        /// <summary>Old behaviour for the legacy boxes: prefer the widest rung (one line) while it is not much smaller than the best.</summary>
+        public bool PreferOneLine;
+
+        /// <summary>
+        /// Fixed nominal size (client 2026-11-18): the image is NEVER scaled down to the box. The rung is the widest one whose natural width fits the
+        /// box width (so one line whenever it fits), or the narrowest if none does; the layout sizes the box from <see cref="MeasureHeight"/>.
+        /// </summary>
+        public bool NoShrink;
+
+        /// <summary>A soft dark shadow behind every Bangla image (white text on the blue glass).</summary>
+        public bool Shadowed;
+
+        /// <summary>Scale (1 = nominal) the last shown Bangla image was drawn at; below 1 means the box was too small for it. Used by the typography check.</summary>
+        public float LastShrink { get; private set; } = 1f;
+
+        /// <summary>Number of Bangla images (lines) and their total height in pixels at the current font, for the typography check.</summary>
+        public float LastImageHeight { get; private set; }
+
+        /// <summary>True while a Bangla image (not TextMeshPro text) is what is drawn.</summary>
+        public bool ShowingImages => _showing;
+
+        /// <summary>
+        /// Height in pixels the Bangla text needs at the current font when drawn with <see cref="NoShrink"/> in a slot <paramref name="widthPx"/> wide;
+        /// -1 when the text is not drawn as Bangla images (English mode): the caller then measures it with TextMeshPro.
+        /// </summary>
+        public float MeasureHeight(string src, float widthPx)
+        {
+            if (!Loc.IsBangla)
+                return -1f;
+            var bn = src ?? string.Empty;
+            if (!Loc.HasBengali(bn))
+            {
+                var tr = Loc.Translate(bn);
+                if (tr != null)
+                    bn = tr;
+            }
+
+            if (!Loc.HasBengali(bn))
+                return -1f;
+            var sp = PickRung(bn, widthPx);
+            return sp == null ? -1f : sp.rect.height * EffectiveFont / RenderPx * BnScale;
+        }
+
+        private Sprite PickRung(string bn, float widthPx)
+        {
+            if (_index == null)
+                LoadIndex();
+            var key = Hash(bn, IsBold);
+            if (!_index.TryGetValue(key, out var buckets))
+            {
+                key = Hash(bn, !IsBold);
+                if (!_index.TryGetValue(key, out buckets))
+                    return null;
+            }
+
+            var baseScale = EffectiveFont / RenderPx * BnScale;
+            Sprite widest = null;
+            Sprite narrowest = null;
+            var narrowestB = int.MaxValue;
+            var widestB = -1;
+            foreach (var b in buckets)
+            {
+                if (AvoidCapped && b >= 3000 && buckets.Length > 1)
+                    continue;
+                var name = key + "_" + b;
+                if (!SpriteCache.TryGetValue(name, out var sp) || sp == null)
+                {
+                    sp = Resources.Load<Sprite>("BnAuto/" + name);
+                    SpriteCache[name] = sp;
+                }
+
+                if (sp == null)
+                    continue;
+                if (b < narrowestB)
+                {
+                    narrowestB = b;
+                    narrowest = sp;
+                }
+
+                if (sp.rect.width * baseScale <= widthPx && b > widestB)
+                {
+                    widestB = b;
+                    widest = sp;
+                }
+            }
+
+            return widest != null ? widest : narrowest;
+        }
+
         private Sprite FindBest(string bn, float fallbackPx)
         {
             var box = rectTransform.rect.size;
+            if (NoShrink && box.x >= 8f)
+                return PickRung(bn, box.x);
             if (box.x < 8f || box.y < 8f)
                 return FindSprite(bn, fallbackPx);
             if (_index == null)
@@ -253,6 +344,9 @@ namespace ChemicalSafety.Localization
             var baseScale = EffectiveFont / RenderPx * BnScale;
             Sprite best = null;
             var bestShrink = -1f;
+            Sprite wide = null;
+            var wideB = -1;
+            var wideShrink = 0f;
             foreach (var b in buckets)
             {
                 var name = key + "_" + b;
@@ -274,8 +368,18 @@ namespace ChemicalSafety.Localization
                     best = sp;
                     bestShrink = shrink;
                 }
+
+                if (b >= wideB)
+                {
+                    wideB = b;
+                    wide = sp;
+                    wideShrink = shrink;
+                }
             }
 
+            // one line while it fits at 85 % of the nominal size or better; a longer text may wrap (no room left on the line)
+            if (PreferOneLine && wide != null && wideShrink >= 0.85f)
+                best = wide;
             return best;
         }
 
@@ -294,8 +398,12 @@ namespace ChemicalSafety.Localization
                 maxW = Mathf.Max(maxW, w[i]);
             }
 
-            var shrink = Mathf.Min(1f, box.x / Mathf.Max(1f, maxW), box.y / Mathf.Max(1f, totalH));
+            var shrink = NoShrink
+                ? Mathf.Min(1f, box.x / Mathf.Max(1f, maxW))
+                : Mathf.Min(1f, box.x / Mathf.Max(1f, maxW), box.y / Mathf.Max(1f, totalH));
             totalH *= shrink;
+            LastShrink = shrink;
+            LastImageHeight = totalH;
 
             var a = alignment;
             var left = a == TextAlignmentOptions.Left || a == TextAlignmentOptions.TopLeft || a == TextAlignmentOptions.BottomLeft ||
@@ -323,6 +431,16 @@ namespace ChemicalSafety.Localization
                 irt.anchoredPosition = new Vector2(0f, -cursor);
                 cursor += h[i] * shrink;
                 img.color = color;
+                var sh = img.GetComponent<Shadow>();
+                if (Shadowed && sh == null)
+                {
+                    sh = img.gameObject.AddComponent<Shadow>();
+                    sh.effectColor = new Color(0f, 0.03f, 0.1f, 0.8f);
+                    sh.effectDistance = new Vector2(2f, -2f);
+                }
+
+                if (sh != null)
+                    sh.enabled = Shadowed;
             }
 
             for (var i = sprites.Count; i < _imgs.Count; i++)

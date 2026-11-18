@@ -204,6 +204,16 @@ namespace ChemicalSafety.Presentable
             }
         }
 
+        /// <summary>World height of the card's top edge (frame margin included), for keeping it below the top bar.</summary>
+        public float TopWorldY
+        {
+            get
+            {
+                Build();
+                return transform.position.y + (_canvasRt.sizeDelta.y * 0.5f + 40f) * metersPerPixel * _baseScale;
+            }
+        }
+
         public void SetSpeaking(bool speaking) => _speaking = speaking;
 
         /// <summary>
@@ -266,22 +276,35 @@ namespace ChemicalSafety.Presentable
 
         // Controller-ray scenario: the card shrinks to its words on every side (same 32 pt text and same Bangla image size as the
         // other scenarios, even margins), keeping the frame's own proportions so the shape stays premium.
+        // Scenario 2 (client 2026-11-18, long text): more air on the sides and below, a larger Bangla image. Off for every other scenario.
+        private bool _compactRoomy;
+
+        public void SetCompactRoomy(bool on)
+        {
+            if (_compactRoomy == on)
+                return;
+            _compactRoomy = on;
+            if (_built)
+                Reflow();
+        }
+
         private void ReflowCompact()
         {
-            const float textW = 760f;
+            // roomy (Scenario 2): the SAME word size as the Scenario 1 card (44 pt; client: one text size in every scenario), narrower box
+            var textW = _compactRoomy ? 800f : 760f;
             _english.enableAutoSizing = false;
-            _english.fontSize = 32f;
+            _english.fontSize = _compactRoomy ? 44f : 32f;
             _english.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textW);
             var useBn = ChemicalSafety.Localization.Loc.IsBangla && _bangla.sprite != null;
             _english.gameObject.SetActive(!useBn);
             _bangla.gameObject.SetActive(useBn);
             _english.ForceMeshUpdate();
-            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, 420f);
+            var englishH = useBn ? 0f : Mathf.Clamp(_english.preferredHeight + 8f, 64f, _compactRoomy ? 560f : 420f);
 
             var aspect = 6f;
             if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
                 aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
-            var bnH = useBn ? Mathf.Min(190f, 920f / Mathf.Max(0.1f, aspect)) : 0f;
+            var bnH = useBn ? Mathf.Min(_compactRoomy ? 640f : 190f, (_compactRoomy ? 800f : 920f) / Mathf.Max(0.1f, aspect)) : 0f;
             var bnW = bnH * aspect;
 
             const float padTop = 64f;
@@ -289,11 +312,13 @@ namespace ChemicalSafety.Presentable
             const float speakerH = 172f;
             const float speakerDrop = 28f;
             const float gap = 18f;
-            const float padBot = 120f; // room under the text so it never touches the frame's lower edge
-            const float sidePad = 110f;
+            var padBot = _compactRoomy ? 150f : 120f; // room under the text so it never touches the frame's lower edge
+            var sidePad = _compactRoomy ? 190f : 110f;
             var contentW = useBn ? Mathf.Max(bnW, 520f) : textW;
             var cardW = Mathf.Max(720f, contentW + 2f * sidePad);
-            var h = padTop + titleH + gap + speakerDrop + speakerH + gap + (useBn ? bnH : englishH) + padBot;
+            // roomy (Scenario 2): the speaker sits at the right end of the title line like in Scenario 1, so the words move up
+            var speakerBand = _compactRoomy ? 0f : speakerDrop + speakerH + gap;
+            var h = padTop + titleH + gap + (_compactRoomy ? 34f : 0f) + speakerBand + (useBn ? bnH : englishH) + padBot;
 
             _canvasRt.sizeDelta = new Vector2(cardW, h);
             _frameRt.sizeDelta = new Vector2(cardW * 1.269f, h * 1.175f); // the frame art's own ratios (as at 1300 x 790)
@@ -301,9 +326,26 @@ namespace ChemicalSafety.Presentable
             var y = padTop;
             // the title keeps the frame-relative height it has in the normal card (about 17 % of the frame height from its top edge)
             Band(_titleRt, 0.116f * h, titleH, 680f);
-            y += titleH + gap + speakerDrop;
-            Band(_speaker, y, speakerH, speakerH);
-            y += speakerH + gap;
+            if (_compactRoomy)
+            {
+                y += titleH + gap + 34f;
+                var speakerZ = _speaker.localPosition.z;
+                _speaker.anchorMin = _speaker.anchorMax = new Vector2(1f, 1f);
+                _speaker.pivot = new Vector2(1f, 1f);
+                // at the right end of the title line (client marked the spot), a little larger
+                _speaker.sizeDelta = new Vector2(120f, 120f);
+                _speaker.anchoredPosition = new Vector2(-(cardW * 0.103f), -(0.116f * h + titleH * 0.5f - 60f));
+                var spp = _speaker.localPosition;
+                spp.z = speakerZ;
+                _speaker.localPosition = spp;
+            }
+            else
+            {
+                y += titleH + gap + speakerDrop;
+                Band(_speaker, y, speakerH, speakerH);
+                y += speakerH + gap;
+            }
+
             Band(_english.rectTransform, y, englishH, textW);
             Band(_bangla.rectTransform, y, bnH, bnW);
 
@@ -402,6 +444,18 @@ namespace ChemicalSafety.Presentable
 
         private bool _roomy;
 
+        // Tallest Bangla text image in the glass card (units). 200 = every scenario as before; Scenario 1 raises it for its longer text
+        // so the card grows with the words instead of shrinking them.
+        private float _bnBodyMax = 200f;
+
+        public void SetBnBodyMax(float max)
+        {
+            if (Mathf.Approximately(_bnBodyMax, max))
+                return;
+            _bnBodyMax = max;
+            Reflow();
+        }
+
         private void ReflowGlass()
         {
             // (client: the box a little bigger and the words one size larger: card 1000 -> 1100, words 840 -> 940 wide, 40 -> 44 pt)
@@ -419,7 +473,7 @@ namespace ChemicalSafety.Presentable
             var aspect = 6f;
             if (_bangla.sprite != null && _bangla.sprite.rect.height > 1f)
                 aspect = _bangla.sprite.rect.width / _bangla.sprite.rect.height;
-            var bnH = useBn ? Mathf.Min(200f, textW / Mathf.Max(0.1f, aspect)) : 0f;
+            var bnH = useBn ? Mathf.Min(_bnBodyMax, textW / Mathf.Max(0.1f, aspect)) : 0f;
             var bnW = bnH * aspect;
 
             const float padTop = 40f;

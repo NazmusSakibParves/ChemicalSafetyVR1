@@ -586,6 +586,28 @@ namespace ChemicalSafety.Presentable
             Say("SC04 reveal: reasons shown = " + reasons + "/" + cur.options.Length + ", wrong popup open = " +
                 (FindDeep(mcq4.transform, "WrongPopup") != null && FindDeep(mcq4.transform, "WrongPopup").gameObject.activeInHierarchy));
             LayoutCheck("SC04 MCQ reveal", mcq4.transform);
+            yield return new WaitForSeconds(2f);
+            {
+                Transform nb4 = null;
+                foreach (var t4 in mcq4.GetComponentsInChildren<Transform>())
+                    if (t4.name == "NextButton" && t4.gameObject.activeInHierarchy)
+                        nb4 = t4;
+                var lb4 = nb4 != null ? FindDeep(nb4, "Label") : null;
+                var sb = new System.Text.StringBuilder();
+                if (lb4 != null)
+                {
+                    var tm4 = lb4.GetComponent<TMPro.TMP_Text>();
+                    sb.Append("text='" + (tm4 != null ? tm4.text : "?") + "' rect=" + ((RectTransform)lb4).rect.size + " imgs:");
+                    foreach (var im4 in lb4.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+                    {
+                        var ir4 = im4.rectTransform;
+                        var cg4 = nb4.GetComponent<CanvasGroup>();
+                        sb.Append(" [" + (im4.sprite != null ? im4.sprite.name : "null") + " active=" + im4.gameObject.activeInHierarchy + " a=" + im4.color.a.ToString("0.0") + " crAlpha=" + im4.canvasRenderer.GetAlpha().ToString("0.0") + " cull=" + im4.canvasRenderer.cull + " size=" + ir4.rect.size + " localPos=" + ir4.localPosition + " worldScale=" + ir4.lossyScale.x.ToString("0.0000") + " pillSize=" + ((RectTransform)nb4).rect.size + " pillAlpha=" + (cg4 != null ? cg4.alpha.ToString("0.0") : "none") + " pillSibling=" + nb4.GetSiblingIndex() + " labelSibling=" + lb4.GetSiblingIndex() + " labelLocal=" + lb4.localPosition + "]");
+                    }
+                }
+                Say("SC04 NEXT label: " + sb);
+                yield return Shot("34b_sc04_next");
+            }
             Click(mcq4.transform, "NextButton");
         }
 
@@ -643,7 +665,7 @@ namespace ChemicalSafety.Presentable
             var frame = 0;
             var nw = 0f;
             var nextOn = false;
-            while (!nextOn && nw < 40f)
+            while (!nextOn && nw < 80f) // the right answer now plays: shared line + explanation, then the protocol
             {
                 foreach (var tr in mcq3.GetComponentsInChildren<Transform>())
                     if (tr.name == "NextButton" && tr.gameObject.activeInHierarchy)
@@ -761,6 +783,11 @@ namespace ChemicalSafety.Presentable
                 return 0;
             var crt = (RectTransform)canvas.transform;
             var cr = crt.rect;
+            // the safe margins are pixels of the frame art: a box taller than normal (Scenario 1 growBox) has smaller margins as a fraction of its height
+            var mcqPanel = root.GetComponentInChildren<PresentableMcqPanel>(true);
+            var tall = mcqPanel != null && !wholeCanvas ? mcqPanel.TallScale : 1f;
+            yLo /= tall;
+            yHi = 1f - (1f - yHi) / tall;
             var bad = 0;
             var count = 0;
             foreach (var t in root.GetComponentsInChildren<TMPro.TMP_Text>(false))
@@ -807,6 +834,14 @@ namespace ChemicalSafety.Presentable
                         mn.x.ToString("0.00") + "-" + mx.x.ToString("0.00") + " y " + mn.y.ToString("0.00") + "-" +
                         mx.y.ToString("0.00") + (inRow ? "" : " (leaves its row)"));
                 }
+            }
+
+            if (mcqPanel != null && !wholeCanvas && mcqPanel.IsOpen)
+            {
+                var typeReport = mcqPanel.TypeReport(out var typeOk);
+                Say("TYPE " + (typeOk ? "ok  " : "FAIL") + " " + where + ":" + typeReport);
+                if (!typeOk)
+                    bad++;
             }
 
             Say("layout " + where + ": " + count + " texts checked, violations = " + bad);
@@ -4396,7 +4431,7 @@ namespace ChemicalSafety.Presentable
             // right answer: the drum goes onto the trolley first (about 7 s), the voice starts together with NEXT
             var nextFrame = 0.8f;
             var frameNo = 0;
-            while (waited < (wrongRun ? 8f : 22f))
+            while (waited < (wrongRun ? 28f : 36f)) // the voice chain is now: shared line + the client's explanation + the NEXT line
             {
                 // the trolley sequence as a strip of frames (Temp/Smoke/09t_N.png), to look for the drum / trolley overlap
                 if (!wrongRun && frameNo < 9 && waited >= nextFrame)

@@ -29,6 +29,9 @@ namespace ChemicalSafety.Presentable
         public const int CorrectIndex = 3;
 
         public static string[] OptionLabels => Loc.A("SC01", "OptionLabels");
+
+        /// <summary>The short names on the plates above the drums and in the label-pick popup (the question options are full sentences since 2026-11-18).</summary>
+        public static string[] DrumNames => Loc.A("SC01", "DrumNames");
         public static string[] OptionWrongLabels => Loc.A("SC01", "OptionWrongLabels");
         public static string[] OptionFeedback => Loc.A("SC01", "OptionFeedback");
         public static string[] OptionReasons => Loc.A("SC01", "OptionReasons");

@@ -33,7 +33,7 @@ namespace ChemicalSafety.Presentable
         public static string QuestionPrompt => Loc.T("SC03", "QuestionPrompt");
         public static string CorrectTitle => Loc.T("SC03", "CorrectTitle");
         public static string FinishLabel => Loc.T("SC03", "FinishLabel");
-        public const int CorrectIndex = 1;
+        public const int CorrectIndex = 3; // option D (2026-11-18: the client's four options, the safe answer is the last)
 
         public static string[] OptionLabels => Loc.A("SC03", "OptionLabels");
 

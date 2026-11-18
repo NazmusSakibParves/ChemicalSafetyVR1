@@ -1,0 +1,18 @@
+{
+ "InstructionEnglish": "76e6b7993112dbdbf47ef026a51b2a03f6d41fc2",
+ "SdsHint": "61f7a63a03cfdeb06a8d77ede351ba6c7a763b74",
+ "TouchHint": "ea76347d3a53b5154b656ffe4eceb623ead21b9a",
+ "ReportTitle": "d3060d340ca2771d9e3cf454984310707fad2ed2",
+ "ScanCaption": "2770885131b73bc4d829202cbfd6c2037810cbb8",
+ "ContinueLabel": "142da10b1dc2e86a7a5c103fe9265307a640b898",
+ "QuestionHeader": "e5a7da751beeaaf158f9e856057f3bde61caae01",
+ "QuestionPrompt": "5da4c01170b217ce3e4b8b004bd26a93c43d8c0e",
+ "CorrectTitle": "8bf0bc98caa648e0f8b3136ca8752606ad6ec68c",
+ "FinishLabel": "27784e6e8a5bca44bf1013ff8f7078619cbbebf4",
+ "ModuleComplete": "afe42c6fd9bbfadf61b9e93e93fc6e528f30eb17",
+ "TagCorrect": "0a020e7e67569e3f38b29bf6d0245609750e3653",
+ "TagWrong": "0ed843e543d5ccf8be4d9be6797deb0ec7cd1188",
+ "ProtocolHeader": "b462235991126c56551ba812d3ff14be9883ab08",
+ "ProtocolSource": "d4210582abd702ebcdf40fd22fba4fc7f7ffa635",
+ "ProtocolDone": "23e156c89801ffd1a88a6ce4d3f759f511127355"
+}

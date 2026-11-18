@@ -18,7 +18,7 @@ namespace ChemicalSafety.Presentable
     {
         // metres in the view: right, up, forward of the head. Default = top centre, ~24 degrees above (it was 29 and fell outside a normal game view) the eye line (2026-11-17: it used to sit at ~10 degrees
         // and ran through every instruction card / MCQ box / popup, whose top edges reach 17-31 degrees). Quest vertical field of view is about +-48 degrees.
-        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.40f, 0.9f);
+        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.46f, 0.9f); // 2026-11-18: a little higher (was 0.40) so the cards / boxes under it have room
         private static Vector3 _barOffset = DefaultBarOffset; // survives a re-created bar (jump), reset by ResetBarPosition
         private static readonly Vector3 ToastOffset = new Vector3(0f, 0.02f, 1.5f);
 
@@ -77,6 +77,12 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Puts the bar back to the default top-centre place.</summary>
         public static void ResetBarPosition() => _barOffset = DefaultBarOffset;
+
+        /// <summary>Height of the bar's lower edge above the eye line per metre of distance (a box at distance d must keep its top below d * this).</summary>
+        public static float BarBottomRatio => (_barOffset.y - BarH * BarScale * 0.5f) / Mathf.Max(0.3f, _barOffset.z);
+
+        /// <summary>Same, but the bar is head-locked: it sinks when the learner looks down. 8 degrees of looking down are allowed for, so a box placed below this stays under the bar for a normal glance at the drums / table.</summary>
+        public static float SafeBarRatio => Mathf.Tan(Mathf.Atan(BarBottomRatio) - 8f * Mathf.Deg2Rad);
 
         public void SetVisible(bool visible)
         {

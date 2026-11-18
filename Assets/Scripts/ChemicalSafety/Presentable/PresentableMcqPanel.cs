@@ -48,6 +48,10 @@ namespace ChemicalSafety.Presentable
             public bool longPrompt;
             [Tooltip("inlineReveal: no NEXT button after the reveal; the director carries on by itself (Revealed event). Scenario 2, questions 1-5.")]
             public bool hideNext;
+            [Tooltip("Scenario 1 (2026-11-18, long client texts): the box may grow taller than its normal size so four answers with their reasons fit without squeezing or touching the edges. Default false = every other scenario unchanged.")]
+            public bool growBox;
+            [Tooltip("Scenarios 1 and 2 (client 2026-11-18): the question is one size larger and bold, the answers are larger and never shrink below a readable size. Default false = every other scenario unchanged.")]
+            public bool largeText;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -87,6 +91,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float metersPerPixel = 0.00055f;
 
         private float _worldScale = 1f;
+        public float WorldScale => _worldScale;
 
         // ---- client MCQ design (Scenarios 1-12): transparent glass frame, light-blue answer boxes that turn green / red, tick / cross.
         // Active only when the builder gave the panel the new sprites (PresentableSceneBuilder.McqNewDesign); otherwise nothing changes.
@@ -103,6 +108,10 @@ namespace ChemicalSafety.Presentable
         private const float SkinRowHBn = 0.086f; // Bangla: shorter answer boxes leave room for a two-line, larger reason under each
 
         private static float SkinRowHNow => ChemicalSafety.Localization.Loc.IsBangla ? SkinRowHBn : SkinRowH;
+
+        // largeText in the fixed (embedded callout) layout: slightly shorter answer boxes leave room for a two-line reason under each answer (English;
+        // Bangla already has the short rows)
+        private float RowHNow => _question != null && _question.largeText && !_dyn && !ChemicalSafety.Localization.Loc.IsBangla ? 0.082f : SkinRowHNow;
         private readonly List<GameObject> _skinDecor = new List<GameObject>();
 
         private static float SkinTop(int i) => SkinTop0 - i * SkinSlot;
@@ -147,6 +156,134 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Bangla text is an image picked by size (BnTmp never enlarges it, and takes the one-line image when everything fits): in the dynamic box the
         /// size caps are raised so the multi-line images are chosen and the Bangla reads as large as the English.</summary>
+        // ---- ONE type system for the question boxes (client 2026-11-18). Fixed pixel sizes, never auto-sized, Bangla images never shrunk: the same size for
+        // every question, answer and reason in Scenarios 1, 3, 4 (and, a little smaller because of its tighter fixed canvas, the Scenario 2 callout).
+        // The box takes its height from the measured text (BuildDyn), the text never takes its size from the box.
+        // client 2026-11-18: question, then answers ONE step (4 px) smaller, then reasons ONE step smaller again
+        // (a Bangla image of the same nominal size is drawn about a third larger than Times New Roman, so Bangla uses a smaller triple, again 4 px per step)
+        private static bool Bn => ChemicalSafety.Localization.Loc.IsBangla;
+        private static float TypeQuestion => Bn ? 32f : 44f;
+        private static float TypeAnswer => Bn ? 28f : 40f;
+        private static float TypeReason => Bn ? 24f : 36f;
+        private static float TypeTag => Bn ? 20f : 30f;
+        private static float CalloutQuestion => Bn ? 28f : 36f;
+        private static float CalloutAnswer => Bn ? 24f : 32f;
+        private static float CalloutReason => Bn ? 20f : 28f;
+        private static float CalloutTag => Bn ? 16f : 24f;
+
+        public static float QuestionSize(bool embedded) => embedded ? CalloutQuestion : TypeQuestion;
+        public static float AnswerSize(bool embedded) => embedded ? CalloutAnswer : TypeAnswer;
+        public static float ReasonSize(bool embedded) => embedded ? CalloutReason : TypeReason;
+
+        // A soft dark shadow behind the white text (English: TextMeshPro underlay; Bangla images: UI Shadow) so it reads on the blue glass.
+        private static void SetTextShadow(TextMeshProUGUI t, bool on)
+        {
+            if (t == null)
+                return;
+            if (t is ChemicalSafety.Localization.BnTmp bt)
+                bt.Shadowed = on;
+            var m = t.fontMaterial;
+            if (m == null)
+                return;
+            if (on)
+            {
+                m.EnableKeyword("UNDERLAY_ON");
+                m.SetColor("_UnderlayColor", new Color(0f, 0.03f, 0.1f, 0.85f));
+                m.SetFloat("_UnderlayOffsetX", 0.6f);
+                m.SetFloat("_UnderlayOffsetY", -0.6f);
+                m.SetFloat("_UnderlaySoftness", 0.3f);
+                m.SetFloat("_UnderlayDilate", 0.15f);
+            }
+            else
+            {
+                m.DisableKeyword("UNDERLAY_ON");
+            }
+        }
+
+        private void ApplyLargeText(bool on)
+        {
+            var emb = _embedded;
+            if (_header != null)
+            {
+                _header.fontStyle = on ? FontStyles.Bold : FontStyles.Normal;
+                if (Skin)
+                    _header.color = on ? Color.white : SkinTitle; // the question is pure white
+                SetTextShadow(_header, on);
+                _header.enableAutoSizing = !on;
+                if (on)
+                {
+                    _header.fontSize = emb ? CalloutQuestion : TypeQuestion;
+                    _header.textWrappingMode = TextWrappingModes.Normal;
+                    _header.margin = new Vector4(6f, 0f, 6f, 0f); // the header pane is one fixed strip: two lines of the question fit it only without a vertical margin
+                }
+                else
+                {
+                    _header.fontSizeMax = Skin ? 30f : 28f;
+                    if (Skin)
+                        _header.margin = new Vector4(4f, 0f, 4f, 0f);
+                }
+
+                if (_header is ChemicalSafety.Localization.BnTmp hb)
+                    hb.NoShrink = on;
+            }
+
+            foreach (var r in _rows)
+            {
+                if (r.label != null)
+                {
+                    r.label.enableAutoSizing = !on;
+                    if (on)
+                    {
+                        r.label.fontSize = emb ? CalloutAnswer : TypeAnswer;
+                        r.label.textWrappingMode = TextWrappingModes.Normal;
+                        r.label.overflowMode = TextOverflowModes.Overflow;
+                    }
+                    else
+                    {
+                        r.label.fontSizeMin = 14f;
+                        r.label.fontSizeMax = 28f;
+                    }
+
+                    if (r.label is ChemicalSafety.Localization.BnTmp lb)
+                        lb.NoShrink = on;
+                    if (on)
+                        r.label.color = Color.white;
+                    SetTextShadow(r.label, on);
+                }
+
+                if (r.reason != null)
+                {
+                    r.reason.enableAutoSizing = !on;
+                    if (on)
+                    {
+                        r.reason.fontSize = emb ? CalloutReason : TypeReason;
+                        r.reason.textWrappingMode = TextWrappingModes.Normal;
+                        r.reason.overflowMode = TextOverflowModes.Overflow;
+                    }
+
+                    if (r.reason is ChemicalSafety.Localization.BnTmp rb)
+                        rb.NoShrink = on;
+                    SetTextShadow(r.reason, on);
+                }
+
+                if (r.reasonTag != null)
+                {
+                    r.reasonTag.enableAutoSizing = !on;
+                    if (on)
+                        r.reasonTag.fontSize = emb ? CalloutTag : TypeTag;
+                    else
+                    {
+                        r.reasonTag.fontSizeMin = 14f;
+                        r.reasonTag.fontSizeMax = 22f;
+                    }
+
+                    if (r.reasonTag is ChemicalSafety.Localization.BnTmp tb)
+                        tb.NoShrink = on;
+                    SetTextShadow(r.reasonTag, on);
+                }
+            }
+        }
+
         private void SetDynFonts(bool on)
         {
             if (_header is ChemicalSafety.Localization.BnTmp hb)
@@ -167,10 +304,14 @@ namespace ChemicalSafety.Presentable
             {
                 if (r.reason == null)
                     continue;
+                if (_question != null && _question.largeText)
+                    continue; // fixed size, wrapped by the measured layout (ApplyLargeText)
                 r.reason.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
                 r.reason.overflowMode = wrap ? TextOverflowModes.Truncate : TextOverflowModes.Ellipsis;
-                r.reason.fontSizeMax = wrap ? 24f : 22f;
-                r.reason.fontSizeMin = wrap ? 12f : 14f;
+                var big = _question != null && _question.largeText;
+                // client 2026-11-18: the reasons were too small to read, larger now (the boxes make room: see BuildDyn / RowHNow)
+                r.reason.fontSizeMax = wrap ? (big ? (_embedded ? 29f : 27f) : 24f) : 22f;
+                r.reason.fontSizeMin = wrap ? (big ? (_embedded ? 20f : 19f) : 12f) : 14f;
             }
         }
 
@@ -195,7 +336,7 @@ namespace ChemicalSafety.Presentable
         {
             if (!Skin)
                 return;
-            if (_dyn)
+            if (_dyn && !_embedded)
             {
                 // the frame is cut into a 9-slice and its header pane is at a fixed pixel position: the title, the Q and the ? sit on the pane's middle
                 var yc = 1f - PaneCenterPx(_dynF) / (_dynF * sizePx.y) - 0.012f; // a hair below the middle: clear of the bezel arcs
@@ -214,7 +355,10 @@ namespace ChemicalSafety.Presentable
                 return;
             }
 
-            SetA(_header.rectTransform, 0.17f, 0.785f, 0.89f, 0.955f);
+            // callout (embedded, largeText): the question band sits a little lower so a 2-3 line question stays inside the header pane
+            var calloutHead = _embedded && _question != null && _question.largeText;
+            // the callout's header pane (the frame art, stretched over 900 px) spans about 0.77 - 0.98 of the height; the question is centred in it
+            SetA(_header.rectTransform, calloutHead ? 0.15f : 0.17f, calloutHead ? 0.777f : 0.785f, calloutHead ? 0.9f : 0.89f, calloutHead ? 0.975f : 0.955f);
             if (_qBadgeRt != null)
                 SetA(_qBadgeRt, 0.075f, 0.84f, 0.16f, 0.955f);
             if (_qMarkRt != null)
@@ -259,6 +403,11 @@ namespace ChemicalSafety.Presentable
             public readonly float[] top = new float[4], rowH = new float[4], reasonH = new float[4];
         }
 
+        // growBox questions (Scenarios 1, 3, 4; client 2026-11-18): the box is wider as well as taller (frame proportions kept: the bevel stays the same size in
+        // pixels), so the reasons fit on fewer lines and the box does not have to grow so tall
+        private const float WideK = 1.4f;
+        private float _wk = 1f;
+
         private DynLayout _dynQ, _dynR;
         private int _dynN;
 
@@ -281,23 +430,203 @@ namespace ChemicalSafety.Presentable
         {
             var n = q.options.Length;
             var bn = ChemicalSafety.Localization.Loc.IsBangla;
-            var capLabel = bn ? 30 : 56;   // characters per line of an answer at a readable size
-            var capReason = bn ? 34 : 84;  // the reason is smaller (Bangla needs more, shorter lines)
+            var rowH = new float[4];
+            var reasonH = new float[4];
+            float gap;
+            if (q.largeText)
+            {
+                // ---- measured layout (client 2026-11-18): every text is measured at its FIXED size in its real slot width; nothing is guessed from a character
+                // count and nothing is squeezed, so the box simply takes the height the text needs
+                var H = sizePx.y;
+                var W = sizePx.x * _wk;
+                var reasonW = W * (0.95f - 0.205f) - 24f;
+                for (var i = 0; i < n; i++)
+                {
+                    var o = q.options[i];
+                    var nIcons = o.icons == null ? 0 : Mathf.Min(o.icons.Length, 3);
+                    var labelRight = nIcons > 0 ? (q.inlineReveal ? 0.885f : 0.95f) - nIcons * (0.082f + 0.014f) - 0.02f : 0.92f;
+                    var labelW = 0.9f * W * (labelRight - 0.125f) - 24f;
+                    rowH[i] = Mathf.Max(74f, MeasureTextPx(_rows[i].label, o.label, labelW) + (Bn ? 48f : 36f)) / H;
+                    reasonH[i] = reveal ? (MeasureTextPx(_rows[i].reason, o.reason, reasonW) + (Bn ? 36f : 20f)) / H : 0f;
+                }
+
+                gap = (reveal ? 14f : 26f) / H;
+                // the box is never flatter than 1.46 : 1 (the designed proportion is 1.38 : 1): short content gets more air instead
+                var minF = _embedded ? 1f : 1240f * _wk / (900f * 1.46f);
+                return SolveDyn(rowH, reasonH, gap, n, reveal, q.growBox ? 2.6f : 1.0f, minF);
+            }
+
+            var wideK = q.growBox ? WideK : 1f;
+            var capLabel = Mathf.RoundToInt((bn ? 30 : 56) * wideK);   // characters per line of an answer at a readable size
+            var capReason = Mathf.RoundToInt((bn ? 34 : 84) * wideK);  // the reason is smaller (Bangla needs more, shorter lines)
             var rowLine = bn ? 0.044f : 0.036f;
             var reasonLine = bn ? 0.042f : 0.032f;
             var maxLabelLines = bn ? 5 : 4;
             var maxReasonLines = bn ? 6 : 4;
-            var gap = reveal ? 0.018f : 0.030f;
-            const float nextH = 0.094f, nextGap = 0.010f, bottomPad = 0.075f;
-            var L = new DynLayout();
-            var rowH = new float[4];
-            var reasonH = new float[4];
-            var total = 0f;
+            gap = reveal ? 0.018f : 0.030f;
             for (var i = 0; i < n; i++)
             {
                 rowH[i] = 0.066f + rowLine * Mathf.Min(maxLabelLines, TextLines(q.options[i].label, capLabel));
                 reasonH[i] = reveal ? 0.020f + reasonLine * Mathf.Min(maxReasonLines, TextLines(q.options[i].reason, capReason)) : 0f;
+            }
+
+            return SolveDyn(rowH, reasonH, gap, n, reveal, q.growBox ? 1.5f : 1f, 0f);
+        }
+
+        /// <summary>
+        /// Typography check for the smoke test (client 2026-11-18: every question / answer / reason of a box must be drawn at ONE size, nothing shrunk, nothing
+        /// outside its slot). Lists the size every visible text is drawn at; ok = false when a group is not uniform, a Bangla image was scaled down, or a text
+        /// does not fit its slot.
+        /// </summary>
+        public string TypeReport(out bool ok)
+        {
+            ok = true;
+            var sb = new System.Text.StringBuilder();
+
+            float Size(TextMeshProUGUI t, out bool fits, out bool shrunk)
+            {
+                fits = true;
+                shrunk = false;
+                if (t == null || !t.gameObject.activeInHierarchy || string.IsNullOrEmpty(t.text))
+                    return -1f;
+                var rect = t.rectTransform.rect;
+                if (t is ChemicalSafety.Localization.BnTmp bt && ChemicalSafety.Localization.Loc.IsBangla && bt.ShowingImages)
+                {
+                    fits = bt.LastImageHeight <= rect.height + 6f;
+                    shrunk = bt.LastShrink < 0.98f;
+                    return t.fontSize * bt.LastShrink;
+                }
+
+                fits = t.preferredHeight <= rect.height + 6f;
+                return t.fontSize;
+            }
+
+            void Group(string name, System.Collections.Generic.List<float> sizes, ref bool good)
+            {
+                if (sizes.Count == 0)
+                    return;
+                var lo = Mathf.Min(sizes.ToArray());
+                var hi = Mathf.Max(sizes.ToArray());
+                sb.Append(" " + name + "=" + lo.ToString("0.#") + (hi - lo > 0.5f ? ".." + hi.ToString("0.#") + " NOT-UNIFORM" : ""));
+                if (hi - lo > 0.5f)
+                    good = false;
+            }
+
+            var labels = new System.Collections.Generic.List<float>();
+            var reasons = new System.Collections.Generic.List<float>();
+            var good2 = true;
+            for (var i = 0; i < _rows.Count && _question != null && i < _question.options.Length; i++)
+            {
+                var r = _rows[i];
+                var s1 = Size(r.label, out var f1, out var sh1);
+                if (s1 > 0f)
+                {
+                    labels.Add(s1);
+                    if (!f1)
+                    {
+                        sb.Append(" label" + (i + 1) + "-OVERFLOW");
+                        good2 = false;
+                    }
+
+                    if (sh1)
+                    {
+                        sb.Append(" label" + (i + 1) + "-SHRUNK");
+                        good2 = false;
+                    }
+                }
+
+                var s2 = Size(r.reason, out var f2, out var sh2);
+                if (s2 > 0f)
+                {
+                    reasons.Add(s2);
+                    if (!f2)
+                    {
+                        sb.Append(" reason" + (i + 1) + "-OVERFLOW");
+                        good2 = false;
+                    }
+
+                    if (sh2)
+                    {
+                        sb.Append(" reason" + (i + 1) + "-SHRUNK");
+                        good2 = false;
+                    }
+                }
+            }
+
+            var q = Size(_header, out var fq, out var shq);
+            if (q > 0f)
+            {
+                sb.Append(" question=" + q.ToString("0.#"));
+                if (!fq)
+                {
+                    sb.Append(" question-OVERFLOW");
+                    good2 = false;
+                }
+
+                if (shq)
+                {
+                    sb.Append(" question-SHRUNK");
+                    good2 = false;
+                }
+            }
+
+            Group("answers", labels, ref good2);
+            Group("reasons", reasons, ref good2);
+            sb.Append(" box=" + (CanvasRect != null ? CanvasRect.sizeDelta.x.ToString("0") + "x" + CanvasRect.sizeDelta.y.ToString("0") : "?"));
+            ok = good2;
+            return sb.ToString();
+        }
+
+        // Height of a text in pixels at its current (fixed) font in a slot widthPx wide: the Bangla image that would be drawn, or the TextMeshPro layout.
+        private static float MeasureTextPx(TextMeshProUGUI t, string text, float widthPx)
+        {
+            if (t == null || string.IsNullOrEmpty(text))
+                return 0f;
+            if (t is ChemicalSafety.Localization.BnTmp bt)
+            {
+                var h = bt.MeasureHeight(text, widthPx);
+                if (h >= 0f)
+                    return h;
+            }
+
+            return t.GetPreferredValues(text, widthPx, 0f).y;
+        }
+
+        // Places the rows, reasons and NEXT from their heights (fractions of the normal box height) and finds the box height f. In the Scenario 2 callout
+        // (embedded) the box height is fixed: the rows start under the header band and spare room becomes air between the rows.
+        private DynLayout SolveDyn(float[] rowH, float[] reasonH, float gap, int n, bool reveal, float maxF, float minF)
+        {
+            const float nextH = 0.094f, nextGap = 0.010f, bottomPad = 0.075f;
+            var L = new DynLayout();
+            var total = 0f;
+            for (var i = 0; i < n; i++)
                 total += rowH[i] + reasonH[i] + gap;
+
+            if (_embedded)
+            {
+                const float start = 0.752f;
+                var tailE = reveal ? nextH + nextGap + 0.03f : 0.03f;
+                var avail = start - tailE;
+                var gapE = gap;
+                var kE = 1f;
+                if (total > avail)
+                    kE = avail / total;
+                else
+                    gapE = Mathf.Min(gap + (avail - total) / Mathf.Max(1, n), 0.05f);
+                var cur = start;
+                for (var i = 0; i < n; i++)
+                {
+                    L.rowH[i] = rowH[i] * kE;
+                    L.reasonH[i] = reasonH[i] * kE;
+                    L.top[i] = cur;
+                    cur -= L.rowH[i] + L.reasonH[i] + gapE * kE;
+                }
+
+                L.nextTop = cur - nextGap;
+                L.nextBottom = L.nextTop - nextH;
+                L.f = 1f;
+                L.b = 0f;
+                return L;
             }
 
             var f = 0.85f;
@@ -306,7 +635,7 @@ namespace ChemicalSafety.Presentable
                 // the first answer keeps the same distance below the header pane as in the 4-slot box (53 px)
                 var start = 1f - (PaneBottomPx(f) + 53f) / sizePx.y;
                 var tail = reveal ? nextH + nextGap + bottomPad : bottomPad;
-                var budget = start - tail;
+                var budget = start - tail + (maxF - 1f);
                 var k = total > budget ? budget / total : 1f;
                 var cursor = start;
                 for (var i = 0; i < n; i++)
@@ -329,7 +658,31 @@ namespace ChemicalSafety.Presentable
                     L.b = cursor - bottomPad + gap * k;
                 }
 
-                f = Mathf.Clamp(1f - L.b, 0.45f, 1f);
+                f = Mathf.Clamp(1f - L.b, 0.45f, maxF);
+            }
+
+            if (f < minF)
+            {
+                // spread the spare height as air between the rows so the box keeps its designed proportion
+                var extra = (minF - f) / Mathf.Max(1, n);
+                var cur2 = 1f - (PaneBottomPx(minF) + 53f) / sizePx.y;
+                for (var i = 0; i < n; i++)
+                {
+                    L.top[i] = cur2;
+                    cur2 -= L.rowH[i] + L.reasonH[i] + gap + extra;
+                }
+
+                if (reveal)
+                {
+                    L.nextTop = cur2 - nextGap;
+                    L.nextBottom = L.nextTop - nextH;
+                }
+                else
+                {
+                    L.nextTop = L.nextBottom = cur2;
+                }
+
+                f = minF;
             }
 
             L.f = f;
@@ -358,8 +711,17 @@ namespace ChemicalSafety.Presentable
         /// <summary>Canvas, frame, header and every row / reason / NEXT of the dynamic box at the current blend.</summary>
         private void PlaceDyn()
         {
-            CanvasRect.sizeDelta = new Vector2(sizePx.x, sizePx.y * _dynF);
-            _frameRt.sizeDelta = new Vector2(sizePx.x * 1.1f, sizePx.y * _dynF * 1.1f);
+            if (!_embedded)
+            {
+            CanvasRect.sizeDelta = new Vector2(sizePx.x * _wk, sizePx.y * _dynF);
+            _frameRt.sizeDelta = new Vector2(sizePx.x * _wk * 1.1f, sizePx.y * _dynF * 1.1f);
+            // a box taller than its normal size (growBox): it grows mostly downwards so its top edge stays clear of the top bar / the view's upper edge
+            var lp = _canvasBasePos;
+            if (_dynF > 1f)
+                lp.y -= (_dynF - 1f) * sizePx.y * 0.5f * CanvasRect.localScale.y; // top edge stays where the normal box's top is
+            CanvasRect.localPosition = lp;
+            }
+
             LayoutChrome();
             for (var i = 0; i < _dynN && i < _rows.Count; i++)
             {
@@ -369,12 +731,12 @@ namespace ChemicalSafety.Presentable
                 var top = _dTop[i] - _dRowH[i];
                 var space = Mathf.Max(0.01f, _dReasonH[i] - 0.006f);
                 r.reason.rectTransform.anchorMin = new Vector2(0.205f, DY(top - space - 0.002f));
-                r.reason.rectTransform.anchorMax = new Vector2(0.94f, DY(top - 0.004f));
+                r.reason.rectTransform.anchorMax = new Vector2(0.95f, DY(top - 0.004f)); // up to the right edge of the answer box
                 r.reasonTag.rectTransform.anchorMin = new Vector2(0.105f, DY(top - space - 0.002f));
                 r.reasonTag.rectTransform.anchorMax = new Vector2(0.2f, DY(top - 0.004f));
             }
 
-            SetA(_inlineNext, 0.32f, _dNextBottom, 0.68f, _dNextTop);
+            SetA(_inlineNext, 0.5f - 0.18f / _wk, _dNextBottom, 0.5f + 0.18f / _wk, _dNextTop); // the NEXT pill keeps its size in a wider box
         }
 
         private IEnumerator DynBlend(float from, float to, float seconds)
@@ -394,7 +756,9 @@ namespace ChemicalSafety.Presentable
         private void ApplyDynamicLayout(Question q)
         {
             var n = q.options != null ? q.options.Length : 0;
-            var want = Skin && !_embedded && n >= 1 && n < 4;
+            _wk = 1f;
+            // the measured layout also drives the Scenario 2 callout (embedded: fixed canvas, rows placed from the measured heights)
+            var want = Skin && n >= 1 && (_embedded ? q.largeText : (n < 4 || q.growBox));
             if (!want)
             {
                 if (_dyn)
@@ -402,26 +766,55 @@ namespace ChemicalSafety.Presentable
                     _dyn = false;
                     _dynF = 1f;
                     _dynB = 0f;
-                    CanvasRect.sizeDelta = sizePx;
-                    _frameRt.sizeDelta = sizePx * 1.1f;
-                    SetFrameSliced(false);
+                    if (!_embedded)
+                    {
+                        CanvasRect.sizeDelta = sizePx;
+                        CanvasRect.localPosition = _canvasBasePos;
+                        _frameRt.sizeDelta = sizePx * 1.1f;
+                        SetFrameSliced(false);
+                    }
+
                     SetReasonWrap(false);
                     SetDynFonts(false);
                     LayoutChrome();
                 }
 
+                SetReasonWrap(q.largeText);
+                LayoutChrome();
                 return;
             }
 
             _dynN = n;
-            _dynQ = BuildDyn(q, false);
-            _dynR = BuildDyn(q, true);
+            if (q.largeText && q.growBox && !_embedded)
+            {
+                // the box keeps the designed proportion (1240 x 900 = 1.38 : 1): the narrowest width K (1.0 .. 1.6) at which the box is at least 1.3 : 1 wide
+                // (more text -> taller AND wider together, never a flat strip)
+                for (var k = 1f; k <= 1.601f; k += 0.05f)
+                {
+                    _wk = k;
+                    _dynR = BuildDyn(q, true);
+                    // the question must fit the header strip in at most two lines at this width
+                    var headFits = _header == null || MeasureTextPx(_header, _header.text, 0.72f * 1240f * k - 12f) <= 0.124f * sizePx.y - (Bn ? 22f : 2f);
+                    if (headFits && 1240f * k / (900f * _dynR.f) >= 1.3f)
+                        break;
+                }
+
+                _dynQ = _dynR; // sized ONCE for the final layout: nothing grows or moves when the answer is shown (as the original box)
+            }
+            else
+            {
+                _dynR = BuildDyn(q, true);
+                _dynQ = q.largeText ? _dynR : BuildDyn(q, false);
+            }
+
             _dyn = true;
-            SetFrameSliced(true);
+            if (!_embedded)
+                SetFrameSliced(true);
             SetReasonWrap(true);
             SetDynFonts(true);
             SetDyn(0f); // the question stage; the reveal stage is blended in by LayoutReveal
         }
+
         private TextMeshProUGUI _inlineNextLabel;
         private Image _inlineNextGlow;
         private bool _locked;
@@ -430,6 +823,37 @@ namespace ChemicalSafety.Presentable
 
         public PresentableArt Art => art;
         public RectTransform CanvasRect { get; private set; }
+
+        /// <summary>World height of the bottom edge of the frame (Scenario 4 keeps it above the bench).</summary>
+        public float FrameBottomWorldY
+        {
+            get
+            {
+                var rt = _frameRt != null ? _frameRt : CanvasRect;
+                if (rt == null)
+                    return float.MinValue;
+                var c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return Mathf.Min(Mathf.Min(c[0].y, c[1].y), Mathf.Min(c[2].y, c[3].y));
+            }
+        }
+
+        /// <summary>World height of the top edge of the frame (for keeping the box below the top bar).</summary>
+        public float FrameTopWorldY
+        {
+            get
+            {
+                var rt = _frameRt != null ? _frameRt : CanvasRect;
+                if (rt == null)
+                    return float.MaxValue;
+                var c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return Mathf.Max(Mathf.Max(c[0].y, c[1].y), Mathf.Max(c[2].y, c[3].y));
+            }
+        }
+        /// <summary>Height of the box relative to its normal size when it is taller (growBox), else 1 (used by the smoke test's pixel-based margins).</summary>
+        public float TallScale => _dyn && _dynF > 1f ? _dynF : 1f;
+        private Vector3 _canvasBasePos;
         public int RowCount => _rows.Count;
         public RectTransform RowRoot(int index) => _rows[index].root;
         public bool Fancy => _fx != null;
@@ -485,6 +909,7 @@ namespace ChemicalSafety.Presentable
             IsOpen = true;
             _header.text = Skin && !string.IsNullOrEmpty(question.prompt) ? question.prompt : question.header;
             _header.fontSizeMin = question.longPrompt ? 12f : 18f;
+            ApplyLargeText(question.largeText);
             _prompt.text = question.prompt;
 
             for (var i = 0; i < _rows.Count; i++)
@@ -665,7 +1090,7 @@ namespace ChemicalSafety.Presentable
                 var nr = _inlineNext;
                 if (_dyn)
                 {
-                    SetA(nr, 0.32f, _dNextBottom, 0.68f, _dNextTop); // inside the box, clear of the bottom ornament
+                    SetA(nr, 0.5f - 0.18f / _wk, _dNextBottom, 0.5f + 0.18f / _wk, _dNextTop); // inside the box, clear of the bottom ornament
                 }
                 else
                 {
@@ -677,7 +1102,7 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < _rows.Count; i++)
             {
                 var top = Skin ? (_dyn ? _dTop[i] : SkinTop(i)) : 0.655f - i * (RowH + RowGap);
-                var rowH = Skin ? (_dyn ? _dRowH[i] : SkinRowHNow) : RowH;
+                var rowH = Skin ? (_dyn ? _dRowH[i] : RowHNow) : RowH;
                 var r = _rows[i];
                 r.root.anchorMin = new Vector2(0.05f, DY(top - rowH));
                 r.root.anchorMax = new Vector2(0.95f, DY(top));
@@ -709,10 +1134,10 @@ namespace ChemicalSafety.Presentable
                 for (var i = 0; i < _rows.Count && i < _question.options.Length; i++)
                 {
                     var rr = _rows[i].reason.rectTransform;
-                    var top = _dyn ? _dTop[i] - _dRowH[i] : SkinTop(i) - SkinRowHNow;
-                    var space = _dyn ? _dReasonH[i] - 0.006f : SkinSlot - SkinRowHNow - 0.008f; // the whole gap down to the next answer box
+                    var top = _dyn ? _dTop[i] - _dRowH[i] : SkinTop(i) - RowHNow;
+                    var space = _dyn ? _dReasonH[i] - 0.006f : SkinSlot - RowHNow - 0.008f; // the whole gap down to the next answer box
                     rr.anchorMin = new Vector2(0.205f, DY(top - space - 0.002f));
-                    rr.anchorMax = new Vector2(0.94f, DY(top - 0.004f));
+                    rr.anchorMax = new Vector2(0.95f, DY(top - 0.004f));
                     var tg = _rows[i].reasonTag.rectTransform;
                     tg.anchorMin = new Vector2(0.105f, DY(top - space - 0.002f));
                     tg.anchorMax = new Vector2(0.2f, DY(top - 0.004f));
@@ -828,7 +1253,7 @@ namespace ChemicalSafety.Presentable
                     r.reasonTag.color = isRight ? new Color(0.55f, 1f, 0.68f) : new Color(1f, 0.62f, 0.58f);
                     r.reasonTag.gameObject.SetActive(true);
                     r.reason.text = _question.options[i].reason;
-                    r.reason.color = new Color(0.95f, 0.98f, 1f);
+                    r.reason.color = _question.largeText ? Color.white : new Color(0.95f, 0.98f, 1f);
                     r.reason.gameObject.SetActive(true);
                     r.root.GetComponent<CanvasGroup>().alpha = 1f;
                     continue;
@@ -855,7 +1280,7 @@ namespace ChemicalSafety.Presentable
                 var tagColor = good ? "#6BE38A" : "#FF8A80";
                 var tag = good ? _question.tagCorrect : _question.tagWrong;
                 r.reason.text = "<b><color=" + tagColor + ">" + tag + "</color></b>  " + _question.options[i].reason;
-                r.reason.color = good ? new Color(0.80f, 1f, 0.86f) : new Color(1f, 0.86f, 0.84f);
+                r.reason.color = _question.largeText ? Color.white : (good ? new Color(0.80f, 1f, 0.86f) : new Color(1f, 0.86f, 0.84f));
                 r.reason.gameObject.SetActive(true);
                 r.root.GetComponent<CanvasGroup>().alpha = isRight || isPick ? 1f : 0.85f;
             }
@@ -1106,6 +1531,7 @@ namespace ChemicalSafety.Presentable
             _group = canvas.gameObject.AddComponent<CanvasGroup>();
             var root = canvas.transform;
             CanvasRect = (RectTransform)root;
+            _canvasBasePos = CanvasRect.localPosition;
             var font = art.englishFont;
 
             var panel = root;

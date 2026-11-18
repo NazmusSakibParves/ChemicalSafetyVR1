@@ -137,6 +137,11 @@ namespace ChemicalSafety.Presentable
             _halo1 = Box("Halo1", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f),
                 new Vector2(-W * 0.5f - 44f, -H * 0.5f - 38f + BodyLift), new Vector2(W * 0.5f + 44f, H * 0.5f + 38f + BodyLift));
 
+            // client 2026-11-18: no glow / shadow round the callout
+            _bloom.gameObject.SetActive(false);
+            _halo1.gameObject.SetActive(false);
+            _halo2.gameObject.SetActive(false);
+
             // Speech-bubble tail (client picture): a long triangle that starts wide at the bottom of the card and narrows to a sharp
             // tip touching the container's head. Navy fill + a cyan outline that takes the result colour. Drawn first so the card sits
             // over its top; sized and placed in Open(). A small pulsing dot marks the tip on the container.
@@ -164,10 +169,12 @@ namespace ChemicalSafety.Presentable
             {
                 // client: the callout looks exactly like the MCQ box - the same frame art and the same light dark-blue tint plate behind the text
                 _border = Box("Border", _body, Vector2.zero, Vector2.one, new Color(1f, 1f, 1f, 0f));
+                // client 2026-11-18: the colour and see-through level of the Scenario 1 question box. That box is the frame art over a dark hall, so it reads
+                // deep blue; here the room is bright, so a dark navy tint UNDER the same frame art gives the same deep blue and keeps the room visible.
+                var plate = PresentableUi.Rect("ReadPlate", _body, new Vector2(0.03f, 0.05f), new Vector2(0.97f, 0.95f));
+                PresentableUi.Img(plate, _art.roundedSolid, new Color(0.02f, 0.07f, 0.16f, 0.62f), sliced: true);
                 var frameRt = PresentableUi.Rect("McqFrame", _body, Vector2.zero, Vector2.one, new Vector2(-34f, -26f), new Vector2(34f, 26f));
                 PresentableUi.Img(frameRt, _art.mcqFrame, Color.white);
-                var plate = PresentableUi.Rect("ReadPlate", _body, new Vector2(0.03f, 0.05f), new Vector2(0.97f, 0.95f));
-                PresentableUi.Img(plate, _art.roundedSolid, new Color(0.03f, 0.10f, 0.22f, 0.30f), sliced: true);
             }
             else
             {
@@ -202,18 +209,19 @@ namespace ChemicalSafety.Presentable
             var content = PresentableUi.Rect("Content", _body, Vector2.zero, Vector2.one);
             _content = content.gameObject.AddComponent<CanvasGroup>();
 
-            _chip = PresentableUi.Text("Chip", content, new Vector2(0.025f, 0.905f), new Vector2(0.26f, 0.965f), string.Empty, 26f,
+            _chip = PresentableUi.Text("Chip", content, new Vector2(0.055f, 0.893f), new Vector2(0.285f, 0.938f), string.Empty, 26f,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.9f), TextAlignmentOptions.MidlineLeft, true, font);
             _chip.characterSpacing = 6f;
-            _title = PresentableUi.Text("Title", content, new Vector2(0.025f, 0.795f), new Vector2(0.385f, 0.905f), string.Empty, 44f, Color.white,
+            _title = PresentableUi.Text("Title", content, new Vector2(0.055f, 0.800f), new Vector2(0.385f, 0.893f), string.Empty, 44f, Color.white,
                 TextAlignmentOptions.MidlineLeft, true, font);
             _title.textWrappingMode = TextWrappingModes.Normal;
             _title.enableAutoSizing = true;
             _title.fontSizeMin = 26f;
-            _title.fontSizeMax = 44f;
-            PresentableUi.Img(PresentableUi.Rect("Rule", content, new Vector2(0.025f, 0.786f), new Vector2(0.385f, 0.792f)), _hGradient,
+            _title.fontSizeMax = 38f;
+            _title.margin = new Vector4(0f, 6f, 0f, 6f);
+            PresentableUi.Img(PresentableUi.Rect("Rule", content, new Vector2(0.055f, 0.791f), new Vector2(0.385f, 0.797f)), _hGradient,
                 new Color(Cyan.r, Cyan.g, Cyan.b, 0.8f));
-            Box("RuleAccent", content, new Vector2(0.025f, 0.783f), new Vector2(0.062f, 0.795f), Orange);
+            Box("RuleAccent", content, new Vector2(0.055f, 0.788f), new Vector2(0.092f, 0.800f), Orange);
 
             // the hologram stage: soft light cone, a floor glow with a bright core, the chemical floating above it
             _beam = PresentableUi.Img(PresentableUi.Rect("Beam", content, new Vector2(0.030f, 0.11f), new Vector2(0.145f, 0.76f)), _vGradient,
@@ -348,6 +356,17 @@ namespace ChemicalSafety.Presentable
                 _cam = Camera.main.transform;
             // canvas centre: the tail tip a hand's breadth above the container
             _basePos = new Vector3(center.x, anchorTop.y + (0.08f + TailTip * Mpp) * _scale, center.z);
+            // the NEXT / PAUSE / timer bar stays above the callout: lower it when its top edge would reach the bar, but keep it clear of the container
+            if (_cam != null && SessionHud.Instance != null)
+            {
+                var dx = _basePos.x - _cam.position.x;
+                var dz = _basePos.z - _cam.position.z;
+                var limit = _cam.position.y + SessionHud.SafeBarRatio * Mathf.Sqrt(dx * dx + dz * dz) - 0.03f;
+                var bodyTop = _basePos.y + (BodyLift + H * 0.5f + 26f) * Mpp * _scale;
+                var room = _basePos.y + (BodyLift - H * 0.5f) * Mpp * _scale - (anchorTop.y + 0.18f * _scale);
+                if (bodyTop > limit && room > 0f)
+                    _basePos.y -= Mathf.Min(bodyTop - limit, room);
+            }
             _bubble.position = _basePos;
             Face();
             // the tail points down at the container even when the callout is clamped to the middle of the view

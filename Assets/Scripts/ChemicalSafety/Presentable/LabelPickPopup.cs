@@ -77,7 +77,7 @@ namespace ChemicalSafety.Presentable
             if (ReferenceEquals(_names, Names) && Loc.IsBangla)
             {
                 // the four Scenario 1 label names, same words as the question options
-                var bn = Sc01Content.OptionLabels;
+                var bn = Sc01Content.DrumNames;
                 for (var i = 0; i < _labels.Length && i < bn.Length; i++)
                     _labels[i].text = bn[i];
             }

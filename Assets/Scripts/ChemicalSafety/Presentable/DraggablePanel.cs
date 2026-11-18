@@ -29,6 +29,9 @@ namespace ChemicalSafety.Presentable
 
         public bool Dragging { get; private set; }
 
+        /// <summary>The director keeps this panel below the top bar itself (Scenario 1 question box): the push-out would lift it into the bar again.</summary>
+        public bool SkipPushOut;
+
         public static DraggablePanel Attach(Component host)
         {
             if (host == null)
@@ -121,7 +124,7 @@ namespace ChemicalSafety.Presentable
                 return;
             }
 
-            if (ClearOf3D && !Dragging && PresentableInput.ActiveScenario > 0 && Shown())
+            if (ClearOf3D && !SkipPushOut && !Dragging && PresentableInput.ActiveScenario > 0 && Shown())
                 PushOutOfProps();
         }
 

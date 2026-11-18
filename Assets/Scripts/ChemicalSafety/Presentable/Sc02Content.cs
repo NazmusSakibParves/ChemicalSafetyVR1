@@ -55,6 +55,10 @@ namespace ChemicalSafety.Presentable
         /// <summary>"Question 2.n: Title. Ask" for the n-th question shown (1-based).</summary>
         public static string QuestionText(int chem, int n)
         {
+            // client 2026-11-18: each chemical has its own full question text ("Question 2.N: ..."), N tied to the chemical
+            var full = Loc.T("SC02", "Q" + chem + "Text");
+            if (!string.IsNullOrEmpty(full))
+                return full;
             var num = Loc.IsBangla ? new string((char)('০' + n), 1) : n.ToString();
             return string.Format(Loc.T("SC02", "QuestionFormat"), num, Loc.T("SC02", "Q" + chem + "Title"), Loc.T("SC02", "Q" + chem + "Ask"));
         }

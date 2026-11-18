@@ -140,7 +140,7 @@ namespace ChemicalSafety.Presentable
         {
             if (_text == null || !Loc.IsBangla)
                 return;
-            var labels = Sc01Content.OptionLabels;
+            var labels = Sc01Content.DrumNames;
             if (number >= 1 && number <= labels.Length)
                 _text.text = "<color=#" + _numberHex + ">" + number + ".</color> " + labels[number - 1];
         }

@@ -95,6 +95,9 @@ namespace ChemicalSafety.Editor
             {
                 // white plaster (the Scenario 6 / 8 / 9 factory plaster), dirt and soot added below
                 var plaster = Sc01Pbr("Sc04FacPlasterWhite", "Wall", new Color(1.5f, 1.5f, 1.46f), 0.12f, 1f);
+                // client 2026-11-18: whiter walls (still dirty: the grime is added below): a little light of its own so the plaster reads white, not grey
+                plaster.EnableKeyword("_EMISSION");
+                plaster.SetColor("_EmissionColor", new Color(0.20f, 0.20f, 0.19f));
                 TexBox("Wall_Back", room, new Vector3(cx, h * 0.5f, Sc04HallBackZ), new Vector3(w, h, 0.12f), 0f, plaster, 2.4f, true);
                 TexBox("Wall_Front", room, new Vector3(cx, h * 0.5f, Sc04HallFrontZ), new Vector3(w, h, 0.12f), 0f, plaster, 2.4f, true);
                 TexBox("Wall_Left", room, new Vector3(x1, h * 0.5f, cz), new Vector3(0.12f, h, d), 0f, plaster, 2.4f, true);
@@ -110,7 +113,17 @@ namespace ChemicalSafety.Editor
             }
 
             if (Sc04OldWhiteWalls)
+            {
                 Sc04WallGrime(room, x0, x1, cz, h, d);
+                // client 2026-11-18: a black skirting 12 inch (30.5 cm) high along the foot of all four walls
+                var skirt = Mat("Sc04FacSkirt12", new Color(0.07f, 0.07f, 0.08f), 0.25f, 0.1f);
+                const float skH = 0.305f;
+                const float skT = 0.03f;
+                Box("SkirtBack", room, new Vector3(cx, skH * 0.5f, Sc04HallBackZ + 0.06f + skT * 0.5f), new Vector3(w, skH, skT), skirt, false);
+                Box("SkirtFront", room, new Vector3(cx, skH * 0.5f, Sc04HallFrontZ - 0.06f - skT * 0.5f), new Vector3(w, skH, skT), skirt, false);
+                Box("SkirtLeft", room, new Vector3(x1 - 0.06f - skT * 0.5f, skH * 0.5f, cz), new Vector3(skT, skH, d), skirt, false);
+                Box("SkirtRight", room, new Vector3(x0 + 0.06f + skT * 0.5f, skH * 0.5f, cz), new Vector3(skT, skH, d), skirt, false);
+            }
             Box("Ceiling", room, new Vector3(cx, h, cz), new Vector3(w, 0.1f, d), ceilMat, false);
 
             var steel = Mat("Sc04FacSteel", new Color(0.42f, 0.44f, 0.46f), 0.4f, 0.25f);
@@ -627,9 +640,9 @@ namespace ChemicalSafety.Editor
 
             var blot = Sc03Tex("Stain_Blot");
             var drip = Sc03Tex("Grime_Drip");
-            var smudge = blot != null ? MatAlpha("Sc04WallSmudge", blot, new Color(0.30f, 0.26f, 0.21f, 0.30f), false) : null;
-            var dripMat = drip != null ? MatAlpha("Sc04WallDrip", drip, new Color(0.26f, 0.22f, 0.17f, 0.45f), false) : null;
-            var soot = MatAlpha("Sc04WallSoot", Sc06Tex("Fx_AOStrip"), new Color(0.04f, 0.035f, 0.03f, 0.55f), false);
+            var smudge = blot != null ? MatAlpha("Sc04WallSmudge", blot, new Color(0.30f, 0.26f, 0.21f, 0.24f), false) : null;
+            var dripMat = drip != null ? MatAlpha("Sc04WallDrip", drip, new Color(0.26f, 0.22f, 0.17f, 0.40f), false) : null;
+            var soot = MatAlpha("Sc04WallSoot", Sc06Tex("Fx_AOStrip"), new Color(0.04f, 0.035f, 0.03f, 0.40f), false); // a little lighter: whiter walls, still dirty (client)
 
             // soot band along the top of the side and back walls (and the bottom edge)
             Quad("SootLeftTop", new Vector3(x1 - 0.064f, h - 0.45f, cz), new Vector3(0f, 90f, 0f), new Vector2(d, 0.9f), soot);

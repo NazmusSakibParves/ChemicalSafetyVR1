@@ -53,6 +53,10 @@ LINES = [
     ("Right",
      "Correct! Before entering a confined space such as a chemical tank, the atmosphere must be tested, an entry permit obtained, appropriate PPE worn, and the tripod and rescue equipment prepared. A trained attendant must remain outside. Entry is allowed only after all safety requirements have been met.",
      "সঠিক! রাসায়নিক ট্যাংকের মতো বদ্ধ জায়গায় প্রবেশের আগে বাতাস পরীক্ষা করতে হবে, প্রবেশের অনুমতিপত্র নিতে হবে, উপযুক্ত পিপিই পরতে হবে, ট্রাইপড ও উদ্ধার সরঞ্জাম প্রস্তুত রাখতে হবে এবং বাইরে একজন প্রশিক্ষিত সহকারী রাখতে হবে। সব নিরাপত্তা ব্যবস্থা নিশ্চিত হওয়ার পরই প্রবেশ করা যাবে।"),
+    # the ending of every scenario: the same template (generate_vo.complete_bn / complete_en), numbers 19 -> 20
+    ("Complete", gv.complete_en(19), gv.complete_bn(19)),
+    ("WrongNext", "Wrong answer. Read the reason for each option. Click Next to go to Scenario twenty.",
+     "ভুল উত্তর। প্রতিটি অপশনের কারণ দেখে নিন। সিনারিও %s যেতে নেক্সট বাটনে ক্লিক করুন।" % gv.TO_NUM[20]),
 ]
 
 

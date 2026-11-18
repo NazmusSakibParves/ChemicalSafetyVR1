@@ -382,6 +382,22 @@ namespace ChemicalSafety.Presentable
         public AudioClip artistSc01Instruction;
         public AudioClip artistSc01Complete;
         public AudioClip artistSc01WrongNext;
+        // Scenario 1 (2026-11-18): the question is read aloud, and each answer is explained (right / wrong) before the NEXT line
+        public AudioClip artistSc01Question;
+        public AudioClip artistSc01RightWhy;
+        public AudioClip artistSc01WrongWhy;
+        // Scenario 2 (2026-11-18): each of the six questions is read aloud; right / wrong explanations are common to all six
+        public AudioClip[] artistSc02Question;
+        public AudioClip artistSc02RightWhy;
+        public AudioClip artistSc02WrongWhy;
+        // Scenario 3 (2026-11-18): question read aloud, right / wrong explanations
+        public AudioClip artistSc03Question;
+        public AudioClip artistSc03RightWhy;
+        public AudioClip artistSc03WrongWhy;
+        // Scenario 4 (2026-11-18)
+        public AudioClip artistSc04Question;
+        public AudioClip artistSc04RightWhy;
+        public AudioClip artistSc04WrongWhy;
         public AudioClip artistContinueHint;
         public AudioClip artistCorrect;
         public AudioClip artistWrong;

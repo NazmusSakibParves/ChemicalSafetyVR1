@@ -1,0 +1,17 @@
+{
+ "InstructionEnglish": "b49e75010ec09b320947d416242dbdd29d5156a4",
+ "WelcomeSub": "c7e1db4733c5959a3929dc74e842ea753e7a0d88",
+ "InstructionSub": "b49e75010ec09b320947d416242dbdd29d5156a4",
+ "ContinueHint": "16a16f8fdd2baacaccd402de5db511bfe3631889",
+ "PickLabelHint": "9129216769250ca723a37edb64e44b6269a3f725",
+ "TouchDrumHint": "f217d202c87f12f5a372b64e7cfba9dc03837713",
+ "WrongLabelHint": "a864b67502775726d3dc21fd4e1baf22ef157cd2",
+ "CarrierHint": "eb17762f6cea6d7bb18513c777b386283974fa6b",
+ "QuestionHeader": "d458c827b485913fdabc0490ce5bbd0735c8a121",
+ "QuestionPrompt": "a77e55015eb33cbf9298eeb59ae3960990b28472",
+ "CorrectTitle": "2b743452be46e8a089218f69f053026c2185367f",
+ "WrongTitle": "df3cc193c3bb31f09cc1ac007015444a5547e10e",
+ "TagCorrect": "0a020e7e67569e3f38b29bf6d0245609750e3653",
+ "TagWrong": "0ed843e543d5ccf8be4d9be6797deb0ec7cd1188",
+ "FinishLabel": "27784e6e8a5bca44bf1013ff8f7078619cbbebf4"
+}

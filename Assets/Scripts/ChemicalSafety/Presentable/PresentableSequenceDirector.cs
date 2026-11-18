@@ -676,6 +676,7 @@ namespace ChemicalSafety.Presentable
             if (!skipSc01)
             {
             instructionPanel.SetGlass(sc01GlassCard); // client: Scenario 1 instruction box + Continue in the glass style of the reference picture
+            instructionPanel.SetBnBodyMax(620f); // the longer Scenario 1 text: the card grows with the words (back to 200 below)
             if (rayFlow)
             {
                 LockLocomotion(true);
@@ -688,8 +689,9 @@ namespace ChemicalSafety.Presentable
                 d?.SetCalloutVisible(false, 0.01f);
 
             _instructionClip = Artist(Sc01(art.voInstruction, art.trialInstruction), art.artistSc01Instruction);
-            if (art.useArtistVoice && art.artistBnInstructionPanel != null)
-                instructionPanel.SetContent(null, art.artistBnInstructionPanel); // Bangla card text = the artist's script (English text untouched)
+            // English card text comes from SC01.json (it used to be the hard-coded default of the panel); Bangla = the artist's script image
+            instructionPanel.SetContent(Sc01Content.InstructionEnglish,
+                art.useArtistVoice && art.artistBnInstructionPanel != null ? art.artistBnInstructionPanel : art.bnInstructionPanel);
             PlaceRig(spawnStart.position, spawnStart.forward);
             yield return fader.FadeTo(0f, 1.4f);
             yield return PresentableFx.Wait(0.4f);
@@ -780,6 +782,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc02");
             instructionPanel.SetGlass(false); // the other scenarios keep their own frame
+            instructionPanel.SetBnBodyMax(200f);
             if (rayFlow)
             {
                 LockLocomotion(false);
@@ -814,6 +817,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc02Intro");
+            instructionPanel.SetCompactRoomy(true); // the longer Scenario 2 text: more room around it
             _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc02Content.InstructionEnglish, ArtistCard(2, art.bnSc02InstructionPanel));
             instructionPanel.SetContinueCentered(true);
@@ -862,6 +866,7 @@ namespace ChemicalSafety.Presentable
                 LockLocomotion(false);
                 mcqSc02.SetWorldScale(1f);
                 instructionPanel.SetCompact(false);
+                instructionPanel.SetCompactRoomy(false);
                 subtitle.Dock(null, null, 1f);
             }
 
@@ -931,6 +936,8 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc03Intro");
+            if (ray3)
+                instructionPanel.SetCompactRoomy(true); // same card as Scenario 2 (text size of Scenarios 1-2)
             _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc03Content.InstructionEnglish, ArtistCard(3, art.bnSc03InstructionPanel));
             instructionPanel.SetContinueCentered(true);
@@ -973,6 +980,7 @@ namespace ChemicalSafety.Presentable
                 LockLocomotion(false);
                 mcqSc03.SetWorldScale(1f);
                 instructionPanel.SetCompact(false);
+                instructionPanel.SetCompactRoomy(false);
                 subtitle.Dock(null, null, 1f);
             }
 
@@ -1088,7 +1096,7 @@ namespace ChemicalSafety.Presentable
             Stage("sc03Question");
             // beside the drum, at eye height: the drum and the label stay in view
             Sc03PopupPose(1.6f, 0.6f, out var mcqPos, out var mcqRot);
-            mcqSc03.SetWorldScale(2.0f);
+            mcqSc03.SetWorldScale(1.52f); // client: the same apparent text size as Scenarios 1, 2 and 4 (it was 2.0, about 30 % larger)
             mcqSc03.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc03, BuildSc03Question(), false, 3);
         }
@@ -1101,13 +1109,20 @@ namespace ChemicalSafety.Presentable
             if (_sc03Prot == null)
                 _sc03Prot = Sc03Protocol.Create(art, envSc03 != null ? envSc03.transform : null);
             yield return PresentableFx.Wait(1.0f);
-            StartCoroutine(PlayVoice(art.voCorrect));
-            yield return PresentableFx.Wait(1.6f);
+            // the shared "correct" line, then the client's explanation, then the protocol animation with its narration
+            yield return PlayVoice(art.voCorrect);
+            if (art.artistSc03RightWhy != null)
+                yield return PlayVoice(art.artistSc03RightWhy);
+            yield return PresentableFx.Wait(0.5f);
             var anchor = sc03Inspect.LabelAnchor;
             Sc03PopupPose(-1.5f, 0.6f, out var panelPos, out var panelRot);
             var drumCentre = sc03Detonation != null && sc03Detonation.Drum != null ? sc03Detonation.Drum.position : anchor.position - anchor.forward * 0.29f;
             StartCoroutine(PlayVoice(art.voSc03Protocol));
-            yield return _sc03Prot.Play(drumCentre, anchor, panelPos, panelRot, 2.4f, spawnSc03 != null ? spawnSc03.position : rig.position);
+            // the four steps follow the narration: ends (s from the start of the clip) estimated from its pauses: equal quarters snapped to the nearest pause
+            // (each step's share of the narration = the length of its own text, snapped to the nearest pause of the client's recording: Tools scratch protocol_bounds)
+            var stepEnds = Loc.IsBangla ? new[] { 5.4f, 10.4f, 15.1f, 20.2f } : new[] { 6.4f, 9.5f, 12.9f, 18.5f };
+            yield return _sc03Prot.Play(drumCentre, anchor, panelPos, panelRot, 2.4f, spawnSc03 != null ? spawnSc03.position : rig.position,
+                stepEnds, Loc.IsBangla ? 1.4f : 1.8f);
             _sc03Protocol = false;
         }
 
@@ -1130,9 +1145,11 @@ namespace ChemicalSafety.Presentable
             if (ray4)
             {
                 LockLocomotion(true);
-                instructionPanel.SetCompact(true, sc06CardScale);
+                // client 2026-11-18: the instruction text is as large as in Scenario 1 (same card scale, 1.45 instead of 0.9)
+                instructionPanel.SetCompact(true, rayCardScale);
                 instructionPanel.SetGlass(sc04GlassCard);
-                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), sc06CardScale);
+                instructionPanel.SetBnBodyMax(620f); // the longer text: the Bangla image as large as in Scenario 1 (back to 200 below)
+                subtitle.Dock(instructionPanel.transform, () => -(instructionPanel.BottomExtentMeters + 0.16f), rayCardScale);
             }
 
             Stage("sc04Intro");
@@ -1170,7 +1187,10 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
             if (ray4)
+            {
                 instructionPanel.SetGlass(false);
+                instructionPanel.SetBnBodyMax(200f);
+            }
 
             if (ray4 && gloves != null)
             {
@@ -1293,6 +1313,10 @@ namespace ChemicalSafety.Presentable
 
         private float Sc04TableTop() => gloveBench != null ? gloveBench.TopY : 0.9f;
 
+        // client 2026-11-18: the Scenario 4 question text is as large as Scenario 1's (that box is scale 1 at ~1.05 m; this one is ~1.6 m away, so scale 1.52
+        // gives the same apparent size; 1.85 made it about 20 % larger). The box, which grows with the text, then fits between the top bar and the bench.
+        private const float Sc04QuestionScale = 1.52f;
+
         // A card is lifted when its lowest point (the Continue button hangs below the centre by bottomExtent) would come closer than
         // minClearance to the table top: the table must never cut through a card, whatever the learner's eye height.
         private void Sc04KeepAboveTable(Transform card, float bottomExtent, float minClearance)
@@ -1355,7 +1379,7 @@ namespace ChemicalSafety.Presentable
             Stage("sc04Question");
             Sc04PopupPose(0.78f, 0.32f, 1.6f, out var mcqPos, out var mcqRot);
             mcqPos.y = Mathf.Max(mcqPos.y, Sc04TableTop() + 0.95f);
-            mcqSc04.SetWorldScale(sc04PopupScale);
+            mcqSc04.SetWorldScale(Sc04QuestionScale);
             mcqSc04.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc04, BuildSc04Question(), false, 4);
         }
@@ -3243,6 +3267,8 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(0f, 0.6f);
 
             Stage("sc02Stand");
+            if (placement != null)
+                placement.SuppressCards = true; // the Correct Placement card is hidden in this flow
             subtitle.Hide();
             inspect.SetCardAllowed(false);
             inspect.SetShowCardOnPick(false);
@@ -3271,6 +3297,8 @@ namespace ChemicalSafety.Presentable
             inspect.SetInteractable(false);
             while (placement != null && placement.IsBusy)
                 yield return null;
+            if (placement != null)
+                placement.SuppressCards = false;
         }
 
         private static Vector3 TopCentre(Transform model)
@@ -3349,6 +3377,7 @@ namespace ChemicalSafety.Presentable
                 prompt = Sc02Content.QuestionText(chem, n + 1),
                 options = options,
                 correctIndex = 1,
+                largeText = true, // client: the question larger / bold than the answers, answers clearly readable
                 nextLabel = Sc02Content.FinishLabel,
                 fancy = true,
                 inlineReveal = true,
@@ -3397,6 +3426,7 @@ namespace ChemicalSafety.Presentable
             {
                 if (_answerVoice != null)
                     StopCoroutine(_answerVoice);
+                _sc02VoiceBusy = true;
                 _answerVoice = StartCoroutine(Sc02AnswerVoice(correct, last));
             }
 
@@ -3410,7 +3440,13 @@ namespace ChemicalSafety.Presentable
             if (lockedBefore)
                 panel.ShowAnswered(q, lockedLetter[0] - 'A');
             else
+            {
                 panel.Show(q);
+                // the question is read aloud (stops when an answer is picked)
+                if (art.artistSc02Question != null && chem < art.artistSc02Question.Length && art.artistSc02Question[chem] != null)
+                    StartCoroutine(PlayVoice(art.artistSc02Question[chem]));
+            }
+
             if (last)
             {
                 while (!nextPressed)
@@ -3421,6 +3457,13 @@ namespace ChemicalSafety.Presentable
                 while (!revealed)
                     yield return null;
                 yield return PresentableFx.Wait(sc02ReadSeconds);
+                // the voice (right / wrong + the explanation) is never cut: the next chemical waits until it is finished
+                if (_sc02VoiceBusy)
+                {
+                    while (_sc02VoiceBusy)
+                        yield return null;
+                    yield return PresentableFx.Wait(1f);
+                }
             }
 
             panel.Answered -= OnAnswered;
@@ -3429,28 +3472,33 @@ namespace ChemicalSafety.Presentable
             panel.NextPressed -= OnNext;
             if (_answerVoice != null)
                 StopCoroutine(_answerVoice);
+            _sc02VoiceBusy = false;
             StopVoice();
         }
 
+        // true from the moment an answer is revealed until the whole voice chain (right / wrong + explanation [+ the Scenario 3 line]) has been heard
+        private bool _sc02VoiceBusy;
+
         private IEnumerator Sc02AnswerVoice(bool correct, bool last)
         {
+            _sc02VoiceBusy = true;
             yield return PresentableFx.Wait(0.25f);
             StopVoice();
+            // the shared right / wrong line, then the client's explanation (common to all six questions)
+            yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+            var why = correct ? art.artistSc02RightWhy : art.artistSc02WrongWhy;
+            if (why != null)
+                yield return PlayVoice(why);
             if (!last)
             {
-                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                _sc02VoiceBusy = false;
                 yield break;
             }
 
-            if (!correct)
-            {
-                yield return PlayVoice(Loc.IsBangla ? art.voSc02WrongNextBn : art.voSc02WrongNextEn);
-                yield break;
-            }
-
-            yield return PlayVoice(art.voCorrect);
-            yield return PresentableFx.Wait(1f);
-            yield return PlayVoice(Loc.IsBangla ? art.voSc02CompleteBn : art.voSc02CompleteEn);
+            yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+            yield return PlayVoice(correct ? (Loc.IsBangla ? art.voSc02CompleteBn : art.voSc02CompleteEn)
+                                           : (Loc.IsBangla ? art.voSc02WrongNextBn : art.voSc02WrongNextEn));
+            _sc02VoiceBusy = false;
         }
 
         // The chemical is picked up and goes into its compartment (door opens, container flies in, door closes).
@@ -3872,6 +3920,75 @@ namespace ChemicalSafety.Presentable
 
 
         private void LateUpdate()
+        {
+            FollowEyeInstruction();
+            KeepBelowTopBar();
+        }
+
+        // Scenarios 1 and 2 (client 2026-11-18): the NEXT / PAUSE / timer bar stays ABOVE the instruction card and the question box. A card or
+        // box whose top edge would reach the bar is moved down (only down; the bar is head-locked, so the limit is angular: d * BarBottomRatio).
+        private void KeepBelowTopBar()
+        {
+            var sc = PresentableInput.ActiveScenario;
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4) || _cam == null || SessionHud.Instance == null)
+                return;
+            if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
+                LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
+            // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : null);
+            if (guarded != null)
+            {
+                var dp = guarded.GetComponent<DraggablePanel>();
+                if (dp != null)
+                    dp.SkipPushOut = guarded.IsOpen;
+                if (guarded.IsOpen)
+                {
+                    LowerBelowBar(guarded.transform, guarded.FrameTopWorldY);
+                    if (sc == 4)
+                        KeepAboveBench(guarded);
+                }
+            }
+        }
+
+        // Scenario 4: the question box must not dip into the bench or the gloves. Its bottom is kept 3 cm above the bench top; the top bar limit wins
+        // over that, so if both cannot hold the box is scaled down (only as much as needed).
+        private void KeepAboveBench(PresentableMcqPanel box)
+        {
+            var floorY = Sc04TableTop() + 0.16f; // the raised back lip of the bench is about 10 cm above its top and hides what is behind it
+            var bottom = box.FrameBottomWorldY;
+            if (bottom >= floorY)
+                return;
+            var t = box.transform;
+            var dx = t.position.x - _cam.position.x;
+            var dz = t.position.z - _cam.position.z;
+            var limit = _cam.position.y + SessionHud.SafeBarRatio * Mathf.Sqrt(dx * dx + dz * dz) - 0.03f;
+            var top = box.FrameTopWorldY;
+            var lift = floorY - bottom;
+            if (top + lift <= limit)
+            {
+                t.position += Vector3.up * lift;
+                return;
+            }
+
+            // not enough room between the bench and the bar: scale the box about its centre so that it fits, then place it
+            var height = top - bottom;
+            var room = limit - floorY;
+            if (height > 0.01f && room > 0.2f && room < height)
+                box.SetWorldScale(Mathf.Max(0.9f, box.WorldScale * room / height));
+            t.position += Vector3.up * (floorY - box.FrameBottomWorldY);
+        }
+
+        private void LowerBelowBar(Transform t, float topY)
+        {
+            var dx = t.position.x - _cam.position.x;
+            var dz = t.position.z - _cam.position.z;
+            var d = Mathf.Sqrt(dx * dx + dz * dz);
+            var limit = _cam.position.y + SessionHud.SafeBarRatio * d - 0.03f;
+            if (topY > limit)
+                t.position -= Vector3.up * (topY - limit);
+        }
+
+        private void FollowEyeInstruction()
         {
             if (!_eyeInstruction || instructionPanel == null)
                 return;
@@ -4386,6 +4503,12 @@ namespace ChemicalSafety.Presentable
             panel.NextPressed += OnNext;
             panel.WrongClosed += OnWrongClosed;
             panel.Show(q);
+            if (scenario == 1 && art.artistSc01Question != null)
+                StartCoroutine(PlayVoice(art.artistSc01Question)); // the question is read aloud (stops when an answer is picked)
+            if (scenario == 3 && art.artistSc03Question != null)
+                StartCoroutine(PlayVoice(art.artistSc03Question));
+            if (scenario == 4 && art.artistSc04Question != null)
+                StartCoroutine(PlayVoice(art.artistSc04Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4488,18 +4611,44 @@ namespace ChemicalSafety.Presentable
 
             if (scenario == 1 && !correct && art.voSc01WrongNextBn != null)
             {
-                // no retry in Scenario 1: it says why and sends the learner on with NEXT
+                // no retry in Scenario 1: shared "wrong answer, see the reasons", the client's explanation, then the NEXT line
+                yield return PlayVoice(art.voAnswerWrongSee);
+                if (art.artistSc01WrongWhy != null)
+                    yield return PlayVoice(art.artistSc01WrongWhy);
+                yield return PresentableFx.Wait(0.4f);
                 yield return PlayVoice(Loc.IsBangla ? Artist(art.voSc01WrongNextBn, art.artistSc01WrongNext) : art.voSc01WrongNextEn);
                 yield break;
             }
 
             if (scenario == 3 && PresentableInput.RayActive)
             {
-                // the "correct" line and the protocol narration already played during the animation; NEXT is up now
+                // right: the "correct" line, the explanation and the protocol narration already played during the animation; NEXT is up now
                 if (!correct)
+                {
+                    // shared "wrong answer" line, the client's explanation, then the NEXT line
+                    yield return PlayVoice(art.voAnswerWrongSee);
+                    if (art.artistSc03WrongWhy != null)
+                        yield return PlayVoice(art.artistSc03WrongWhy);
+                    yield return PresentableFx.Wait(0.4f);
                     yield return PlayVoice(Loc.IsBangla ? art.voSc03WrongNextBn : art.voSc03WrongNextEn);
+                }
                 else
                     yield return PlayVoice(Loc.IsBangla ? art.voSc03CompleteBn : art.voSc03CompleteEn);
+                yield break;
+            }
+
+            if (scenario == 4 && inlineReveal)
+            {
+                // shared right / wrong line, the client's explanation, then the NEXT line (as Scenarios 1-3)
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why4 = correct ? art.artistSc04RightWhy : art.artistSc04WrongWhy;
+                if (why4 != null)
+                    yield return PlayVoice(why4);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc04CompleteBn : art.voSc04CompleteEn);
+                else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 4 && art.voWrongNextBn[4] != null)
+                    yield return PlayVoice(art.voWrongNextBn[4]);
                 yield break;
             }
 
@@ -4513,6 +4662,8 @@ namespace ChemicalSafety.Presentable
             yield return PlayVoice(correct ? correctClip : wrongClip);
             if (!correct)
                 yield break;
+            if (scenario == 1 && art.artistSc01RightWhy != null)
+                yield return PlayVoice(art.artistSc01RightWhy); // the client's explanation, then the NEXT line below
             yield return PresentableFx.Wait(1f);
             if (scenario == 12)
             {
@@ -4864,6 +5015,8 @@ namespace ChemicalSafety.Presentable
             return new PresentableMcqPanel.Question
             {
                 inlineReveal = true, // client: no right / wrong popup, tick / cross on the rows + a reason under each, then NEXT (also after a wrong answer)
+                growBox = true, // the longer client texts: the box grows with the words (4 answers + reasons) instead of squeezing them
+                largeText = true, // client: the question one size larger / bold than the answers, answers clearly readable
                 tagCorrect = Sc01Content.TagCorrect,
                 tagWrong = Sc01Content.TagWrong,
                 holdNext = () => _sc01Moving,
@@ -4879,8 +5032,6 @@ namespace ChemicalSafety.Presentable
                     {
                         label = label[0],
                         wrongLabel = wrong[0],
-                        icons = new[] { art.thumbNoLabel },
-                        overlays = new[] { art.labelFaded },
                         feedback = feedback[0],
                         reason = reason[0]
                     },
@@ -4888,7 +5039,6 @@ namespace ChemicalSafety.Presentable
                     {
                         label = label[1],
                         wrongLabel = wrong[1],
-                        icons = new[] { art.thumbNoLabel },
                         feedback = feedback[1],
                         reason = reason[1]
                     },
@@ -4896,16 +5046,12 @@ namespace ChemicalSafety.Presentable
                     {
                         label = label[2],
                         wrongLabel = wrong[2],
-                        icons = new[] { art.iconGhs, art.iconSds, art.thumbNoLabel },
-                        overlays = new Sprite[] { null, null, art.labelMethanol },
                         feedback = feedback[2],
                         reason = reason[2]
                     },
                     new PresentableMcqPanel.Option
                     {
                         label = label[3],
-                        icons = new[] { art.thumbNoLabel },
-                        overlays = new[] { art.labelIsopropanol },
                         feedback = feedback[3],
                         reason = reason[3]
                     }
@@ -7229,7 +7375,9 @@ namespace ChemicalSafety.Presentable
                 // ray flow: as Scenarios 1-3 - tick / cross, a reason under every option, NEXT (no retry)
                 inlineReveal = ray,
                 tagCorrect = Sc04Content.TagCorrect,
-                tagWrong = Sc04Content.TagWrong
+                tagWrong = Sc04Content.TagWrong,
+                largeText = true, // client: the same text sizes as Scenarios 1-3
+                growBox = true
             };
         }
 
@@ -7262,6 +7410,8 @@ namespace ChemicalSafety.Presentable
                 inlineReveal = ray,
                 tagCorrect = Sc03Content.TagCorrect,
                 tagWrong = Sc03Content.TagWrong,
+                largeText = true, // client: the same text sizes as Scenarios 1-2
+                growBox = true,
                 holdNext = ray ? (System.Func<bool>)(() => _sc03Protocol) : null
             };
         }

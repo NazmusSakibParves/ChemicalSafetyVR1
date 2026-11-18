@@ -644,6 +644,23 @@ namespace ChemicalSafety.Editor
             ai.SaveAndReimport();
         }
 
+        /// <summary>ONE switch for the English font: true = Times New Roman (client 2026-11-18), false = the old Liberation Sans. Rebuild the scene after changing.</summary>
+        public static bool EnglishFontTimes = true;
+
+        private static void SetTmpDefaultFont(TMP_FontAsset f)
+        {
+            if (f == null || TMP_Settings.instance == null)
+                return;
+            var so = new SerializedObject(TMP_Settings.instance);
+            var p = so.FindProperty("m_defaultFontAsset");
+            if (p != null && p.objectReferenceValue != f)
+            {
+                p.objectReferenceValue = f;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(TMP_Settings.instance);
+            }
+        }
+
         private static PresentableArt BuildArtAsset()
         {
             var path = ArtRoot + "/PresentableArt.asset";
@@ -1058,6 +1075,25 @@ namespace ChemicalSafety.Editor
 
             if (art.englishFont == null)
                 art.englishFont = TMP_Settings.defaultFontAsset;
+
+            // client 2026-11-18: English text in Times New Roman everywhere. ONE switch: false = the old Liberation Sans.
+            if (EnglishFontTimes)
+            {
+                var times = PresentableFontTool.Load();
+                if (times != null)
+                {
+                    art.englishFont = times;
+                    SetTmpDefaultFont(times);
+                }
+                else
+                {
+                    Debug.LogWarning("[Presentable] Times New Roman asset missing - run menu Create Times New Roman font. Keeping Liberation Sans.");
+                }
+            }
+            else
+            {
+                SetTmpDefaultFont(art.englishFont);
+            }
 
             EditorUtility.SetDirty(art);
             AssetDatabase.SaveAssets();

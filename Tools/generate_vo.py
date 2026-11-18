@@ -380,7 +380,7 @@ def gate_en(what):
 
 CLIPS_EN = {
     "VO_AssalamuAlaikum": "Assalamu Alaikum. Welcome to the chemical safety training.",
-    "VO_SC01_Instruction": "Select the correctly labeled drum based on the provided Safety Data Sheet (SDS).",
+    "VO_SC01_Instruction": "Your floor manager has requested a drum of Cleaning Solvent for the production floor. Check its label before transport. Ensure the label is clear and the chemical name and hazard information match the SDS. Never transport a drum with a faded, missing, or incorrect label.",
     "VO_Carrier": "Load the correct drum onto the trolley for transfer.",
     "VO_ContinueHint": "Click the speaker to hear the instructions again, or Continue to go on.",
     "VO_PickLabel": "Select the correct label for each drum.",

@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "<color=#5FD8FF><b>VOICE-OVER:</b></color> A delivery of six chemicals has arrived. The supervisor asks you to place each container into the correct compartment.",
-   "bn": "<color=#5FD8FF><b>ভয়েস-ওভার:</b></color> ছয়টি রাসায়নিকের একটি চালান এসেছে। সুপারভাইজার আপনাকে প্রতিটি কন্টেইনার সঠিক কম্পার্টমেন্টে রাখতে বলেছেন।"
+   "en": "Before storing new chemicals, review each chemical’s SDS. Not all chemicals are safe to store together. Follow the chemical compatibility chart, keep incompatible chemicals separate, and store together only those confirmed to be compatible.",
+   "bn": "নতুন কেমিক্যাল স্টোরেজ ক্যাবিনেটে রাখার আগে প্রতিটির SDS পরীক্ষা করুন। সব কেমিক্যাল একসঙ্গে রাখা নিরাপদ নয়। তাই কেমিক্যাল কম্প্যাটিবিলিটি চার্ট অনুসরণ করে অসামঞ্জস্যপূর্ণ কেমিক্যাল আলাদা রাখুন এবং নিরাপদে একসঙ্গে রাখা যায় এমন কেমিক্যাল একই স্থানে সংরক্ষণ করুন।"
   },
   {
    "key": "PlaceHint",
@@ -185,6 +185,36 @@
    "key": "Q5Ask",
    "en": "Where does the spray bottle go?",
    "bn": "স্প্রে বোতলটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "Q0Text",
+   "en": "Question 2.1: You have been instructed to store a drum of flammable solvent. Where should you store the drum?",
+   "bn": "প্রশ্ন ২.১: আপনাকে Flammable Solvent এর ড্রামটি স্টোর করতে বলা হয়েছে। ড্রামটি কোথায় রাখবেন?"
+  },
+  {
+   "key": "Q1Text",
+   "en": "Question 2.2: Where does the oxidizer go?",
+   "bn": "প্রশ্ন ২.২: অক্সিডাইজারটি কোন কম্পার্টমেন্টে রাখা যাবে?"
+  },
+  {
+   "key": "Q2Text",
+   "en": "Question 2.3: In which compartment can acids be stored, and with which substances can they be stored together?",
+   "bn": "প্রশ্ন ২.৩: অ্যাসিড কোন কম্পার্টমেন্টে, কোন পদার্থের সাথে রাখা যাবে?"
+  },
+  {
+   "key": "Q3Text",
+   "en": "Question 2.4: Where should the canister of general-purpose cleaning agent be stored?",
+   "bn": "প্রশ্ন ২.৪: সাধারণ পরিষ্কার-পরিচ্ছন্নতার কাজে ব্যবহৃত ক্লিনিং এজেন্টের ক্যানিস্টারটি কোথায় সংরক্ষণ করা যাবে?"
+  },
+  {
+   "key": "Q4Text",
+   "en": "Question 2.5: In which designated storage area should reactive metals be placed?",
+   "bn": "প্রশ্ন ২.৫: বিক্রিয়াশীল ধাতুর জারটি কোথায় রাখা হবে?"
+  },
+  {
+   "key": "Q5Text",
+   "en": "Question 2.6: Where should the sanitizer spray bottle be stored?",
+   "bn": "প্রশ্ন ২.৬: স্যানিটাইজার স্প্রের বোতলটি কোথায় রাখা হবে?"
   }
  ],
  "arrays": [
@@ -256,7 +286,7 @@
    ],
    "bn": [
     "অক্সিডাইজারের সাথে",
-    "দাহ্য-রেটেড কম্পার্টমেন্টে, অক্সিডাইজার ও অ্যাসিড থেকে দূরে",
+    "দাহ্য পদার্থ রাখার কম্পার্টমেন্টে, অক্সিডাইজার ও অ্যাসিড থেকে দূরে",
     "অ্যাসিডের সাথে",
     "যেকোনো খোলা কম্পার্টমেন্টে"
    ]

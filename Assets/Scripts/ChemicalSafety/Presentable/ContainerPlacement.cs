@@ -502,8 +502,13 @@ namespace ChemicalSafety.Presentable
             return t;
         }
 
+        /// <summary>Scenario 2 callout flow (client 2026-11-18): the "CORRECT PLACEMENT" card is not shown (it came up off to the left, out of view).</summary>
+        public bool SuppressCards;
+
         private void ShowCard(CompartmentDoor door, bool good, string title, string sub, string body)
         {
+            if (SuppressCards)
+                return;
             var c = good ? PresentableUi.Green : PresentableUi.Red;
             _cardBorder.color = c;
             _cardTitle.color = c;

@@ -422,9 +422,14 @@ namespace ChemicalSafety.Presentable
         /// Runs the whole protocol (about 11 s). <paramref name="drumCentre"/> the middle of the drum, <paramref name="label"/> its label
         /// (forward = towards the aisle), the panel goes to <paramref name="panelPos"/>, <paramref name="exitTarget"/> is where the lit path ends.
         /// </summary>
-        public IEnumerator Play(Vector3 drumCentre, Transform label, Vector3 panelPos, Quaternion panelRot, float panelScale, Vector3 exitTarget)
+        private float _playStart;
+
+        /// <param name="stepEnds">client 2026-11-18: seconds (from the start of the narration) at which each of the four narrated steps ends; a step is ticked only then. null = the old fixed step times.</param>
+        /// <param name="firstStart">seconds into the narration at which the first step starts (after its short introduction).</param>
+        public IEnumerator Play(Vector3 drumCentre, Transform label, Vector3 panelPos, Quaternion panelRot, float panelScale, Vector3 exitTarget, float[] stepEnds = null, float firstStart = 0f)
         {
             Build();
+            _playStart = Time.time;
             if (_cam == null && Camera.main != null)
                 _cam = Camera.main.transform;
             _drum = drumCentre;
@@ -468,14 +473,27 @@ namespace ChemicalSafety.Presentable
                 _panel.localScale = Vector3.one * (Mpp * panelScale * Mathf.LerpUnclamped(0.75f, 1f, t));
             }, PresentableFx.EaseOutBack);
 
-            // 1. DO NOT OPEN
-            yield return Step(0, Seal(), 2.6f);
-            // 2. EVACUATE
-            yield return Step(1, EvacuatePath(), 2.8f);
-            // 3. NOTIFY SUPERVISOR
-            yield return Step(2, RadioRings(), 2.4f);
-            // 4. CONTACT SPECIALIST DISPOSAL
-            yield return Step(3, SpecialistRing(), 2.4f);
+            if (stepEnds != null && stepEnds.Length >= 4)
+            {
+                // each step starts when the narration reaches it and gets its tick when that part of the narration is over
+                while (Time.time - _playStart < firstStart)
+                    yield return null;
+                yield return StepTo(0, Seal(), stepEnds[0]);
+                yield return StepTo(1, EvacuatePath(), stepEnds[1]);
+                yield return StepTo(2, RadioRings(), stepEnds[2]);
+                yield return StepTo(3, SpecialistRing(), stepEnds[3]);
+            }
+            else
+            {
+                // 1. DO NOT OPEN
+                yield return Step(0, Seal(), 2.6f);
+                // 2. EVACUATE
+                yield return Step(1, EvacuatePath(), 2.8f);
+                // 3. NOTIFY SUPERVISOR
+                yield return Step(2, RadioRings(), 2.4f);
+                // 4. CONTACT SPECIALIST DISPOSAL
+                yield return Step(3, SpecialistRing(), 2.4f);
+            }
 
             // all done: the panel and the seal turn emerald, a glossy sweep crosses the panel
             _tone = new Color(0.13f, 0.90f, 0.63f, 1f);
@@ -488,6 +506,30 @@ namespace ChemicalSafety.Presentable
             yield return PresentableFx.Wait(1.6f);
             _running = false;
             yield return Soften();
+        }
+
+        // Like Step, but the tick comes at an absolute time of the narration (endAt, seconds since Play started), not after a fixed duration.
+        private IEnumerator StepTo(int i, IEnumerator fx, float endAt)
+        {
+            _active = i;
+            PresentableFx.Play(PresentableFx.Chime, 0.6f);
+            PresentableFx.Haptic(true, 0.5f, 0.1f);
+            StartCoroutine(fx);
+            var rg = _rowGroup[i];
+            StartCoroutine(Pop(_iconRt[i]));
+            while (Time.time - _playStart < endAt)
+                yield return null;
+            _tick[i].gameObject.SetActive(true);
+            _tick[i].rectTransform.localScale = Vector3.zero;
+            _badge[i].color = new Color(0.13f, 0.90f, 0.63f, 1f);
+            PresentableFx.Play(PresentableFx.Tick, 0.9f);
+            StartCoroutine(Pop(_tick[i].rectTransform));
+            _railFill.rectTransform.anchorMin = new Vector2(0.0725f, Mathf.Lerp(0.74f, 0.14f, (i + 1) / 4f));
+            _active = -1;
+            _outline[i].color = new Color(0.13f, 0.90f, 0.63f, 0.9f);
+            _plate[i].color = new Color(0.13f, 0.90f, 0.63f, 0.10f);
+            yield return PresentableFx.Wait(0.3f);
+            rg.alpha = 1f;
         }
 
         private IEnumerator Step(int i, IEnumerator fx, float seconds)

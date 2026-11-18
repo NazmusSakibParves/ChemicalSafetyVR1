@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "<color=#5FD8FF><b>VOICE-OVER:</b></color> You find an old drum of organic peroxide that has been sitting on the back shelf for years. Expiry date is over 2 years past. Crystallization visible around the cap. You must decide what to do.",
-   "bn": "<color=#5FD8FF><b>ভয়েস-ওভার:</b></color> আপনি পুরনো স্টোররুমের পেছনের তাকে একটি পুরনো অর্গানিক পারক্সাইডের ড্রাম খুঁজে পেয়েছেন। ড্রামটি বছরের পর বছর ধরে সেখানে পড়ে আছে। মেয়াদ দুই বছরের বেশি আগে শেষ হয়ে গেছে এবং ঢাকনার চারপাশে ক্রিস্টাল জমেছে। আপনাকে সিদ্ধান্ত নিতে হবে কী করবেন।"
+   "en": "Be extremely cautious if you notice crystals or solid deposits on an expired organic peroxide drum. The risk of crystallization and the relevant preventive protocols are detailed in Section 7 (Handling and Storage) and Section 10 (Stability and Reactivity) of the SDS.",
+   "bn": "মেয়াদ উত্তীর্ণ অর্গানিক পারঅক্সাইডের ড্রামে স্ফটিক বা দানার মতো পদার্থ জমে থাকতে দেখলে অত্যন্ত সতর্ক থাকুন। SDS-এর ধারা ৭ (Handling and Storage – পরিচালনা ও সংরক্ষণ) এবং ধারা ১০ (Stability and Reactivity – স্থিতিশীলতা ও বিক্রিয়াশীলতা) এ Crystallization এর ঝুঁকি প্রতিরোধের প্রোটোকলগুলো বিস্তারিতভাবে উল্লেখ করা আছে।"
   },
   {
    "key": "SdsHint",
@@ -116,61 +116,61 @@
   {
    "key": "OptionLabels",
    "en": [
-    "Open the drum and use the chemical as normal",
-    "Do not open. Isolate area, notify supervisor, contact emergency response",
-    "Move the drum to another shelf and continue work",
-    "Dispose of it in regular chemical waste"
+    "Carefully unscrew the cap to check if the liquid is still good.",
+    "Shake the drum to dissolve the crystals back into the liquid.",
+    "Wash the crystals off with a high-pressure water",
+    "Do not touch the drum, evacuate the immediate area, and notify the safety supervisor."
    ],
    "bn": [
-    "ড্রামটি খুলে রাসায়নিকটি স্বাভাবিকভাবে ব্যবহার করুন",
-    "খুলবেন না। এলাকা আলাদা করুন, সুপারভাইজারকে জানান, জরুরি সাড়াদান দলের সাথে যোগাযোগ করুন",
-    "ড্রামটি অন্য তাকে সরিয়ে কাজ চালিয়ে যান",
-    "সাধারণ রাসায়নিক বর্জ্যে ফেলে দিন"
+    "তরলটি ভালো আছে কি না দেখতে সাবধানে ঢাকনা খুলব।",
+    "দানাগুলো গলাতে ড্রাম ঝাঁকাব।",
+    "উচ্চচাপের পানি দিয়ে দানাগুলো ধুয়ে ফেলব।",
+    "ড্রাম স্পর্শ করব না। আশপাশের সবাইকে সরিয়ে নিরাপত্তায় নিয়োজিত সুপারভাইজারকে জানাব।"
    ]
   },
   {
    "key": "OptionFeedback",
    "en": [
     "Wrong. Crystallised organic peroxides can detonate on opening or friction.",
-    "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal.",
     "Wrong. Moving the drum causes shock and friction. Crystallised peroxides are shock-sensitive.",
-    "Wrong. Degraded peroxides need trained, specialist disposal. Regular waste can trigger a violent reaction."
+    "Wrong. Degraded peroxides need trained, specialist disposal. Regular waste can trigger a violent reaction.",
+    "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal."
    ],
    "bn": [
     "ভুল। ক্রিস্টাল জমা অর্গানিক পারক্সাইড খোলার সময় বা ঘষা লাগলে বিস্ফোরিত হতে পারে।",
-    "নষ্ট বা অস্থিতিশীল পারক্সাইডের জন্য এটাই মানসম্মত পদক্ষেপ। এতে জীবন রক্ষা পায় এবং প্রশিক্ষিতদের দিয়ে নিরাপদ নিষ্পত্তি সম্ভব হয়।",
     "ভুল। ড্রাম সরালে ঝাঁকুনি ও ঘর্ষণ হয়। ক্রিস্টাল জমা পারক্সাইড ঝাঁকুনিতে বিস্ফোরণপ্রবণ।",
-    "ভুল। নষ্ট পারক্সাইড প্রশিক্ষিত বিশেষজ্ঞকে দিয়ে নিষ্পত্তি করাতে হয়। সাধারণ বর্জ্যে ফেললে ভয়াবহ বিক্রিয়া হতে পারে।"
+    "ভুল। নষ্ট পারক্সাইড প্রশিক্ষিত বিশেষজ্ঞকে দিয়ে নিষ্পত্তি করাতে হয়। সাধারণ বর্জ্যে ফেললে ভয়াবহ বিক্রিয়া হতে পারে।",
+    "নষ্ট বা অস্থিতিশীল পারক্সাইডের জন্য এটাই মানসম্মত পদক্ষেপ। এতে জীবন রক্ষা পায় এবং প্রশিক্ষিতদের দিয়ে নিরাপদ নিষ্পত্তি সম্ভব হয়।"
    ]
   },
   {
    "key": "OptionWrongTitle",
    "en": [
     "DANGER: DETONATION CONFIRMED",
-    "",
     "DANGER: SHOCK DETONATION",
-    "DANGER: VIOLENT REACTION"
+    "DANGER: VIOLENT REACTION",
+    ""
    ],
    "bn": [
     "বিপদ: বিস্ফোরণ নিশ্চিত",
-    "",
     "বিপদ: ঝাঁকুনিজনিত বিস্ফোরণ",
-    "বিপদ: ভয়াবহ বিক্রিয়া"
+    "বিপদ: ভয়াবহ বিক্রিয়া",
+    ""
    ]
   },
   {
    "key": "OptionReasons",
    "en": [
     "Crystallised organic peroxides can detonate on opening or friction.",
-    "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal.",
     "Physical disturbance of an unstable peroxide can trigger decomposition or detonation.",
-    "Unstable peroxides require specialist disposal."
+    "Unstable peroxides require specialist disposal.",
+    "Standard response for degraded/unstable peroxides. Preserves life and enables trained disposal."
    ],
    "bn": [
     "ক্রিস্টাল জমা অর্গানিক পারক্সাইড খোলার সময় বা ঘষা লাগলে বিস্ফোরিত হতে পারে।",
-    "নষ্ট বা অস্থিতিশীল পারক্সাইডের মানসম্মত পদক্ষেপ। জীবন রক্ষা করে এবং প্রশিক্ষিতদের দিয়ে নিষ্পত্তি সম্ভব করে।",
     "অস্থিতিশীল পারক্সাইড নাড়াচাড়া করলে ভেঙে পড়া বা বিস্ফোরণ ঘটতে পারে।",
-    "অস্থিতিশীল পারক্সাইডের জন্য বিশেষজ্ঞ নিষ্পত্তি প্রয়োজন।"
+    "অস্থিতিশীল পারক্সাইডের জন্য বিশেষজ্ঞ নিষ্পত্তি প্রয়োজন।",
+    "নষ্ট বা অস্থিতিশীল পারক্সাইডের মানসম্মত পদক্ষেপ। জীবন রক্ষা করে এবং প্রশিক্ষিতদের দিয়ে নিষ্পত্তি সম্ভব করে।"
    ]
   },
   {
