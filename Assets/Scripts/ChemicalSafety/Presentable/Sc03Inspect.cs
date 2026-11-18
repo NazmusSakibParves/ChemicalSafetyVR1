@@ -336,10 +336,17 @@ namespace ChemicalSafety.Presentable
                     art.dot, DotColors[i % DotColors.Length], true);
                 dot.raycastTarget = false;
                 var valueColor = i == 2 ? "#FF6A5E" : "#FFFFFF";
-                var text = "<b>" + Sc03Content.ReportLabels[i] + "</b>\n<color=" + valueColor + ">" +
-                           Sc03Content.ReportValues[i] + "</color>";
-                var tmp = PresentableUi.Text("Row" + i, panel, new Vector2(0.16f, y1 - rowH + 0.012f),
-                    new Vector2(0.94f, y1 - 0.006f), text, 32f, Color.white, TextAlignmentOptions.TopLeft, false, font);
+                // Bangla (client 2026-11-18): label and value on ONE line, centred on the dot (the two-line image rows sat off the dots);
+                // English keeps its two lines
+                var bn = ChemicalSafety.Localization.Loc.IsBangla;
+                var text = bn
+                    ? Sc03Content.ReportLabels[i] + " " + Sc03Content.ReportValues[i]
+                    : "<b>" + Sc03Content.ReportLabels[i] + "</b>\n<color=" + valueColor + ">" + Sc03Content.ReportValues[i] + "</color>";
+                var tmp = bn
+                    ? PresentableUi.Text("Row" + i, panel, new Vector2(0.16f, y1 - 0.095f), new Vector2(0.94f, y1 + 0.005f), text, 32f,
+                        Color.white, TextAlignmentOptions.MidlineLeft, false, font)
+                    : PresentableUi.Text("Row" + i, panel, new Vector2(0.16f, y1 - rowH + 0.012f),
+                        new Vector2(0.94f, y1 - 0.006f), text, 32f, Color.white, TextAlignmentOptions.TopLeft, false, font);
                 tmp.enableAutoSizing = true;
                 tmp.fontSizeMin = 16f;
                 tmp.fontSizeMax = 32f;
