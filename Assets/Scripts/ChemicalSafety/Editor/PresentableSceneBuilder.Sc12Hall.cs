@@ -15,6 +15,8 @@ namespace ChemicalSafety.Editor
     public static partial class PresentableSceneBuilder
     {
         private const bool Sc12UseRay = true;
+        // client 2026-11-19 (.docx): the last question of Scenario 12 is the same single-answer MCQ box as Scenarios 1-11. false = the old multi-select card.
+        private const bool Sc12UseSingleMcq = true;
 
         // left wall opening (z range) and height
         private const float Sc12OpenZ0 = -3.7f, Sc12OpenZ1 = -0.9f, Sc12OpenH = 2.5f;

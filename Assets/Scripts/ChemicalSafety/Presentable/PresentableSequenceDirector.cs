@@ -221,6 +221,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private Sc12Station sc12Station;
         [SerializeField] private Sc06Gate sc12Gate;
         [SerializeField] private Sc12Assessment assessmentSc12;
+        [SerializeField] private PresentableMcqPanel mcqSc12;
+        [Tooltip("Scenario 12 (ray): the last question is the same single-answer MCQ box as Scenarios 1-11 (Sc12UseSingleMcq in the builder). False = the old multi-select card.")]
+        [SerializeField] private bool sc12SingleMcq;
         [Tooltip("Scenario 12 on the controller ray (new hall, automatic rounds). False = the old finger-touch Scenario 12.")]
         [SerializeField] private bool sc12RayLook;
         [SerializeField] private Transform sc12RayStand;
@@ -334,6 +337,7 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(sc22Gate);
             DraggablePanel.Attach(mcqSc22);
             DraggablePanel.Attach(assessmentSc12); // Scenario 12 multi-select question card
+            DraggablePanel.Attach(mcqSc12);
         }
 
         private void BeginSession()
@@ -594,6 +598,8 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc12Only", false) && envSc12 != null)
             {
                 Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenario12();
                 yield break;
             }
@@ -3995,12 +4001,12 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11 && sc != 12) || _cam == null || SessionHud.Instance == null)
                 return;
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : (sc == 11 ? mcqSc11 : null))))))));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : (sc == 11 ? mcqSc11 : (sc == 12 ? mcqSc12 : null)))))))));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4590,6 +4596,8 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(PlayVoice(art.artistSc10Question));
             if (scenario == 11 && art.artistSc11Question != null)
                 StartCoroutine(PlayVoice(art.artistSc11Question));
+            if (scenario == 12 && art.artistSc12Question != null)
+                StartCoroutine(PlayVoice(art.artistSc12Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4745,6 +4753,19 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc05CompleteBn : art.voSc05CompleteEn);
                 else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 5 && art.voWrongNextBn[5] != null)
                     yield return PlayVoice(art.voWrongNextBn[5]);
+                yield break;
+            }
+
+            if (scenario == 12 && inlineReveal && sc12SingleMcq)
+            {
+                // client 2026-11-19: as Scenarios 4-11 - shared right / wrong line, the client's explanation, then complete
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why12 = correct ? art.artistSc12RightWhy : art.artistSc12WrongWhy;
+                if (why12 != null)
+                    yield return PlayVoice(why12);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc12CompleteBn : art.voSc12CompleteEn);
                 yield break;
             }
 
@@ -6088,9 +6109,11 @@ namespace ChemicalSafety.Presentable
                 : art.voSc12Instruction != null ? art.voSc12Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc12Content.RayInstruction, art.bnSc12RayInstructionPanel);
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
-            instructionPanel.SetCompact(true, sc689CardScale);
+            // client 2026-11-19: the card text is as large as in Scenarios 1-11 (same card scale and Bangla image size); the backing stays nearly solid
+            instructionPanel.SetCompact(true, rayCardScale);
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(sc689CardRight, sc689CardUp + 0.42f); // upper left: the yellow cabinet stays uncovered
             yield return instructionPanel.Show();
@@ -6103,6 +6126,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             yield return RunSc12RayFlow(stand);
 
@@ -6160,8 +6184,11 @@ namespace ChemicalSafety.Presentable
                 // 2. four pick rounds, no clicks: a wrong pick (red card, the item goes back), then the right one (green card, worn)
                 void OnPicked(int r, int option, bool right)
                 {
+                    // client 2026-11-19: no "right choice" voice-over (the client gave none); the animation picks only right items, so no wrong line either
+                    if (right)
+                        return;
                     StopAllVoiceCoroutines();
-                    StartCoroutine(PlayVoice(right ? art.voSc12Right : art.voSc12Wrong));
+                    StartCoroutine(PlayVoice(art.voSc12Wrong));
                 }
 
                 sc12Station.Picked += OnPicked;
@@ -6170,7 +6197,7 @@ namespace ChemicalSafety.Presentable
                     Stage("sc12Pick" + round);
                     StopAllVoiceCoroutines();
                     StartCoroutine(PlayVoice(art.voSc12Pick[round]));
-                    yield return sc12Station.AutoRound(round, 2.4f, true);
+                    yield return sc12Station.AutoRound(round, 2.4f, false); // client 2026-11-19: every pick in the animation is the right one (no wrong-pick demo)
                 }
 
                 sc12Station.Picked -= OnPicked;
@@ -6214,7 +6241,15 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc12Question");
-            yield return Sc12Question(true);
+            if (sc12SingleMcq && mcqSc12 != null)
+            {
+                Sc04PopupPose(-0.95f, 0.25f, 1.8f, out var mcqPos12, out var mcqRot12);
+                mcqSc12.SetWorldScale(Sc04QuestionScale * 1.8f / 1.6f); // client 2026-11-19: the same apparent text size as Scenarios 1-11 (1.8 m away here)
+                mcqSc12.transform.SetPositionAndRotation(mcqPos12, mcqRot12);
+                yield return RunQuestion(mcqSc12, BuildSc12SingleQuestion(), false, 12);
+            }
+            else
+                yield return Sc12Question(true);
         }
 
         // ------------------------------------------------------------------------------------------------------------------------
@@ -7170,6 +7205,44 @@ namespace ChemicalSafety.Presentable
 
         // The multiple-answer assessment. Marks: one question, full mark when the first submission is exactly the right set; every
         // submission is recorded as the letters of the ticked rows ("A,C,D") in the shown order.
+        private static PresentableMcqPanel.Question BuildSc12SingleQuestion()
+        {
+            var labels = Sc12Content.SingleOptionLabels;
+            var reasons = Sc12Content.SingleOptionReasons;
+            var options = new PresentableMcqPanel.Option[labels.Length];
+            for (var i = 0; i < options.Length; i++)
+            {
+                var reason = reasons != null && i < reasons.Length ? reasons[i] : string.Empty;
+                options[i] = new PresentableMcqPanel.Option
+                {
+                    label = labels[i],
+                    feedback = reason,
+                    wrongTitle = Sc12Content.SingleOptionWrongTitle[i],
+                    reason = reason
+                };
+            }
+
+            return new PresentableMcqPanel.Question
+            {
+                header = Sc12Content.QuestionHeader,
+                prompt = Sc12Content.SingleQuestionPrompt,
+                correctIndex = Sc12Content.SingleCorrectIndex,
+                correctTitle = Sc12Content.SingleCorrectTitle,
+                nextLabel = Sc12Content.FinishLabel,
+                options = options,
+                fancy = true,
+                inlineReveal = PresentableInput.RayActive,
+                tagCorrect = Sc12Content.SingleTagCorrect,
+                tagWrong = Sc12Content.SingleTagWrong,
+                largeText = PresentableInput.RayActive,
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? 1.2f : 1f,
+                maxGrow = 3.8f,
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
+            };
+        }
+
         private IEnumerator Sc12Question(bool ray = false)
         {
             _nextPressed = false;

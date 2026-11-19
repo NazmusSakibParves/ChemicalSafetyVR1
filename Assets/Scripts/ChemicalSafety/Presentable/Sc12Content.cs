@@ -63,5 +63,15 @@ namespace ChemicalSafety.Presentable
         public static string TagRequired => Loc.T("SC12", "TagRequired");
         public static string TagNotRequired => Loc.T("SC12", "TagNotRequired");
         public static string[] OptionReasons => Loc.A("SC12", "OptionReasons");
+
+        // client 2026-11-19 (.docx): Scenario 12's last question is the same single-answer MCQ box as Scenarios 1-11
+        public static string SingleQuestionPrompt => Loc.T("SC12", "SingleQuestionPrompt");
+        public static string SingleCorrectTitle => Loc.T("SC12", "SingleCorrectTitle");
+        public static string SingleTagCorrect => Loc.T("SC12", "SingleTagCorrect");
+        public static string SingleTagWrong => Loc.T("SC12", "SingleTagWrong");
+        public const int SingleCorrectIndex = 2;
+        public static string[] SingleOptionLabels => Loc.A("SC12", "SingleOptionLabels");
+        public static string[] SingleOptionReasons => Loc.A("SC12", "SingleOptionReasons");
+        public static string[] SingleOptionWrongTitle => Loc.A("SC12", "SingleOptionWrongTitle");
     }
 }

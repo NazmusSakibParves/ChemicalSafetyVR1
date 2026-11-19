@@ -3733,12 +3733,7 @@ namespace ChemicalSafety.Presentable
                     if (shots && pick == 0)
                         yield return Shot("134_sc12_ray_pick");
                     var worn0 = station.WornCount;
-                    if (shots && pick == 0)
-                    {
-                        yield return Sc10Wait(() => station.Result == 2, 12f);
-                        yield return Shot("135_sc12_ray_wrong_card");
-                    }
-
+                    // client 2026-11-19: the animation picks only the right items (no wrong-pick demo any more)
                     yield return Sc10Wait(() => station.WornCount > worn0, 25f);
                     Say("SC12 ray " + tag + " pick " + pick + ": worn items = " + station.WornCount + " (expected " + (pick + 1) + ", no click needed)");
                 }
@@ -3763,6 +3758,31 @@ namespace ChemicalSafety.Presentable
             }
 
             yield return WaitStage("sc12Question", 20f);
+            if (Get<bool>(_director, "sc12SingleMcq"))
+            {
+                // client 2026-11-19: the same single-answer MCQ box as Scenarios 1-11
+                var mcq12 = Get<PresentableMcqPanel>(_director, "mcqSc12");
+                yield return Sc10Wait(() => mcq12.IsOpen, 8f);
+                yield return new WaitForSeconds(2.8f);
+                yield return Shot("139_sc12_ray_question");
+                LayoutCheck("SC12 MCQ", mcq12.transform);
+                var cur12 = mcq12.Current;
+                var wrong12 = true;
+#if UNITY_EDITOR
+                wrong12 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc12Wrong", true);
+#endif
+                var row12 = FindDirectRow9(mcq12, cur12, wrong12);
+                if (row12 != null)
+                    row12.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+                yield return new WaitForSeconds(2.2f);
+                yield return Shot("140_sc12_ray_reasons");
+                LayoutCheck("SC12 MCQ reveal", mcq12.transform);
+                yield return TraceWait();
+                Click(mcq12.transform, "NextButton");
+                yield return new WaitForSeconds(0.8f);
+                yield break;
+            }
+
             yield return Sc10Wait(() => assess.Visible, 8f);
             yield return new WaitForSeconds(1.2f);
             Say("SC12 ray assessment visible = " + assess.Visible + " (expected True)");

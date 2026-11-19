@@ -223,6 +223,8 @@ namespace ChemicalSafety.Editor
             SetRef(mcq11, "art", art);
             var mcq12 = Child("McqPanel_SC12", flow).AddComponent<Sc12Assessment>();
             SetRef(mcq12, "art", art);
+            var mcq12s = Child("McqPanel_SC12Single", flow).AddComponent<PresentableMcqPanel>();
+            SetRef(mcq12s, "art", art);
             var mcq19 = Child("McqPanel_SC19", flow).AddComponent<PresentableMcqPanel>();
             SetRef(mcq19, "art", art);
             var mcq20 = Child("McqPanel_SC20", flow).AddComponent<PresentableMcqPanel>();
@@ -427,6 +429,8 @@ namespace ChemicalSafety.Editor
             so.FindProperty("sc12Station").objectReferenceValue = sc12.station;
             so.FindProperty("sc12Gate").objectReferenceValue = sc12.gate;
             so.FindProperty("assessmentSc12").objectReferenceValue = mcq12;
+            so.FindProperty("mcqSc12").objectReferenceValue = mcq12s;
+            so.FindProperty("sc12SingleMcq").boolValue = Sc12UseSingleMcq;
             so.FindProperty("sc12RayStand").objectReferenceValue = sc12.rayStand;
             so.FindProperty("sc12CardAnchor").objectReferenceValue = sc12.cardAnchor;
             so.FindProperty("sc12RayLook").boolValue = Sc12UseRay;

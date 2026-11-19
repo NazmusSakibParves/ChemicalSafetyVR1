@@ -16,11 +16,11 @@ namespace ChemicalSafety.Editor
     {
         private const string KeyFile = "Assets/Scripts/ChemicalSafety/Editor/BnFullWidthKeys.txt";
 
-        public static string AddForScenario(int scenario)
+        public static string AddForScenario(int scenario, string key = "RayOptionReasons")
         {
             var path = "Assets/Resources/Content/SC" + scenario.ToString("00") + ".json";
             var txt = File.ReadAllText(path);
-            var m = Regex.Match(txt, "\"RayOptionReasons\".*?\"bn\"\\s*:\\s*\\[(.*?)\\]", RegexOptions.Singleline);
+            var m = Regex.Match(txt, "\"" + key + "\".*?\"bn\"\\s*:\\s*\\[(.*?)\\]", RegexOptions.Singleline);
             if (!m.Success)
                 return "no RayOptionReasons in " + path;
             var keys = new HashSet<string>(File.Exists(KeyFile) ? File.ReadAllLines(KeyFile) : new string[0]);

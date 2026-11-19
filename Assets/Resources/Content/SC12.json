@@ -128,8 +128,8 @@
     },
     {
       "key": "RayInstruction",
-      "en": "You are a process operator about to enter the process area to handle a corrosive acid. Before you go in, check the Safety Data Sheet and choose the right PPE from the yellow cabinet.",
-      "bn": "আপনি একজন প্রসেস অপারেটর এবং ক্ষয়কারী অ্যাসিড সামলাতে প্রসেস এলাকায় ঢুকতে যাচ্ছেন। ঢোকার আগে নিরাপত্তা তথ্যপত্র দেখে নিন এবং হলুদ আলমারি থেকে সঠিক পিপিই বেছে নিন।"
+      "en": "Before handling a corrosive chemical, it is essential to ensure your safety. Using incorrect PPE can cause harm to your skin, eyes, and respiratory system. Carefully review the safety instructions in the SDS of the relevant chemical and select the appropriate Personal Protective Equipment (PPE) for the task.",
+      "bn": "রাসায়নিক পদার্থ নিয়ে কাজ শুরু করার আগে নিজের সুরক্ষা নিশ্চিত করা জরুরি। ভুল PPE ব্যবহার করলে ত্বক, চোখ ও শ্বাসতন্ত্রের ক্ষতি হতে পারে। সংশ্লিষ্ট রাসায়নিক পদার্থের SDS-এর নিরাপত্তা নির্দেশনা ভালোভাবে পড়ে কাজের জন্য উপযুক্ত সুরক্ষা সরঞ্জাম (PPE) নির্বাচন করুন।"
     },
     {
       "key": "TagRequired",
@@ -140,6 +140,26 @@
       "key": "TagNotRequired",
       "en": "NOT REQUIRED",
       "bn": "প্রয়োজন নেই"
+    },
+    {
+      "key": "SingleQuestionPrompt",
+      "en": "You are a dyeing section worker. You are about to work with a new chemical. How will you know what protective equipment you need to wear?",
+      "bn": "আপনি একজন ডাইং সেকশনের কর্মী। আপনি নতুন একটি কেমিক্যাল নিয়ে কাজ করবেন। কী কী সুরক্ষা সরঞ্জাম পরতে হবে, তা কীভাবে বুঝবেন?"
+    },
+    {
+      "key": "SingleCorrectTitle",
+      "en": "RIGHT ANSWER",
+      "bn": "সঠিক উত্তর"
+    },
+    {
+      "key": "SingleTagCorrect",
+      "en": "CORRECT",
+      "bn": "সঠিক"
+    },
+    {
+      "key": "SingleTagWrong",
+      "en": "WRONG",
+      "bn": "ভুল"
     }
   ],
   "arrays": [
@@ -276,6 +296,51 @@
         "নিরাপত্তা তথ্যপত্র অনুযায়ী এই ক্ষয়কারী রাসায়নিকের জন্য সঠিক উপাদানের গ্লাভস।",
         "তরল ক্ষয়কারী রাসায়নিকের জন্য শরীরের সুরক্ষা লাগে।",
         "অনেক ক্ষেত্রে লাগলেও এই নির্দিষ্ট কাজের জন্য নিরাপত্তা তথ্যপত্রে বাধ্যতামূলক নয়।"
+      ]
+    },
+    {
+      "key": "SingleOptionLabels",
+      "en": [
+        "Look at what the worker next to you is wearing and copy them.",
+        "Just pick the thickest, heaviest gear in the locker to be safe.",
+        "Read Section 8 of the Safety Data Sheet (Exposure Controls/Personal Protection).",
+        "Ask the factory security guard on duty."
+      ],
+      "bn": [
+        "পাশের কর্মী যা পরেছেন, আমিও তাই পরব।",
+        "লকারের সবচেয়ে মোটা ও ভারী সুরক্ষা সরঞ্জাম বেছে নেব।",
+        "SDS-এর ৮ নম্বর অংশ (এক্সপোজার কন্ট্রোল ও ব্যক্তিগত সুরক্ষা) পড়ে দেখব।",
+        "দায়িত্বে থাকা নিরাপত্তারক্ষীকে জিজ্ঞাসা করব।"
+      ]
+    },
+    {
+      "key": "SingleOptionReasons",
+      "en": [
+        "Guessing or copying others can lead to fatal chemical exposure. Gear must be specific to the chemical.",
+        "Guessing or copying others can lead to fatal chemical exposure. Gear must be specific to the chemical.",
+        "Section 8 of the universally standardized SDS explicitly dictates the required PPE for that specific chemical.",
+        "Guessing or copying others can lead to fatal chemical exposure. Gear must be specific to the chemical."
+      ],
+      "bn": [
+        "অনুমান করে বা অন্যকে দেখে সুরক্ষা সরঞ্জাম পড়লে কেমিক্যাল শরীরে লেগে মারাত্মক ক্ষতি হতে পারে। প্রতিটি কেমিক্যালের সুরক্ষার ধরন আলাদা।",
+        "অনুমান করে বা অন্যকে দেখে সুরক্ষা সরঞ্জাম পড়লে কেমিক্যাল শরীরে লেগে মারাত্মক ক্ষতি হতে পারে। প্রতিটি কেমিক্যালের সুরক্ষার ধরন আলাদা।",
+        "SDS-এর ৮ নম্বর অংশে লেখা থাকে, ওই কেমিক্যালের জন্য কোন কোন PPE লাগবে।",
+        "অনুমান করে বা অন্যকে দেখে সুরক্ষা সরঞ্জাম পড়লে কেমিক্যাল শরীরে লেগে মারাত্মক ক্ষতি হতে পারে। প্রতিটি কেমিক্যালের সুরক্ষার ধরন আলাদা।"
+      ]
+    },
+    {
+      "key": "SingleOptionWrongTitle",
+      "en": [
+        "WRONG",
+        "WRONG",
+        "",
+        "WRONG"
+      ],
+      "bn": [
+        "ভুল",
+        "ভুল",
+        "",
+        "ভুল"
       ]
     }
   ],

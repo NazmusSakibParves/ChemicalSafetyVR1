@@ -410,6 +410,9 @@ MonoBehaviour:
   artistSc11Question: {fileID: 8300000, guid: e733990259fc2b34082a899cd0985937, type: 3}
   artistSc11RightWhy: {fileID: 8300000, guid: 4219b456f4fa6664ca4b8839896986c7, type: 3}
   artistSc11WrongWhy: {fileID: 8300000, guid: b3755735a936bb944a7de81b6fde77bb, type: 3}
+  artistSc12Question: {fileID: 8300000, guid: 08268602ca2babc41b40cc4caf058b6d, type: 3}
+  artistSc12RightWhy: {fileID: 8300000, guid: 7da00e21b0bc0aa42a448ba6806ef4a1, type: 3}
+  artistSc12WrongWhy: {fileID: 8300000, guid: c894fa0035d41d44b9a5d4620f612158, type: 3}
   artistContinueHint: {fileID: 8300000, guid: 00462f5f94a36b045b60b7a4296d77fc, type: 3}
   artistCorrect: {fileID: 8300000, guid: b2de7e6a2d3882b4ca65166ee7e78d2c, type: 3}
   artistWrong: {fileID: 8300000, guid: c8717667e9bf62647af76856eef28c49, type: 3}
@@ -536,6 +539,18 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4219b456f4fa6664ca4b8839896986c7, type: 3}
   - {fileID: 8300000, guid: 24a71312bb570554aba0556cf4945a7c, type: 3}
   - {fileID: 8300000, guid: b3755735a936bb944a7de81b6fde77bb, type: 3}
+  - {fileID: 8300000, guid: b5fc3c110a00aff4c91a67aaee9882f2, type: 3}
+  - {fileID: 8300000, guid: 2b71a589303f3204483238dd47c2ccad, type: 3}
+  - {fileID: 8300000, guid: 488642416f654f543b8c0664963693ac, type: 3}
+  - {fileID: 8300000, guid: e8b15780e3196784e8d8441eac94d324, type: 3}
+  - {fileID: 8300000, guid: 0a805ff5b2eba5d49915b417dfc25f61, type: 3}
+  - {fileID: 8300000, guid: af9ec31ed20171a4181b714d3ac454db, type: 3}
+  - {fileID: 8300000, guid: 08268602ca2babc41b40cc4caf058b6d, type: 3}
+  - {fileID: 8300000, guid: fda88effdde23ce4da03c1cb58a1d628, type: 3}
+  - {fileID: 8300000, guid: 16f148f57e5ae444e8299cbfe07bcf40, type: 3}
+  - {fileID: 8300000, guid: 7da00e21b0bc0aa42a448ba6806ef4a1, type: 3}
+  - {fileID: 8300000, guid: 67b69309ae820a94b8da5629110b9655, type: 3}
+  - {fileID: 8300000, guid: c894fa0035d41d44b9a5d4620f612158, type: 3}
   - {fileID: 8300000, guid: c8717667e9bf62647af76856eef28c49, type: 3}
   artistBnInstructionCards:
   - {fileID: 0}
