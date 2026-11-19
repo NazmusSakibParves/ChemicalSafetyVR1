@@ -401,6 +401,9 @@ MonoBehaviour:
   artistSc08Question: {fileID: 8300000, guid: 6c94918b7f8a6244fb2f6e19fdbe2acb, type: 3}
   artistSc08RightWhy: {fileID: 8300000, guid: 813ce245b9f4a2448a5f0ea2b4a6dc12, type: 3}
   artistSc08WrongWhy: {fileID: 8300000, guid: becc1ff62fe101d43b0244a5fbb66322, type: 3}
+  artistSc09Question: {fileID: 8300000, guid: 228455e2a0869404e8f8a086961b5c8e, type: 3}
+  artistSc09RightWhy: {fileID: 8300000, guid: 26d91fc747e0e0045a5e204cd7651772, type: 3}
+  artistSc09WrongWhy: {fileID: 8300000, guid: 38e2fb9f159153c46b30907e4a419413, type: 3}
   artistContinueHint: {fileID: 8300000, guid: 00462f5f94a36b045b60b7a4296d77fc, type: 3}
   artistCorrect: {fileID: 8300000, guid: b2de7e6a2d3882b4ca65166ee7e78d2c, type: 3}
   artistWrong: {fileID: 8300000, guid: c8717667e9bf62647af76856eef28c49, type: 3}
@@ -489,6 +492,19 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 813ce245b9f4a2448a5f0ea2b4a6dc12, type: 3}
   - {fileID: 8300000, guid: 50dd12608a6d188479087a62914d1109, type: 3}
   - {fileID: 8300000, guid: becc1ff62fe101d43b0244a5fbb66322, type: 3}
+  - {fileID: 8300000, guid: 4a956b87524263e46b4dc3bda5a3e11d, type: 3}
+  - {fileID: 8300000, guid: 52f88bbc9de6099488db8fcc8983f51d, type: 3}
+  - {fileID: 8300000, guid: 228455e2a0869404e8f8a086961b5c8e, type: 3}
+  - {fileID: 8300000, guid: 9f0c175beecaeb747b1fc21851182d83, type: 3}
+  - {fileID: 8300000, guid: ad10536017d51e64fa13de1b1d200876, type: 3}
+  - {fileID: 8300000, guid: 61ac3389fabeea248a6ebd863370af81, type: 3}
+  - {fileID: 8300000, guid: c9985c7861bc32f4eae1e40d67d373a1, type: 3}
+  - {fileID: 8300000, guid: ea5de3338781f8245b52e39ec1a538c2, type: 3}
+  - {fileID: 8300000, guid: cc06b506a7bae844ca9ca80b1aaaca62, type: 3}
+  - {fileID: 8300000, guid: 26d91fc747e0e0045a5e204cd7651772, type: 3}
+  - {fileID: 8300000, guid: e10348fc4a339a04cbed379a87992bca, type: 3}
+  - {fileID: 8300000, guid: edc80d94f1d86ac4fa83e61142150430, type: 3}
+  - {fileID: 8300000, guid: 38e2fb9f159153c46b30907e4a419413, type: 3}
   - {fileID: 8300000, guid: c8717667e9bf62647af76856eef28c49, type: 3}
   artistBnInstructionCards:
   - {fileID: 0}

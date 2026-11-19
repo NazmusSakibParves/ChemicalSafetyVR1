@@ -2285,7 +2285,11 @@ namespace ChemicalSafety.Presentable
             var cur = mcq9.Current;
             Say("SC09 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
             // a WRONG pick: the reasons show and the voice sends the learner on with NEXT (no "Try again")
-            var row = FindDeep(mcq9.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var sc9Wrong = true;
+#if UNITY_EDITOR
+            sc9Wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc09Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq9, cur, sc9Wrong);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
@@ -2301,7 +2305,15 @@ namespace ChemicalSafety.Presentable
             Say("SC09 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC09 MCQ reveal", mcq9.transform);
             Say("SC09 shower mount after the run: active = " + (mount != null && mount.activeInHierarchy) + " (shown only inside Scenario 9)");
+            yield return TraceWait();
             Click(mcq9.transform, "NextButton");
+        }
+
+        // Scenario 9: the row to press (EditorPref ChemSafetySc09Wrong, default true = the old behaviour: a wrong pick; false = the right one)
+        private static Transform FindDirectRow9(PresentableMcqPanel mcq9, PresentableMcqPanel.Question cur, bool wrong)
+        {
+            var index = wrong && !AllCorrect ? (cur.correctIndex + 1) % cur.options.Length : (AllCorrect ? ShownCorrectRow(cur.correctIndex) : cur.correctIndex);
+            return FindDeep(mcq9.transform, "Row" + (index + 1));
         }
 
         private IEnumerator Sc09Smoke(InstructionPanelView panel, AudioSource voiceSrc)
@@ -2448,6 +2460,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 9 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("102_sc09_correct");
+            yield return TraceWait();
             Click(mcq9.transform, "NextButton");
         }
 

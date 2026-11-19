@@ -83,8 +83,8 @@
     },
     {
       "key": "RayInstruction",
-      "en": "You are working with chemicals in the dyeing section. You are about to pour the chemical from the can on the table into an empty container. If something goes wrong, follow the safety procedure at once.",
-      "bn": "আপনি ডাইং সেকশনে কেমিক্যাল নিয়ে কাজ করছেন। টেবিলে থাকা কেমিক্যালের ক্যান থেকে খালি পাত্রে ঢালতে যাচ্ছেন। কিছু ভুল হলে সাথে সাথে নিরাপত্তা পদ্ধতি মেনে কাজ করুন।"
+      "en": "If a chemical splashes into your eyes or onto your face during work, taking immediate emergency action is critical. Follow the SDS instructions to identify the correct emergency decontamination procedure and select the appropriate action.",
+      "bn": "কাজের সময় কেমিক্যাল চোখে বা মুখে ছিটকে পড়লে দ্রুত জরুরি ব্যবস্থা নেওয়া অত্যন্ত গুরুত্বপূর্ণ। এ ধরনের পরিস্থিতিতে জরুরি ডিকন্টামিনেশন পদ্ধতি জানতে SDS-এর নির্দেশনা অনুসরণ করুন এবং উপযুক্ত ব্যবস্থা নির্বাচন করুন।"
     },
     {
       "key": "RaySpill",
@@ -104,7 +104,7 @@
     {
       "key": "RayQuestionPrompt",
       "en": "You are working with chemicals in the dyeing section. Suddenly, a chemical splashes into your eyes and onto your face. What should you do first?",
-      "bn": "আপনি ডাইং সেকশনে কেমিক্যাল নিয়ে কাজ করছেন। হঠাৎ করে আপনার চোখে ও মুখে কেমিক্যাল ছিটকে পড়েছে। আপনি প্রথমে কী করবেন?"
+      "bn": "আপনি ডাইং সেকশনে কেমিক্যাল নিয়ে কাজ করছেন। হঠাৎ করে আপনার চোখে ও মুখে কেমিক্যাল ছিটকে পড়েছে। আপনি প্রথমে কী করবেন?"
     },
     {
       "key": "RayCorrectTitle",
