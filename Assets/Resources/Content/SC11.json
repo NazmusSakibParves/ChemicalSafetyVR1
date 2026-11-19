@@ -116,7 +116,7 @@
       "en": "YOU",
       "bn": "আপনি"
     },
-    { "key": "RayInstruction", "en": "You are a general worker. While working, you heard a hissing sound from a gas cylinder and saw gas leaking — clear signs of a gas leak. Now take the correct action.", "bn": "আপনি একজন সাধারণ শ্রমিক। কাজ করার সময় একটি গ্যাসের সিলিন্ডারের কাছে হিসহিস শব্দ শুনলেন এবং গ্যাস বের হতে দেখলেন। যা গ্যাস লিকের সুস্পষ্ট লক্ষণ। এখন সঠিক পদক্ষেপ নিন।" },
+    { "key": "RayInstruction", "en": "During a routine inspection of the gas cylinder storage area, you hear a faint hissing sound coming from a cylinder. This may indicate a gas leak, which can lead to a serious accident. Follow the SDS instructions and the factory’s emergency safety procedures to select the appropriate risk-control action.", "bn": "গ্যাস সিলিন্ডার সংরক্ষণের স্থান পরিদর্শনের সময় একটি সিলিন্ডার থেকে হালকা হিসহিস শব্দ শোনা যাচ্ছে। এটি গ্যাস লিকের লক্ষণ হতে পারে, যা গুরুতর দুর্ঘটনার কারণ হতে পারে। SDS-এর নির্দেশনা ও কারখানার জরুরি নিরাপত্তা পদ্ধতি অনুসরণ করে ঝুঁকি নিয়ন্ত্রণের উপযুক্ত ব্যবস্থা নির্বাচন করুন।" },
     { "key": "RayQuestionPrompt", "en": "You are a Factory worker. While working, you hear hissing and see gas leaking from a gas cylinder. What will you do?", "bn": "আপনি একজন সাধারণ শ্রমিক। কাজ করার সময় একটি গ্যাসের সিলিন্ডারের কাছে হিসহিস শব্দ শুনলেন এবং গ্যাস বের হতে দেখলেন। এখন কী করবেন?" },
     { "key": "RayCorrectTitle", "en": "RIGHT ANSWER", "bn": "সঠিক উত্তর" },
     { "key": "TagCorrect", "en": "CORRECT", "bn": "সঠিক" },

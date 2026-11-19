@@ -16,18 +16,24 @@ namespace ChemicalSafety.Editor
         // bump when the settings below change so Unity reimports every content texture
         public override uint GetVersion() => 4;
 
-        // BnAuto keys (non-bold, bold) of the Scenario 10 reasons whose wide rungs must not be cut to 2048 px
-        private static readonly string[] FullWidthKeys =
-        {
-            "d3eb0178d657a81a", "84aa31ba179e9dc6", "0fc57b5c8b80511b", "6b114fc3b3ba7c17",
-            "24b0b87900f589f4", "e6cf8120cc16e6d4", "575734bbace21c19", "6a5de0ae6de0d565"
-        };
+        // BnAuto keys (non-bold and bold hash of each answer reason, one per line in BnFullWidthKeys.txt) whose wide rungs must not be cut to 2048 px,
+        // so a reason can be drawn on ONE line where it fits (client 2026-11-19). Add a scenario's keys with Chemical Safety/Presentable/Add Reason Keys.
+        private static string[] _fullWidthKeys;
+        private static long _keyStamp;
 
         private static bool IsFullWidth(string path)
         {
+            var f = "Assets/Scripts/ChemicalSafety/Editor/BnFullWidthKeys.txt";
+            var stamp = System.IO.File.Exists(f) ? System.IO.File.GetLastWriteTimeUtc(f).Ticks : 0L;
+            if (_fullWidthKeys == null || stamp != _keyStamp)
+            {
+                _keyStamp = stamp;
+                _fullWidthKeys = stamp != 0L ? System.IO.File.ReadAllLines(f) : new string[0];
+            }
+
             var name = System.IO.Path.GetFileNameWithoutExtension(path);
-            foreach (var k in FullWidthKeys)
-                if (name.StartsWith(k))
+            foreach (var k in _fullWidthKeys)
+                if (k.Length >= 8 && name.StartsWith(k.Trim()))
                     return true;
             return false;
         }
