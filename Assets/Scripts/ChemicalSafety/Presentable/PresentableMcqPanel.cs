@@ -60,6 +60,10 @@ namespace ChemicalSafety.Presentable
             public bool headerBacking;
             [Tooltip("Scenario 7 (client 2026-11-19): the least width : height of the box (default 1.46). A higher number gives a shorter box, so less spare room is spread as gaps between the options.")]
             public float minAspect = 1.46f;
+            [Tooltip("growBox: how tall the box may grow (times its normal height). Default 2.6 = every scenario unchanged; Scenario 10 (very long Bangla answers + reasons) asks for more so nothing is squeezed.")]
+            public float maxGrow = 2.6f;
+            [Tooltip("Extra pixels of air added inside every answer box and every reason slot (largeText layout). Default 0 = every scenario unchanged; Scenario 10 uses it so long Bangla lines never touch the box edge or the reason below.")]
+            public float extraPad = 0f;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -480,14 +484,14 @@ namespace ChemicalSafety.Presentable
                     var nIcons = o.icons == null ? 0 : Mathf.Min(o.icons.Length, 3);
                     var labelRight = nIcons > 0 ? (q.inlineReveal ? 0.885f : 0.95f) - nIcons * (0.082f + 0.014f) - 0.02f : 0.92f;
                     var labelW = 0.9f * W * (labelRight - 0.125f) - 24f;
-                    rowH[i] = Mathf.Max(74f, MeasureTextPx(_rows[i].label, o.label, labelW) + (Bn ? 48f : 36f)) / H;
-                    reasonH[i] = reveal ? (MeasureTextPx(_rows[i].reason, o.reason, reasonW) + (Bn ? 36f : 20f)) / H : 0f;
+                    rowH[i] = Mathf.Max(74f, MeasureTextPx(_rows[i].label, o.label, labelW) + (Bn ? 48f : 36f) + q.extraPad) / H;
+                    reasonH[i] = reveal ? (MeasureTextPx(_rows[i].reason, o.reason, reasonW) + (Bn ? 36f : 20f) + q.extraPad) / H : 0f;
                 }
 
                 gap = (reveal ? 14f : 26f) / H;
                 // the box is never flatter than 1.46 : 1 (the designed proportion is 1.38 : 1): short content gets more air instead
                 var minF = _embedded ? 1f : 1240f * _wk / (900f * Mathf.Max(1.2f, q.minAspect));
-                return SolveDyn(rowH, reasonH, gap, n, reveal, q.growBox ? 2.6f : 1.0f, minF);
+                return SolveDyn(rowH, reasonH, gap, n, reveal, q.growBox ? q.maxGrow : 1.0f, minF);
             }
 
             var wideK = q.growBox ? WideK : 1f;

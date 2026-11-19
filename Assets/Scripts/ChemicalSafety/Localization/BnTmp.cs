@@ -297,8 +297,6 @@ namespace ChemicalSafety.Localization
             var widestB = -1;
             foreach (var b in buckets)
             {
-                if (AvoidCapped && b >= 3000 && buckets.Length > 1)
-                    continue;
                 var name = key + "_" + b;
                 if (!SpriteCache.TryGetValue(name, out var sp) || sp == null)
                 {
@@ -307,6 +305,9 @@ namespace ChemicalSafety.Localization
                 }
 
                 if (sp == null)
+                    continue;
+                // only a rung the import really cut to 2048 px is skipped (a wide rung imported at its true size, as Scenario 10's reasons, is used)
+                if (AvoidCapped && b >= 3000 && buckets.Length > 1 && Mathf.Abs(sp.rect.width - 2048f) < 8f)
                     continue;
                 if (b < narrowestB)
                 {
@@ -361,7 +362,7 @@ namespace ChemicalSafety.Localization
                 var shrink = Mathf.Min(1f, box.x / Mathf.Max(1f, sp.rect.width * baseScale), box.y / Mathf.Max(1f, sp.rect.height * baseScale));
                 // the 3600 / 5200 px rungs are cut down to 2048 px by the texture import (x0.57 / x0.39): their real glyphs are much smaller than the size
                 // BnTmp assumes, so where asked (the dynamic MCQ box) they are skipped when a narrower rung exists (2400 is only x0.85, fine)
-                if (AvoidCapped && b >= 3000 && buckets.Length > 1)
+                if (AvoidCapped && b >= 3000 && buckets.Length > 1 && Mathf.Abs(sp.rect.width - 2048f) < 8f)
                     continue;
                 if (best == null || shrink >= bestShrink - 0.01f)
                 {

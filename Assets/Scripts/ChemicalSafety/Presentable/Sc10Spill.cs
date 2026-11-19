@@ -1131,7 +1131,8 @@ namespace ChemicalSafety.Presentable
             var panLocalTop = panAt + Vector3.up * 0.03f;
             var sweepDir = Flat(panAt - c);
             var side = Vector3.Cross(Vector3.up, sweepDir);
-            var perStroke = 3;
+            // client 2026-11-19: 4 sweeps at most (was 7-8), the same pieces, so the user is not bored
+            var perStroke = Mathf.Max(3, Mathf.CeilToInt(pieces.Count / 4f));
             var strokes = Mathf.CeilToInt(pieces.Count / (float)perStroke);
             var idx = 0;
             for (var s = 0; s < strokes; s++)
@@ -1162,7 +1163,7 @@ namespace ChemicalSafety.Presentable
                         var jj = j - batchStart;
                         var kk = Mathf.Clamp01((k - 0.15f * jj / perStroke) / (1f - 0.15f));
                         var ee = Mathf.SmoothStep(0f, 1f, kk);
-                        var p = Vector3.Lerp(starts[jj], panLocalTop + side * ((jj - 1) * 0.05f), ee);
+                        var p = Vector3.Lerp(starts[jj], panLocalTop + side * (((jj % 5) - 2) * 0.03f), ee);
                         p.y = Mathf.Lerp(starts[jj].y, panLocalTop.y + 0.004f, ee) + Mathf.Sin(kk * Mathf.PI) * 0.025f;
                         pieces[j].position = p;
                         pieces[j].Rotate(0f, 240f * Time.deltaTime * (1f - kk), 0f, Space.World);

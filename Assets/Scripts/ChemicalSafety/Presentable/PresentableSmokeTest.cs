@@ -2594,7 +2594,11 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC10 MCQ", mcq10.transform);
             var cur = mcq10.Current;
             Say("SC10 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq10.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var sc10Wrong = true;
+#if UNITY_EDITOR
+            sc10Wrong = UnityEditor.EditorPrefs.GetBool("ChemSafetySc10Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq10, cur, sc10Wrong);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.2f);
@@ -2609,6 +2613,7 @@ namespace ChemicalSafety.Presentable
 
             Say("SC10 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC10 MCQ reveal", mcq10.transform);
+            yield return TraceWait();
             Click(mcq10.transform, "NextButton");
             yield return WaitStage("sc10Done", 20f);
             yield return new WaitForSeconds(0.5f);
@@ -2792,6 +2797,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 10 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("118_sc10_correct");
+            yield return TraceWait();
             Click(mcq10.transform, "NextButton");
         }
 

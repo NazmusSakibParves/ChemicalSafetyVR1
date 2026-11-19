@@ -607,6 +607,9 @@ namespace ChemicalSafety.Presentable
 
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc10Only", false) && envSc10 != null)
             {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenario10();
                 yield break;
             }
@@ -3990,12 +3993,12 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10) || _cam == null || SessionHud.Instance == null)
                 return;
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : null))))));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : null)))))));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4581,6 +4584,8 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(PlayVoice(art.artistSc08Question));
             if (scenario == 9 && art.artistSc09Question != null)
                 StartCoroutine(PlayVoice(art.artistSc09Question));
+            if (scenario == 10 && art.artistSc10Question != null)
+                StartCoroutine(PlayVoice(art.artistSc10Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4736,6 +4741,21 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc05CompleteBn : art.voSc05CompleteEn);
                 else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 5 && art.voWrongNextBn[5] != null)
                     yield return PlayVoice(art.voWrongNextBn[5]);
+                yield break;
+            }
+
+            if (scenario == 10 && inlineReveal)
+            {
+                // client 2026-11-19: as Scenarios 4-9 - shared right / wrong line, the client's explanation, then complete / next
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why10 = correct ? art.artistSc10RightWhy : art.artistSc10WrongWhy;
+                if (why10 != null)
+                    yield return PlayVoice(why10);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc10CompleteBn : art.voSc10CompleteEn);
+                else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 10 && art.voWrongNextBn[10] != null)
+                    yield return PlayVoice(art.voWrongNextBn[10]);
                 yield break;
             }
 
@@ -5360,9 +5380,11 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc10RayInstruction != null ? art.voSc10RayInstruction : art.voInstruction;
             instructionPanel.SetContent(Sc10Content.RayInstruction, art.bnSc10RayInstructionPanel);
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
-            instructionPanel.SetCompact(true, sc689CardScale);
+            // client 2026-11-19: the card text is as large as in Scenarios 1-9 (same card scale and Bangla image size); the backing stays nearly solid
+            instructionPanel.SetCompact(true, rayCardScale);
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(sc689CardRight, sc689CardUp);
             yield return instructionPanel.Show();
@@ -5375,6 +5397,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             yield return RunSc10RayFlow();
 
@@ -5502,7 +5525,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc10Question");
             Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc10.SetWorldScale(sc06PopupScale);
+            mcqSc10.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-9
             mcqSc10.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc10, BuildSc10RayQuestion(), false, 10);
         }
@@ -5534,7 +5557,15 @@ namespace ChemicalSafety.Presentable
                 fancy = true,
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc10Content.TagCorrect,
-                tagWrong = Sc10Content.TagWrong
+                tagWrong = Sc10Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-9 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                // a long question (3 lines at this size): a larger header strip so all of it fits, and a shorter box (less spare height)
+                headerScale = PresentableInput.RayActive ? 1.45f : 1f,
+                minAspect = 1.7f,
+                maxGrow = 3.8f, // long Bangla answers + reasons: room so no row is squeezed onto its reason
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 
