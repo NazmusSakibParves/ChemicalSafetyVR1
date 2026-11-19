@@ -230,6 +230,16 @@ namespace ChemicalSafety.Presentable
             return c;
         }
 
+        /// <summary>Set by the director: stops the main voice channel (Scenarios 13-18 speak on their own channel).</summary>
+        public static System.Action MainVoiceStop;
+
+        /// <summary>Stops this runner's own voice channel.</summary>
+        public void StopOwnVoice()
+        {
+            if (_audio != null)
+                _audio.Stop();
+        }
+
         private IEnumerator SayAnswer(bool right, int q)
         {
             var why = (right ? "RightWhy" : "WrongWhy") + (q + 1);
@@ -262,6 +272,7 @@ namespace ChemicalSafety.Presentable
                 _audio.spatialBlend = 0f;
             }
 
+            MainVoiceStop?.Invoke(); // one voice at a time: the main channel is silent before this line starts
             _audio.Stop();
             _audio.clip = clip;
             _audio.Play();

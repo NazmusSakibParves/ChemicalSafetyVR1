@@ -332,6 +332,11 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(mcqSc19);
             DraggablePanel.Attach(sc20Gate);
             DraggablePanel.Attach(mcqSc20);
+            ScCheckRunner.MainVoiceStop = () =>
+            {
+                if (voice != null)
+                    voice.Stop(); // a Scenario 13-18 line starts: the main channel is silent first
+            };
             DraggablePanel.Attach(sc21Gate);
             DraggablePanel.Attach(mcqSc21);
             DraggablePanel.Attach(sc22Gate);
@@ -4007,13 +4012,13 @@ namespace ChemicalSafety.Presentable
         {
             var sc = PresentableInput.ActiveScenario;
             var checkPanel = scCheck != null && scCheck.MainVisible; // Scenarios 13-18: the question panel (with the SDS) stays below the top bar too
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11 && sc != 12 && !checkPanel) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11 && sc != 12 && sc != 19 && sc != 20 && sc != 21 && sc != 22 && !checkPanel) || _cam == null || SessionHud.Instance == null)
                 return;
             // Scenarios 13-18 (new design): the question and SDS panels stand beside the chemical, clear of the top bar, so they are not lowered
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : (sc == 11 ? mcqSc11 : (sc == 12 ? mcqSc12 : null)))))))));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : (sc == 11 ? mcqSc11 : (sc == 12 ? mcqSc12 : (sc == 19 ? mcqSc19 : (sc == 20 ? mcqSc20 : (sc == 21 ? mcqSc21 : (sc == 22 ? mcqSc22 : null)))))))))))));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4641,6 +4646,8 @@ namespace ChemicalSafety.Presentable
             if (scenario == 19)
             {
                 // the client's own explanation lines, already in the selected language
+                // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc19Vo(correct ? "Right" : "Wrong"));
                 // the same ending as every other scenario: "... click Next to go to Scenario twenty" (missing clip = silence, as before)
                 var sc19Next = Sc19Vo(correct ? "Complete" : "WrongNext");
@@ -4656,6 +4663,8 @@ namespace ChemicalSafety.Presentable
             if (scenario == 20)
             {
                 // the client's own explanation lines, already in the selected language, then the same ending as every other scenario
+                // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc20Vo(correct ? "Right" : "Wrong"));
                 var sc20Next = Sc20Vo(correct ? "Complete" : "WrongNext");
                 if (sc20Next != null)
@@ -4671,6 +4680,8 @@ namespace ChemicalSafety.Presentable
             {
                 // the client's own explanation lines, already in the selected language, then the same ending as every other scenario
                 StopVoice();
+                // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc21Vo(correct ? "Right" : "Wrong"));
                 var sc21Next = Sc21Vo(correct ? "Complete" : "WrongNext");
                 if (sc21Next != null)
@@ -4686,6 +4697,8 @@ namespace ChemicalSafety.Presentable
             {
                 // the client's explanation line, then the congratulation: "Click Finish to see the scorecard" (the same line after a wrong answer)
                 StopVoice();
+                // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc22Vo(correct ? "Right" : "Wrong"));
                 var sc22End = Sc22Vo("Congrats");
                 if (sc22End != null)
@@ -5181,6 +5194,8 @@ namespace ChemicalSafety.Presentable
         {
             if (voice != null)
                 voice.Stop();
+            if (scCheck != null)
+                scCheck.StopOwnVoice(); // Scenarios 13-18 have their own sound channel: never two voices at once
         }
 
         /// <summary>Moves / rotates the rig so the head stands on floorPos looking along forward.</summary>
@@ -6269,8 +6284,27 @@ namespace ChemicalSafety.Presentable
 
         private AudioClip Sc19Vo(string key) => Resources.Load<AudioClip>("Sc19Vo/" + Loc.Suffix() + "/" + key);
 
+        // client 2026-11-19: the film starts every line at a fixed second, but the client's lines are longer than the gaps between those seconds: a line
+        // now waits until the line before it has ended (nothing is cut off, nothing speaks over another line). The film itself is not touched.
+        private float _sc19VoiceUntil;
+        private int _sc19Pending;
+
         private IEnumerator Sc19Voice(string text, AudioClip clip)
         {
+            _sc19Pending++;
+            while (Time.unscaledTime < _sc19VoiceUntil)
+                yield return null;
+            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
+#if UNITY_EDITOR
+            try
+            {
+                System.IO.File.AppendAllText("Temp/Smoke/voice_trace.log", "SC19film | " + Loc.Current + " | " + (clip != null ? clip.name : "(none)") + " | start " + Time.unscaledTime.ToString("F1") + " | len " + (clip != null ? clip.length.ToString("F1") : "0") + System.Environment.NewLine);
+            }
+            catch
+            {
+                // tracing must never disturb the game
+            }
+#endif
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6280,6 +6314,18 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(2.5f);
             if (token == _subtitleToken)
                 subtitle.Hide();
+            _sc19Pending = Mathf.Max(0, _sc19Pending - 1);
+        }
+
+        // after the film: the lines still waiting are spoken to the end before the card opens (at most 90 s)
+        private IEnumerator Sc19DrainVoice()
+        {
+            var guard = 0f;
+            while ((_sc19Pending > 0 || Time.unscaledTime < _sc19VoiceUntil) && guard < 90f)
+            {
+                guard += Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
 
         /// <summary>A hard cut of the film softened: black in an instant, back in a quarter of a second.</summary>
@@ -6313,9 +6359,10 @@ namespace ChemicalSafety.Presentable
             _instructionClip = Sc19Vo("Instruction");
             instructionPanel.SetContent(Sc19Content.RayInstruction, art.bnSc19RayInstructionPanel);
             LockLocomotion(true);
-            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetCompact(true, rayCardScale); // client 2026-11-19: the card text is as large as in Scenarios 1-12
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(0f, 0f);
             yield return instructionPanel.Show();
@@ -6328,6 +6375,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet: it opens by itself and closes again
             Stage("sc19Sds");
@@ -6361,12 +6409,15 @@ namespace ChemicalSafety.Presentable
             while (again)
             {
                 Stage("sc19Film");
+                _sc19Pending = 0;
+                _sc19VoiceUntil = 0f;
                 // the film screen floats in front of the learner at eye level (the animator's own camera cuts, his framing)
                 if (sc19Cine.UseScreen)
                 {
                     Sc04PopupPose(0f, 0.06f, 2.7f, out var screenPos, out var screenRot);
                     sc19Cine.PlaceScreen(screenPos, screenRot);
                     yield return sc19Cine.Play(hooks);
+                    yield return Sc19DrainVoice();
                     yield return PresentableFx.Wait(1.0f);
                     sc19Cine.SetScreen(false);
                 }
@@ -6382,6 +6433,7 @@ namespace ChemicalSafety.Presentable
                     var restoreY = rig != null ? rig.position.y : 0f;
                     sc19Cine.BeginRigDrive(rig, _cam);
                     yield return sc19Cine.Play(hooks);
+                    yield return Sc19DrainVoice();
                     yield return PresentableFx.Wait(0.6f);
                     yield return fader.FadeTo(1f, 0.35f);
                     sc19Cine.EndRigDrive();
@@ -6431,8 +6483,9 @@ namespace ChemicalSafety.Presentable
             // 4. the question
             Stage("sc19Question");
             Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc19.SetWorldScale(sc06PopupScale);
+            mcqSc19.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-12
             mcqSc19.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            StartCoroutine(PlayVoiceAsIs(Sc19Vo("Question"))); // the client's question voice
             yield return RunQuestion(mcqSc19, BuildSc19Question(), false, 19);
             LockLocomotion(false);
             sc19Cine.ResetAll();
@@ -6472,7 +6525,14 @@ namespace ChemicalSafety.Presentable
                 fancy = true,
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc19Content.TagCorrect,
-                tagWrong = Sc19Content.TagWrong
+                tagWrong = Sc19Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-12 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? 1.9f : 1f, // a long three-line question
+                maxGrow = 3.8f,
+                minAspect = 1.7f,
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 
@@ -6485,6 +6545,11 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Sc20Voice(string text, AudioClip clip)
         {
+            // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
+            _sc19Pending++;
+            while (Time.unscaledTime < _sc19VoiceUntil)
+                yield return null;
+            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6494,6 +6559,7 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(2.5f);
             if (token == _subtitleToken)
                 subtitle.Hide();
+            _sc19Pending = Mathf.Max(0, _sc19Pending - 1);
         }
 
         private IEnumerator RunScenario20()
@@ -6519,9 +6585,10 @@ namespace ChemicalSafety.Presentable
             _instructionClip = Sc20Vo("Instruction");
             instructionPanel.SetContent(Sc20Content.RayInstruction, art.bnSc20RayInstructionPanel);
             LockLocomotion(true);
-            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetCompact(true, rayCardScale); // client 2026-11-19: the card text is as large as in Scenarios 1-12
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(0f, 0f);
             yield return instructionPanel.Show();
@@ -6534,6 +6601,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
             Stage("sc20Sds");
@@ -6567,6 +6635,8 @@ namespace ChemicalSafety.Presentable
             while (again)
             {
                 Stage("sc20Film");
+                _sc19Pending = 0;
+                _sc19VoiceUntil = 0f;
                 var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
                 var ccWas = cc != null && cc.enabled;
                 if (cc != null)
@@ -6581,6 +6651,7 @@ namespace ChemicalSafety.Presentable
                 fader.SetExtra(0f);
                 sc20Cine.BeginRigDrive(rig, _cam);
                 yield return sc20Cine.Play(hooks);
+                yield return Sc19DrainVoice(); // the lines still waiting are spoken to the end first
                 yield return PresentableFx.Wait(0.6f);
                 yield return fader.FadeTo(1f, 0.35f);
                 sc20Cine.EndRigDrive();
@@ -6630,8 +6701,9 @@ namespace ChemicalSafety.Presentable
             // 4. the question
             Stage("sc20Question");
             Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc20.SetWorldScale(sc06PopupScale);
+            mcqSc20.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-12
             mcqSc20.transform.SetPositionAndRotation(mcqPos, mcqRot);
+            StartCoroutine(PlayVoiceAsIs(Sc20Vo("Question"))); // the client's question voice
             yield return RunQuestion(mcqSc20, BuildSc20Question(), false, 20);
             LockLocomotion(false);
             sc20Cine.ResetAll();
@@ -6672,7 +6744,14 @@ namespace ChemicalSafety.Presentable
                 fancy = true,
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc20Content.TagCorrect,
-                tagWrong = Sc20Content.TagWrong
+                tagWrong = Sc20Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-12 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? (Loc.IsBangla ? 2.5f : 1.45f) : 1f, // a long question (four lines in Bangla)
+                maxGrow = 3.8f,
+                minAspect = 1.7f,
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 
@@ -6722,6 +6801,11 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Sc21Voice(string text, AudioClip clip)
         {
+            // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
+            _sc19Pending++;
+            while (Time.unscaledTime < _sc19VoiceUntil)
+                yield return null;
+            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6731,6 +6815,7 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(2.5f);
             if (token == _subtitleToken)
                 subtitle.Hide();
+            _sc19Pending = Mathf.Max(0, _sc19Pending - 1);
         }
 
         private IEnumerator RunScenario21()
@@ -6756,9 +6841,10 @@ namespace ChemicalSafety.Presentable
             _instructionClip = Sc21Vo("Instruction");
             instructionPanel.SetContent(Sc21Content.RayInstruction, art.bnSc21RayInstructionPanel);
             LockLocomotion(true);
-            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetCompact(true, rayCardScale); // client 2026-11-19: the card text is as large as in Scenarios 1-12
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(0f, 0f);
             yield return instructionPanel.Show();
@@ -6771,6 +6857,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
             Stage("sc21Sds");
@@ -6804,6 +6891,8 @@ namespace ChemicalSafety.Presentable
             while (again)
             {
                 Stage("sc21Film");
+                _sc19Pending = 0;
+                _sc19VoiceUntil = 0f;
                 var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
                 var ccWas = cc != null && cc.enabled;
                 if (cc != null)
@@ -6818,6 +6907,7 @@ namespace ChemicalSafety.Presentable
                 fader.SetExtra(0f);
                 sc21Cine.BeginRigDrive(rig, _cam);
                 yield return sc21Cine.Play(hooks);
+                yield return Sc19DrainVoice(); // the lines still waiting are spoken to the end first
                 yield return PresentableFx.Wait(0.6f);
                 yield return fader.FadeTo(1f, 0.35f);
                 sc21Cine.EndRigDrive();
@@ -6867,9 +6957,10 @@ namespace ChemicalSafety.Presentable
             // 4. the question
             Stage("sc21Question");
             Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc21.SetWorldScale(sc06PopupScale);
+            mcqSc21.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-12
             mcqSc21.transform.SetPositionAndRotation(mcqPos, mcqRot);
             StartCoroutine(PlayVoiceAsIs(Sc21Vo("Question")));
+            StartCoroutine(PlayVoiceAsIs(Sc21Vo("Question"))); // the client's question voice
             yield return RunQuestion(mcqSc21, BuildSc21Question(), false, 21);
             LockLocomotion(false);
             sc21Cine.ResetAll();
@@ -6910,7 +7001,14 @@ namespace ChemicalSafety.Presentable
                 fancy = true,
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc21Content.TagCorrect,
-                tagWrong = Sc21Content.TagWrong
+                tagWrong = Sc21Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-12 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? (Loc.IsBangla ? 2.5f : 1.9f) : 1f, // a long question (four lines in Bangla)
+                maxGrow = 3.8f,
+                minAspect = 1.7f,
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 
@@ -6918,6 +7016,11 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Sc22Voice(string text, AudioClip clip)
         {
+            // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
+            _sc19Pending++;
+            while (Time.unscaledTime < _sc19VoiceUntil)
+                yield return null;
+            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6927,6 +7030,7 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(2.5f);
             if (token == _subtitleToken)
                 subtitle.Hide();
+            _sc19Pending = Mathf.Max(0, _sc19Pending - 1);
         }
 
         /// <summary>The film stands still while the caution popup is on screen with its voice-over; it hides by itself when the voice is done.</summary>
@@ -6953,6 +7057,8 @@ namespace ChemicalSafety.Presentable
                 yield return sc22Caution.HideFade();
             StopVoice();
             Stage("sc22Film");
+                _sc19Pending = 0;
+                _sc19VoiceUntil = 0f;
         }
 
         private IEnumerator RunScenario22()
@@ -6978,10 +7084,10 @@ namespace ChemicalSafety.Presentable
             _instructionClip = Sc22Vo("Instruction");
             instructionPanel.SetContent(Sc22Content.RayInstruction, art.bnSc22RayInstructionPanel);
             LockLocomotion(true);
-            instructionPanel.SetCompact(true, sc689CardScale);
+            instructionPanel.SetCompact(true, rayCardScale); // client 2026-11-19: the card text is as large as in Scenarios 1-12
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetRoomy(true);   // the long Scenario 22 text needs a bigger card
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(0f, 0f);
             yield return instructionPanel.Show();
@@ -6995,6 +7101,7 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetRoomy(false);
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
             Stage("sc22Sds");
@@ -7029,6 +7136,8 @@ namespace ChemicalSafety.Presentable
             while (again)
             {
                 Stage("sc22Film");
+                _sc19Pending = 0;
+                _sc19VoiceUntil = 0f;
                 var cc = rig != null ? rig.GetComponentInChildren<CharacterController>(true) : null;
                 var ccWas = cc != null && cc.enabled;
                 if (cc != null)
@@ -7043,6 +7152,7 @@ namespace ChemicalSafety.Presentable
                 fader.SetExtra(0f);
                 sc22Cine.BeginRigDrive(rig, _cam);
                 yield return sc22Cine.Play(hooks);
+                yield return Sc19DrainVoice(); // the lines still waiting are spoken to the end first
                 yield return PresentableFx.Wait(0.6f);
                 yield return fader.FadeTo(1f, 0.35f);
                 sc22Cine.EndRigDrive();
@@ -7092,7 +7202,7 @@ namespace ChemicalSafety.Presentable
             // 4. the question
             Stage("sc22Question");
             Sc04PopupPose(0f, 0.12f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc22.SetWorldScale(sc06PopupScale);
+            mcqSc22.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-12
             mcqSc22.transform.SetPositionAndRotation(mcqPos, mcqRot);
             StartCoroutine(PlayVoiceAsIs(Sc22Vo("Question")));
             yield return RunQuestion(mcqSc22, BuildSc22Question(), false, 22);
@@ -7133,7 +7243,14 @@ namespace ChemicalSafety.Presentable
                 fancy = true,
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc22Content.TagCorrect,
-                tagWrong = Sc22Content.TagWrong
+                tagWrong = Sc22Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-12 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? 1.9f : 1f, // a long three-line question
+                maxGrow = 3.8f,
+                minAspect = 1.7f,
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 

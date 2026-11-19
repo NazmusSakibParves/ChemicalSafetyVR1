@@ -3124,7 +3124,11 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC19 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC19 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var wrong19 = true;
+#if UNITY_EDITOR
+            wrong19 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc19Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq, cur, wrong19);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3136,6 +3140,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC19 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC19 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc19Done", 20f);
@@ -3256,7 +3261,11 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC20 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC20 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var wrong20 = true;
+#if UNITY_EDITOR
+            wrong20 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc20Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq, cur, wrong20);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3268,6 +3277,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC20 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC20 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc20Done", 20f);
@@ -3401,7 +3411,11 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC21 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC21 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var wrong21 = true;
+#if UNITY_EDITOR
+            wrong21 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc21Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq, cur, wrong21);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3413,6 +3427,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC21 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC21 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc21Done", 20f);
@@ -3544,7 +3559,11 @@ namespace ChemicalSafety.Presentable
             LayoutCheck("SC22 MCQ", mcq.transform);
             var cur = mcq.Current;
             Say("SC22 question: options = " + cur.options.Length + ", correct option = [" + cur.options[cur.correctIndex].label + "], inline reveal = " + cur.inlineReveal);
-            var row = FindDeep(mcq.transform, "Row" + ((AllCorrect ? ShownCorrectRow(cur.correctIndex) : (cur.correctIndex + 1) % cur.options.Length) + 1));
+            var wrong22 = true;
+#if UNITY_EDITOR
+            wrong22 = UnityEditor.EditorPrefs.GetBool("ChemSafetySc22Wrong", true);
+#endif
+            var row = FindDirectRow9(mcq, cur, wrong22);
             if (row != null)
                 row.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
             yield return new WaitForSeconds(2.4f);
@@ -3564,6 +3583,7 @@ namespace ChemicalSafety.Presentable
             Say("SC22 finish button label = [" + finishLabel + "] (expected FINISH / ফিনিশ), cached label = [" + Sc22Content.FinishLabel + "]");
             yield return new WaitForSeconds(1.2f);
             Say("SC22 end voice = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected Congrats once the explanation is done)");
+            yield return TraceWait();
             yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc22Done", 20f);

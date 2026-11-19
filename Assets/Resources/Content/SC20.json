@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "RayInstruction",
-      "en": "You work in the chemical storage area of a factory. If a corrosive chemical splashes onto your hands or clothing, immediately use the emergency shower. Remove contaminated clothing and footwear while rinsing. Flush the affected areas for the duration specified in the SDS and seek medical attention promptly.",
-      "bn": "আপনি কারখানার কেমিক্যাল স্টোরেজে কাজ করেন। করসিভ কেমিক্যাল হাত বা কাপড়ে ছিটকে পড়লে সঙ্গে সঙ্গে জরুরি শাওয়ার ব্যবহার করুন। পানি দিয়ে ধোয়ার সময় দূষিত কাপড় ও জুতা খুলে ফেলুন। SDS অনুযায়ী নির্ধারিত সময় ধরে আক্রান্ত স্থান ধুয়ে দ্রুত চিকিৎসা সহায়তা নিন।"
+      "en": "During chemical transfer, a corrosive liquid can be splashed onto your arm and clothing. Immediate and appropriate action is essential, as continued contact with the chemical can cause serious injury. Follow the SDS instructions and the factory’s emergency safety procedures to select the appropriate immediate response.",
+      "bn": "রাসায়নিক পদার্থ স্থানান্তরের সময় ক্ষয়কারী তরল হাতে ও পোশাকে ছিটকে পড়তে পারে। এ ধরনের দুর্ঘটনায় দ্রুত ও সঠিক ব্যবস্থা নেওয়া জরুরি, কারণ রাসায়নিক পদার্থ ত্বকের সংস্পর্শে থাকলে গুরুতর ক্ষতি হতে পারে। SDS-এর নির্দেশনা ও কারখানার জরুরি নিরাপত্তা পদ্ধতি অনুসরণ করে তাৎক্ষণিক করণীয়টি নির্বাচন করুন।"
     },
     {
       "key": "GateTitle",
@@ -85,13 +85,13 @@
       "key": "RayOptionReasons",
       "en": [
         "Contaminated clothing can keep chemicals in contact with the skin and cause further injury. Remove contaminated clothing while flushing with water.",
-        "Delaying the use of the emergency shower can make the injury worse. Do not wait to finish your work. Use the emergency shower immediately.",
-        "Correct! If a chemical splashes onto your body or clothing, use the emergency shower immediately. Remove contaminated clothing, shoes, and other items while flushing with water. Rinse the affected areas with plenty of water for the duration specified in the SDS and seek medical attention as needed."
+        "Corrosives continue burning tissue: delay means more damage.",
+        "Standard procedure: continuous flushing dilutes and removes the chemical."
       ],
       "bn": [
         "পোশাকে রাসায়নিক পদার্থ লাগলে তা ত্বকের সংস্পর্শে থেকে ত্বকের ক্ষতি করতে পারে। তাই পানি দিয়ে ধোয়ার সময় রাসায়নিক পদার্থ লেগে থাকা কাপড় খুলে ফেলতে হবে।",
-        "শাওয়ার ব্যবহার করতে দেরি করলে ক্ষতির পরিমাণ আরও বাড়তে পারে। তাই কাজ শেষ করার জন্য অপেক্ষা না করে দ্রুত জরুরি শাওয়ার ব্যবহার করতে হবে।",
-        "সঠিক! রাসায়নিক পদার্থ শরীর বা কাপড়ে ছিটকে পড়লে দেরি না করে জরুরি শাওয়ার ব্যবহার করতে হবে। পানি দিয়ে ধোয়ার সময় দূষিত কাপড়, জুতা ও অন্যান্য সামগ্রী খুলে ফেলতে হবে। SDS অনুযায়ী নির্ধারিত সময় ধরে প্রচুর পানি দিয়ে আক্রান্ত স্থান ধুতে হবে এবং প্রয়োজন অনুযায়ী চিকিৎসা সহায়তা নিতে হবে।"
+        "ক্ষয়কারী কেমিক্যাল টিস্যু পোড়াতে থাকে: দেরি মানে বেশি ক্ষতি।",
+        "স্ট্যান্ডার্ড পদ্ধতি: একটানা ধুলে কেমিক্যাল পাতলা হয় ও দূর হয়।"
       ]
     },
     {

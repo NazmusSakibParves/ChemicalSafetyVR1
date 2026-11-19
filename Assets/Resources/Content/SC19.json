@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "RayInstruction",
-      "en": "A worker is about to enter this empty chemical container. What is the mandatory safety step before entry?",
-      "bn": "একজন শ্রমিক একটি খালি রাসায়নিক ট্যাংকের ভেতরে প্রবেশ করতে যাচ্ছেন। প্রবেশের আগে বাধ্যতামূলকভাবে কোন নিরাপত্তামূলক ব্যবস্থা নিতে হবে?"
+      "en": "You have been asked to enter an empty chemical storage tank to inspect a valve. Even if the tank is empty, it may contain toxic gases, have an oxygen-deficient atmosphere, or present other hazards. Before entering, follow the SDS, confined-space entry permit requirements, and factory safety procedures to select the necessary precautions.",
+      "bn": "একটি খালি রাসায়নিক পদার্থ সংরক্ষণ ট্যাংকের ভেতরে ভালভ পরীক্ষা করতে বলা হয়েছে। ট্যাংক খালি থাকলেও ভেতরে বিষাক্ত গ্যাস, অক্সিজেনের ঘাটতি বা অন্যান্য বিপজ্জনক পরিবেশ থাকতে পারে। প্রবেশের আগে SDS, কনফাইন্ড স্পেস এন্ট্রি পারমিট এবং কারখানার নিরাপত্তা নির্দেশনা অনুসরণ করে প্রয়োজনীয় সতর্কতামূলক ব্যবস্থা নির্বাচন করুন।"
     },
     {
       "key": "GateTitle",
@@ -28,8 +28,8 @@
     },
     {
       "key": "RayQuestionPrompt",
-      "en": "A worker is about to enter this empty chemical container. What is the mandatory safety step before entry?",
-      "bn": "একজন শ্রমিক একটি খালি রাসায়নিক ট্যাংকের ভেতরে প্রবেশ করতে যাচ্ছেন। প্রবেশের আগে বাধ্যতামূলকভাবে কোন নিরাপত্তামূলক ব্যবস্থা নিতে হবে?"
+      "en": "A worker is about to enter an empty chemical tank. What is the mandatory safety step before entry?",
+      "bn": "একজন শ্রমিক একটি  খালি রাসায়নিক ট্যাংকের ভেতরে প্রবেশ করতে যাচ্ছেন। প্রবেশের আগে বাধ্যতামূলকভাবে কোন নিরাপত্তামূলক ব্যবস্থা নিতে হবে?"
     },
     {
       "key": "RayCorrectTitle",
@@ -87,12 +87,12 @@
     {
       "key": "RayOptionReasons",
       "en": [
-        "Even an empty tank may hold toxic gas or chemical residue, and the oxygen may be low. A tank that only looks safe is not safe to enter.",
-        "Before entering a confined space the atmosphere must be tested, a permit obtained, PPE worn, the tripod and rescue equipment prepared, and a trained attendant kept outside. Enter only after all of it."
+        "\"Empty\" tanks still contain residual vapor and low oxygen.",
+        "Matches the confined space entry standard. Every step protects the entrant."
       ],
       "bn": [
-        "খালি ট্যাংকেও বিষাক্ত গ্যাস বা রাসায়নিকের অবশিষ্টাংশ থাকতে পারে এবং অক্সিজেন কম থাকতে পারে। শুধু দেখে নিরাপদ মনে হলেই ভেতরে ঢোকা নিরাপদ নয়।",
-        "বদ্ধ জায়গায় ঢোকার আগে বাতাস পরীক্ষা, প্রবেশের অনুমতিপত্র, উপযুক্ত PPE, ট্রাইপড ও উদ্ধার সরঞ্জাম এবং বাইরে একজন প্রশিক্ষিত সহকারী নিশ্চিত করতে হবে। সব ব্যবস্থা নেওয়ার পরই প্রবেশ করা যাবে।"
+        "'খালি' ট্যাঙ্কেও অবশিষ্ট বাষ্প ও কম অক্সিজেন থাকে।",
+        "এটি আবদ্ধ স্থানে প্রবেশের মানদণ্ডের সাথে মিলে। প্রতিটি ধাপ প্রবেশকারীকে রক্ষা করে।"
       ]
     },
     {

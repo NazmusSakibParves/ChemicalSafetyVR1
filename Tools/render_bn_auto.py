@@ -39,6 +39,9 @@ LATIN_BOLD = "C:/Windows/Fonts/segoeuib.ttf"
 SYMBOL = "C:/Windows/Fonts/seguisym.ttf"
 
 RENDER_PX = 80          # keep equal to BnTmp.RenderPx
+EXTRA_LADDER = (1100, 1300, 1700, 1900, 2100, 2800, 3200)  # finer wrap widths ONLY for the texts of Tools/bn_fill_texts.json (answers and reasons of Scenarios 19-22):
+                                                           # a line is filled as far as the box allows before it goes on to the next line (client 2026-11-19)
+FILL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bn_fill_texts.json")
 LADDER = (900, 1500, 2400, 3600, 5200)  # 3600 / 5200: a long sentence can be ONE line where the box is wide (client 2026-11-12)
 STROKE = 1  # px at 80 px: slightly heavier strokes so Bangla stays readable on the transparent glass
 PAD = 6
@@ -205,9 +208,11 @@ def main():
     bad = 0
     done = 0
     keep = set()
+    fill_texts = set(json.load(open(FILL_FILE, encoding="utf8"))) if os.path.exists(FILL_FILE) else set()
     for text, bold in sorted(wanted):
         h = text_hash(text, bold)
-        for bucket in LADDER:
+        ladder = tuple(sorted(set(LADDER + EXTRA_LADDER))) if text in fill_texts else LADDER
+        for bucket in ladder:
             path = os.path.join(OUT, f"{h}_{bucket}.png")
             keep.add(os.path.basename(path))
             if os.path.exists(path) and not force:

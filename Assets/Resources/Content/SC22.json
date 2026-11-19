@@ -4,7 +4,7 @@
     {
       "key": "RayInstruction",
       "en": "You notice a coworker transferring solvent from a drum into an empty drinking-water bottle to carry it to another room. Storing or carrying chemicals in drinking-water bottles is dangerous and may lead to accidental ingestion. Follow the SDS and workplace safety procedures, and advise your coworker to take the appropriate corrective action.",
-      "bn": "আপনি দেখছেন, একজন সহকর্মী ড্রাম থেকে রাসায়নিক পদার্থ একটি খালি পানির বোতলে ঢালছেন। পানির বোতলে রাসায়নিক রাখা বা বহন করা বিপজ্জনক। এতে ভুল করে পান করার ঝুঁকি তৈরি হতে পারে। সঠিক পদক্ষেপ জানতে SDS এর সেকশন ৭ (Handling and Storage) পড়ুন এবং নিরাপত্তা নির্দেশনা অনুসরণ করুন।"
+      "bn": "আপনি দেখছেন, একজন সহকর্মী ড্রাম থেকে রাসায়নিক পদার্থ একটি খালি পানির বোতলে ঢালছেন। পানির বোতলে রাসায়নিক রাখা বা বহন করা বিপজ্জনক। এতে ভুল করে পান করার ঝুঁকি তৈরি হতে পারে। সঠিক পদক্ষেপ জানতে SDS এর সেকশন ৭ (Handling and Storage) পড়ুন এবং নিরাপত্তা নির্দেশনা অনুসরণ করুন।"
     },
     {
       "key": "GateTitle",
@@ -93,13 +93,13 @@
       "en": [
         "Drinking-water bottles are not designed for storing or carrying chemicals. Adding a label or placing it in a secondary tray does not eliminate this risk.",
         "If solvent is placed in one, someone may accidentally drink it. Since the bottle looks like a drinking-water container, it can cause serious poisoning or accidents.",
-        "Correct! Never store or carry chemicals in drinking-water bottles or food containers. Always use an approved, properly labeled container for chemical transfer. Also ensure appropriate PPE, adequate ventilation, and spill-prevention measures according to the SDS.",
+        "Addresses the act, explains the hazard and gives a safe alternative.",
         "Adding a label or placing it in a secondary tray does not eliminate this risk. Always use an approved, properly labeled container for transferring solvents."
       ],
       "bn": [
         "পানির বোতল রাসায়নিক সংরক্ষণ বা বহনের জন্য তৈরি নয়। শুধু লেবেল লাগানো বা অতিরিক্ত ট্রেতে রাখলেই এই ঝুঁকি দূর হয় না।",
         "এতে সলভেন্ট রাখলে কেউ ভুল করে পান করতে পারে। বোতলটি দেখতে পানির বোতলের মতো হওয়ায় মারাত্মক বিষক্রিয়া বা দুর্ঘটনা ঘটতে পারে।",
-        "সঠিক! পানির বোতল বা খাবারের পাত্রে কখনো রাসায়নিক রাখা বা বহন করা যাবে না। রাসায়নিক স্থানান্তরের আগে কাজটি নিরাপদভাবে করার জন্য অনুমোদিত ও সঠিক লেবেলযুক্ত পাত্র ব্যবহার করতে হবে। পাশাপাশি SDS অনুযায়ী উপযুক্ত PPE, পর্যাপ্ত বায়ু চলাচল এবং রাসায়নিক ছড়িয়ে পড়া রোধের ব্যবস্থা নিশ্চিত করতে হবে।",
+        "কাজটি থামায়, বিপদ বোঝায় ও নিরাপদ বিকল্প দেয়।",
         "শুধু লেবেল লাগানো বা অতিরিক্ত ট্রেতে রাখলেই এই ঝুঁকি দূর হয় না। রাসায়নিক স্থানান্তরের জন্য সবসময় অনুমোদিত ও সঠিকভাবে লেবেলযুক্ত পাত্র ব্যবহার করতে হবে।"
       ]
     },
