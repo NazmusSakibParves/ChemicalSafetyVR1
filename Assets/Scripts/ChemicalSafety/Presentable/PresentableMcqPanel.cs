@@ -58,6 +58,8 @@ namespace ChemicalSafety.Presentable
             public bool whiteHeader;
             [Tooltip("Scenario 6 (client 2026-11-19): a soft dark plate behind the header strip, so the room's ceiling lights seen through the glass do not cut across the question.")]
             public bool headerBacking;
+            [Tooltip("Scenario 7 (client 2026-11-19): the least width : height of the box (default 1.46). A higher number gives a shorter box, so less spare room is spread as gaps between the options.")]
+            public float minAspect = 1.46f;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -484,7 +486,7 @@ namespace ChemicalSafety.Presentable
 
                 gap = (reveal ? 14f : 26f) / H;
                 // the box is never flatter than 1.46 : 1 (the designed proportion is 1.38 : 1): short content gets more air instead
-                var minF = _embedded ? 1f : 1240f * _wk / (900f * 1.46f);
+                var minF = _embedded ? 1f : 1240f * _wk / (900f * Mathf.Max(1.2f, q.minAspect));
                 return SolveDyn(rowH, reasonH, gap, n, reveal, q.growBox ? 2.6f : 1.0f, minF);
             }
 

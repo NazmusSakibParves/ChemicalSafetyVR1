@@ -395,6 +395,9 @@ MonoBehaviour:
   artistSc06Question: {fileID: 8300000, guid: 661e987a11befc249a7571c7c165af16, type: 3}
   artistSc06RightWhy: {fileID: 8300000, guid: b83ca45b331299a4b8f2974f12c3e11e, type: 3}
   artistSc06WrongWhy: {fileID: 8300000, guid: 090fc469d8c672b4bbe0a17dd7f84e70, type: 3}
+  artistSc07Question: {fileID: 8300000, guid: c2c2763480116ba49ae7b2acef3205d6, type: 3}
+  artistSc07RightWhy: {fileID: 8300000, guid: c459510a35265d94eb7aadc1e49c32cb, type: 3}
+  artistSc07WrongWhy: {fileID: 8300000, guid: 4619ebdd8dba6a9468feaf38502f36e4, type: 3}
   artistContinueHint: {fileID: 8300000, guid: 00462f5f94a36b045b60b7a4296d77fc, type: 3}
   artistCorrect: {fileID: 8300000, guid: b2de7e6a2d3882b4ca65166ee7e78d2c, type: 3}
   artistWrong: {fileID: 8300000, guid: c8717667e9bf62647af76856eef28c49, type: 3}
@@ -469,7 +472,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: ddfe472be6b30b8408a91228638cc756, type: 3}
   - {fileID: 8300000, guid: 2ae3f94a4376658439318541489be994, type: 3}
   - {fileID: 8300000, guid: abe5b3cf2963092478ba50232f3cdab2, type: 3}
+  - {fileID: 8300000, guid: c2c2763480116ba49ae7b2acef3205d6, type: 3}
+  - {fileID: 8300000, guid: c459510a35265d94eb7aadc1e49c32cb, type: 3}
   - {fileID: 8300000, guid: 10131122bed06e64880a02398f481e38, type: 3}
+  - {fileID: 8300000, guid: 4619ebdd8dba6a9468feaf38502f36e4, type: 3}
   - {fileID: 8300000, guid: 6557801a00e50bd419aa6318e943dce2, type: 3}
   - {fileID: 8300000, guid: 7f934bd1fba901e438b0f315d2b894c3, type: 3}
   - {fileID: 8300000, guid: 6417cb1d18122c7448e302c325edc01e, type: 3}

@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "InstructionEnglish",
-      "en": "You are a factory worker. During work, a fire has broken out on your floor involving electrical equipment and flammable solvents! The fire has not yet spread and is still under control. Choose the correct fire extinguisher.",
-      "bn": "আপনি একজন কারখানা শ্রমিক। কাজ চলাকালীন আপনার ফ্লোরে বৈদ্যুতিক যন্ত্রপাতি ও দাহ্য সলভেন্টে আগুন লেগেছে! আগুন এখনো ছড়িয়ে পড়েনি এবং নিয়ন্ত্রণের মধ্যে আছে। সঠিক ফায়ার এক্সটিংগুইশারটি বেছে নিন।"
+      "en": "If a fire involves electrical equipment and flammable solvents, never use water or ordinary foam extinguishers. Follow Section 5 (Firefighting Measures) of the SDS and implement the necessary precautions to prevent and control fires and respond effectively to emergency situations. If the fire is too large to handle safely, evacuate and seek emergency assistance.",
+      "bn": "কারখানায় বৈদ্যুতিক যন্ত্রপাতি ও দাহ্য সলভেন্টে আগুন লাগলে পানি বা সাধারণ ফোম এক্সটিংগুইশার ব্যবহার করবেন না। SDS-এর ধারা ৫ (অগ্নিনির্বাপণ ব্যবস্থা) অনুসরণ করে অগ্নিকাণ্ড প্রতিরোধ, নিয়ন্ত্রণ এবং জরুরি পরিস্থিতি মোকাবিলার প্রয়োজনীয় ব্যবস্থা গ্রহণ করুন। আগুন বড় হলে নিরাপদ স্থানে সরে গিয়ে জরুরি সহায়তা নিন।"
     },
     {
       "key": "CardSuffix",
@@ -126,7 +126,7 @@
         "Throw a bucket of water on it."
       ],
       "bn": [
-        "সিলভার রঙের ওয়াটার এক্সটিংগুইশার।",
+        "রুপালি রঙের ওয়াটার এক্সটিংগুইশার।",
         "ক্রিম রঙের ফোম এক্সটিংগুইশার।",
         "লাল রঙের CO<sub>2</sub> বা ABC ড্রাই কেমিক্যাল এক্সটিংগুইশার।",
         "এক বালতি পানি ঢেলে দেব।"

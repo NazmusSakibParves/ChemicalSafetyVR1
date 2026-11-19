@@ -57,6 +57,9 @@ namespace ChemicalSafety.Editor
             Keep("VO_Sc06Question_bn.mp3", c => art.artistSc06Question = c);
             Keep("VO_Sc06RightWhy_bn.mp3", c => art.artistSc06RightWhy = c);
             Keep("VO_Sc06WrongWhy_bn.mp3", c => art.artistSc06WrongWhy = c);
+            Keep("VO_Sc07Question_bn.mp3", c => art.artistSc07Question = c);
+            Keep("VO_Sc07RightWhy_bn.mp3", c => art.artistSc07RightWhy = c);
+            Keep("VO_Sc07WrongWhy_bn.mp3", c => art.artistSc07WrongWhy = c);
             Keep("VO_ContinueHint_bn.mp3", c => art.artistContinueHint = c);
             Keep("VO_Correct_bn.mp3", c => art.artistCorrect = c);
             Keep("VO_Wrong_bn.mp3", c => art.artistWrong = c);

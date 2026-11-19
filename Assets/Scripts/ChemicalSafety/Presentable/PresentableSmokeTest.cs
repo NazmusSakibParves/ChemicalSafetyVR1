@@ -1575,6 +1575,7 @@ namespace ChemicalSafety.Presentable
             Say("scenario 7 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return new WaitForSeconds(2.5f);
             yield return Shot("74_sc07_done");
+            yield return TraceWait();
             Click(mcq7.transform, "NextButton");
         }
 
@@ -1754,6 +1755,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC07 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC07 MCQ reveal", mcq7.transform);
+            yield return TraceWait();
             Click(mcq7.transform, "NextButton");
         }
 

@@ -625,6 +625,9 @@ namespace ChemicalSafety.Presentable
 
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc07Only", false) && envSc07 != null)
             {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenario7();
                 yield break;
             }
@@ -1316,6 +1319,25 @@ namespace ChemicalSafety.Presentable
         /// <summary>One switch: false = the earlier per-scenario side offsets of the popups (beside the props).</summary>
         private const bool CentrePopups = true;
 
+        // Distance for a popup straight ahead of the head: the wanted distance, or less when a wall / pillar is closer (never inside it).
+        private float WallClearDistance(float wanted)
+        {
+            if (_cam == null)
+                return wanted;
+            var fwd = Flat(_cam.forward);
+            var hits = Physics.RaycastAll(_cam.position, fwd, wanted + 0.4f, ~0, QueryTriggerInteraction.Ignore);
+            var best = float.MaxValue;
+            foreach (var h in hits)
+            {
+                if (h.collider == null || (rig != null && h.collider.transform.IsChildOf(rig)) || h.collider.GetComponentInParent<Canvas>() != null)
+                    continue;
+                if (h.distance < best)
+                    best = h.distance;
+            }
+
+            return best < wanted + 0.3f ? Mathf.Clamp(best - 0.3f, 0.7f, wanted) : wanted;
+        }
+
         private float Sc04TableTop() => gloveBench != null ? gloveBench.TopY : 0.9f;
 
         // client 2026-11-18: the Scenario 4 question text is as large as Scenario 1's (that box is scale 1 at ~1.05 m; this one is ~1.6 m away, so scale 1.52
@@ -1915,14 +1937,16 @@ namespace ChemicalSafety.Presentable
                 extinguishers.Stop();
                 Stage("sc07Gate");
                 yield return PresentableFx.Wait(0.35f);
-                // the plain wall above the extinguishers (the client's arrow): the card floats there, the extinguishers stay free
-                Sc04PopupPose(0f, 0.40f, 1.6f, out var gatePos, out var gateRot);
+                // client 2026-11-19: the card hangs at eye level, in FRONT of the pillar wall (at 1.6 m it was inside the wall): the distance is the wall distance
+                // minus 30 cm, and the card is scaled in the same proportion so it looks as large as before
+                var gateDist = WallClearDistance(1.6f);
+                Sc04PopupPose(0f, 0.40f, gateDist, out var gatePos, out var gateRot);
                 var choice = 0; // 1 = BACK, 2 = NEXT
                 void OnBack() => choice = 1;
                 void OnNext() => choice = 2;
                 sc07Gate.Back += OnBack;
                 sc07Gate.Next += OnNext;
-                sc07Gate.Show(gatePos, gateRot, sc07GateScale);
+                sc07Gate.Show(gatePos, gateRot, sc07GateScale * gateDist / 1.6f);
                 StartCoroutine(PlayVoice(art.voSc07Gate));
                 while (choice == 0)
                     yield return null;
@@ -1968,8 +1992,10 @@ namespace ChemicalSafety.Presentable
             if (ray7)
             {
                 // controller ray: head free, a SMALL glass card to one side (the hall stays visible)
-                instructionPanel.SetCompact(true, sc06CardScale);
+                // client 2026-11-19: the instruction text is as large as in Scenarios 1-6 (same card scale and Bangla image size)
+                instructionPanel.SetCompact(true, rayCardScale);
                 instructionPanel.SetGlass(sc04GlassCard);
+                instructionPanel.SetBnBodyMax(620f); // back to 200 below
             }
 
             BeginEyeInstruction();
@@ -2002,6 +2028,7 @@ namespace ChemicalSafety.Presentable
             {
                 instructionPanel.SetGlass(false);
                 instructionPanel.SetCompact(false);
+                instructionPanel.SetBnBodyMax(200f);
             }
 
             // the fire starts, the alarm rings, the workers see it and run; the hero stays
@@ -2129,7 +2156,7 @@ namespace ChemicalSafety.Presentable
             {
                 // centred in the aisle: the burning pillar stays left, the extinguishers right, nothing important is covered
                 Sc04PopupPose(0f, 0.05f, 2.0f, out var mcq7Pos, out var mcq7Rot);
-                mcqSc07.SetWorldScale(sc07PopupScale);
+                mcqSc07.SetWorldScale(Sc04QuestionScale * 2.0f / 1.6f); // client 2026-11-19: the same apparent text size as Scenarios 1-6 (the box is 2.0 m away here, 1.6 m there)
                 mcqSc07.transform.SetPositionAndRotation(mcq7Pos, mcq7Rot);
             }
             else
@@ -3942,12 +3969,12 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7) || _cam == null || SessionHud.Instance == null)
                 return;
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : null)));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : null))));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4492,6 +4519,8 @@ namespace ChemicalSafety.Presentable
                     StartCoroutine(Sc03ProtocolRoutine());
                 if (scenario == 7 && correct)
                     StartCoroutine(Sc07Win(panel)); // the fire is put out first, then the right-answer card opens
+                else if (scenario == 7)
+                    _sc07WinDone = true; // a wrong answer has no fire-fighting scene: nothing to wait for (NEXT and the answer voice were held for ever)
             }
 
             void OnWrongClosed()
@@ -4525,6 +4554,8 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(PlayVoice(art.artistSc05Question));
             if (scenario == 6 && art.artistSc06Question != null)
                 StartCoroutine(PlayVoice(art.artistSc06Question));
+            if (scenario == 7 && art.artistSc07Question != null)
+                StartCoroutine(PlayVoice(art.artistSc07Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4680,6 +4711,21 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc05CompleteBn : art.voSc05CompleteEn);
                 else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 5 && art.voWrongNextBn[5] != null)
                     yield return PlayVoice(art.voWrongNextBn[5]);
+                yield break;
+            }
+
+            if (scenario == 7 && inlineReveal)
+            {
+                // client 2026-11-19: as Scenarios 4-6 - (right: after the fire is out) shared right / wrong line, the client's explanation, then complete / next
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why7 = correct ? art.artistSc07RightWhy : art.artistSc07WrongWhy;
+                if (why7 != null)
+                    yield return PlayVoice(why7);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc07CompleteBn : art.voSc07CompleteEn);
+                else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 7 && art.voWrongNextBn[7] != null)
+                    yield return PlayVoice(art.voWrongNextBn[7]);
                 yield break;
             }
 
@@ -7345,7 +7391,13 @@ namespace ChemicalSafety.Presentable
                 // ray flow: as Scenarios 1-6 - tick / cross, a reason under every option, NEXT (no retry)
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc07Content.TagCorrect,
-                tagWrong = Sc07Content.TagWrong
+                tagWrong = Sc07Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-6 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                // the Scenario 7 question is long (3 lines at this size): the header strip is larger than in the other scenarios so all of it fits
+                headerScale = PresentableInput.RayActive ? 1.45f : 1f,
+                minAspect = 1.7f, // a little less spare height: the gaps between the options are smaller (client 2026-11-19)
+                whiteHeader = PresentableInput.RayActive
             };
         }
 
