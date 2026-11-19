@@ -3681,6 +3681,8 @@ namespace ChemicalSafety.Presentable
                         }
                         else if (runner.AnswerLocked)
                         {
+                            if (n == 13 && st == "q1")
+                                yield return TraceWait(); // the answer voice chain is logged (right line, then the explanation)
                             runner.PressNext();
                         }
                     }

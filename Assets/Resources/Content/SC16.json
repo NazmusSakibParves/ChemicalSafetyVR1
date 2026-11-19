@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "You are a factory worker. Before handling hydrogen peroxide, carefully review its SDS. Wear the required chemical-resistant gloves, protective clothing, goggles, and face shield as specified in the SDS.",
+      "bn": "আপনি একজন কারখানার শ্রমিক। হাইড্রোজেন পারঅক্সাইড নিয়ে কাজ শুরু করার আগে SDS ভালোভাবে পড়ুন। SDS-এর নির্দেশনা অনুযায়ী প্রয়োজনীয় রাসায়নিক-প্রতিরোধী গ্লাভস, সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড পরুন।"
     },
     {
       "key": "Instructions",
@@ -221,8 +221,8 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Before you begin, tell me — what PPE is required for Hydrogen Peroxide?",
-        "bn": "কাজ শুরুর আগে বলুন, হাইড্রোজেন পারঅক্সাইডের জন্য কোন কোন PPE লাগবে?"
+        "en": "You are a factory worker. What type of PPE should you wear when handling hydrogen peroxide? Refer to the SDS to find the answer.",
+        "bn": "আপনি কারখানার একজন শ্রমিক। হাইড্রোজেন পারঅক্সাইড নিয়ে কাজ করার সময় কোন ধরনের পিপিই ব্যবহার করবেন? SDS দেখে উত্তর দিন।"
       },
       "options": [
         {
@@ -230,35 +230,51 @@
           "text": {
             "en": "Chemical-resistant gloves (Nitrile/Butyl/Viton), protective clothing, goggles & face shield.",
             "bn": "রাসায়নিক-প্রতিরোধী গ্লাভস (নাইট্রাইল/বিউটাইল/ভাইটন), সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 8: Nitrile / Butyl / Viton gloves, protective clothing, goggles and face shield.",
+            "bn": "SDS-এর ৮ নম্বর অংশের সাথে মিলে: নাইট্রাইল/বিউটাইল/ভাইটন গ্লাভস, সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Safety glasses only.",
-            "bn": "শুধু সেফটি চশমা।"
+            "en": "Wear only standard safety glasses to protect your eyes when handling hydrogen peroxide.",
+            "bn": "শুধু সাধারণ সেফটি চশমা পরে চোখের সুরক্ষা নিশ্চিত করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Safety glasses alone are insufficient: eye, face, hand and body protection are required.",
+            "bn": "শুধু সেফটি চশমা যথেষ্ট নয়: চোখ, মুখ, হাত ও শরীরের সুরক্ষা লাগে।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Thin nitrile gloves and a standard lab coat.",
-            "bn": "পাতলা নাইট্রাইল গ্লাভস এবং সাধারণ ল্যাব কোট।"
+            "en": "Wear thin nitrile gloves, a standard lab coat, and regular safety glasses.",
+            "bn": "পাতলা নাইট্রাইল গ্লাভস, সাধারণ ল্যাব কোট এবং সাধারণ সেফটি চশমা ব্যবহার করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Thin gloves and a standard lab coat are insufficient.",
+            "bn": "পাতলা গ্লাভস ও সাধারণ ল্যাব কোট যথেষ্ট নয়।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "No PPE required.",
-            "bn": "কোনো PPE পরার দরকার নেই।"
+            "en": "Handle hydrogen peroxide in regular work clothing without using any special protective equipment.",
+            "bn": "সাধারণ কাজের পোশাক পরে কোনো বিশেষ সুরক্ষা সরঞ্জাম ছাড়াই কাজ করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Never correct: SDS Section 8 mandates protective equipment.",
+            "bn": "এটা কখনোই সঠিক নয়: SDS-এর ৮ নম্বর অংশ অনুযায়ী সুরক্ষা সরঞ্জাম বাধ্যতামূলক।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Nitrile/Butyl/Viton gloves, protective clothing, and a face shield are required.",
-        "bn": "সঠিক! নাইট্রাইল/বিউটাইল/ভাইটন গ্লাভস, সুরক্ষা পোশাক এবং ফেস শিল্ড সহ সম্পূর্ণ সুরক্ষা সেট প্রয়োজন।"
+        "en": "Correct! Full protective equipment is required, including Nitrile/Butyl/Viton gloves, protective clothing, and a face shield.",
+        "bn": "সঠিক! নাইট্রাইল/বিউটাইল/ভাইটন গ্লাভস, সুরক্ষা পোশাক এবং ফেস শিল্ডসহ সব ধরনের প্রয়োজনীয় সুরক্ষা সরঞ্জাম ব্যবহার করতে হবে।"
       },
       "reasonWrong": {
         "en": "SDS Section 8 mandates eye/face, hand, and body protection. Safety glasses alone or thin gloves are insufficient.",
@@ -272,48 +288,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Now — what is the first-aid response for skin contact with Hydrogen Peroxide?",
-        "bn": "এবার বলুন, হাইড্রোজেন পারঅক্সাইড ত্বকে লাগলে প্রথমে কী করবেন?"
+        "en": "What should you do if you inhale hydrogen peroxide?",
+        "bn": "হাইড্রোজেন পারঅক্সাইড শ্বাস প্রশ্বাসের (in-hale) সাথে ভিতরে ঢুকে গেলে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Remove contaminated clothing and flush with water for at least 15 minutes; seek medical help if irritation or burns occur.",
-            "bn": "দাগানো কাপড় খুলে ফেলব এবং কমপক্ষে ১৫ মিনিট পানি দিয়ে ধোব, জ্বালা বা পোড়া লাগলে ডাক্তারের সাহায্য নেব।"
+            "en": "Move the person to fresh air, monitor their condition, and seek medical attention if symptoms occur.",
+            "bn": "আক্রান্ত ব্যক্তিকে বিশুদ্ধ বাতাসে নিয়ে যান, তার শারীরিক অবস্থার দিকে খেয়াল রাখুন এবং কোনো লক্ষণ দেখা দিলে চিকিৎসকের সাহায্য নিন।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 4: move the person to fresh air, watch their condition, seek medical help if symptoms occur.",
+            "bn": "SDS-এর ৪ নম্বর অংশের সাথে মিলে: আক্রান্ত ব্যক্তিকে খোলা বাতাসে নেওয়া, অবস্থা লক্ষ করা, উপসর্গ হলে চিকিৎসকের সাহায্য নেওয়া।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Apply burn cream.",
-            "bn": "পোড়ার মলম লাগাব।"
+            "en": "Let the affected person rest in the work area. If breathing becomes difficult, ask them to drink water.",
+            "bn": "আক্রান্ত ব্যক্তিকে কাজের জায়গায় রেখেই কিছুক্ষণ বিশ্রাম নিতে দিন। শ্বাসকষ্ট বেশি হলে তাকে পানি পান করতে বলুন।"
+          },
+          "reasonWrong": {
+            "en": "Leaving the person in the work area is not the correct response.",
+            "bn": "আক্রান্ত ব্যক্তিকে কাজের জায়গায় রেখে দেওয়া সঠিক পদক্ষেপ নয়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with a dry cloth.",
-            "bn": "শুকনো কাপড় দিয়ে মুছব।"
+            "en": "Put a mask on the affected person without moving them to fresh air, and ask them to continue working as usual.",
+            "bn": "আক্রান্ত ব্যক্তিকে খোলা বাতাসে না নিয়ে মুখে মাস্ক পরিয়ে দিন এবং আগের মতো কাজ চালিয়ে যেতে বলুন।"
+          },
+          "reasonWrong": {
+            "en": "Only putting a mask on them, without moving them to fresh air, is not enough.",
+            "bn": "খোলা বাতাসে না নিয়ে শুধু মাস্ক পরানো যথেষ্ট নয়।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Neutralize with baking soda.",
-            "bn": "বেসিং সোডা দিয়ে নিষ্ক্রিয় করব।"
+            "en": "Do not move the affected person to fresh air immediately. Wait and seek medical help only if coughing or breathing difficulties get worse.",
+            "bn": "আক্রান্ত ব্যক্তিকে সঙ্গে সঙ্গে বিশুদ্ধ বাতাসে না নিয়ে কিছুক্ষণ অপেক্ষা করুন। শ্বাসকষ্ট বা কাশি বেড়ে গেলে চিকিৎসার ব্যবস্থা করুন।"
+          },
+          "reasonWrong": {
+            "en": "Do not wait: move them to fresh air immediately.",
+            "bn": "অপেক্ষা করা যাবে না: এখনই খোলা বাতাসে নিতে হবে।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Flush for at least 15 minutes and seek medical help if needed.",
-        "bn": "সঠিক! কমপক্ষে ১৫ মিনিট পানি দিয়ে ধুতে হবে এবং প্রয়োজনে ডাক্তারের সাহায্য নিতে হবে।"
+        "en": "Correct! Move the affected person to fresh air immediately. Provide care based on their symptoms and seek medical attention if any symptoms occur.",
+        "bn": "সঠিক! আক্রান্ত ব্যক্তিকে দ্রুত খোলা ও বিশুদ্ধ বাতাসে নিতে হবে। তার শারীরিক অবস্থার লক্ষণ অনুযায়ী প্রয়োজনীয় ব্যবস্থা নিতে হবে এবং কোনো সমস্যা দেখা দিলে চিকিৎসকের সাহায্য নিতে হবে।"
       },
       "reasonWrong": {
-        "en": "Cream or dry cloths are not the correct treatment. Do not attempt to neutralize peroxide on the skin. Prolonged flushing with water is the only correct SDS first-aid step.",
-        "bn": "ক্রিম বা শুকনো কাপড় সঠিক চিকিৎসা নয়। ত্বকে পারঅক্সাইড নিষ্ক্রিয় করার চেষ্টা করবেন না। দীর্ঘ সময় পানি দিয়ে ধোয়াই একমাত্র সঠিক প্রাথমিক চিকিৎসা।"
+        "en": "Leaving the affected person in the work area or simply putting a mask on them is not the correct response. Move them to fresh air immediately. Seek medical attention if breathing difficulties or other symptoms occur.",
+        "bn": "আক্রান্ত ব্যক্তিকে কাজের জায়গায় রেখে দেওয়া বা শুধু মাস্ক পরিয়ে দেওয়া সঠিক ব্যবস্থা নয়। দ্রুত তাকে খোলা ও বিশুদ্ধ বাতাসে নিতে হবে। শ্বাসকষ্ট বা অন্য কোনো সমস্যা দেখা দিলে চিকিৎসকের সাহায্য নিতে হবে।"
       }
     },
     {
@@ -323,43 +355,59 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "And finally — what are the safe storage conditions for Hydrogen Peroxide?",
-        "bn": "শেষ প্রশ্ন: হাইড্রোজেন পারঅক্সাইড নিরাপদে রাখার শর্ত কী?"
+        "en": "What is the safe storage temperature for Hydrogen Peroxide?",
+        "bn": "হাইড্রোজেন পারঅক্সাইড নিরাপদে রাখার জন্য কত তাপমাত্রা দরকার?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "In a cool, dry, well-ventilated place, below 30°C, away from heat, direct sunlight, and incompatible materials.",
-            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, ৩০°C-এর নিচে, তাপ, সরাসরি রোদ এবং বেমানান পদার্থ থেকে দূরে।"
+            "en": "In a cool, dry, well-ventilated place, above 30°C, away from heat, direct sunlight, and incompatible materials.",
+            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, ৩০°C-এর উপরে, তাপ, সরাসরি রোদ এবং বেমানান পদার্থ থেকে দূরে।"
+          },
+          "reasonWrong": {
+            "en": "Storage above 30°C is hazardous: hydrogen peroxide must be kept below 30°C.",
+            "bn": "৩০°C-এর উপরে রাখা বিপজ্জনক: হাইড্রোজেন পারঅক্সাইড ৩০°C-এর নিচে রাখতে হবে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Next to organic solvents.",
-            "bn": "জৈব দ্রাবকের পাশে রাখব।"
+            "en": "Store hydrogen peroxide next to organic solvents for convenient access alongside other chemicals.",
+            "bn": "অন্যান্য রাসায়নিকের সঙ্গে সহজে ব্যবহারের জন্য হাইড্রোজেন পারঅক্সাইড জৈব দ্রাবকের পাশে রাখতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Hydrogen peroxide is a strong oxidizer: next to organic solvents it is a fire or explosion risk.",
+            "bn": "হাইড্রোজেন পারঅক্সাইড শক্তিশালী অক্সিডাইজার: জৈব দ্রাবকের পাশে আগুন বা বিস্ফোরণের ঝুঁকি।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "In a heated area.",
-            "bn": "গরম করার জন্য হিটারযুক্ত জায়গায় রাখব।"
+            "en": "Store in a cool, dry, well-ventilated place, below 30°C, away from heat, direct sunlight, and incompatible materials.",
+            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচল করে এমন জায়গায়, ৩০°C-এর নিচে তাপমাত্রায়, তাপ, সরাসরি রোদ ও বেমানান পদার্থ থেকে দূরে রাখতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 7: cool, dry, well-ventilated place, below 30°C, away from heat, sunlight and incompatible materials.",
+            "bn": "SDS-এর ৭ নম্বর অংশের সাথে মিলে: শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থান, ৩০°C-এর নিচে, তাপ, রোদ ও বেমানান পদার্থ থেকে দূরে।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "In a freezer.",
-            "bn": "ফ্রিজারে রাখব।"
+            "en": "Store hydrogen peroxide in a freezer to keep the temperature low and maintain its quality.",
+            "bn": "হাইড্রোজেন পারঅক্সাইডের গুণাগুণ ঠিক রাখতে এবং তাপমাত্রা কম রাখতে এটি ফ্রিজারে সংরক্ষণ করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "A freezer is not the safe storage for hydrogen peroxide; storage above 30°C is hazardous, so keep it cool.",
+            "bn": "ফ্রিজার হাইড্রোজেন পারঅক্সাইডের নিরাপদ সংরক্ষণ নয়; ৩০°C-এর উপরে রাখা বিপজ্জনক, তাই শীতল স্থানে রাখুন।"
           }
         }
       ],
-      "correct": "A",
+      "correct": "C",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Store in a cool, dry, well-ventilated place, below 30°C, away from incompatible materials.",
+        "en": "Correct! Store in a cool, dry, well-ventilated place, below 30°C, and away from incompatible materials.",
         "bn": "সঠিক! শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থানে, ৩০°C-এর নিচে এবং বেমানান পদার্থ থেকে দূরে সংরক্ষণ করতে হবে।"
       },
       "reasonWrong": {

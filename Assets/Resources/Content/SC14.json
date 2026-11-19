@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting work with Nitric Acid, it is important to understand how to handle it safely. Carefully review the SDS of the relevant chemical to answer the supervisor’s questions and provide accurate information based on the SDS.",
+      "bn": "নাইট্রিক অ্যাসিড নিয়ে কাজ শুরু করার আগে এর নিরাপদ ব্যবহার সম্পর্কে জানা জরুরি। সুপারভাইজারের প্রশ্নগুলোর উত্তর দিতে সংশ্লিষ্ট রাসায়নিকের SDS ভালোভাবে পড়ুন এবং সঠিক তথ্য খুঁজে বের করে উত্তর দিন।"
     },
     {
       "key": "Instructions",
@@ -221,36 +221,52 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Before you begin, tell me — what PPE is required for Nitric Acid?",
-        "bn": "কাজ শুরুর আগে বলুন, নাইট্রিক অ্যাসিডের জন্য কোন কোন PPE লাগবে?"
+        "en": "You are a chemical storekeeper in a factory. What type of PPE should you wear when handling Nitric Acid? Refer to the SDS to find the answer.",
+        "bn": "আপনি একজন কারখানার কেমিক্যাল স্টোরের স্টোর কিপার। নাইট্রিক অ্যাসিড হ্যান্ডেল করার সময় কোন ধরনের পিপিই ব্যবহার করবেন? SDS দেখে উত্তর দিন।"
       },
       "options": [
         {
           "id": "A",
           "text": {
             "en": "Heavy-duty chemical-resistant gloves (Neoprene, Butyl, or Viton), protective clothing, and splash goggles with face shield.",
-            "bn": "ভারী রাসায়নিক-প্রতিরোধী গ্লাভস (নিওপ্রিন, বিউটাইল বা ভাইটন), সুরক্ষা পোশাক এবং স্প্ল্যাশ গগলস ও ফেস শিল্ড।"
+            "bn": "ভারী রাসায়নিক-প্রতিরোধী গ্লাভস (নিওপ্রিন, বিউটাইল বা ভিটন), সুরক্ষা পোশাক এবং স্প্ল্যাশ গগলসের সঙ্গে ফেস শিল্ড ব্যবহার করতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 8: heavy-duty Neoprene / Butyl / Viton gloves, protective clothing and splash goggles.",
+            "bn": "SDS-এর ৮ নম্বর অংশের সাথে মিলে: মোটা নিওপ্রিন/বিউটাইল/ভাইটন গ্লাভস, সুরক্ষা পোশাক ও স্প্ল্যাশ গগলস।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Thin nitrile gloves and standard glasses.",
-            "bn": "পাতলা নাইট্রাইল গ্লাভস এবং সাধারণ চশমা।"
+            "en": "Standard safety glasses, light-duty work gloves, and regular work clothing.",
+            "bn": "সাধারণ সেফটি চশমা, হালকা কাজের গ্লাভস এবং সাধারণ কাজের পোশাক ব্যবহার করা।"
+          },
+          "reasonWrong": {
+            "en": "Insufficient eye and hand protection for concentrated nitric acid.",
+            "bn": "ঘন নাইট্রিক অ্যাসিডের জন্য চোখ ও হাতের সুরক্ষা যথেষ্ট নয়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Respirator only.",
-            "bn": "শুধু রেসপিরেটর।"
+            "en": "Thin nitrile gloves, a standard lab coat, and regular protective glasses.",
+            "bn": "পাতলা নাইট্রাইল গ্লাভস, সাধারণ ল্যাব কোট এবং সাধারণ সুরক্ষা চশমা ব্যবহার করা।"
+          },
+          "reasonWrong": {
+            "en": "Thin nitrile gloves can be broken through in less than a minute.",
+            "bn": "পাতলা নাইট্রাইল গ্লাভস এক মিনিটের কম সময়েই ভেদ হয়ে যেতে পারে।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "No PPE required.",
-            "bn": "কোনো PPE পরার দরকার নেই।"
+            "en": "Handle the acid directly in regular work clothing without using any special protective equipment.",
+            "bn": "কোনো বিশেষ সুরক্ষা সরঞ্জাম ছাড়াই সাধারণ কাজের পোশাক পরে সরাসরি অ্যাসিড হ্যান্ডেল করা।"
+          },
+          "reasonWrong": {
+            "en": "Never correct: no special protective equipment at all.",
+            "bn": "এটা কখনোই সঠিক নয়: কোনো বিশেষ সুরক্ষা সরঞ্জাম ছাড়া।"
           }
         }
       ],
@@ -261,7 +277,7 @@
         "bn": "সঠিক! নিওপ্রিন, বিউটাইল বা ভাইটন গ্লাভস এবং ফেস শিল্ড সহ সম্পূর্ণ সুরক্ষা সেট প্রয়োজন।"
       },
       "reasonWrong": {
-        "en": "Thin nitrile or latex gloves are not recommended for concentrated nitric acid as it can break through in less than a minute. SDS Section 8 mandates heavy-duty gloves and full eye/face protection.",
+        "en": "Thin nitrile or latex gloves are not recommended for concentrated Nitric Acid as it can break through in less than a minute. SDS Section 8 mandates heavy-duty gloves and full eye/face protection.",
         "bn": "ঘন নাইট্রিক অ্যাসিডের জন্য পাতলা নাইট্রাইল বা ল্যাটেক্স গ্লাভস সুপারিশ করা হয় না, কারণ এটি এক মিনিটেরও কম সময়ে গ্লাভস ভেদ করতে পারে। SDS-এর ৮ নম্বর অংশ অনুযায়ী ভারী গ্লাভস এবং চোখ-মুখের সুরক্ষা বাধ্যতামূলক।"
       }
     },
@@ -272,48 +288,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Now — what is the first-aid response for skin contact with Nitric Acid?",
-        "bn": "এবার বলুন, নাইট্রিক অ্যাসিড ত্বকে লাগলে প্রথমে কী করবেন?"
+        "en": "What is the first-aid response for skin contact with Nitric Acid?",
+        "bn": "নাইট্রিক অ্যাসিড ত্বকে লাগলে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Remove contaminated clothing and flush with water for at least 15 minutes, then seek medical help.",
-            "bn": "দাগানো কাপড় খুলে ফেলব এবং কমপক্ষে ১৫ মিনিট পানি দিয়ে ধোব, তারপর ডাক্তারের সাহায্য নেব।"
+            "en": "Remove contaminated clothing and flush with water for 15–30 minutes, then seek medical help.",
+            "bn": "দূষিত পোশাক দ্রুত খুলে ফেলুন এবং আক্রান্ত স্থান ১৫–৩০ মিনিট ধরে পরিষ্কার পানি দিয়ে ধুয়ে ফেলুন। এরপর চিকিৎসকের সাহায্য নিন।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 4: flush for 15–30 minutes, remove contaminated clothing, seek medical help.",
+            "bn": "SDS-এর ৪ নম্বর অংশের সাথে মিলে: ১৫–৩০ মিনিট পানি দিয়ে ধোয়া, দূষিত পোশাক খোলা ও চিকিৎসকের সাহায্য নেওয়া।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Neutralize the acid with baking soda.",
-            "bn": "বেসিং সোডা দিয়ে অ্যাসিড নিষ্ক্রিয় করব।"
+            "en": "Apply burn cream to the affected area, monitor for any problems, and continue working.",
+            "bn": "আক্রান্ত স্থানে পোড়ার মলম লাগিয়ে নিন এবং কোনো সমস্যা হচ্ছে কি না, তা খেয়াল রেখে কাজ চালিয়ে যান।"
+          },
+          "reasonWrong": {
+            "en": "Cream traps the chemical against the skin.",
+            "bn": "ক্রিম লাগালে কেমিক্যাল ত্বকের সাথে আটকে থাকে।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with a dry cloth.",
-            "bn": "শুকনো কাপড় দিয়ে মুছে ফেলব।"
+            "en": "Avoid using water, wipe the acid off with a clean, dry cloth, and continue working as usual.",
+            "bn": "আক্রান্ত স্থানে পানি ব্যবহার না করে শুকনো পরিষ্কার কাপড় দিয়ে অ্যাসিড মুছে ফেলুন এবং আগের মতো কাজ চালিয়ে যান।"
+          },
+          "reasonWrong": {
+            "en": "Wiping with a dry cloth spreads the acid.",
+            "bn": "শুকনো কাপড়ে মুছলে অ্যাসিড আরও ছড়ায়।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Apply burn cream and cover.",
-            "bn": "পোড়ার মলম লাগিয়ে ঢেকে দেব।"
+            "en": "Apply baking soda to the affected area to neutralize the acid, then rinse with water.",
+            "bn": "আক্রান্ত স্থানে বেকিং সোডা লাগিয়ে অ্যাসিডের প্রভাব কমানোর চেষ্টা করুন এবং এরপর পানি দিয়ে ধুয়ে ফেলুন।"
+          },
+          "reasonWrong": {
+            "en": "Do not attempt to neutralize acid on the skin.",
+            "bn": "ত্বকে অ্যাসিড নিষ্ক্রিয় করার চেষ্টা করবেন না।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Matches SDS Section 4: flush for at least 15 minutes, remove contaminated clothing, seek medical attention.",
-        "bn": "SDS-এর ৪ নম্বর অংশ অনুযায়ী কমপক্ষে ১৫ মিনিট পানি দিয়ে ধুতে হবে, দাগানো পোশাক খুলতে হবে এবং ডাক্তারের কাছে যেতে হবে।"
+        "en": "Matches SDS Section 4: flush for 15–30 minutes, remove contaminated clothing and seek medical attention.",
+        "bn": "SDS-এর ৪ নম্বর অংশ অনুযায়ী কমপক্ষে ১৫–৩০ মিনিট পানি দিয়ে ধুতে হবে, দূষিত পোশাক খুলে ফেলতে হবে এবং ডাক্তারের কাছে যেতে হবে।"
       },
       "reasonWrong": {
-        "en": "Do not attempt to neutralize acid on the skin. Wiping with a dry cloth spreads it. Prolonged flushing with water is the only correct SDS first-aid step.",
-        "bn": "ত্বকে অ্যাসিড নিষ্ক্রিয় করার চেষ্টা করবেন না। শুকনো কাপড়ে মুছলে তা আরও ছড়ায়। দীর্ঘ সময় পানি দিয়ে ধোয়াই একমাত্র সঠিক প্রাথমিক চিকিৎসা।"
+        "en": "Cream traps chemical, wiping spreads it. Do not attempt to neutralize acid on the skin. Prolonged flushing with water is the only correct SDS first-aid step.",
+        "bn": "ক্রিম লাগালে কেমিক্যাল ত্বকের ভেতরে আটকে যেতে পারে। শুকনো কাপড়ে মুছলে তা আরও ছড়ায়। ত্বকে অ্যাসিড নিষ্ক্রিয় করার চেষ্টা করবেন না। দীর্ঘ সময় পানি দিয়ে ধোয়াই একমাত্র সঠিক প্রাথমিক চিকিৎসা।"
       }
     },
     {
@@ -323,36 +355,52 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "And finally — what are the safe storage conditions for Nitric Acid?",
-        "bn": "শেষ প্রশ্ন: নাইট্রিক অ্যাসিড নিরাপদে রাখার শর্ত কী?"
+        "en": "What are the safe storage conditions for Nitric Acid?",
+        "bn": "নাইট্রিক অ্যাসিড নিরাপদে রাখার শর্ত কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
             "en": "In a cool, dry, well-ventilated place, away from heat, direct sunlight, and organic materials.",
-            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, তাপ, সরাসরি রোদ এবং জৈব পদার্থ থেকে দূরে রাখতে হবে।"
+            "bn": "তাপ, সরাসরি রোদ ও জৈব পদার্থ থেকে দূরে, শীতল, শুষ্ক এবং ভালো বাতাস চলাচল করে এমন জায়গায় রাখতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 7: cool, dry, well-ventilated place, away from heat, sunlight and organic materials.",
+            "bn": "SDS-এর ৭ নম্বর অংশের সাথে মিলে: শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থান, তাপ, রোদ ও জৈব পদার্থ থেকে দূরে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Next to organic solvents.",
-            "bn": "জৈব দ্রাবকের পাশে রাখব।"
+            "en": "Store the chemical next to organic solvents so that it is easily accessible with other chemicals.",
+            "bn": "অন্য রাসায়নিকের সঙ্গে সহজে মিশে যাওয়ার জন্য জৈব দ্রাবকের পাশে রাসায়নিকটি রাখতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Nitric acid is a strong oxidizer: contact with organic materials is a fire or explosion risk.",
+            "bn": "নাইট্রিক অ্যাসিড শক্তিশালী অক্সিডাইজার: জৈব পদার্থের সংস্পর্শে আগুন বা বিস্ফোরণের ঝুঁকি।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "In a heated area.",
-            "bn": "গরম করার জন্য হিটারযুক্ত জায়গায় রাখব।"
+            "en": "Store the chemical in a heated area instead of a cool, dry place so that it is ready for use.",
+            "bn": "ঠান্ডা ও শুষ্ক জায়গার পরিবর্তে গরম জায়গায় রাসায়নিকটি রাখতে হবে, যাতে এটি ব্যবহারের জন্য প্রস্তুত থাকে।"
+          },
+          "reasonWrong": {
+            "en": "Heat is a fire or explosion risk for nitric acid.",
+            "bn": "তাপে নাইট্রিক অ্যাসিডের আগুন বা বিস্ফোরণের ঝুঁকি থাকে।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Outside in the open.",
-            "bn": "খোলা জায়গায় রাখব।"
+            "en": "Store the chemical in an open area instead of inside a room or storage facility to allow air circulation.",
+            "bn": "বাতাস চলাচলের সুবিধার জন্য রাসায়নিকটি কোনো ঘর বা স্টোরের ভেতরে না রেখে খোলা জায়গায় রাখতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "An open area exposes it to heat and direct sunlight; SDS Section 7 requires a storage room.",
+            "bn": "খোলা জায়গায় তাপ ও সরাসরি রোদ লাগে; SDS-এর ৭ নম্বর অংশ অনুযায়ী সংরক্ষণ কক্ষে রাখতে হবে।"
           }
         }
       ],

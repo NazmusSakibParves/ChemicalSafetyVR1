@@ -590,6 +590,8 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetyScCheckOnly", false) && envScCheck != null && scCheck != null)
             {
                 Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenarioCheck(13);
                 Stage("complete");
                 yield break;
@@ -2718,11 +2720,13 @@ namespace ChemicalSafety.Presentable
         // learner is taken a little forward to the table so the chemical reads well
         private IEnumerator ScCheckInstruction(string english, AudioClip clip, System.Func<bool> pressed)
         {
-            instructionPanel.SetContent(english, null);
+            instructionPanel.SetContent(english, scCheck != null ? Resources.Load<Sprite>("ScCheck/ui_bninstr_" + scCheck.CurrentSc) : null);
             LockLocomotion(true);
-            instructionPanel.SetCompact(true, sc689CardScale);
+            // client 2026-11-19: the card text is as large as in Scenarios 1-12 (same card scale); the backing stays nearly solid
+            instructionPanel.SetCompact(true, rayCardScale);
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(sc689CardRight, sc689CardUp);
             yield return instructionPanel.Show();
@@ -2737,6 +2741,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
             if (scCheck != null && scCheck.ViewStand != null)
                 yield return Glide(scCheck.ViewStand.position, 1.6f);
             LockLocomotion(false);
@@ -4001,8 +4006,10 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11 && sc != 12) || _cam == null || SessionHud.Instance == null)
+            var checkPanel = scCheck != null && scCheck.MainVisible; // Scenarios 13-18: the question panel (with the SDS) stays below the top bar too
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8 && sc != 9 && sc != 10 && sc != 11 && sc != 12 && !checkPanel) || _cam == null || SessionHud.Instance == null)
                 return;
+            // Scenarios 13-18 (new design): the question and SDS panels stand beside the chemical, clear of the top bar, so they are not lowered
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)

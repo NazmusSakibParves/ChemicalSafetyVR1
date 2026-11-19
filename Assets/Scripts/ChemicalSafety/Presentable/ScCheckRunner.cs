@@ -36,9 +36,26 @@ namespace ChemicalSafety.Presentable
         private static readonly Color HoloCyan = new Color(0.55f, 0.88f, 1f);
         private static readonly Color Good = new Color(0.40f, 1f, 0.55f);
         private static readonly Color Bad = new Color(1f, 0.38f, 0.34f);
-        private const float Scale = 0.0008f;
+        private static float Scale => NewMcqUi ? 0.0015f : 0.0008f; // the new design: bigger, and 3 m away (not 1.6 m) so it is not on the eyes in the world so the answers can be read
 
         private string _sc; // "SC13"
+
+        /// <summary>The scenario id being played ("SC13" ... "SC18").</summary>
+        public string CurrentSc => _sc;
+
+        /// <summary>The question panel (with the SDS beside it): visible, and the world Y of its top edge (the top bar must stay above it).</summary>
+        public Transform MainTransform => _main != null ? _main.transform : null;
+        public bool MainVisible => _main != null && _main.gameObject.activeInHierarchy;
+
+        public float MainTopWorldY
+        {
+            get
+            {
+                var corners = new Vector3[4];
+                ((RectTransform)_main.transform).GetWorldCorners(corners);
+                return Mathf.Max(corners[1].y, corners[2].y);
+            }
+        }
         private Transform _cam;
         private AudioSource _audio;
         private Canvas _main;
@@ -68,6 +85,16 @@ namespace ChemicalSafety.Presentable
         public const bool BigSds = true;
 
         /// <summary>
+        /// 2026-11-19 (client): the question box of Scenarios 13-18 has its own design (Downloads/Scene13-18 MCQ UI): a translucent neon frame with a
+        /// title strip, "MCQ n: chemical", the question, four answer rows with a letter box (the pictogram question: four cards), NEXT below.
+        /// <c>false</c> = the earlier four-card panel.
+        /// </summary>
+        public const bool NewMcqUi = true;
+
+        private Sprite _ansOff, _ansOn;
+        private readonly Image[] _optLetterBox = new Image[4];
+
+        /// <summary>
         /// 2026-11-14 (client): the SDS is in two places in Scenarios 13-18: the panel beside the question (as it was, opens by itself, its own
         /// HIDE / SHOW SDS button) AND the clipboard in the learner's left hand like in the other scenarios (left X button raises / lowers it).
         /// <c>true</c>: X belongs to the clipboard (the director gives it the sheet of the question through <see cref="SheetChanged"/>);
@@ -77,8 +104,11 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Raised with the sheet of the current question (the director puts it on the left-hand clipboard).</summary>
         public Action<Sprite> SheetChanged;
-        private static float CanvasW => BigSds ? 2500f : 2200f;
-        private static float CanvasH => BigSds ? 1000f : 860f;
+        // the new design: question panel 1250 px, a 700 px gap (the chemical stands in it, the top bar stays clear), SDS panel 1250 px
+        private const float MainDist = 2.4f; // metres from the eyes to the question + SDS boxes (the new design)
+        private const float QuestionW = 2000f, GapW = 90f, SdsW = 1300f; // side by side, as in the client's workflow picture (a small gap) // the SDS panel keeps the earlier 1400 x 1000 px (the whole sheet is visible)
+        private static float CanvasW => NewMcqUi ? QuestionW + GapW + SdsW : BigSds ? 2500f : 2200f;
+        private static float CanvasH => NewMcqUi ? 1450f : BigSds ? 1000f : 860f;
 
         private static readonly Dictionary<string, Sprite> PictureCache = new Dictionary<string, Sprite>();
         private RectTransform _nextBtn, _sdsPanel, _sdsContent, _roundBtn;
@@ -200,6 +230,22 @@ namespace ChemicalSafety.Presentable
             return c;
         }
 
+        private IEnumerator SayAnswer(bool right, int q)
+        {
+            var why = (right ? "RightWhy" : "WrongWhy") + (q + 1);
+            // client 2026-11-19: a right answer's explanation already begins with "Correct!" - so only the explanation is played (the old
+            // "Correct!" line would be heard twice); a wrong answer: the "not quite" line, then the explanation
+            if (right && Clip(why) != null)
+            {
+                yield return Say(why);
+                yield break;
+            }
+
+            yield return Say(right ? "Right" : "Wrong");
+            if (Clip(why) != null)
+                yield return Say(why);
+        }
+
         private IEnumerator Say(string key)
         {
             var clip = Clip(key);
@@ -219,6 +265,17 @@ namespace ChemicalSafety.Presentable
             _audio.Stop();
             _audio.clip = clip;
             _audio.Play();
+#if UNITY_EDITOR
+            // Editor only: the voice trace of the smoke test (same file and format as the director's)
+            try
+            {
+                System.IO.File.AppendAllText("Temp/Smoke/voice_trace.log", _sc + " | " + Localization.Loc.Current + " | " + clip.name + System.Environment.NewLine);
+            }
+            catch
+            {
+                // tracing must never disturb the game
+            }
+#endif
             var wait = 0f;
             while (!_audio.isPlaying && wait < 2f)
             {
@@ -330,9 +387,21 @@ namespace ChemicalSafety.Presentable
             if (toAnchor.sqrMagnitude < 0.01f)
                 toAnchor = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
             toAnchor.Normalize();
-            var pos = _cam.position + toAnchor * 1.6f; // 1.6 m from the eyes, in line with the chemical, so it reads big and sits above it
+            var pos = _cam.position + toAnchor * (NewMcqUi ? MainDist : 1.6f); // 1.6 m (the new design: 2.4 m: not on the eyes, still easy to point at with the ray) from the eyes, in line with the chemical, so it reads big and sits above it
             // client: popups open at eye level in free space; only lifted when eye level would put the card into the chemical
             pos.y = Mathf.Max(_cam.position.y + 0.03f, chemAnchor.position.y + 0.05f + heightMeters * 0.5f);
+            if (NewMcqUi && _main != null && t == _main.transform)
+            {
+                // client 2026-11-19: the question box and the SDS box stand ABOVE the chemical (its head is never covered): their lower edge is
+                // 4 cm over the chemical's top, their upper edge stays under the top bar; if that is less room than the boxes need, they scale down
+                var chemTop = chemAnchor.position.y + 0.34f;
+                _fit = 1f;
+                // the panels stand beside the chemical (it is in the 70 cm gap) with their lower edge level with its head; the top bar is clear of them
+                // because they are 35 cm and more off the middle
+                // top edge 62 cm over the eyes (about 13 degrees up at 2.6 m, under the top bar's level at the sides), the boxes hang down beside the chemical
+                pos.y = MainCenterY();
+            }
+
             t.SetPositionAndRotation(pos, Quaternion.LookRotation(toAnchor, Vector3.up));
             if (t == _main.transform)
             {
@@ -343,6 +412,7 @@ namespace ChemicalSafety.Presentable
         }
 
         private Vector3 _mainBase, _mainRight;
+        private float _fit = 1f; // the new design: how much the question + SDS canvas is scaled down to fit between the chemical and the top bar
 
         // SDS hidden: the question panel is the left 55% of the canvas, so the canvas slides right to bring it over the chemical;
         // SDS open: question and SDS stand side by side with the chemical under the gap between them
@@ -351,8 +421,8 @@ namespace ChemicalSafety.Presentable
             if (_main == null || chemAnchor == null || _mainRight == Vector3.zero)
                 return;
             // the gap between the question panel and the SDS panel stands over the chemical; SDS hidden: the question panel does
-            var openShift = BigSds ? 0.14f : 0f;
-            var closedShift = BigSds ? 0.58f : 0.46f;
+            var openShift = NewMcqUi ? (CanvasW * 0.5f - (QuestionW + GapW * 0.5f)) * Scale * _fit : BigSds ? 0.14f : 0f; // the new design: the gap between the panels is the middle of the canvas // the new design: the gap between the two panels is at 0.505 of the canvas
+            var closedShift = NewMcqUi ? (CanvasW * 0.5f - QuestionW * 0.5f) * Scale * _fit : BigSds ? 0.58f : 0.46f;
             _main.transform.position = _mainBase + _mainRight * (_sdsOpen ? openShift : closedShift);
         }
 
@@ -599,8 +669,29 @@ namespace ChemicalSafety.Presentable
                 _optImg[i].sprite = pic;
                 _optImg[i].gameObject.SetActive(pic != null);
                 _optText[i].gameObject.SetActive(pic == null);
-                _optBg[i].color = new Color(0.45f, 0.78f, 1f, 0.30f);
+                if (NewMcqUi && _ansOff != null)
+                {
+                    _optBg[i].sprite = _ansOff;
+                    _optBg[i].type = Image.Type.Simple;
+                    _optBg[i].color = new Color(1f, 1f, 1f, 0.78f);
+                }
+                else
+                    _optBg[i].color = new Color(0.45f, 0.78f, 1f, 0.30f);
                 _optLetter[i].color = HoloWhite;
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                _reasonShown[i] = null;
+                if (_optReason[i] != null)
+                    _optReason[i].gameObject.SetActive(false);
+            }
+
+            if (NewMcqUi && _ansOff != null)
+            {
+                ApplyFixedSizes();
+                LayoutNewDynamic(count, qq.reasonCorrect != null ? qq.reasonCorrect.Get(Loc.Current) : string.Empty,
+                    qq.reasonWrong != null ? qq.reasonWrong.Get(Loc.Current) : string.Empty);
             }
 
             _verdict.text = string.Empty;
@@ -662,12 +753,14 @@ namespace ChemicalSafety.Presentable
                     supervisor.ShakeHead();
             }
 
-            StartCoroutine(Say(right ? "Right" : "Wrong"));
+            // client 2026-11-19: the scenario's right / wrong line, then the client's explanation of this question (as Scenarios 4-12)
+            var answerSay = StartCoroutine(SayAnswer(right, q));
             _next = false;
             _nextBtn.gameObject.SetActive(true);
             yield return PopIn(_nextBtn, 1f);
             while (!_next)
                 yield return null;
+            StopCoroutine(answerSay);
             StopVoice();
             SetSds(false, true);
             yield return PresentableFx.Wait(0.2f);
@@ -676,6 +769,236 @@ namespace ChemicalSafety.Presentable
         // finger / smoke API ------------------------------------------------
 
         private bool _silentSelect;
+
+        // client 2026-11-19: every question, every answer and every reason of Scenarios 13-18 is drawn at ONE fixed size (nothing auto-shrunk)
+        private void ApplyFixedSizes()
+        {
+            var bn = Localization.Loc.IsBangla;
+            // client 2026-11-19: large, clear sizes (every question, every answer and every reason at ONE size)
+            FixSize(_title, 56f);
+            FixSize(_mcq, bn ? 38f : 40f);
+            FixSize(_chemLabel, bn ? 38f : 40f);
+            FixSize(_chemName, bn ? 38f : 40f);
+            FixSize(_prompt, bn ? 44f : 46f);
+            for (var i = 0; i < 4; i++)
+            {
+                FixSize(_optText[i], bn ? 38f : 40f);
+                FixSize(_optLetter[i], 60f);
+            }
+
+            FixSize(_verdict, 34f);
+            FixSize(_reason, bn ? 30f : 32f);
+            for (var i = 0; i < 4; i++)
+                FixSize(_optReason[i], bn ? 30f : 32f);
+        }
+
+        private static void FixSize(TextMeshProUGUI t, float size)
+        {
+            if (t == null)
+                return;
+            t.enableAutoSizing = false;
+            t.fontSize = size;
+            if (t is Localization.BnTmp bt)
+            {
+                bt.NoShrink = true; // the Bangla image is drawn at its nominal size (never scaled down to the box)
+                bt.AvoidCapped = true;
+            }
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        // The client's answer rows (client 2026-11-19), DYNAMIC: every text is measured at its fixed size in its real slot width and the box takes
+        // the height the content needs (nothing overlaps, nothing is squeezed). A picture question (Scenario 18) uses four cards.
+        private RectTransform _panelRt, _stripRt;
+
+        private static float MeasureTxt(TextMeshProUGUI t, string text, float widthPx)
+        {
+            if (t == null || string.IsNullOrEmpty(text))
+                return 0f;
+            if (t is Localization.BnTmp bt)
+            {
+                var h = bt.MeasureHeight(text, widthPx);
+                if (h >= 0f)
+                    return h;
+            }
+
+            return t.GetPreferredValues(text, widthPx, 0f).y;
+        }
+
+        private static void PlacePx(RectTransform rt, float x0, float x1, float yTop, float yBottom, float w, float h)
+        {
+            rt.anchorMin = new Vector2(x0 / w, 1f - yBottom / h);
+            rt.anchorMax = new Vector2(x1 / w, 1f - yTop / h);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        private int _newCount;
+
+        // client 2026-11-19: the boxes and the NEXT button must never sink into the table: the lower edge of the question box (and of the
+        // 1000 px SDS box) stands 10 cm above the table top (the chemical's base), however tall the question box is
+        private float MainCenterY()
+        {
+            var hh = _panelRt != null ? _panelRt.rect.height + 6f + 112f : 1000f; // the box + the NEXT button under it (the SDS is as tall as the box)
+            var tableTop = chemAnchor != null ? chemAnchor.position.y : _cam.position.y - 0.7f;
+            // client 2026-11-19: the boxes stand UNDER the timer bar and ABOVE the table: if the room between them is less than the boxes need,
+            // the pair is scaled down as much as needed (never below 55 %)
+            var barY = _cam.position.y + SessionHud.SafeBarRatio * MainDist - 0.03f;
+            // client 2026-11-19: at the user's EYE LEVEL: the pair is centred on the eyes, so its half-height is limited by the bar above and the table below
+            var eyeY = _cam.position.y;
+            var avail = 2f * Mathf.Min(barY - eyeY, eyeY - (tableTop + 0.10f));
+            _fit = Mathf.Clamp(avail / (hh * Scale), 0.55f, 1f);
+            var top = eyeY + hh * Scale * _fit * 0.5f;
+            return top - CanvasH * 0.5f * Scale * _fit;
+        }
+        private readonly TextMeshProUGUI[] _optReason = new TextMeshProUGUI[4]; // the reason under an answer (client 2026-11-19: as Scenarios 1-12)
+        private readonly string[] _reasonShown = new string[4];
+
+        private void LayoutNewDynamic(int count, string reasonA, string reasonB, bool reveal = false)
+        {
+            _newCount = count;
+            var picture = false;
+            for (var i = 0; i < count; i++)
+                if (_optImg[i] != null && _optImg[i].gameObject.activeSelf)
+                    picture = true;
+            var w = QuestionW; // the question panel
+            const float topPx = 132f, bottomPx = 83f; // the frame's title strip above the content, its glow below (NEXT hangs under the frame)
+            var textW = 0.88f * w;
+            var chemH = 56f; // the "Chemical Name: ..." line
+            var promptH = Mathf.Max(64f, MeasureTxt(_prompt, _prompt.text, 0.74f * w) + 10f);
+            var cardW = (0.955f - 0.145f) * w;
+            var rowH = new float[4];
+            var rowsH = 0f;
+            if (picture)
+                rowsH = 300f;
+            else
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    rowH[i] = Mathf.Max(80f, MeasureTxt(_optText[i], _optText[i].text, cardW * 0.94f) + 28f);
+                    rowsH += rowH[i] + (i > 0 ? 10f : 0f);
+                }
+            }
+
+            const float verdictH = 48f;
+            // the reason is drawn after the answer: the box grows downwards then (the question state is shorter)
+            var reasonRow = new float[4];
+            if (reveal && !picture)
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    reasonRow[i] = string.IsNullOrEmpty(_reasonShown[i]) ? 0f : MeasureTxt(_optReason[i], _optReason[i].text, cardW * 0.97f) + 12f;
+                    rowsH += reasonRow[i];
+                }
+            }
+
+            var reasonH = 0f;
+            var stripH = 0.01f; // no verdict strip any more: the explanation is the voice-over, the reasons stand under the answers
+            if (picture && reveal)
+            {
+                // the picture question keeps one verdict line with the reason under the four cards
+                reasonH = MeasureTxt(_reason, _reason.text, textW) + 14f;
+                stripH = verdictH + reasonH;
+            }
+            var content = chemH + 4f + promptH + 14f + rowsH + stripH;
+            var h = Mathf.Clamp(content + topPx + bottomPx, 600f, 1330f);
+            _panelRt.sizeDelta = new Vector2(0f, h);
+            _panelRt.anchoredPosition = Vector2.zero;
+            if (_sdsPanel != null)
+            {
+                // the SDS panel is exactly as tall as the question box and its top edge is on the same line (side by side, like the workflow picture)
+                _sdsPanel.anchorMin = new Vector2(_sdsPanel.anchorMin.x, 1f - h / CanvasH);
+                _sdsPanel.offsetMin = new Vector2(_sdsPanel.offsetMin.x, 0f);
+                if (_roundBtn != null)
+                    _roundBtn.anchorMin = _roundBtn.anchorMax = new Vector2(1f, 1f - h / CanvasH);
+            }
+            // the NEXT button hangs right under the box, whatever its height, big enough to read from 3 m
+            if (_nextBtn != null)
+            {
+                _nextBtn.anchorMin = _nextBtn.anchorMax = new Vector2(QuestionW * 0.5f / CanvasW, 1f);
+                _nextBtn.pivot = new Vector2(0.5f, 1f);
+                _nextBtn.sizeDelta = new Vector2(460f, 112f);
+                _nextBtn.anchoredPosition = new Vector2(0f, -(h + 6f)); // outside the box, right under it (client 2026-11-19)
+                FixSize(_nextText, 60f);
+            }
+
+            if (_mainBase != Vector3.zero && _cam != null)
+            {
+                _mainBase.y = MainCenterY();
+                if (_main != null)
+                    _main.transform.localScale = Vector3.one * (Scale * _fit);
+                ApplyMainOffset(); // the box grew or shrank: it stays under the timer bar and above the table
+            }
+
+            PlacePx(_title.rectTransform, 0.08f * w, 0.92f * w, 44f, 114f, w, h);
+            var y = topPx;
+            _chemLabel.gameObject.SetActive(true);
+            _chemName.gameObject.SetActive(true);
+            PlacePx(_chemLabel.rectTransform, 0.07f * w, 0.30f * w, y, y + chemH, w, h);
+            PlacePx(_chemName.rectTransform, 0.30f * w, 0.95f * w, y, y + chemH, w, h);
+            y += chemH + 4f;
+            PlacePx(_mcq.rectTransform, 0.07f * w, 0.21f * w, y, y + 56f, w, h);
+            PlacePx(_prompt.rectTransform, 0.21f * w, 0.95f * w, y, y + promptH, w, h);
+            y += promptH + 14f;
+            for (var i = 0; i < 4; i++)
+            {
+                var rt = _optBg[i].rectTransform;
+                if (picture)
+                {
+                    const float gap = 0.015f;
+                    var cw = (0.88f - gap * 3f) / 4f;
+                    PlacePx(rt, (0.07f + i * (cw + gap)) * w, (0.07f + i * (cw + gap) + cw) * w, y, y + rowsH, w, h);
+                    _optLetterBox[i].gameObject.SetActive(false);
+                    _optLetter[i].rectTransform.SetParent(rt, false);
+                    _optLetter[i].rectTransform.anchorMin = new Vector2(0.07f, 0.84f);
+                    _optLetter[i].rectTransform.anchorMax = new Vector2(0.45f, 0.99f);
+                    _optLetter[i].alignment = TextAlignmentOptions.MidlineLeft;
+                }
+                else
+                {
+                    if (i >= count)
+                        continue;
+                    PlacePx(rt, 0.145f * w, 0.955f * w, y, y + rowH[i], w, h);
+                    _optLetterBox[i].gameObject.SetActive(true);
+                    var lb = _optLetterBox[i].rectTransform;
+                    lb.anchorMin = new Vector2(-(86f + 14f) / cardW, 0f);
+                    lb.anchorMax = new Vector2(-14f / cardW, 1f);
+                    lb.offsetMin = Vector2.zero;
+                    lb.offsetMax = Vector2.zero;
+                    _optLetter[i].rectTransform.SetParent(lb, false);
+                    _optLetter[i].rectTransform.anchorMin = Vector2.zero;
+                    _optLetter[i].rectTransform.anchorMax = Vector2.one;
+                    _optLetter[i].alignment = TextAlignmentOptions.Center;
+                    _optText[i].rectTransform.anchorMin = new Vector2(0.03f, 0.04f);
+                    _optText[i].rectTransform.anchorMax = new Vector2(0.97f, 0.96f);
+                    _optText[i].alignment = TextAlignmentOptions.MidlineLeft;
+                    y += rowH[i];
+                    if (reasonRow[i] > 0f)
+                    {
+                        _optReason[i].gameObject.SetActive(true);
+                        PlacePx(_optReason[i].rectTransform, 0.16f * w, 0.95f * w, y + 2f, y + reasonRow[i], w, h);
+                        y += reasonRow[i];
+                    }
+                    else if (_optReason[i] != null)
+                        _optReason[i].gameObject.SetActive(false);
+                    y += 10f;
+                }
+            }
+
+            if (picture)
+                y += rowsH;
+            y += 6f;
+            PlacePx(_stripRt, 0.07f * w, 0.95f * w, y, y + stripH, w, h);
+            var vf = verdictH / stripH;
+            _verdict.rectTransform.anchorMin = new Vector2(0.03f, 1f - vf);
+            _verdict.rectTransform.anchorMax = new Vector2(0.97f, 1f);
+            _reason.rectTransform.anchorMin = new Vector2(0f, 0f);
+            _reason.rectTransform.anchorMax = new Vector2(1f, 1f - vf);
+            _verdict.rectTransform.offsetMin = Vector2.zero;
+            _verdict.rectTransform.offsetMax = Vector2.zero;
+            _reason.rectTransform.offsetMin = Vector2.zero;
+            _reason.rectTransform.offsetMax = Vector2.zero;
+        }
 
         public void SelectOption(int row)
         {
@@ -694,6 +1017,13 @@ namespace ChemicalSafety.Presentable
             {
                 if (!_optBg[i].transform.parent.gameObject.activeSelf)
                     continue;
+                if (NewMcqUi && _ansOn != null)
+                {
+                    _optBg[i].sprite = i == _correctShown || i == row ? _ansOn : _ansOff;
+                    _optBg[i].color = i == _correctShown ? new Color(0.45f, 1f, 0.6f, 0.9f) : i == row ? new Color(1f, 0.45f, 0.45f, 0.9f) : new Color(1f, 1f, 1f, 0.45f);
+                    continue;
+                }
+
                 if (i == _correctShown)
                     _optBg[i].color = new Color(0.25f, 0.9f, 0.45f, 0.55f);
                 else if (i == row)
@@ -719,6 +1049,41 @@ namespace ChemicalSafety.Presentable
                 }
 
                 _reason.text = rText;
+                if (NewMcqUi && _ansOff != null && _panelRt != null)
+                {
+                    // the reason under the right answer, and under the wrong answer that was picked (the doc has one "right" and one "wrong" text per question)
+                    var pictureQ = false;
+                    for (var k = 0; k < _newCount; k++)
+                        if (_optImg[k] != null && _optImg[k].gameObject.activeSelf)
+                            pictureQ = true;
+                    if (!pictureQ)
+                    {
+                        _verdict.text = string.Empty;
+                        _reason.text = string.Empty;
+                    }
+
+                    // client 2026-11-19: under every answer the reason why THIS answer is right / wrong (as Scenarios 1-12); the explanation of the
+                    // whole question is the voice-over, never written here. The reasons come from the option's own reasonRight / reasonWrong in SCxx.json.
+                    for (var i = 0; i < _newCount; i++)
+                    {
+                        string t = null;
+                        var oo = i < _shownOptions.Length ? _shownOptions[i] : null;
+                        if (oo != null)
+                        {
+                            var f = i == _correctShown ? oo.reasonRight : oo.reasonWrong;
+                            t = f != null ? f.Get(Localization.Loc.Current) : null;
+                        }
+
+                        _reasonShown[i] = string.IsNullOrEmpty(t) || pictureQ ? null : t;
+                        if (_optReason[i] != null)
+                        {
+                            _optReason[i].text = string.IsNullOrEmpty(t) || pictureQ ? string.Empty : t; // (no "Reason:" tag in front: a joined line would need its own Bangla picture)
+                            _optReason[i].color = i == _correctShown ? new Color(0.7f, 1f, 0.8f) : new Color(1f, 0.8f, 0.75f);
+                        }
+                    }
+
+                    LayoutNewDynamic(_newCount, string.Empty, string.Empty, true);
+                }
                 _reason.color = right ? new Color(0.7f, 1f, 0.8f) : new Color(1f, 0.8f, 0.75f);
             }
         }
@@ -790,10 +1155,22 @@ namespace ChemicalSafety.Presentable
 
         private void SetSdsSheetSize()
         {
+            if (NewMcqUi)
+                Canvas.ForceUpdateCanvases(); // the SDS panel was just resized with the question box: measure its window after that
             var vp = (RectTransform)_sdsScroll.viewport;
             var w = vp.rect.width;
             var sp = _sdsSheet.sprite;
             var aspect = sp != null ? sp.rect.height / Mathf.Max(1f, sp.rect.width) : 1.34f;
+            if (NewMcqUi)
+            {
+                // client 2026-11-19: the whole sheet is visible at once (as in the earlier design): the sheet is fitted into the window, no scrolling
+                var fitH = Mathf.Min(w * aspect, vp.rect.height);
+                var fitW = fitH / aspect;
+                _sdsContent.sizeDelta = new Vector2(fitW - w, fitH);
+                _sdsScroll.verticalNormalizedPosition = 1f;
+                return;
+            }
+
             // the sheet fills the window width (text as large as the picture allows) and is taller than the window, so it scrolls
             _sdsContent.sizeDelta = new Vector2(0f, w * aspect);
             _sdsScroll.verticalNormalizedPosition = 1f;
@@ -853,7 +1230,7 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PopIn(Transform t, float to)
         {
-            var baseScale = t.GetComponent<Canvas>() != null ? Vector3.one * Scale : Vector3.one;
+            var baseScale = t.GetComponent<Canvas>() != null ? Vector3.one * (Scale * (_main != null && t == _main.transform ? _fit : 1f)) : Vector3.one;
             var g = t.GetComponent<CanvasGroup>();
             yield return PresentableFx.Tween(0.3f, k =>
             {
@@ -989,17 +1366,57 @@ namespace ChemicalSafety.Presentable
             _mainGroup = _main.gameObject.AddComponent<CanvasGroup>();
             DraggablePanel.Attach(_main);
             var panel = BigSds
-                ? PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.359f), new Vector2(0.42f, 1f)) // same 1050 x 641 px as before
+                ? PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, NewMcqUi ? 0.10f : 0.359f), new Vector2(NewMcqUi ? QuestionW / CanvasW : 0.42f, 1f)) // 1050 x 641 px (the new design: 1050 x 800)
                 : PresentableUi.Rect("Panel", _main.transform, new Vector2(0f, 0.255f), new Vector2(0.4773f, 1f));
-            var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
-            PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
-            PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.004f, 0.004f), new Vector2(0.996f, 0.996f)), art.roundedSolid, new Color(0.02f, 0.07f, 0.15f, 0.80f), true);
-            PresentableUi.Img(panel, screen, panelTint, true).raycastTarget = true;
-            _title = T("Title", panel, new Vector2(0.04f, 0.865f), new Vector2(0.96f, 0.985f), 52f, HoloWhite, TextAlignmentOptions.Center, true, 22f);
+            var frameSp = NewMcqUi ? LoadSprite("ScCheck/ui_mcq_frame") : null;
+            var newUi = NewMcqUi && frameSp != null;
+            if (newUi)
+            {
+                // dynamic height (LayoutNewDynamic): the panel hangs from the top of the canvas
+                _panelRt = panel;
+                panel.anchorMin = new Vector2(0f, 1f);
+                panel.anchorMax = new Vector2(QuestionW / CanvasW, 1f);
+                panel.pivot = new Vector2(0f, 1f);
+                panel.offsetMin = Vector2.zero;
+                panel.offsetMax = Vector2.zero;
+                panel.sizeDelta = new Vector2(0f, 900f);
+            }
+
+            _ansOff = LoadSprite("ScCheck/ui_mcq_ans_off");
+            _ansOn = LoadSprite("ScCheck/ui_mcq_ans_on");
+            if (newUi)
+            {
+                // the client's translucent neon frame: the room shows through it (transparent, as in the picture)
+                PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f)), art.roundedSolid, new Color(0.01f, 0.05f, 0.14f, 0.62f), true);
+                var fr = PresentableUi.Img(panel, frameSp, new Color(1f, 1f, 1f, 0.9f), true);
+                fr.type = Image.Type.Sliced;
+                fr.pixelsPerUnitMultiplier = 1.2f; // the border pieces (title strip, glow) stay the same size however tall the box grows
+                fr.raycastTarget = true;
+            }
+            else
+            {
+                var glow = PresentableUi.Rect("Glow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
+                PresentableUi.Img(glow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
+                PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.004f, 0.004f), new Vector2(0.996f, 0.996f)), art.roundedSolid, new Color(0.02f, 0.07f, 0.15f, 0.80f), true);
+                PresentableUi.Img(panel, screen, panelTint, true).raycastTarget = true;
+            }
+
+            _title = newUi
+                ? T("Title", panel, new Vector2(0.08f, 0.85f), new Vector2(0.92f, 0.945f), 52f, HoloWhite, TextAlignmentOptions.Center, true, 22f)
+                : T("Title", panel, new Vector2(0.04f, 0.865f), new Vector2(0.96f, 0.985f), 52f, HoloWhite, TextAlignmentOptions.Center, true, 22f);
             _chemLabel = T("ChemLabel", panel, new Vector2(0.05f, 0.775f), new Vector2(0.30f, 0.865f), 40f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
             _chemName = T("ChemName", panel, new Vector2(0.30f, 0.775f), new Vector2(0.97f, 0.865f), 38f, HoloCyan, TextAlignmentOptions.MidlineLeft, false, 18f);
             _mcq = T("Mcq", panel, new Vector2(0.05f, 0.66f), new Vector2(0.21f, 0.77f), 42f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 18f);
             _prompt = T("Prompt", panel, new Vector2(0.21f, 0.615f), new Vector2(0.96f, 0.78f), 42f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, 18f);
+            if (newUi)
+            {
+                // client 2026-11-19 (the workflow picture): the title, then "Chemical Name: ...", then "MCQ n:" with the question beside it
+                _mcq.alignment = TextAlignmentOptions.TopLeft;
+                _prompt.alignment = TextAlignmentOptions.TopLeft;
+                _prompt.rectTransform.anchorMin = new Vector2(0.07f, 0.605f);
+                _prompt.rectTransform.anchorMax = new Vector2(0.95f, 0.78f);
+            }
+
             const float gap = 0.014f;
             const float x0 = 0.045f;
             const float totalW = 0.91f;
@@ -1012,6 +1429,12 @@ namespace ChemicalSafety.Presentable
                 _optBg[i] = PresentableUi.Img(card, cardSp, new Color(0.45f, 0.78f, 1f, 0.30f), true, true);
                 var idx = i;
                 MakeButton("OptBtn" + i, panel, card, _optBg[i], () => SelectOption(idx));
+                if (newUi)
+                {
+                    var lb = PresentableUi.Rect("LetterBox", card, new Vector2(0f, 0f), new Vector2(0.05f, 1f));
+                    _optLetterBox[i] = PresentableUi.Img(lb, LoadSprite("ScCheck/ui_mcq_letter"), new Color(1f, 1f, 1f, 0.78f), false, false, true);
+                }
+
                 _optLetter[i] = T("Letter", card, new Vector2(0.07f, 0.84f), new Vector2(0.45f, 0.99f), 64f, HoloWhite, TextAlignmentOptions.MidlineLeft, true, 22f);
                 _optLetter[i].text = ((char)('A' + i)).ToString();
                 _optText[i] = T("Text", card, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.83f), 42f, HoloWhite, TextAlignmentOptions.Center, false, 22f);
@@ -1023,15 +1446,40 @@ namespace ChemicalSafety.Presentable
                 _optImg[i].gameObject.SetActive(false);
             }
 
+            if (newUi)
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    _optReason[i] = T("OptReason" + i, panel, new Vector2(0.16f, 0.4f), new Vector2(0.95f, 0.45f), 24f, HoloWhite, TextAlignmentOptions.MidlineLeft, false, 12f);
+                    _optReason[i].textWrappingMode = TextWrappingModes.Normal;
+                    _optReason[i].gameObject.SetActive(false);
+                }
+            }
+
             // verdict strip inside the panel: its own padded band between the cards and the bottom edge
-            var strip = PresentableUi.Rect("VerdictStrip", panel, new Vector2(0.04f, 0.01f), new Vector2(0.96f, 0.19f));
+            var strip = newUi
+                ? PresentableUi.Rect("VerdictStrip", panel, new Vector2(0.07f, 0.02f), new Vector2(0.95f, 0.16f))
+                : PresentableUi.Rect("VerdictStrip", panel, new Vector2(0.04f, 0.01f), new Vector2(0.96f, 0.19f));
+            _stripRt = strip;
             _verdictBg = PresentableUi.Img(strip, art.roundedSolid, new Color(0.1f, 0.3f, 0.5f, 0.0f), true);
             _verdict = T("Verdict", strip, new Vector2(0.03f, 0.52f), new Vector2(0.97f, 0.95f), 28f, Good, TextAlignmentOptions.Center, true, 14f);
             _reason = T("Reason", strip, new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.52f), 20f, HoloWhite, TextAlignmentOptions.Center, false, 10f);
             _reason.textWrappingMode = TextWrappingModes.Normal;
+            if (newUi)
+            {
+                // client 2026-11-19: the reason is drawn on ONE line where it fits (a second line only when there is no room)
+                _reason.rectTransform.anchorMin = new Vector2(0.0f, 0.0f);
+                _reason.rectTransform.anchorMax = new Vector2(1.0f, 0.55f);
+                _reason.fontSizeMax = 26f;
+                _reason.fontSizeMin = 14f;
+                if (_reason is Localization.BnTmp rbt)
+                    rbt.AvoidCapped = true;
+            }
 
             _nextBtn = BigSds
-                ? PresentableUi.Rect("Next", _main.transform, new Vector2(0.146f, 0.0f), new Vector2(0.2736f, 0.083f))
+                ? (NewMcqUi
+                    ? PresentableUi.Rect("Next", _main.transform, new Vector2(0.18f, 0.0f), new Vector2(0.28f, 0.058f)) // under the middle of the question panel
+                    : PresentableUi.Rect("Next", _main.transform, new Vector2(0.146f, 0.0f), new Vector2(0.2736f, 0.083f)))
                 : PresentableUi.Rect("Next", _main.transform, new Vector2(0.166f, 0.0f), new Vector2(0.311f, 0.097f));
             _nextBtn.gameObject.AddComponent<CanvasGroup>();
             var nextImg = PresentableUi.Img(_nextBtn, nextSp, Color.white, false, true, true);
@@ -1039,11 +1487,12 @@ namespace ChemicalSafety.Presentable
             MakeButton("NextBtn", _main.transform, _nextBtn, nextImg, PressNext);
 
             // SDS side panel: the frame picture (584x924, glow padding inside the file) is shown unsliced; everything sits inside its visible edge
-            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(BigSds ? 0.44f : 0.495f, 0f), new Vector2(1f, 1f));
+            _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(NewMcqUi ? (QuestionW + GapW) / CanvasW : BigSds ? 0.44f : 0.495f, NewMcqUi ? 1f - 1000f / CanvasH : 0f), new Vector2(1f, 1f));
             _sdsPanel.gameObject.AddComponent<CanvasGroup>();
             var sdsBg = PresentableUi.Img(_sdsPanel, sdsFrame, new Color(0.82f, 0.9f, 1f, 0.97f), false);
             sdsBg.type = Image.Type.Simple;
             sdsBg.raycastTarget = true;
+            // client 2026-11-19: only the question box has the new design; the SDS panel keeps its earlier look (frame, title, window)
             _refTitle = T("RefTitle", _sdsPanel, new Vector2(0.15f, 0.87f), new Vector2(0.90f, 0.94f), 36f, HoloWhite, TextAlignmentOptions.Center, true, 14f);
             // inside the frame picture's visible edge (its left glow edge is at 0.09-0.11 of the width, the right one at 0.955): the sheet must not stick out of the box
             var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.118f, 0.15f), new Vector2(0.955f, 0.86f));
@@ -1075,7 +1524,7 @@ namespace ChemicalSafety.Presentable
             MakeButton("DownBtn", _sdsPanel, down, downImg, () => ScrollSds(-0.35f));
 
             // the round CHECK SDS toggle overlaps the lower right corner, like the picture
-            _roundBtn = PresentableUi.Rect("CheckSds", _main.transform, new Vector2(1f, 0f), new Vector2(1f, 0f));
+            _roundBtn = PresentableUi.Rect("CheckSds", _main.transform, new Vector2(1f, NewMcqUi ? 1f - 1000f / CanvasH : 0f), new Vector2(1f, NewMcqUi ? 1f - 1000f / CanvasH : 0f));
             _roundBtn.sizeDelta = new Vector2(190f, 186f);
             _roundBtn.anchoredPosition = new Vector2(-48f, 96f);
             var roundImg = PresentableUi.Img(_roundBtn, round, Color.white, false, true, true);

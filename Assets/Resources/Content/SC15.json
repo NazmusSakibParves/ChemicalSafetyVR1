@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before starting work with Chloring gas, it is important to understand how to handle it safely. Carefully review the SDS of the relevant chemical to answer the supervisor’s questions and provide accurate information based on the SDS.",
+      "bn": "ক্লোরিন গ্যাস নিয়ে কাজ শুরু করার আগে এর নিরাপদ ব্যবহার সম্পর্কে জানা জরুরি। সুপারভাইজারের প্রশ্নগুলোর উত্তর দিতে সংশ্লিষ্ট রাসায়নিকের SDS ভালোভাবে পড়ুন এবং সঠিক তথ্য খুঁজে বের করে উত্তর দিন।"
     },
     {
       "key": "Instructions",
@@ -221,8 +221,8 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Before you begin, tell me — what PPE is required for Chlorine Gas?",
-        "bn": "কাজ শুরুর আগে বলুন, ক্লোরিন গ্যাসের জন্য কোন কোন PPE লাগবে?"
+        "en": "You are a factory worker. What type of PPE should you wear when handling chlorine gas? Refer to the SDS to find the answer.",
+        "bn": "আপনি কারখানার একজন শ্রমিক। ক্লোরিন গ্যাস নিয়ে কাজ করার সময় কোন ধরনের পিপিই ব্যবহার করবেন? SDS দেখে উত্তর দিন।"
       },
       "options": [
         {
@@ -230,27 +230,43 @@
           "text": {
             "en": "Chemical-resistant gloves (Butyl/Viton/Neoprene), protective clothing, goggles & face shield; SCBA for emergencies.",
             "bn": "রাসায়নিক-প্রতিরোধী গ্লাভস (বিউটাইল/ভাইটন/নিওপ্রিন), সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড; জরুরি অবস্থার জন্য SCBA।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 8: Butyl / Viton / Neoprene gloves, protective clothing, goggles and face shield; SCBA for emergencies.",
+            "bn": "SDS-এর ৮ নম্বর অংশের সাথে মিলে: বিউটাইল/ভাইটন/নিওপ্রিন গ্লাভস, সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড; জরুরি অবস্থায় SCBA।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Dust mask only.",
-            "bn": "শুধু ডাস্ট মাস্ক।"
+            "en": "Wear only a standard dust mask to protect yourself from the harmful effects of chlorine gas.",
+            "bn": "ক্লোরিন গ্যাসের ক্ষতিকর প্রভাব থেকে বাঁচতে শুধু সাধারণ ডাস্ট মাস্ক পরে কাজ করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "A standard dust mask is insufficient against toxic chlorine gas.",
+            "bn": "বিষাক্ত ক্লোরিন গ্যাসের বিরুদ্ধে সাধারণ ডাস্ট মাস্ক যথেষ্ট নয়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Standard lab coat and safety glasses.",
-            "bn": "সাধারণ ল্যাব কোট এবং সেফটি চশমা।"
+            "en": "Wear a standard lab coat, safety glasses, and regular work gloves to avoid exposure to chlorine gas.",
+            "bn": "ক্লোরিন গ্যাসের সংস্পর্শ এড়াতে সাধারণ ল্যাব কোট, সেফটি চশমা এবং সাধারণ কাজের গ্লাভস পরে কাজ করতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Standard glasses and regular gloves do not protect from chlorine gas.",
+            "bn": "সাধারণ চশমা ও সাধারণ গ্লাভস ক্লোরিন গ্যাস থেকে সুরক্ষা দেয় না।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "No PPE required.",
-            "bn": "কোনো PPE পরার দরকার নেই।"
+            "en": "Handle chlorine gas in regular work clothing without using any special protective equipment.",
+            "bn": "ক্লোরিন গ্যাস নিয়ে কাজ করার সময় বিশেষ কোনো সুরক্ষা সরঞ্জাম ছাড়াই সাধারণ কাজের পোশাক পরে কাজ করা যাবে।"
+          },
+          "reasonWrong": {
+            "en": "Never correct: chlorine gas causes severe respiratory damage.",
+            "bn": "এটা কখনোই সঠিক নয়: ক্লোরিন গ্যাস শ্বাসতন্ত্রের মারাত্মক ক্ষতি করে।"
           }
         }
       ],
@@ -261,7 +277,7 @@
         "bn": "সঠিক! বিউটাইল/ভাইটন গ্লাভস, ফেস শিল্ড, সুরক্ষা পোশাক এবং জরুরি অবস্থার জন্য SCBA প্রয়োজন।"
       },
       "reasonWrong": {
-        "en": "Chlorine gas is highly toxic and causes severe respiratory damage. Standard masks or glasses are insufficient. SDS Section 8 mandates full protective ensemble and SCBA for emergencies.",
+        "en": "Chlorine gas is highly toxic and causes severe respiratory damage. Standard masks or glasses are insufficient. SDS Section 8 mandates a full protective ensemble and SCBA for emergencies.",
         "bn": "ক্লোরিন গ্যাস অত্যন্ত বিষাক্ত এবং শ্বাসনালীতে মারাত্মক ক্ষতি করে। সাধারণ মাস্ক বা চশমা যথেষ্ট নয়। SDS-এর ৮ নম্বর অংশ অনুযায়ী সম্পূর্ণ সুরক্ষা সেট এবং জরুরি অবস্থার জন্য SCBA প্রয়োজন।"
       }
     },
@@ -272,36 +288,52 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Now — what is the first-aid response for skin contact with Chlorine (or liquid Chlorine)?",
-        "bn": "এবার বলুন, ক্লোরিন ত্বকে লাগলে (বা তরল ক্লোরিনের সংস্পর্শে এলে) প্রথমে কী করবেন?"
+        "en": "What should you do first if chlorine gas comes into contact with your skin (or if you are exposed to liquid chlorine)?",
+        "bn": "ক্লোরিন গ্যাস ত্বকে লাগলে (বা তরল ক্লোরিনের সংস্পর্শে এলে) প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
             "en": "Flush with water for at least 15 minutes, remove contaminated clothing, and seek medical help. For frostbite, rewarm in water at ~42°C.",
-            "bn": "কমপক্ষে ১৫ মিনিট পানি দিয়ে ধোব, দাগানো কাপড় খুলে ফেলব এবং ডাক্তারের সাহায্য নেব। ফ্রস্টবাইট হলে ৪২°C গরম পানিতে ডুবাব।"
+            "bn": "কমপক্ষে ১৫ মিনিট পানি দিয়ে ধুয়ে ফেলে কাপড় খুলে ফেলব এবং ডাক্তারের সাহায্য নেব। ফ্রস্টবাইট হলে প্রায় ৪২°C তাপমাত্রার পানিতে আক্রান্ত স্থান ধীরে ধীরে গরম করুন।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 4: flush for at least 15 minutes, remove contaminated clothing, rewarm at ~42°C for frostbite.",
+            "bn": "SDS-এর ৪ নম্বর অংশের সাথে মিলে: কমপক্ষে ১৫ মিনিট ধোয়া, দূষিত পোশাক খোলা, ফ্রস্টবাইট হলে ~৪২°C পানিতে উষ্ণ করা।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Apply burn cream.",
-            "bn": "পোড়ার মলম লাগাব।"
+            "en": "Apply raw egg to the affected area, followed by burn cream, and continue working assuming this will reduce skin irritation.",
+            "bn": "আক্রান্ত স্থানে ডিমের প্রলেপ লাগান এবং এরপর পোড়ার মলম ব্যবহার করুন। এতে ত্বকের জ্বালাপোড়া কমে যাবে বলে ধরে নিয়ে কাজ চালিয়ে যান।"
+          },
+          "reasonWrong": {
+            "en": "Cream is not the correct treatment for chlorine contact or frostbite.",
+            "bn": "ক্লোরিনের সংস্পর্শ বা ফ্রস্টবাইটের জন্য ক্রিম সঠিক চিকিৎসা নয়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Wipe with a dry cloth.",
-            "bn": "শুকনো কাপড় দিয়ে মুছব।"
+            "en": "Wipe the affected area thoroughly with a dry cloth. Arrange to seek medical advice when time permits.",
+            "bn": "আক্রান্ত স্থান পরিষ্কার করার জন্য শুকনো কাপড় দিয়ে ভালোভাবে মুছে নিন। এরপর সময় পেলে চিকিৎসকের পরামর্শ নেওয়ার ব্যবস্থা করুন।"
+          },
+          "reasonWrong": {
+            "en": "A dry cloth is not the correct treatment, and medical advice cannot wait.",
+            "bn": "শুকনো কাপড় সঠিক চিকিৎসা নয়, আর চিকিৎসকের পরামর্শ ফেলে রাখা যাবে না।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Apply baking soda.",
-            "bn": "বেসিং সোডা লাগাব।"
+            "en": "Apply baking soda to the affected area to make a paste. Then cover the paste with a cloth bandage.",
+            "bn": "আক্রান্ত স্থানে বেকিং সোডা লাগিয়ে একটি পেস্ট তৈরি করুন। এরপর সেই পেস্টের ওপর কাপড়ের ব্যান্ডেজ লাগিয়ে রাখুন।"
+          },
+          "reasonWrong": {
+            "en": "A baking-soda paste under a bandage is not the SDS first-aid step.",
+            "bn": "বেকিং সোডার পেস্ট ব্যান্ডেজে ঢাকা SDS-এর প্রাথমিক চিকিৎসা নয়।"
           }
         }
       ],
@@ -312,7 +344,7 @@
         "bn": "সঠিক! দীর্ঘ সময় পানি দিয়ে ধোয়া এবং ফ্রস্টবাইট হলে ৪২°C গরম পানিতে উষ্ণ করা প্রয়োজন।"
       },
       "reasonWrong": {
-        "en": "Contact with liquid chlorine can cause frostbite. Cream or dry cloths are not the correct treatment. SDS Section 4 requires prolonged flushing and rewarming if frostbite occurs.",
+        "en": "Contact with liquid chlorine can cause frostbite. Cream or dry clothes are not the correct treatment. SDS Section 4 requires prolonged flushing and rewarming if frostbite occurs.",
         "bn": "তরল ক্লোরিনের সংস্পর্শে ফ্রস্টবাইট হতে পারে। ক্রিম বা শুকনো কাপড় সঠিক চিকিৎসা নয়। SDS-এর ৪ নম্বর অংশ অনুযায়ী দীর্ঘ সময় পানি দিয়ে ধোয়া এবং প্রয়োজনে গরম পানি দিয়ে পুনরায় উষ্ণ করা প্রয়োজন।"
       }
     },
@@ -323,44 +355,60 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "And finally — what are the safe storage conditions for Chlorine Gas?",
-        "bn": "শেষ প্রশ্ন: ক্লোরিন গ্যাস নিরাপদে রাখার শর্ত কী?"
+        "en": "What are the safe storage conditions for Chlorine Gas?",
+        "bn": "ক্লোরিন গ্যাস নিরাপদে রাখার শর্ত কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "In a cool, dry, well-ventilated place, away from heat, sunlight, and combustibles; secure cylinders upright.",
-            "bn": "শীতল, শুষ্ক ও ভালো বাতাস চলাচলযুক্ত জায়গায়, তাপ, সূর্যালোক এবং দাহ্য পদার্থ থেকে দূরে সিলিন্ডার সুরক্ষিতভাবে রাখতে হবে।"
+            "en": "Store in a cool, dry, well-ventilated place, away from heat, direct sunlight, and combustible materials. Keep cylinders secured in an upright position.",
+            "bn": "তাপ, সরাসরি রোদ ও আগুন ধরে যেতে পারে এমন বস্তু থেকে দূরে, শীতল, শুষ্ক এবং ভালো বাতাস চলাচল করে এমন জায়গায় রাখতে হবে। গ্যাসের সিলিন্ডার সোজা করে নিরাপদভাবে আটকে রাখতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 7: cool, dry, well-ventilated place, cylinders secured upright, away from heat and combustibles.",
+            "bn": "SDS-এর ৭ নম্বর অংশের সাথে মিলে: শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থান, সিলিন্ডার খাড়া ও নিরাপদে বাঁধা, তাপ ও দাহ্য পদার্থ থেকে দূরে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Next to organic solvents.",
-            "bn": "জৈব দ্রাবকের পাশে রাখব।"
+            "en": "Store the gas cylinders next to other chemicals and organic solvents for easy access during work.",
+            "bn": "সহজে ব্যবহার করার সুবিধার জন্য গ্যাসের সিলিন্ডার অন্যান্য রাসায়নিক ও জৈব দ্রাবকের পাশে একসঙ্গে রাখতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Chlorine is a strong oxidizer: next to organic solvents it is a fire or explosion risk.",
+            "bn": "ক্লোরিন শক্তিশালী অক্সিডাইজার: জৈব দ্রাবকের পাশে আগুন বা বিস্ফোরণের ঝুঁকি।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "In a heated area.",
-            "bn": "গরম করার জন্য হিটারযুক্ত জায়গায় রাখব।"
+            "en": "Store the gas cylinders in a heated area with a heater instead of a cool, dry place to maintain the temperature.",
+            "bn": "ঠান্ডা ও শুষ্ক জায়গার পরিবর্তে হিটারযুক্ত গরম জায়গায় গ্যাসের সিলিন্ডার রাখতে হবে, যাতে তাপমাত্রা বজায় থাকে।"
+          },
+          "reasonWrong": {
+            "en": "Heat is a fire or explosion risk for chlorine cylinders.",
+            "bn": "তাপে ক্লোরিন সিলিন্ডারের আগুন বা বিস্ফোরণের ঝুঁকি থাকে।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Leave outside in the open.",
-            "bn": "খোলা জায়গায় ফেলে রাখব।"
+            "en": "Leave the gas cylinders lying on the ground in an open area instead of storing them properly indoors.",
+            "bn": "গ্যাসের সিলিন্ডার স্টোররুমে না রেখে খোলা জায়গায় মাটির ওপর ফেলে রাখতে হবে, যাতে সহজে বাতাস চলাচল করতে পারে।"
+          },
+          "reasonWrong": {
+            "en": "Unsecured cylinders lying on the ground can fall or roll and cause accidents.",
+            "bn": "মাটিতে পড়ে থাকা বাঁধাহীন সিলিন্ডার গড়িয়ে বা পড়ে দুর্ঘটনা ঘটাতে পারে।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Store in a cool, dry, well-ventilated place, away from heat, sunlight, and combustibles, with cylinders secured.",
-        "bn": "সঠিক! শীতল, শুষ্ক, ভালো বাতাস চলাচলযুক্ত স্থানে এবং তাপ, সূর্যালোক ও দাহ্য পদার্থ থেকে দূরে সিলিন্ডার সুরক্ষিতভাবে রাখতে হবে।"
+        "en": "Cylinders must be stored securely in a cool, dry, well-ventilated place, away from heat, direct sunlight, and flammable materials.",
+        "bn": "সঠিক! গ্যাসের সিলিন্ডার শীতল, শুষ্ক ও ভালো বাতাস চলাচল করে এমন জায়গায় রাখতে হবে। তাপ, সরাসরি রোদ ও আগুন ধরে যেতে পারে এমন বস্তু থেকে দূরে সিলিন্ডার নিরাপদে রাখতে হবে।"
       },
       "reasonWrong": {
         "en": "Chlorine gas is a strong oxidizer. Contact with heat, sunlight, or combustibles poses a fire or explosion risk. Unsecured cylinders can fall and cause accidents.",

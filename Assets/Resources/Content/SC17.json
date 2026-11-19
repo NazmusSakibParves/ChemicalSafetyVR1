@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "Before handling hydrogen peroxide, read its SDS and understand its hazards. In case of fire, use suitable firefighting methods and PPE according to the situation.",
+      "bn": "হাইড্রোজেন পারঅক্সাইড ব্যবহারের আগে SDS পড়ে এর বিপদ সম্পর্কে জানুন। আগুন লাগলে পরিস্থিতি অনুযায়ী উপযুক্ত অগ্নিনির্বাপক ব্যবস্থা ও PPE ব্যবহার করুন।"
     },
     {
       "key": "Instructions",
@@ -221,48 +221,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "First, tell me — what is the primary hazard statement for Hydrogen Peroxide?",
-        "bn": "প্রথমে বলুন, হাইড্রোজেন পারঅক্সাইডের প্রধান হ্যাজার্ড স্টেটমেন্ট কী?"
+        "en": "You are given the Safety Data Sheet (SDS) for hydrogen peroxide. Use the SDS to identify the main hazard statements for hydrogen peroxide.",
+        "bn": "আপনাকে হাইড্রোজেন পারঅক্সাইডের এসডিএস দেয়া হল। এসডিএস এর সাহায্যে হাইড্রোজেন পারঅক্সাইডের প্রধান হ্যাজার্ড স্টেটমেন্ট চিহ্নিত করুন।"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Strong oxidizer; may cause fire or explosion. Causes severe skin burns and eye damage. Harmful if swallowed.",
-            "bn": "শক্তিশালী অক্সিডাইজার; আগুন বা বিস্ফোরণ ঘটাতে পারে। ত্বকে গুরুতর পোড়া এবং চোখের ক্ষতি করে। গিলে ফেললে ক্ষতিকর।"
+            "en": "Strong oxidizer; may intensify fire. Causes severe skin burns and serious eye damage.",
+            "bn": "শক্তিশালী অক্সিডাইজার; আগুনের তীব্রতা বাড়াতে পারে। ত্বকে মারাত্মক পোড়া এবং চোখের গুরুতর ক্ষতি করতে পারে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 2: a strong oxidizer that may intensify fire and causes severe skin burns and eye damage.",
+            "bn": "SDS-এর ২ নম্বর অংশের সাথে মিলে: শক্তিশালী অক্সিডাইজার, আগুন বাড়াতে পারে এবং ত্বকে মারাত্মক পোড়া ও চোখের গুরুতর ক্ষতি করে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Extremely flammable liquid and vapor; may cause drowsiness or dizziness.",
-            "bn": "অত্যন্ত দাহ্য তরল এবং বাষ্প; তন্দ্রা বা মাথা ঘোরা সৃষ্টি করতে পারে।"
+            "en": "Highly flammable liquid and vapour; may easily catch fire near heat or flames.",
+            "bn": "অত্যন্ত দাহ্য তরল ও বাষ্প; আগুনের কাছে রাখলে সহজেই আগুন ধরে যেতে পারে।"
+          },
+          "reasonWrong": {
+            "en": "Hydrogen peroxide is not extremely flammable; it is an oxidizer.",
+            "bn": "হাইড্রোজেন পারঅক্সাইড অত্যন্ত দাহ্য নয়; এটি একটি অক্সিডাইজার।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Fatal if inhaled; toxic to aquatic life.",
-            "bn": "শ্বাস নিলে মারাত্মক; জলজ জীবনের জন্য বিষাক্ত।"
+            "en": "Fatal if inhaled and very toxic to aquatic life.",
+            "bn": "শ্বাসের সঙ্গে শরীরে প্রবেশ করলে মারাত্মক ক্ষতি করতে পারে এবং জলজ প্রাণীর জন্য অত্যন্ত ক্ষতিকর।"
+          },
+          "reasonWrong": {
+            "en": "This is not the main hazard statement for hydrogen peroxide in SDS Section 2.",
+            "bn": "SDS-এর ২ নম্বর অংশে এটি হাইড্রোজেন পারঅক্সাইডের প্রধান হ্যাজার্ড স্টেটমেন্ট নয়।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "May cause cancer.",
-            "bn": "ক্যান্সার সৃষ্টি করতে পারে।"
+            "en": "It may cause cancer and damage important organs after prolonged exposure.",
+            "bn": "দীর্ঘদিন সংস্পর্শে থাকলে ক্যান্সার সৃষ্টি করতে পারে এবং শরীরের গুরুত্বপূর্ণ অঙ্গের ক্ষতি করতে পারে।"
+          },
+          "reasonWrong": {
+            "en": "This is not the main hazard statement for hydrogen peroxide in SDS Section 2.",
+            "bn": "SDS-এর ২ নম্বর অংশে এটি হাইড্রোজেন পারঅক্সাইডের প্রধান হ্যাজার্ড স্টেটমেন্ট নয়।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! It is a strong oxidizer that causes severe skin burns and eye damage.",
-        "bn": "সঠিক! এটি একটি শক্তিশালী অক্সিডাইজার যা ত্বক ও চোখের গুরুতর ক্ষতি করে।"
+        "en": "Correct! It is a strong oxidizer that can cause fire or explosion.",
+        "bn": "সঠিক! এটি একটি শক্তিশালী অক্সিডাইজার, যা আগুন বা বিস্ফোরণ ঘটাতে পারে।"
       },
       "reasonWrong": {
         "en": "Hydrogen peroxide is not extremely flammable; it is a strong oxidizer that can cause fire or explosion. The correct hazard statement is in SDS Section 2.",
-        "bn": "হাইড্রোজেন পারঅক্সাইড অত্যন্ত দাহ্য নয়, বরং এটি একটি শক্তিশালী অক্সিডাইজার যা আগুন বা বিস্ফোরণ ঘটাতে পারে। SDS-এর ২ নম্বর অংশে সঠিক হ্যাজার্ড স্টেটমেন্ট রয়েছে।"
+        "bn": "হাইড্রোজেন পারঅক্সাইড সাধারণত  দাহ্য পদার্থ  নয়। এটি একটি শক্তিশালী অক্সিডাইজার, যা আগুন বা বিস্ফোরণ ঘটাতে পারে। সঠিক হ্যাজার্ড স্টেটমেন্ট জানতে SDS-এর ২ নম্বর অংশ (Hazard Identification) দেখুন।"
       }
     },
     {
@@ -272,48 +288,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "Now — what are the firefighting measures for Hydrogen Peroxide?",
-        "bn": "এবার বলুন, হাইড্রোজেন পারঅক্সাইডের অগ্নি নির্বাপণ ব্যবস্থা কী?"
+        "en": "You are a warehouse supervisor in a factory. What fire-extinguishing instructions would you give workers for Hydrogen Peroxide based on its SDS?",
+        "bn": "আপনি একটি কারখানার ওয়ার হাউজের সুপারভাইজার। হাইড্রোজেন পারঅক্সাইডের অগ্নি নির্বাপণ ব্যবস্থা নিয়ে এসডিএস এর সাহায্যে শ্রমিকদের কি ধরনের নির্দেশনা দিবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Use water spray to cool containers. It is non-combustible but decomposes to release oxygen, which intensifies fire. Firefighters must wear SCBA.",
-            "bn": "পাত্র ঠান্ডা করতে পানি স্প্রে ব্যবহার করব। এটি নিজে পোড়ে না, কিন্তু ভেঙে গিয়ে অক্সিজেন ছড়ায় যা আগুন বাড়ায়। অগ্নিনির্বাপকদের SCBA পরতে হবে।"
+            "en": "Use extinguishing measures that are appropriate to local circumstances and the surrounding environment .",
+            "bn": "আশপাশের পরিবেশ এবং পরিস্থিতি অনুযায়ী উপযুক্ত পদ্ধতিতে আগুন নেভাতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Correct but incomplete: this is only one of the three instructions.",
+            "bn": "সঠিক, কিন্তু অসম্পূর্ণ: এটি তিনটি নির্দেশনার একটি মাত্র।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Use a direct, high-pressure water jet to extinguish the flames.",
-            "bn": "সরাসরি উচ্চ-চাপের পানি জেট দিয়ে আগুন নেভাব।"
+            "en": "During fire fighting use personal protective equipment.",
+            "bn": "আগুন নেভানোর সময় উপযুক্ত ব্যক্তিগত সুরক্ষা সরঞ্জাম (PPE) পরতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Correct but incomplete: this is only one of the three instructions.",
+            "bn": "সঠিক, কিন্তু অসম্পূর্ণ: এটি তিনটি নির্দেশনার একটি মাত্র।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Use dry chemical extinguisher only.",
-            "bn": "শুধু ড্রাই কেমিক্যাল এক্সটিংগুইশার ব্যবহার করব।"
+            "en": "Hydrogen Peroxide is an Oxidizer. Contact with other material may cause fire.",
+            "bn": "হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার। এটি অন্য পদার্থের সংস্পর্শে এলে আগুন লাগতে পারে।"
+          },
+          "reasonWrong": {
+            "en": "Correct but incomplete: this is only one of the three instructions.",
+            "bn": "সঠিক, কিন্তু অসম্পূর্ণ: এটি তিনটি নির্দেশনার একটি মাত্র।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "No protective equipment is required for small fires.",
-            "bn": "ছোট আগুনের জন্য কোনো সুরক্ষা সরঞ্জাম লাগবে না।"
+            "en": "All of the above.",
+            "bn": "উপরের সবগুলোই।"
+          },
+          "reasonRight": {
+            "en": "All three instructions apply, so this is the complete answer.",
+            "bn": "তিনটি নির্দেশনাই প্রযোজ্য, তাই এটিই পূর্ণ উত্তর।"
           }
         }
       ],
-      "correct": "A",
+      "correct": "D",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Use water spray to cool containers, and firefighters must wear SCBA.",
-        "bn": "সঠিক! পাত্র ঠান্ডা করতে পানি স্প্রে ব্যবহার করতে হবে এবং অগ্নিনির্বাপকদের SCBA পরতে হবে।"
+        "en": "Correct! Hydrogen peroxide is a strong oxidizer, so fire-extinguishing methods must be selected according to local conditions and the surrounding environment. Firefighters must wear appropriate personal protective equipment (PPE).",
+        "bn": "সঠিক! হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার, তাই আগুন নেভানোর পদ্ধতি আশপাশের পরিবেশ ও পরিস্থিতি অনুযায়ী বেছে নিতে হবে। অগ্নিনির্বাপকদের উপযুক্ত সুরক্ষা সরঞ্জাম (PPE) পরতে হবে।"
       },
       "reasonWrong": {
-        "en": "Hydrogen peroxide itself is non-combustible but decomposes under heat to release oxygen, intensifying fire. A direct water jet or dry chemical alone is insufficient. Firefighters must always wear SCBA and full gear.",
-        "bn": "হাইড্রোজেন পারঅক্সাইড নিজে পোড়ে না, কিন্তু তাপে ভেঙে অক্সিজেন ছড়ায় যা আগুনকে তীব্র করে। তাই সরাসরি পানি জেট বা শুধু ড্রাই কেমিক্যাল যথেষ্ট নয়। অগ্নিনির্বাপকদের সর্বদা SCBA এবং সম্পূর্ণ সুরক্ষা পোশাক পরতে হবে।"
+        "en": "Your answer is incomplete. Hydrogen peroxide is a strong oxidizer that can create a fire hazard when it comes into contact with other materials. Fire-extinguishing methods must be selected according to local conditions and the surrounding environment. Firefighters must also wear appropriate personal protective equipment (PPE). Therefore, all three instructions (A, B, and C) must be followed.",
+        "bn": "আপনার উত্তরটি সম্পূর্ণ সঠিক নয়। হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার, যা অন্য পদার্থের সংস্পর্শে এলে আগুনের ঝুঁকি তৈরি করতে পারে। আগুন নেভানোর পদ্ধতি আশপাশের পরিবেশ ও পরিস্থিতি অনুযায়ী বেছে নিতে হবে। এ সময় অগ্নিনির্বাপকদের উপযুক্ত সুরক্ষা সরঞ্জাম (PPE) পরতে হবে। তাই A, B ও C—তিনটি নির্দেশনাই মেনে চলতে হবে।"
       }
     },
     {
@@ -323,48 +355,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "And finally — what are the key precautionary statements for Hydrogen Peroxide?",
-        "bn": "শেষ প্রশ্ন: হাইড্রোজেন পারঅক্সাইডের জন্য মূল সতর্কতামূলক ব্যবস্থা কী?"
+        "en": "What are the key precautionary statements for Hydrogen Peroxide?",
+        "bn": "হাইড্রোজেন পারঅক্সাইডের জন্য মূল সতর্কতামূলক ব্যবস্থা কী?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Keep away from heat, sparks, open flames, and combustibles. Wear protective gloves and eye/face protection. Store in a well-ventilated place, away from incompatible materials.",
-            "bn": "তাপ, স্পার্ক, খোলা আগুন এবং দাহ্য পদার্থ থেকে দূরে রাখব। সুরক্ষা গ্লাভস ও চোখ/মুখের সুরক্ষা পরব। ভালো বাতাস চলাচলযুক্ত স্থানে, বেমানান পদার্থ থেকে দূরে রাখব।"
+            "en": "Take any precaution to avoid mixing with combustibles.",
+            "bn": "দাহ্য পদার্থের সঙ্গে যেন মিশে না যায়, সে জন্য প্রয়োজনীয় সতর্কতা অবলম্বন করতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches the precautionary statements: prevent hydrogen peroxide from mixing with combustibles.",
+            "bn": "সতর্কতামূলক বিবৃতির সাথে মিলে: হাইড্রোজেন পারঅক্সাইড দাহ্য পদার্থের সাথে মিশতে দেওয়া যাবে না।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Store next to organic solvents and reducing agents.",
-            "bn": "জৈব দ্রাবক এবং বিজারক পদার্থের পাশে রাখব।"
+            "en": "Wipe skin thoroughly after handling.",
+            "bn": "ব্যবহারের পর ত্বক ভালোভাবে মুছে ফেলতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Not the key precaution here: mixing with combustibles is the fire or explosion risk.",
+            "bn": "এখানে মূল সতর্কতা এটি নয়: দাহ্য পদার্থের সাথে মিশলেই আগুন বা বিস্ফোরণের ঝুঁকি।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Work without any PPE.",
-            "bn": "কোনো PPE ছাড়াই কাজ করব।"
+            "en": "Do not eat, but may drink.",
+            "bn": "খাওয়া যাবে না, তবে পানীয় পান করা যাবে।"
+          },
+          "reasonWrong": {
+            "en": "Not a correct precaution statement.",
+            "bn": "এটি সঠিক সতর্কতামূলক বিবৃতি নয়।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Avoid washing skin with water.",
-            "bn": "পানি দিয়ে ত্বক ধোয়া এড়িয়ে চলব।"
+            "en": "IF IN EYES: Don’t rinse with water.",
+            "bn": "চোখে লাগলে পানি দিয়ে ধোয়া যাবে না।"
+          },
+          "reasonWrong": {
+            "en": "If it gets into the eyes, rinse with water: never tell people not to rinse.",
+            "bn": "চোখে লাগলে পানি দিয়ে ধুতে হয়: ধুতে নিষেধ করা কখনোই সঠিক নয়।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Keep away from heat and combustibles, and wear protective gloves and eye/face protection.",
-        "bn": "সঠিক! তাপ ও দাহ্য পদার্থ থেকে দূরে রাখতে হবে এবং সুরক্ষা গ্লাভস ও চোখ/মুখের সুরক্ষা পরতে হবে।"
+        "en": "Correct! Hydrogen peroxide must not be allowed to mix with combustible materials, as this may create a risk of fire or explosion. Take the necessary precautions and wear appropriate PPE as specified in the SDS.",
+        "bn": "সঠিক! হাইড্রোজেন পারঅক্সাইডকে দাহ্য পদার্থের সঙ্গে মিশতে দেওয়া যাবে না। এ ধরনের মিশ্রণ আগুন বা বিস্ফোরণের ঝুঁকি তৈরি করতে পারে। তাই প্রয়োজনীয় সতর্কতা অবলম্বন করতে হবে এবং SDS অনুযায়ী উপযুক্ত PPE পরতে হবে।"
       },
       "reasonWrong": {
-        "en": "Hydrogen peroxide is a strong oxidizer. Contact with organic materials, heat, or fire poses a risk of fire or explosion. SDS Section 2 requires keeping it away from heat and combustibles, and wearing full PPE.",
-        "bn": "হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার। জৈব পদার্থ, তাপ বা আগুনের সংস্পর্শে এলে আগুন বা বিস্ফোরণের ঝুঁকি থাকে। SDS-এর ২ নম্বর অংশ অনুযায়ী তাপ ও দাহ্য পদার্থ থেকে দূরে রাখতে হবে এবং সম্পূর্ণ PPE পরতে হবে।"
+        "en": "Hydrogen peroxide is a strong oxidizer. Mixing it with combustible materials may create a risk of fire or explosion. Therefore, take necessary precautions to prevent mixing with combustibles and wear appropriate PPE as specified in the SDS.",
+        "bn": "হাইড্রোজেন পারঅক্সাইড একটি শক্তিশালী অক্সিডাইজার। এটি দাহ্য পদার্থের সঙ্গে মিশে গেলে আগুন বা বিস্ফোরণের ঝুঁকি তৈরি হতে পারে। তাই দাহ্য পদার্থের সঙ্গে মিশে যাওয়া রোধ করতে প্রয়োজনীয় সতর্কতা অবলম্বন করতে হবে এবং SDS অনুযায়ী উপযুক্ত PPE পরতে হবে।"
       }
     }
   ]

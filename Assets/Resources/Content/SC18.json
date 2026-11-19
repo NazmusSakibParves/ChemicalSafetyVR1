@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "Before starting any chemical task, you must pass a 'pre-task safety check'. Three questions from the SDS. You have SDS access — this is open-book. Answers vary by chemical.",
-      "bn": "যেকোনো রাসায়নিক কাজ শুরুর আগে আপনাকে একটি 'কাজ-পূর্ব নিরাপত্তা পরীক্ষা' পাস করতে হবে। এসডিএস থেকে তিনটি প্রশ্ন। আপনি এসডিএস দেখতে পারবেন, এটি ওপেন-বুক। রাসায়নিক অনুযায়ী উত্তর ভিন্ন হয়।"
+      "en": "You are a worker in a textile factory and use bleaching powder for cotton bleaching. Follow the SDS instructions regarding safe handling and first aid measures when working with bleaching powder.",
+      "bn": "আপনি টেক্সটাইল কারখানার একজন শ্রমিক এবং কটন ব্লিচিংয়ের কাজে ব্লিচিং পাউডার ব্যবহার করেন। ব্লিচিং পাউডার নিয়ে কাজ করার আগে SDS-এর নিরাপত্তা এবং প্রাথমিক চিকিৎসার (First Aid) নির্দেশনা ভালোভাবে পড়ে নিন।"
     },
     {
       "key": "Instructions",
@@ -188,8 +188,8 @@
     },
     {
       "key": "NextRound",
-      "en": "FINISH",
-      "bn": "শেষ করুন"
+      "en": "NEXT",
+      "bn": "পরবর্তী"
     },
     {
       "key": "ModuleComplete",
@@ -221,48 +221,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "First, tell me — what is the first-aid response for eye contact with Bleaching Powder?",
-        "bn": "প্রথমে বলুন, ব্লিচিং পাউডার চোখে লাগলে প্রথমে কী করবেন?"
+        "en": "You are a worker in a textile factory and use bleaching powder for cotton bleaching. What should you do first if bleaching powder gets into your eyes?",
+        "bn": "আপনি টেক্সটাইল কারখানার একজন শ্রমিক এবং কটন ব্লিচিংয়ের কাজে ব্লিচিং পাউডার ব্যবহার করেন। ব্লিচিং পাউডার চোখে লাগলে প্রথমে কী করবেন?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Rinse cautiously with water for several minutes, remove contact lenses if possible, continue rinsing, and immediately call a doctor/poison center.",
-            "bn": "কয়েক মিনিট ধরে সতর্কতার সঙ্গে পানি দিয়ে ধোব, কন্ট্যাক্ট লেন্স থাকলে খুলে ফেলব, ধোয়া চালিয়ে যাব এবং সঙ্গে সঙ্গে ডাক্তার/বিষ বিশেষজ্ঞের সাহায্য নেব।"
+            "en": "Rinse thoroughly with plenty of water for at least 15 minutes and consult a physician.",
+            "bn": "প্রচুর পানি দিয়ে কমপক্ষে ১৫ মিনিট ধরে চোখ ভালোভাবে ধুতে হবে এবং চিকিৎসকের পরামর্শ নিতে হবে।"
+          },
+          "reasonRight": {
+            "en": "Matches SDS Section 4: rinse with plenty of clean water for at least 15 minutes, then seek medical attention.",
+            "bn": "SDS-এর ৪ নম্বর অংশের সাথে মিলে: প্রচুর পরিষ্কার পানি দিয়ে কমপক্ষে ১৫ মিনিট ধোয়া, তারপর চিকিৎসকের সাহায্য নেওয়া।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Neutralize with a weak acid.",
-            "bn": "দুর্বল অ্যাসিড দিয়ে নিষ্ক্রিয় করব।"
+            "en": "Rinse thoroughly with plenty of warm water for at least 5 minutes.",
+            "bn": "প্রচুর কুসুম গরম পানি দিয়ে কমপক্ষে ৫ মিনিট ধরে ভালোভাবে ধুতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Rinsing for a short time may not completely remove the chemical.",
+            "bn": "অল্প সময় ধুলে কেমিক্যাল পুরোপুরি দূর নাও হতে পারে।"
           }
         },
         {
           "id": "C",
           "text": {
             "en": "Wash with soap and water for 2 minutes.",
-            "bn": "সাবান-পানি দিয়ে ২ মিনিট ধোব।"
+            "bn": "সাবান ও পানি দিয়ে ২ মিনিট ধরে ধুতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Do not use soap or other chemicals in the eyes.",
+            "bn": "চোখে সাবান বা অন্য কোনো কেমিক্যাল ব্যবহার করবেন না।"
           }
         },
         {
           "id": "D",
           "text": {
             "en": "Apply ointment and cover the eye.",
-            "bn": "চোখে মলম লাগিয়ে ঢেকে দেব।"
+            "bn": "চোখে মলম লাগিয়ে ঢেকে রাখতে হবে।"
+          },
+          "reasonWrong": {
+            "en": "Do not use ointment: flush the eyes with plenty of water instead.",
+            "bn": "মলম লাগাবেন না: তার বদলে প্রচুর পানি দিয়ে চোখ ধুতে হবে।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Flush for several minutes, remove lenses if possible, continue rinsing, and seek immediate medical help.",
-        "bn": "সঠিক! কয়েক মিনিট পানি দিয়ে ধুয়ে, প্রয়োজনে লেন্স খুলে, ধোয়া চালিয়ে যেতে হবে এবং সঙ্গে সঙ্গে ডাক্তারের সাহায্য নিতে হবে।"
+        "en": "Correct! If bleaching powder gets into the eyes, immediately rinse them with plenty of clean water for at least 15 minutes. Then seek medical attention promptly.",
+        "bn": "সঠিক! ব্লিচিং পাউডার চোখে লাগলে সঙ্গে সঙ্গে প্রচুর পরিষ্কার পানি দিয়ে কমপক্ষে ১৫ মিনিট চোখ ধুতে হবে। এরপর দ্রুত চিকিৎসকের পরামর্শ নিতে হবে।"
       },
       "reasonWrong": {
-        "en": "Never use a neutralizing agent in the eyes. Soapy water or ointment are not suitable for eyes. SDS Section 4 requires prolonged flushing with water and immediate medical attention.",
-        "bn": "চোখে কোনো নিষ্ক্রিয়কারী পদার্থ (Neutralizing Agent) ব্যবহার করবেন না। সাবান-পানি বা মলম চোখের জন্য উপযুক্ত নয়। SDS-এর ৪ নম্বর অংশ অনুযায়ী দীর্ঘ সময় পানি দিয়ে ধোয়া এবং অবিলম্বে চিকিৎসকের সাহায্য নেওয়া প্রয়োজন।"
+        "en": "If bleaching powder gets into the eyes, do not use soap, ointment, or other chemicals. Rinsing for a short time may not completely remove the chemical. Flush the eyes with plenty of clean water for at least 15 minutes and consult a physician.",
+        "bn": "ব্লিচিং পাউডার চোখে লাগলে সাবান, মলম বা অন্য কোনো রাসায়নিক পদার্থ ব্যবহার করা যাবে না। অল্প সময় ধুলে চোখ থেকে রাসায়নিক পদার্থ পুরোপুরি দূর নাও হতে পারে। তাই প্রচুর পরিষ্কার পানি দিয়ে কমপক্ষে ১৫ মিনিট চোখ ধুতে হবে এবং চিকিৎসকের পরামর্শ নিতে হবে।"
       }
     },
     {
@@ -273,7 +289,7 @@
       },
       "prompt": {
         "en": "Which of the following is NOT a GHS pictogram for bleaching powder?",
-        "bn": "ব্লিচিং পাউডারের GHS পিক্টোগ্রাম নয় কোনটি?"
+        "bn": "ব্লিচিং পাউডারের GHS পিক্টোগ্রাম নয় কোনটি?"
       },
       "pickMembers": 3,
       "pickOutsiders": 1,
@@ -285,11 +301,7 @@
             "bn": "বিস্ময়চিহ্ন (ক্ষতিকর / উত্তেজক)"
           },
           "image": "ScCheck/SC18/pict_exclamation",
-          "outsider": false,
-          "reasonWrong": {
-            "en": "This IS a GHS pictogram of bleaching powder: the exclamation mark means harmful if swallowed and an irritant. Look for the one that does NOT belong.",
-            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: বিস্ময়চিহ্ন মানে গিলে ফেললে ক্ষতিকর এবং উত্তেজক। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
-          }
+          "outsider": false
         },
         {
           "id": "P2",
@@ -298,11 +310,7 @@
             "bn": "পরিবেশ (জলজ বিষাক্ততা)"
           },
           "image": "ScCheck/SC18/pict_environment",
-          "outsider": false,
-          "reasonWrong": {
-            "en": "This IS a GHS pictogram of bleaching powder: the environment pictogram means very toxic to aquatic life. Look for the one that does NOT belong.",
-            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: পরিবেশ পিক্টোগ্রাম মানে জলজ জীবনের জন্য অত্যন্ত বিষাক্ত। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
-          }
+          "outsider": false
         },
         {
           "id": "P3",
@@ -311,11 +319,7 @@
             "bn": "শিখা-বৃত্ত (অক্সিডাইজার)"
           },
           "image": "ScCheck/SC18/pict_oxidizer",
-          "outsider": false,
-          "reasonWrong": {
-            "en": "This IS a GHS pictogram of bleaching powder: the flame over circle means oxidizer; it makes a fire burn harder. Look for the one that does NOT belong.",
-            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: শিখা-বৃত্ত মানে অক্সিডাইজার; এটি আগুনকে আরও তীব্র করে। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
-          }
+          "outsider": false
         },
         {
           "id": "P4",
@@ -324,11 +328,7 @@
             "bn": "ক্ষয়কারী (Corrosion)"
           },
           "image": "ScCheck/SC18/pict_corrosion",
-          "outsider": false,
-          "reasonWrong": {
-            "en": "This IS a GHS pictogram of bleaching powder: the corrosion pictogram means severe skin burns and eye damage. Look for the one that does NOT belong.",
-            "bn": "এটি ব্লিচিং পাউডারের GHS পিক্টোগ্রাম: ক্ষয়কারী পিক্টোগ্রাম মানে ত্বকে মারাত্মক পোড়া ও চোখের ক্ষতি। যেটি ব্লিচিং পাউডারের নয়, সেটি খুঁজুন।"
-          }
+          "outsider": false
         },
         {
           "id": "P5",
@@ -337,11 +337,7 @@
             "bn": "স্বাস্থ্য বিপদ (ক্যান্সারজনক)"
           },
           "image": "ScCheck/SC18/pict_health",
-          "outsider": true,
-          "reasonRight": {
-            "en": "Correct! The health hazard pictogram (serious long-term effects such as cancer) is NOT a GHS pictogram of bleaching powder. SDS Section 2 shows the oxidizer, corrosion, exclamation mark and environment pictograms.",
-            "bn": "সঠিক! স্বাস্থ্য বিপদ (ক্যান্সারের মতো দীর্ঘমেয়াদি ক্ষতি) পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়। SDS-এর ২ নম্বর অংশে শিখা-বৃত্ত, ক্ষয়কারী, বিস্ময়চিহ্ন ও পরিবেশ পিক্টোগ্রাম রয়েছে।"
-          }
+          "outsider": true
         },
         {
           "id": "P6",
@@ -350,22 +346,18 @@
             "bn": "মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা)"
           },
           "image": "ScCheck/SC18/pict_skull",
-          "outsider": true,
-          "reasonRight": {
-            "en": "Correct! The skull and crossbones pictogram (acute toxicity) is NOT a GHS pictogram of bleaching powder. SDS Section 2 shows the oxidizer, corrosion, exclamation mark and environment pictograms.",
-            "bn": "সঠিক! মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা) পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়। SDS-এর ২ নম্বর অংশে শিখা-বৃত্ত, ক্ষয়কারী, বিস্ময়চিহ্ন ও পরিবেশ পিক্টোগ্রাম রয়েছে।"
-          }
+          "outsider": true
         }
       ],
       "correct": "",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! This pictogram does not belong to bleaching powder.",
-        "bn": "সঠিক! এই পিক্টোগ্রামটি ব্লিচিং পাউডারের নয়।"
+        "en": "Correct! The flammable symbol (flame) is not an applicable GHS hazard pictogram for bleaching powder.",
+        "bn": "সঠিক! দাহ্য পদার্থের প্রতীক (আগুনের শিখা) ব্লিচিং পাউডারের জন্য প্রযোজ্য GHS বিপদসংকেত নয়।"
       },
       "reasonWrong": {
-        "en": "This pictogram does belong to bleaching powder. Look for the one that does not.",
-        "bn": "এই পিক্টোগ্রামটি ব্লিচিং পাউডারের। যেটি নয়, সেটি খুঁজুন।"
+        "en": "Bleaching powder is an oxidizer, corrosive, harmful, and toxic to aquatic life. SDS Section 2 includes three of the four pictograms shown above.",
+        "bn": "ব্লিচিং পাউডার একটি অক্সিডাইজার, ক্ষয়কারী, ক্ষতিকর এবং জলজ জীবনের জন্য বিষাক্ত। SDS-এর ২ নম্বর অংশে উপরে উল্লেখিত চারটি পিক্টোগ্রামের মধ্যে তিনটি অন্তর্ভুক্ত রয়েছে।"
       }
     },
     {
@@ -426,48 +418,64 @@
         "bn": "রাসায়নিক নিরাপত্তা মূল্যায়ন পরীক্ষা"
       },
       "prompt": {
-        "en": "And finally — what is the first-aid response if Bleaching Powder is swallowed?",
-        "bn": "শেষ প্রশ্ন: ব্লিচিং পাউডার গিলে ফেললে প্রথমে কী করবেন?"
+        "en": "You are working as a first aider in a factory. What should you NOT do if a worker swallows bleaching powder?",
+        "bn": "আপনি কারখানায় একজন ফার্স্ট এইডার হিসেবে কর্মরত। কোনো শ্রমিক ব্লিচিং পাউডার গিলে ফেললে কোন কাজটি করা যাবে না?"
       },
       "options": [
         {
           "id": "A",
           "text": {
-            "en": "Rinse mouth, do NOT induce vomiting, and immediately call a doctor/poison center.",
-            "bn": "মুখ ধোব, বমি করাব না, এবং সঙ্গে সঙ্গে ডাক্তার/বিষ বিশেষজ্ঞের সাহায্য নেব।"
+            "en": "Induce vomiting.",
+            "bn": "বমি করানোর চেষ্টা করুন।"
+          },
+          "reasonRight": {
+            "en": "This is what you should NOT do: inducing vomiting can cause further damage to the esophagus.",
+            "bn": "এটাই করা উচিত নয়: বমি করালে খাদ্যনালীর আরও ক্ষতি হতে পারে।"
           }
         },
         {
           "id": "B",
           "text": {
-            "en": "Induce vomiting immediately.",
-            "bn": "সঙ্গে সঙ্গে বমি করাব।"
+            "en": "Never give anything by mouth to an unconscious person.",
+            "bn": "অচেতন ব্যক্তিকে মুখে কোনো কিছু খেতে বা পান করতে দেবেন না।"
+          },
+          "reasonWrong": {
+            "en": "This is correct to do, so it is not the answer to a NOT-question.",
+            "bn": "এটা করা সঠিক, তাই 'কী করবেন না' প্রশ্নের উত্তর এটি নয়।"
           }
         },
         {
           "id": "C",
           "text": {
-            "en": "Give milk or vinegar.",
-            "bn": "দুধ বা ভিনেগার খাওয়াব।"
+            "en": "Rinse mouth with water.",
+            "bn": "পানি দিয়ে মুখ ভালোভাবে কুলকুচি করান।"
+          },
+          "reasonWrong": {
+            "en": "This is correct to do: SDS Section 4 requires rinsing the mouth.",
+            "bn": "এটা করা সঠিক: SDS-এর ৪ নম্বর অংশ অনুযায়ী মুখ ধুতে হবে।"
           }
         },
         {
           "id": "D",
           "text": {
-            "en": "Wait for symptoms to appear.",
-            "bn": "লক্ষণ দেখা পর্যন্ত অপেক্ষা করব।"
+            "en": "Consult a physician.",
+            "bn": "চিকিৎসকের পরামর্শ নিন।"
+          },
+          "reasonWrong": {
+            "en": "This is correct to do: seek immediate medical help.",
+            "bn": "এটা করা সঠিক: অবিলম্বে চিকিৎসকের সাহায্য নিতে হবে।"
           }
         }
       ],
       "correct": "A",
       "shuffle": true,
       "reasonCorrect": {
-        "en": "Correct! Rinse mouth, do not induce vomiting, and seek immediate medical help.",
-        "bn": "সঠিক! মুখ ধুয়ে, বমি না করিয়ে, সঙ্গে সঙ্গে ডাক্তারের সাহায্য নিতে হবে।"
+        "en": "Correct! Do not induce vomiting. Rinse the mouth thoroughly with water and seek immediate medical attention.",
+        "bn": "সঠিক! বমি না করিয়ে, পানি দিয়ে মুখ ভালোভাবে কুলকুচি করিয়ে, সঙ্গে সঙ্গে ডাক্তারের সাহায্য নিতে হবে।"
       },
       "reasonWrong": {
-        "en": "Inducing vomiting can cause further damage to the esophagus. Do not attempt to neutralize with milk or vinegar. SDS Section 4 requires rinsing the mouth, NOT inducing vomiting, and seeking immediate medical help.",
-        "bn": "বমি করালে খাদ্যনালীতে আরও ক্ষতি হতে পারে। দুধ বা ভিনেগার দিয়ে নিষ্ক্রিয় করার চেষ্টা করবেন না। SDS-এর ৪ নম্বর অংশ অনুযায়ী মুখ ধুয়ে, বমি না করিয়ে, অবিলম্বে চিকিৎসকের সাহায্য নিতে হবে।"
+        "en": "Inducing vomiting can cause further damage to the esophagus. SDS Section 4 requires rinsing the mouth, NOT inducing vomiting, and seeking immediate medical help.",
+        "bn": "বমি করালে খাদ্যনালীতে আরও ক্ষতি হতে পারে। SDS-এর ৪ নম্বর অংশ অনুযায়ী মুখ ধুয়ে, বমি না করিয়ে, অবিলম্বে চিকিৎসকের সাহায্য নিতে হবে।"
       }
     }
   ]

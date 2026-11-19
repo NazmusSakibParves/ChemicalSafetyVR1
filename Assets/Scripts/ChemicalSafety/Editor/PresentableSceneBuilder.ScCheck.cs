@@ -27,7 +27,8 @@ namespace ChemicalSafety.Editor
                     ti.maxTextureSize = 2048;
                     ti.filterMode = FilterMode.Bilinear;
                     ti.textureCompression = n.StartsWith("sds") ? TextureImporterCompression.Uncompressed : TextureImporterCompression.CompressedHQ; // the SDS sheets are small text pictures: no block artefacts
-                    ti.spriteBorder = n == "ui_screen" ? new Vector4(70f, 70f, 70f, 70f)
+                    ti.spriteBorder = n == "ui_mcq_frame" ? new Vector4(90f, 85f, 90f, 145f)
+                        : n == "ui_screen" ? new Vector4(70f, 70f, 70f, 70f)
                         : n == "ui_popup" ? new Vector4(80f, 80f, 80f, 80f)
                         : n == "ui_sds_frame" ? new Vector4(50f, 50f, 50f, 50f)
                         : Vector4.zero;

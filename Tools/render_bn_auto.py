@@ -171,12 +171,12 @@ def content_strings():
                     yield f"{a['key']}[{i}]", t
         # LQuestion records (header / prompt / options) used by the Supervisor Check scenarios SC13-SC18
         for q in data.get("questions", []):
-            for k in ("header", "prompt", "correctTitle", "wrongTitle", "nextLabel"):
+            for k in ("header", "prompt", "correctTitle", "wrongTitle", "nextLabel", "reasonCorrect", "reasonWrong"):
                 t = (q.get(k) or {}).get("bn") if isinstance(q.get(k), dict) else None
                 if t:
                     yield f"{q.get('id', 'Q')}.{k}", t
             for o in q.get("options", []):
-                for k in ("text", "feedback", "wrongTitle"):
+                for k in ("text", "feedback", "wrongTitle", "reasonRight", "reasonWrong"):
                     t = (o.get(k) or {}).get("bn") if isinstance(o.get(k), dict) else None
                     if t:
                         yield f"{q.get('id', 'Q')}.{o.get('id', 'O')}.{k}", t
