@@ -77,6 +77,17 @@ namespace ChemicalSafety.Presentable
             return row;
         }
 
+        // EditorPref ChemSafetyVoiceTrace: after an answer is revealed the test waits until the whole voice chain has played (it is logged to
+        // Temp/Smoke/voice_trace.log by the director); normally NEXT is clicked at once, which cuts the chain.
+        private static IEnumerator TraceWait()
+        {
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetBool("ChemSafetyVoiceTrace", false))
+                yield return new WaitForSeconds(45f);
+#endif
+            yield break;
+        }
+
         private static void Say(string s)
         {
             Debug.Log("[SMOKE] " + s);
@@ -178,6 +189,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("scenario 5 complete vo = " + (heard5.Length > 0 ? heard5 : "NOT HEARD"));
+            yield return TraceWait();
             Click(mcq5.transform, "NextButton");
         }
 
@@ -282,6 +294,7 @@ namespace ChemicalSafety.Presentable
             Say("SC05 reveal: reasons shown = " + reasons + "/" + cur.options.Length + ", wrong popup open = " +
                 (FindDeep(mcq5.transform, "WrongPopup") != null && FindDeep(mcq5.transform, "WrongPopup").gameObject.activeInHierarchy));
             LayoutCheck("SC05 MCQ reveal", mcq5.transform);
+            yield return TraceWait();
             Click(mcq5.transform, "NextButton");
         }
 
@@ -420,6 +433,7 @@ namespace ChemicalSafety.Presentable
 
             Say("SC06 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC06 MCQ reveal", mcq6.transform);
+            yield return TraceWait();
             Click(mcq6.transform, "NextButton");
         }
 
@@ -608,6 +622,7 @@ namespace ChemicalSafety.Presentable
                 Say("SC04 NEXT label: " + sb);
                 yield return Shot("34b_sc04_next");
             }
+            yield return TraceWait();
             Click(mcq4.transform, "NextButton");
         }
 
@@ -682,6 +697,7 @@ namespace ChemicalSafety.Presentable
 
             Say("SC03 NEXT visible = " + nextOn + " after " + nw.ToString("0.0") + " s" + (wrong ? " (no animation)" : " (after the protocol)"));
             yield return Shot("sc03r_next");
+            yield return TraceWait();
             Click(mcq3.transform, "NextButton");
             var att = ChemicalSafety.Results.SessionResults.Current != null && ChemicalSafety.Results.SessionResults.Current.attempts != null
                 ? ChemicalSafety.Results.SessionResults.Current.attempts.Find(a => a.lesson_id == "SC03") : null;
@@ -744,6 +760,7 @@ namespace ChemicalSafety.Presentable
 
                     Say("SC02 Q6: NEXT visible = " + nextOn + " after " + nw.ToString("0.0") + " s");
                     yield return Shot("sc02_q6_next");
+                    yield return TraceWait();
                     Click(mcq.transform, "NextButton");
                 }
                 else
@@ -1377,6 +1394,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 6 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("59_sc06_correct");
+            yield return TraceWait();
             Click(mcq6.transform, "NextButton");
         }
 
@@ -3090,6 +3108,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC19 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC19 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc19Done", 20f);
         }
@@ -3221,6 +3240,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC20 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC20 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc20Done", 20f);
         }
@@ -3365,6 +3385,7 @@ namespace ChemicalSafety.Presentable
                     reasons++;
             Say("SC21 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC21 MCQ reveal", mcq.transform);
+            yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc21Done", 20f);
         }
@@ -3515,6 +3536,7 @@ namespace ChemicalSafety.Presentable
             Say("SC22 finish button label = [" + finishLabel + "] (expected FINISH / ফিনিশ), cached label = [" + Sc22Content.FinishLabel + "]");
             yield return new WaitForSeconds(1.2f);
             Say("SC22 end voice = " + (voiceSrc != null && voiceSrc.clip != null ? voiceSrc.clip.name : "none") + " (expected Congrats once the explanation is done)");
+            yield return TraceWait();
             Click(mcq.transform, "NextButton");
             yield return WaitStage("sc22Done", 20f);
         }
@@ -4485,6 +4507,7 @@ namespace ChemicalSafety.Presentable
             }
 
             LayoutCheck(wrongRun ? "SC01 MCQ wrong reveal" : "SC01 MCQ correct reveal", mcq1.transform);
+            yield return TraceWait();
             Click(mcq1.transform, "NextButton");
 
 #if UNITY_EDITOR
@@ -5004,6 +5027,7 @@ namespace ChemicalSafety.Presentable
             Say("scenario 3 complete vo = " + (heard3.Length > 0 ? heard3 : "NOT HEARD") + ", common correct-answer voice heard = " + sawCorrect3);
             yield return Shot("21_sc03_correct");
             LayoutCheck("SC03 MCQ correct card", mcq3.transform);
+            yield return TraceWait();
             Click(mcq3.transform, "NextButton");
 
             // Scenario 4 is entered only after SC03 Next. The checks above are unchanged.
@@ -5147,6 +5171,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("scenario 4 complete vo = " + (heard4.Length > 0 ? heard4 : "NOT HEARD"));
+            yield return TraceWait();
             Click(mcq4.transform, "NextButton");
 
             // Scenario 5 (dyeing factory) follows the SC04 NEXT
@@ -5295,6 +5320,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 5 complete vo = " + (heard5.Length > 0 ? heard5 : "NOT HEARD"));
             yield return Shot("46_sc05_correct");
+            yield return TraceWait();
             Click(mcq5.transform, "NextButton");
 
             // Scenario 6 (chemistry lab, fume hood) follows the SC05 NEXT

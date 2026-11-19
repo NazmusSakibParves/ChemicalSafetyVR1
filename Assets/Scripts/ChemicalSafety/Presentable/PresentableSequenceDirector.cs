@@ -567,6 +567,8 @@ namespace ChemicalSafety.Presentable
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc05Only", false) && envSc05 != null)
             {
                 Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only: the top bar (BACK | NEXT | PAUSE | timer) as in the real flow, which creates it at the login
                 yield return RunScenario5();
                 yield break;
             }
@@ -574,6 +576,9 @@ namespace ChemicalSafety.Presentable
             // developer shortcut (menu Chemical Safety/Presentable/Dev: start at Scenario 6): skips straight to the lab
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc06Only", false) && envSc06 != null)
             {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenario6();
                 yield break;
             }
@@ -1719,7 +1724,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc06Question");
             Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc06.SetWorldScale(sc06PopupScale);
+            mcqSc06.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 3-5
             mcqSc06.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc06, BuildSc06Question(), false, 6);
         }
@@ -1760,9 +1765,12 @@ namespace ChemicalSafety.Presentable
             {
                 // controller ray: head free, a SMALL glass card on the RIGHT, the voice reads it, then it goes by itself (no Continue click)
                 LockLocomotion(true);
-                instructionPanel.SetCompact(true, sc689CardScale);
+                // client 2026-11-19: the instruction text is as large as in Scenarios 1-5 (same card scale and Bangla image size); the backing stays
+                // nearly solid because the card sits over the bright poster, but the words are not enlarged to 48
+                instructionPanel.SetCompact(true, rayCardScale);
                 instructionPanel.SetGlass(sc04GlassCard);
-                instructionPanel.SetClearLook(true); // over the bright poster: nearly solid backing, words one size larger
+                instructionPanel.SetClearBacking(true);
+                instructionPanel.SetBnBodyMax(620f); // back to 200 below
                 BeginEyeInstruction();
                 Sc05AsideInstruction(sc689CardRight, sc689CardUp); // to the LEFT and lower: the hood stays free, clear of the poster
                 yield return instructionPanel.Show();
@@ -1774,6 +1782,7 @@ namespace ChemicalSafety.Presentable
                 EndEyeInstruction();
                 instructionPanel.SetGlass(false);
                 instructionPanel.SetCompact(false);
+                instructionPanel.SetBnBodyMax(200f);
                 yield return RunSc06RayFlow();
                 LockLocomotion(false);
                 mcqSc06.SetWorldScale(1f);
@@ -3933,12 +3942,12 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6) || _cam == null || SessionHud.Instance == null)
                 return;
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : null));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : null)));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4514,6 +4523,8 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(PlayVoice(art.artistSc04Question));
             if (scenario == 5 && art.artistSc05Question != null)
                 StartCoroutine(PlayVoice(art.artistSc05Question));
+            if (scenario == 6 && art.artistSc06Question != null)
+                StartCoroutine(PlayVoice(art.artistSc06Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4669,6 +4680,21 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc05CompleteBn : art.voSc05CompleteEn);
                 else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 5 && art.voWrongNextBn[5] != null)
                     yield return PlayVoice(art.voWrongNextBn[5]);
+                yield break;
+            }
+
+            if (scenario == 6 && inlineReveal)
+            {
+                // client 2026-11-19: as Scenarios 4 and 5 - shared right / wrong line, the client's explanation, then the complete / next line
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why6 = correct ? art.artistSc06RightWhy : art.artistSc06WrongWhy;
+                if (why6 != null)
+                    yield return PlayVoice(why6);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc06CompleteBn : art.voSc06CompleteEn);
+                else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 6 && art.voWrongNextBn[6] != null)
+                    yield return PlayVoice(art.voWrongNextBn[6]);
                 yield break;
             }
 
@@ -4887,9 +4913,29 @@ namespace ChemicalSafety.Presentable
             return en;
         }
 
+#if UNITY_EDITOR
+        // Editor only: every voice line that is played is appended to Temp/Smoke/voice_trace.log (scenario, language, clip name) so the answer chains can be proven.
+        private static void TraceVoice(AudioClip clip)
+        {
+            try
+            {
+                System.IO.File.AppendAllText("Temp/Smoke/voice_trace.log",
+                    PresentableInput.ActiveScenario + " | " + Loc.Current + " | " + (clip != null ? clip.name : "(none)") + System.Environment.NewLine);
+            }
+            catch (System.Exception e)
+            {
+                // tracing must never disturb the game
+                Debug.LogWarning("[VoiceTrace] " + e.Message);
+            }
+        }
+#endif
+
         private IEnumerator PlayVoice(AudioClip clip)
         {
             clip = LocalizedClip(clip);
+#if UNITY_EDITOR
+            TraceVoice(clip);
+#endif
             if (clip == null || voice == null)
             {
                 yield return PresentableFx.Wait(2.5f);
@@ -7331,7 +7377,12 @@ namespace ChemicalSafety.Presentable
                 // ray flow: as Scenarios 1-5 - tick / cross, a reason under every option, NEXT (no retry)
                 inlineReveal = ray,
                 tagCorrect = Sc06Content.TagCorrect,
-                tagWrong = Sc06Content.TagWrong
+                tagWrong = Sc06Content.TagWrong,
+                largeText = ray, // client 2026-11-19: the same text sizes and font as Scenarios 1-5 (the ray flow)
+                growBox = ray,
+                headerScale = ray ? 1.2f : 1f,
+                whiteHeader = ray,
+                headerBacking = ray // the room's ceiling lights show through the glass: a soft plate behind the question
             };
         }
 

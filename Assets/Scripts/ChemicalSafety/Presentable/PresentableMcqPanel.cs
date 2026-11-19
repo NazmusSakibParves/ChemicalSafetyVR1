@@ -56,6 +56,8 @@ namespace ChemicalSafety.Presentable
             public float headerScale = 1f;
             [Tooltip("Scenario 5 (client 2026-11-19): the question stays pure white (not the light-blue title colour) at every stage.")]
             public bool whiteHeader;
+            [Tooltip("Scenario 6 (client 2026-11-19): a soft dark plate behind the header strip, so the room's ceiling lights seen through the glass do not cut across the question.")]
+            public bool headerBacking;
             public string tagCorrect = "CORRECT";
             public string tagWrong = "WRONG";
             [NonSerialized] public Func<bool> holdNext; // inlineReveal: true while a cutscene must finish before NEXT shows
@@ -350,6 +352,7 @@ namespace ChemicalSafety.Presentable
                     r.anchorMax = new Vector2(x1, yc + halfOld / _dynF);
                 }
 
+                UpdateHeaderBack(Band);
                 Band(_header.rectTransform, 0.17f, 0.89f, 0.062f * HeaderScale); // as tall as the pane's inside: a long (Bangla) title shrinks to fit it, it never spills out
                 if (_qBadgeRt != null)
                     Band(_qBadgeRt, 0.075f, 0.16f, 0.0575f);
@@ -399,7 +402,27 @@ namespace ChemicalSafety.Presentable
             _frame.pixelsPerUnitMultiplier = refPpu / _slicedFrame.pixelsPerUnit * (_slicedFrame.rect.width / (sizePx.x * 1.1f)) / HeaderScale;
         }
 
-        // a larger header strip (Scenario 5 only; every other box keeps 1): the sliced frame's borders, including the header pane, grow by this factor
+        private RectTransform _headerBackRt;
+
+        private void UpdateHeaderBack(System.Action<RectTransform, float, float, float> band)
+        {
+            var on = _question != null && _question.headerBacking;
+            if (on && _headerBackRt == null && _header != null)
+            {
+                _headerBackRt = PresentableUi.Rect("HeaderBack", _header.rectTransform.parent, Vector2.zero, Vector2.one);
+                var img = PresentableUi.Img(_headerBackRt, art.roundedSolid, new Color(0.02f, 0.07f, 0.14f, 0.62f));
+                img.raycastTarget = false;
+                _headerBackRt.SetSiblingIndex(_header.transform.GetSiblingIndex());
+            }
+
+            if (_headerBackRt == null)
+                return;
+            _headerBackRt.gameObject.SetActive(on);
+            if (on)
+                band(_headerBackRt, 0.12f, 0.93f, 0.058f * HeaderScale);
+        }
+
+        // a larger header strip (Scenario 5 and 6 only; every other box keeps 1): the sliced frame's borders, including the header pane, grow by this factor
         private float HeaderScale => _question != null && _question.headerScale > 1f ? _question.headerScale : 1f;
 
         private Color HeaderColour() => _question != null && _question.whiteHeader ? Color.white : (Skin ? SkinTitle : Color.white);

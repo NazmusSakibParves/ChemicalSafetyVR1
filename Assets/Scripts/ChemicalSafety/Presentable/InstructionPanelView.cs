@@ -165,9 +165,10 @@ namespace ChemicalSafety.Presentable
         {
             Build();
             on &= art != null && art.glassPanel != null && art.glassButton != null;
-            if (!on && _clear)
+            if (!on && (_clear || _clearBackOnly))
             {
                 _clear = false;
+                _clearBackOnly = false;
                 ApplyBacking();
             }
 
@@ -231,9 +232,24 @@ namespace ChemicalSafety.Presentable
                 Reflow();
         }
 
+        /// <summary>
+        /// Scenario 6 (client 2026-11-19): the nearly solid backing of the clear look, but the words keep the normal size (44) like Scenarios 1-5.
+        /// Reset by SetGlass(false).
+        /// </summary>
+        public void SetClearBacking(bool on)
+        {
+            Build();
+            if (_clearBackOnly == on)
+                return;
+            _clearBackOnly = on;
+            ApplyBacking();
+        }
+
+        private bool _clearBackOnly;
+
         private void ApplyBacking()
         {
-            var a = _clear ? ClearBackAlpha : glassBackAlpha;
+            var a = _clear || _clearBackOnly ? ClearBackAlpha : glassBackAlpha;
             if (_glassBack != null)
                 _glassBack.color = new Color(0.02f, 0.08f, 0.11f, a);
             if (_pillBack != null)

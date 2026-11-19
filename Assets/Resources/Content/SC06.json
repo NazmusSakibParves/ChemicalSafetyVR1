@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "InstructionEnglish",
-      "en": "You are a Mixing Operator. You need to pour a volatile solvent, but because the container is open, vapors are spreading into the air. Take the right Engineering Control before pouring.",
-      "bn": "আপনি একজন মিক্সিং অপারেটর। আপনাকে একটি উদ্বায়ী দ্রাবক ঢালতে হবে, কিন্তু পাত্রটি খোলা থাকায় বাষ্প বাতাসে ছড়িয়ে পড়ছে। ঢালার আগে সঠিক ইঞ্জিনিয়ারিং কন্ট্রোল নিন।"
+      "en": "Pouring volatile solvents can release harmful vapors. Do not work on an open bench or rely only on an open window. Follow the safety instructions provided in the SDS.",
+      "bn": "দ্রুত বাষ্প হয়ে যায় এমন সলভেন্ট ঢালার সময় ক্ষতিকর বাষ্প ছড়াতে পারে। তাই খোলা টেবিলে কাজ করবেন না বা শুধু জানালার বাতাসের ওপর নির্ভর করবেন না। SDS-এর নিরাপত্তা নির্দেশনা মেনে কাজ সম্পন্ন করুন।"
     },
     {
       "key": "HoodHint",
@@ -117,13 +117,13 @@
       "key": "OptionLabels",
       "en": [
         "Pour it quickly on the open bench to finish faster.",
-        "Move the operation under the Local Exhaust Ventilation (FUME / LEV) hood and turn it on.",
+        "Move the operation under the Local Exhaust Ventilation (LEV) hood and turn it on.",
         "We will use a different safe chemical instead of this one.",
         "Open a nearby window."
       ],
       "bn": [
         "তাড়াতাড়ি কাজ শেষ করতে খোলা টেবিলে দ্রুত ঢালব।",
-        "কাজটি FUME / LEV হুডের নিচে করব এবং বাষ্প টেনে নেওয়ার ব্যবস্থা চালু করব।",
+        "কাজটি LEV হুডের নিচে করব এবং বাষ্প টেনে নেওয়ার ব্যবস্থা চালু করব।",
         "এই ক্যামিকেলের পরিবর্তে অন্য নিরাপদ ক্যামিকেল ব্যবহার করব।",
         "পাশের জানালা খুলে দেব।"
       ]
