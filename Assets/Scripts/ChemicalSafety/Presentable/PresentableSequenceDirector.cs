@@ -619,6 +619,9 @@ namespace ChemicalSafety.Presentable
 
             if (UnityEditor.EditorPrefs.GetBool("ChemSafetySc08Only", false) && envSc08 != null)
             {
+                Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
+                if (SessionHud.Instance == null)
+                    BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
                 yield return RunScenario8();
                 yield break;
             }
@@ -2337,7 +2340,7 @@ namespace ChemicalSafety.Presentable
 
             Stage("sc08Question");
             Sc04PopupPose(-0.95f, 0.25f, 1.6f, out var mcqPos, out var mcqRot);
-            mcqSc08.SetWorldScale(sc06PopupScale);
+            mcqSc08.SetWorldScale(Sc04QuestionScale); // client 2026-11-19: the same text size as Scenarios 1-7
             mcqSc08.transform.SetPositionAndRotation(mcqPos, mcqRot);
             yield return RunQuestion(mcqSc08, BuildSc08Question(), false, 8);
         }
@@ -2372,9 +2375,11 @@ namespace ChemicalSafety.Presentable
             _instructionClip = art.voSc08Instruction != null ? art.voSc08Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc08Content.InstructionEnglish, ArtistCard(8, art.bnSc08InstructionPanel));
             LockLocomotion(true); // the head is free, the body stays: no walking about in VR
-            instructionPanel.SetCompact(true, sc689CardScale);
+            // client 2026-11-19: the instruction text is as large as in Scenarios 1-7 (same card scale and Bangla image size); the backing stays nearly solid
+            instructionPanel.SetCompact(true, rayCardScale);
             instructionPanel.SetGlass(sc04GlassCard);
-            instructionPanel.SetClearLook(true);
+            instructionPanel.SetClearBacking(true);
+            instructionPanel.SetBnBodyMax(620f); // back to 200 below
             BeginEyeInstruction();
             Sc05AsideInstruction(sc689CardRight, sc689CardUp); // same place as Scenario 6: the hood and the table stay free
             yield return instructionPanel.Show();
@@ -2387,6 +2392,7 @@ namespace ChemicalSafety.Presentable
             EndEyeInstruction();
             instructionPanel.SetGlass(false);
             instructionPanel.SetCompact(false);
+            instructionPanel.SetBnBodyMax(200f);
 
             yield return RunSc08RayFlow();
 
@@ -3969,12 +3975,12 @@ namespace ChemicalSafety.Presentable
         private void KeepBelowTopBar()
         {
             var sc = PresentableInput.ActiveScenario;
-            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7) || _cam == null || SessionHud.Instance == null)
+            if ((sc != 1 && sc != 2 && sc != 3 && sc != 4 && sc != 5 && sc != 6 && sc != 7 && sc != 8) || _cam == null || SessionHud.Instance == null)
                 return;
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
-            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : null))));
+            var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : null)))));
             if (guarded != null)
             {
                 var dp = guarded.GetComponent<DraggablePanel>();
@@ -4556,6 +4562,8 @@ namespace ChemicalSafety.Presentable
                 StartCoroutine(PlayVoice(art.artistSc06Question));
             if (scenario == 7 && art.artistSc07Question != null)
                 StartCoroutine(PlayVoice(art.artistSc07Question));
+            if (scenario == 8 && art.artistSc08Question != null)
+                StartCoroutine(PlayVoice(art.artistSc08Question));
             while (!_nextPressed)
                 yield return null;
             panel.Answered -= OnAnswered;
@@ -4711,6 +4719,21 @@ namespace ChemicalSafety.Presentable
                     yield return PlayVoice(Loc.IsBangla ? art.voSc05CompleteBn : art.voSc05CompleteEn);
                 else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 5 && art.voWrongNextBn[5] != null)
                     yield return PlayVoice(art.voWrongNextBn[5]);
+                yield break;
+            }
+
+            if (scenario == 8 && inlineReveal)
+            {
+                // client 2026-11-19: as Scenarios 4-7 - shared right / wrong line, the client's explanation, then complete / next
+                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                var why8 = correct ? art.artistSc08RightWhy : art.artistSc08WrongWhy;
+                if (why8 != null)
+                    yield return PlayVoice(why8);
+                yield return PresentableFx.Wait(correct ? 1f : 0.4f);
+                if (correct)
+                    yield return PlayVoice(Loc.IsBangla ? art.voSc08CompleteBn : art.voSc08CompleteEn);
+                else if (art.voWrongNextBn != null && art.voWrongNextBn.Length > 8 && art.voWrongNextBn[8] != null)
+                    yield return PlayVoice(art.voWrongNextBn[8]);
                 yield break;
             }
 
@@ -7360,7 +7383,11 @@ namespace ChemicalSafety.Presentable
                 // ray flow: as Scenarios 1-7 - tick / cross, a reason under every option, NEXT (no retry)
                 inlineReveal = PresentableInput.RayActive,
                 tagCorrect = Sc08Content.TagCorrect,
-                tagWrong = Sc08Content.TagWrong
+                tagWrong = Sc08Content.TagWrong,
+                largeText = PresentableInput.RayActive, // client 2026-11-19: the same text sizes and font as Scenarios 1-7 (the ray flow)
+                growBox = PresentableInput.RayActive,
+                headerScale = PresentableInput.RayActive ? 1.2f : 1f,
+                whiteHeader = PresentableInput.RayActive
             };
         }
 

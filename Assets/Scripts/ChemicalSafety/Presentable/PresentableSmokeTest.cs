@@ -1951,6 +1951,7 @@ namespace ChemicalSafety.Presentable
 
             Say("SC08 reveal: reasons shown = " + reasons + "/" + cur.options.Length);
             LayoutCheck("SC08 MCQ reveal", mcq8.transform);
+            yield return TraceWait();
             Click(mcq8.transform, "NextButton");
         }
 
@@ -2145,6 +2146,7 @@ namespace ChemicalSafety.Presentable
 
             Say("scenario 8 complete vo = " + (heard.Length > 0 ? heard : "NOT HEARD"));
             yield return Shot("87_sc08_correct");
+            yield return TraceWait();
             Click(mcq8.transform, "NextButton");
         }
 

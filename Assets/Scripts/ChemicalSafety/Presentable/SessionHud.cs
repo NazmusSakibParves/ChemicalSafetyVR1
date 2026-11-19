@@ -187,6 +187,12 @@ namespace ChemicalSafety.Presentable
             _flashGroup.alpha = 0f;
             _flash = PresentableUi.Text(fl, " ", 40f, new Color(1f, 0.85f, 0.3f, 1f), TextAlignmentOptions.Center, true);
             _flash.textWrappingMode = TextWrappingModes.NoWrap;
+            // client 2026-11-19: the bar text was hidden behind the fume hood's top edge when the learner stood at the hood (TextMeshPro text is depth tested):
+            // the same Times New Roman with the overlay shader is drawn on top of everything; only the bar uses it
+            var hudFont = Resources.Load<TMP_FontAsset>("Fonts/TimesNewRoman HudOverlay SDF");
+            if (hudFont != null)
+                foreach (var tmp in canvas.GetComponentsInChildren<TextMeshProUGUI>(true))
+                    tmp.font = hudFont;
             PresentableUi.AlwaysOnTop(canvas);
 
             // drag the whole bar with the ray (a press on a button still clicks it)

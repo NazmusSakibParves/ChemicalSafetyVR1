@@ -93,6 +93,60 @@ namespace ChemicalSafety.Editor
             Debug.Log("[Font] Times New Roman font assets built in " + Dir);
         }
 
+        /// <summary>The bar's text: the same Times New Roman (regular + bold) but with the TextMeshPro Overlay shader (drawn on top of everything), so the
+        /// timer bar text is never hidden behind the fume hood or a wall. Files go to Assets/Resources/Fonts (the bar loads it by name).</summary>
+        [MenuItem("Chemical Safety/Presentable/Create HUD overlay font")]
+        public static void CreateHudOverlay()
+        {
+            var overlay = Shader.Find("TextMeshPro/Mobile/Distance Field Overlay");
+            if (overlay == null)
+            {
+                Debug.LogError("[Font] overlay shader not found");
+                return;
+            }
+
+            const string dir = "Assets/Resources/Fonts";
+            Directory.CreateDirectory(dir);
+            var chars = Charset();
+            var made = new TMP_FontAsset[2];
+            for (var i = 0; i < 2; i++)
+            {
+                var ttf = AssetDatabase.LoadAssetAtPath<Font>(Dir + "/" + Faces[i].asset + ".ttf");
+                if (ttf == null)
+                {
+                    Debug.LogError("[Font] run Create Times New Roman font first");
+                    return;
+                }
+
+                var path = dir + "/" + (i == 0 ? "TimesNewRoman HudOverlay SDF" : "TimesNewRoman-Bold HudOverlay SDF") + ".asset";
+                AssetDatabase.DeleteAsset(path);
+                var fa = TMP_FontAsset.CreateFontAsset(ttf, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+                fa.name = Path.GetFileNameWithoutExtension(path);
+                AssetDatabase.CreateAsset(fa, path);
+                if (fa.atlasTextures != null)
+                    foreach (var t in fa.atlasTextures)
+                    {
+                        t.name = fa.name + " Atlas";
+                        AssetDatabase.AddObjectToAsset(t, fa);
+                    }
+
+                fa.material.shader = overlay;
+                fa.material.name = fa.name + " Material";
+                AssetDatabase.AddObjectToAsset(fa.material, fa);
+                fa.TryAddCharacters(chars, out _);
+                EditorUtility.SetDirty(fa);
+                made[i] = fa;
+            }
+
+            var table = made[0].fontWeightTable;
+            table[4] = new TMP_FontWeightPair { regularTypeface = made[0], italicTypeface = null };
+            table[7] = new TMP_FontWeightPair { regularTypeface = made[1], italicTypeface = null };
+            EditorUtility.SetDirty(made[0]);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[Font] HUD overlay font built in " + dir);
+        }
+
         public static TMP_FontAsset Load()
         {
             return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(Dir + "/" + RegularName + ".asset");

@@ -407,6 +407,9 @@ namespace ChemicalSafety.Presentable
         public AudioClip artistSc07Question;
         public AudioClip artistSc07RightWhy;
         public AudioClip artistSc07WrongWhy;
+        public AudioClip artistSc08Question;
+        public AudioClip artistSc08RightWhy;
+        public AudioClip artistSc08WrongWhy;
         public AudioClip artistContinueHint;
         public AudioClip artistCorrect;
         public AudioClip artistWrong;

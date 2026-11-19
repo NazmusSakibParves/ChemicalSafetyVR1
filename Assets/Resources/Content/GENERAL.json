@@ -79,7 +79,7 @@
     { "key": "UpWaiting", "en": "Saved safely - will be sent when the internet is available", "bn": "নিরাপদে সংরক্ষিত - ইন্টারনেট পেলেই পাঠানো হবে" },
     { "key": "UpSent", "en": "Result sent to the server", "bn": "ফলাফল সার্ভারে পাঠানো হয়েছে" },
     { "key": "UpRejected", "en": "Saved - the server did not accept it yet, it will try again", "bn": "সংরক্ষিত - সার্ভার এখনো নেয়নি, আবার চেষ্টা হবে" },
-    { "key": "BarBack", "en": "BACK", "bn": "পিছনে" },
+    { "key": "BarBack", "en": "BACK", "bn": "পূর্ববর্তী" },
     { "key": "BarNext", "en": "NEXT", "bn": "পরবর্তী" },
     { "key": "BarPause", "en": "PAUSE", "bn": "বিরতি" },
     { "key": "BarResume", "en": "RESUME", "bn": "চালু করুন" },

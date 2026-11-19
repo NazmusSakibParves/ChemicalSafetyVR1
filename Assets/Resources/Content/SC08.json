@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "InstructionEnglish",
-      "en": "You are a lab technician. A batch of dye requires dilute sulfuric acid. Dilute the acid carefully with water.",
-      "bn": "আপনি একজন ল্যাব টেকনিশিয়ান। একটি ডাই ব্যাচের জন্য পাতলা সালফিউরিক অ্যাসিড দরকার। সঠিক পদ্ধতিতে অ্যাসিডটি সাবধানে পানির সাথে মিশিয়ে পাতলা করুন।"
+      "en": "Great care must be taken when diluting concentrated sulfuric acid in the laboratory. Mixing it incorrectly can generate intense heat and cause acid splashes that may result in severe burns. Select the correct method for diluting the acid by following the SDS instructions.",
+      "bn": "ল্যাবে ঘন সালফিউরিক অ্যাসিড পাতলা করার সময় খুব সতর্ক থাকতে হবে। ভুল পদ্ধতিতে মেশালে প্রচুর তাপ তৈরি হয়ে অ্যাসিড ছিটকে মারাত্মক পোড়া সৃষ্টি করতে পারে। SDS-এর নির্দেশনা মেনে সঠিকভাবে অ্যাসিড পাতলা করার পদ্ধতিটি বেছে নিন।"
     },
     {
       "key": "PpeHint",
