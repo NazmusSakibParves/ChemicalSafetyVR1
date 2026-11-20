@@ -278,6 +278,25 @@ namespace ChemicalSafety.Localization
             return sp == null ? -1f : sp.rect.height * EffectiveFont / RenderPx * BnScale;
         }
 
+        /// <summary>Width in pixels of the text drawn on ONE line (the widest rung) at the current font; -1 when it is not drawn as Bangla images.</summary>
+        public float MeasureLineWidth(string src)
+        {
+            if (!Loc.IsBangla)
+                return -1f;
+            var bn = src ?? string.Empty;
+            if (!Loc.HasBengali(bn))
+            {
+                var tr = Loc.Translate(bn);
+                if (tr != null)
+                    bn = tr;
+            }
+
+            if (!Loc.HasBengali(bn))
+                return -1f;
+            var sp = PickRung(bn, 100000f);
+            return sp == null ? -1f : sp.rect.width * EffectiveFont / RenderPx * BnScale;
+        }
+
         private Sprite PickRung(string bn, float widthPx)
         {
             if (_index == null)

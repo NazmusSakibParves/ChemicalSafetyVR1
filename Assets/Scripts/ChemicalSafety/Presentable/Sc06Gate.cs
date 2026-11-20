@@ -59,11 +59,74 @@ namespace ChemicalSafety.Presentable
                 Next?.Invoke();
         }
 
+        // client 2026-11-20: Scenarios 19-22 have a longer hint (client .docx) which the Bangla picture shrank to a few pixels. A hint that does not fit its
+        // box at the normal size (38, as in Scenarios 4-12) is drawn at that size and the card grows taller by what is missing. A short hint changes nothing.
+        private const float BaseH = 640f, HintTopFrac = 0.46f, HintBotFrac = 0.25f, BaseW = 900f, HintWidthFrac = 0.82f;
+
+        private void Relayout()
+        {
+            if (_card == null)
+                return;
+            var hint = _card.Find("Hint") != null ? _card.Find("Hint").GetComponent<ChemicalSafety.Localization.BnTmp>() : null;
+            if (hint == null)
+                return;
+            var src = string.IsNullOrEmpty(bodyText) ? Sc06Content.GateBody : bodyText;
+            var boxH = (HintTopFrac - HintBotFrac) * BaseH;
+            var extra = 0f;
+            var big = false;
+            var w = BaseW;
+            // client 2026-11-20: the hint of Scenarios 19-22 (one shared text) and of Scenarios 4 / 7 / 9 ("Press NEXT to proceed ...") is ONE line in Bangla;
+            // the other gates keep exactly their earlier look. (The card keeps the English text it was built with; Bangla is drawn from it at run time.)
+            if (ChemicalSafety.Localization.Loc.IsBangla && !string.IsNullOrEmpty(src) &&
+                (src.StartsWith("If yes, click NEXT to proceed, or if you want to watch the whole process again") ||
+                 (src.StartsWith("Press NEXT to proceed or BACK to review again.") && titleText == "GLOVE INSPECTION COMPLETE")))
+            {
+                hint.NoShrink = true; // measure at the nominal size, then decide
+                var lineW = hint.MeasureLineWidth(src);                // client: the hint stays ONE line at the normal size: a hint wider than the box makes the card wider
+                if (lineW > BaseW * HintWidthFrac)
+                {
+                    big = true;
+                    w = (lineW + 24f) / HintWidthFrac;
+                }
+
+                var need = hint.MeasureHeight(src, w * HintWidthFrac);                if (need > boxH)
+                {
+                    big = true;
+                    extra = need - boxH + 16f;
+                }
+            }
+
+            hint.NoShrink = big;
+            var h = BaseH + extra;
+            ((RectTransform)_card).sizeDelta = new Vector2(w, h);
+            var k = BaseH / h;
+            SetAnchors("Title", 0.70f, 0.90f, true, k);
+            SetAnchors("Question", 0.47f, 0.69f, true, k);
+            var hr = (RectTransform)_card.Find("Hint");
+            hr.anchorMin = new Vector2(hr.anchorMin.x, HintBotFrac * k);
+            hr.anchorMax = new Vector2(hr.anchorMax.x, 1f - (1f - HintTopFrac) * k);
+            foreach (var n in new[] { "BackButtonBack", "BackButton", "NextButtonBack", "NextButton" })
+                SetAnchors(n, 0.045f, 0.235f, false, k);
+        }
+
+        private void SetAnchors(string childName, float yMin, float yMax, bool fromTop, float k)
+        {
+            var c = _card.Find(childName);
+            if (c == null)
+                return;
+            var rt = (RectTransform)c;
+            var a = fromTop ? 1f - (1f - yMin) * k : yMin * k;
+            var b = fromTop ? 1f - (1f - yMax) * k : yMax * k;
+            rt.anchorMin = new Vector2(rt.anchorMin.x, a);
+            rt.anchorMax = new Vector2(rt.anchorMax.x, b);
+        }
+
         /// <summary>Opens the card about half a metre in front of the head, upright, facing the user.</summary>
         public void Show()
         {
             if (_card == null)
                 Build();
+            Relayout();
             var cam = Camera.main != null ? Camera.main.transform : null;
             var fwd = cam != null ? cam.forward : Vector3.forward;
             fwd.y = 0f;
@@ -84,6 +147,7 @@ namespace ChemicalSafety.Presentable
                 Build();
             if (_card == null)
                 return;
+            Relayout();
             _card.localScale = _baseScale * Mathf.Max(0.1f, worldScale);
             _card.SetPositionAndRotation(position, rotation);
             _card.gameObject.SetActive(true);
