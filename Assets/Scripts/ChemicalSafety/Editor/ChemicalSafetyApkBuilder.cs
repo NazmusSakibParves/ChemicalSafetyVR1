@@ -83,7 +83,11 @@ namespace ChemicalSafety.Editor
             UnityEditor.Build.Reporting.BuildReport report;
             try
             {
-                report = BuildPipeline.BuildPlayer(new[] { scene }, abs, BuildTarget.Android, options);
+                // Presentable builds start with the animated intro scene (index 0, then Presentable at index 1).
+                var scenes = scene == PresentableScene && File.Exists(SplashSetup.SplashScene)
+                    ? new[] { SplashSetup.SplashScene, scene }
+                    : new[] { scene };
+                report = BuildPipeline.BuildPlayer(scenes, abs, BuildTarget.Android, options);
             }
             finally
             {

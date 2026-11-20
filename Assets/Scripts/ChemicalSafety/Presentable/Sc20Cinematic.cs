@@ -689,7 +689,7 @@ namespace ChemicalSafety.Presentable
 
                 maxMoved = Mathf.Max(maxMoved, (ChestPos() - chest0).magnitude);
                 yield return null;
-                t += Mathf.Min(UnityEngine.Time.unscaledDeltaTime, 0.1f);
+                t += Mathf.Min(SessionClock.GameDelta, 0.1f);
             }
 
             ApplyTime(Duration);
@@ -707,7 +707,7 @@ namespace ChemicalSafety.Presentable
             var e = 0f;
             while (e < seconds)
             {
-                e += UnityEngine.Time.unscaledDeltaTime;
+                e += SessionClock.GameDelta;
                 loopSource.volume = Mathf.Lerp(v0, 0f, e / seconds);
                 yield return null;
             }

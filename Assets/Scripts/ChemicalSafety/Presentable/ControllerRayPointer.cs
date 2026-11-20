@@ -117,6 +117,8 @@ namespace ChemicalSafety.Presentable
                 {
                     if (b == null || !b.IsInteractable() || !b.gameObject.activeInHierarchy)
                         continue;
+                    if (SessionClock.Frozen && b.GetComponentInParent<SessionHud>() == null)
+                        continue; // PAUSE: only the top bar answers, nothing in the frozen scenario can be pressed
                     var brt = (RectTransform)b.transform;
                     var local = brt.InverseTransformPoint(point);
                     var rect = brt.rect;
@@ -137,7 +139,7 @@ namespace ChemicalSafety.Presentable
             var origin2 = new Ray(origin, dir);
             foreach (var pt in _pokes)
             {
-                if (pt == null || !pt.Interactable || !pt.gameObject.activeInHierarchy || pt.Colliders == null)
+                if (pt == null || !pt.Interactable || !pt.gameObject.activeInHierarchy || pt.Colliders == null || SessionClock.Frozen)
                     continue;
                 foreach (var col in pt.Colliders)
                 {
@@ -189,7 +191,7 @@ namespace ChemicalSafety.Presentable
             {
                 foreach (var d in DraggablePanel.All)
                 {
-                    if (d != null && d.HitBody(origin, dir, bodyT, out var ht, out var hp))
+                    if (d != null && (!SessionClock.Frozen || d.GetComponent<SessionHud>() != null) && d.HitBody(origin, dir, bodyT, out var ht, out var hp))
                     {
                         bodyT = ht;
                         bodyHit = d;

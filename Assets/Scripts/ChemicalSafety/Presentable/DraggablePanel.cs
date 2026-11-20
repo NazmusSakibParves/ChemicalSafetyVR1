@@ -251,6 +251,28 @@ namespace ChemicalSafety.Presentable
             _rot = transform.rotation;
             _scenario = PresentableInput.ActiveScenario;
             _moved = true;
+
+            // head-locked bar (client 2026-11-20, smooth drag): work in the head's own frame on the plane the bar sits on, so a still hand never
+            // moves the bar and a moving hand moves it one to one, whatever the head does meanwhile
+            var cam = OnHeadOffset != null ? Camera.main : null;
+            if (cam != null)
+            {
+                var inv = Quaternion.Inverse(cam.transform.rotation);
+                var bar = inv * (transform.position - cam.transform.position);
+                _headPlaneZ = bar.z;
+                var o = inv * (origin - cam.transform.position);
+                var d = inv * (hitPoint - origin).normalized;
+                _headGrab = d.z > 0.05f ? new Vector2(bar.x, bar.y) - HeadPlaneHit(o, d, _headPlaneZ) : Vector2.zero;
+            }
+        }
+
+        private float _headPlaneZ = 0.9f;
+        private Vector2 _headGrab;
+
+        private static Vector2 HeadPlaneHit(Vector3 o, Vector3 d, float z)
+        {
+            var t = (z - o.z) / d.z;
+            return new Vector2(o.x + d.x * t, o.y + d.y * t);
         }
 
         public void Drag(Vector3 origin, Vector3 dir, Vector3 head)
@@ -262,7 +284,17 @@ namespace ChemicalSafety.Presentable
             {
                 var cam = Camera.main;
                 if (cam != null)
-                    OnHeadOffset(Quaternion.Inverse(cam.transform.rotation) * (target - cam.transform.position));
+                {
+                    var inv = Quaternion.Inverse(cam.transform.rotation);
+                    var o = inv * (origin - cam.transform.position);
+                    var d = inv * dir;
+                    if (d.z > 0.05f) // a ray pointing away from the bar's plane leaves the bar where it is
+                    {
+                        var p = HeadPlaneHit(o, d, _headPlaneZ) + _headGrab;
+                        OnHeadOffset(new Vector3(p.x, p.y, _headPlaneZ));
+                    }
+                }
+
                 return;
             }
 

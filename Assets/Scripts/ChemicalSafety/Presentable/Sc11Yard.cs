@@ -555,14 +555,14 @@ namespace ChemicalSafety.Presentable
                 var w = 0f;
                 while (!_radioVoice.isPlaying && w < 3f)
                 {
-                    w += Time.unscaledDeltaTime;
+                    w += SessionClock.GameDelta;
                     yield return null;
                 }
 
                 w = 0f;
                 while (_radioVoice.isPlaying && w < 30f)
                 {
-                    w += Time.unscaledDeltaTime;
+                    w += SessionClock.GameDelta;
                     yield return null;
                 }
             }

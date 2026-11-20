@@ -437,7 +437,7 @@ namespace ChemicalSafety.Presentable
             var waited = 0f;
             while (keep != null && !keep.activeInHierarchy && waited < 30f)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -2091,7 +2091,7 @@ namespace ChemicalSafety.Presentable
                 var sdsWait = 0f;
                 while (clipboard.IsVisible && sdsWait < 9f)
                 {
-                    sdsWait += Time.unscaledDeltaTime;
+                    sdsWait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -3134,7 +3134,7 @@ namespace ChemicalSafety.Presentable
             var sdsWait = 0f;
             while (clipboard.IsVisible && sdsWait < 10f)
             {
-                sdsWait += Time.unscaledDeltaTime;
+                sdsWait += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -4446,7 +4446,7 @@ namespace ChemicalSafety.Presentable
                     yield break;
                 // reading the details card or the large chart does not use up the time
                 if (chart == null || !chart.IsOpen)
-                    waited += Time.unscaledDeltaTime;
+                    waited += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -4464,7 +4464,7 @@ namespace ChemicalSafety.Presentable
             var waited = 0f;
             while (!_hotspotHit && waited < patience)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -5147,14 +5147,14 @@ namespace ChemicalSafety.Presentable
             var waited = 0f;
             while (!voice.isPlaying && waited < 3f)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
 
             waited = 0f;
             while (voice.isPlaying && voice.clip == clip && waited < 30f)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -5191,14 +5191,14 @@ namespace ChemicalSafety.Presentable
             var waited = 0f;
             while (!voice.isPlaying && waited < 3f)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
 
             waited = 0f;
             while (voice.isPlaying && voice.clip == clip && waited < 30f)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += SessionClock.GameDelta;
                 yield return null;
             }
         }
@@ -5656,7 +5656,7 @@ namespace ChemicalSafety.Presentable
             var sdsWait = 0f;
             while (clipboard.IsVisible && sdsWait < 12f)
             {
-                sdsWait += Time.unscaledDeltaTime;
+                sdsWait += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -5968,7 +5968,7 @@ namespace ChemicalSafety.Presentable
                 var evacGuard = 0f;
                 while (sc11Yard.WorkersOut < sc11Yard.WorkerCount && evacGuard < 2.5f) // the last ones keep walking off during the next step
                 {
-                    evacGuard += Time.unscaledDeltaTime;
+                    evacGuard += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -6206,7 +6206,7 @@ namespace ChemicalSafety.Presentable
                 var sdsMax = Mathf.Max(6f, art.voSc12Sds != null ? art.voSc12Sds.length + 2f : 6f);
                 while (clipboard.IsVisible && sdsWait < sdsMax)
                 {
-                    sdsWait += Time.unscaledDeltaTime;
+                    sdsWait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -6305,13 +6305,13 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Sc19Voice(string text, AudioClip clip)
         {
             _sc19Pending++;
-            while (Time.unscaledTime < _sc19VoiceUntil)
+            while (SessionClock.GameTime < _sc19VoiceUntil)
                 yield return null;
-            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
+            _sc19VoiceUntil = SessionClock.GameTime + (clip != null ? clip.length : 2.5f) + 0.3f;
 #if UNITY_EDITOR
             try
             {
-                System.IO.File.AppendAllText("Temp/Smoke/voice_trace.log", "SC19film | " + Loc.Current + " | " + (clip != null ? clip.name : "(none)") + " | start " + Time.unscaledTime.ToString("F1") + " | len " + (clip != null ? clip.length.ToString("F1") : "0") + System.Environment.NewLine);
+                System.IO.File.AppendAllText("Temp/Smoke/voice_trace.log", "SC19film | " + Loc.Current + " | " + (clip != null ? clip.name : "(none)") + " | start " + SessionClock.GameTime.ToString("F1") + " | len " + (clip != null ? clip.length.ToString("F1") : "0") + System.Environment.NewLine);
             }
             catch
             {
@@ -6334,9 +6334,9 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Sc19DrainVoice()
         {
             var guard = 0f;
-            while ((_sc19Pending > 0 || Time.unscaledTime < _sc19VoiceUntil) && guard < 90f)
+            while ((_sc19Pending > 0 || SessionClock.GameTime < _sc19VoiceUntil) && guard < 90f)
             {
-                guard += Time.unscaledDeltaTime;
+                guard += SessionClock.GameDelta;
                 yield return null;
             }
         }
@@ -6401,7 +6401,7 @@ namespace ChemicalSafety.Presentable
                 var wait = 0f;
                 while (clipboard.IsVisible && wait < 10f)
                 {
-                    wait += Time.unscaledDeltaTime;
+                    wait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -6560,9 +6560,9 @@ namespace ChemicalSafety.Presentable
         {
             // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
             _sc19Pending++;
-            while (Time.unscaledTime < _sc19VoiceUntil)
+            while (SessionClock.GameTime < _sc19VoiceUntil)
                 yield return null;
-            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
+            _sc19VoiceUntil = SessionClock.GameTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6627,7 +6627,7 @@ namespace ChemicalSafety.Presentable
                 var wait = 0f;
                 while (clipboard.IsVisible && wait < 10f)
                 {
-                    wait += Time.unscaledDeltaTime;
+                    wait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -6816,9 +6816,9 @@ namespace ChemicalSafety.Presentable
         {
             // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
             _sc19Pending++;
-            while (Time.unscaledTime < _sc19VoiceUntil)
+            while (SessionClock.GameTime < _sc19VoiceUntil)
                 yield return null;
-            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
+            _sc19VoiceUntil = SessionClock.GameTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -6883,7 +6883,7 @@ namespace ChemicalSafety.Presentable
                 var wait = 0f;
                 while (clipboard.IsVisible && wait < 10f)
                 {
-                    wait += Time.unscaledDeltaTime;
+                    wait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -7031,9 +7031,9 @@ namespace ChemicalSafety.Presentable
         {
             // client 2026-11-19: one line after the other (see Sc19Voice): a line waits until the line before it has ended
             _sc19Pending++;
-            while (Time.unscaledTime < _sc19VoiceUntil)
+            while (SessionClock.GameTime < _sc19VoiceUntil)
                 yield return null;
-            _sc19VoiceUntil = Time.unscaledTime + (clip != null ? clip.length : 2.5f) + 0.3f;
+            _sc19VoiceUntil = SessionClock.GameTime + (clip != null ? clip.length : 2.5f) + 0.3f;
             var token = ++_subtitleToken;
             if (Sc19Subtitles && !string.IsNullOrEmpty(text))
                 subtitle.Show(null, text);
@@ -7127,7 +7127,7 @@ namespace ChemicalSafety.Presentable
                 var wait = 0f;
                 while (clipboard.IsVisible && wait < 10f)
                 {
-                    wait += Time.unscaledDeltaTime;
+                    wait += SessionClock.GameDelta;
                     yield return null;
                 }
 
@@ -7276,7 +7276,7 @@ namespace ChemicalSafety.Presentable
             var sdsWait = 0f;
             while (clipboard.IsVisible && sdsWait < 12f)
             {
-                sdsWait += Time.unscaledDeltaTime;
+                sdsWait += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -7509,7 +7509,7 @@ namespace ChemicalSafety.Presentable
             var sdsWait = 0f;
             while (clipboard.IsVisible && sdsWait < 12f)
             {
-                sdsWait += Time.unscaledDeltaTime;
+                sdsWait += SessionClock.GameDelta;
                 yield return null;
             }
 
@@ -7537,7 +7537,7 @@ namespace ChemicalSafety.Presentable
             var evacGuard = 0f;
             while (sc11Yard.WorkersOut < sc11Yard.WorkerCount && evacGuard < 20f)
             {
-                evacGuard += Time.unscaledDeltaTime;
+                evacGuard += SessionClock.GameDelta;
                 yield return null;
             }
 

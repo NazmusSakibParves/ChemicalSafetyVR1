@@ -290,14 +290,14 @@ namespace ChemicalSafety.Presentable
             var wait = 0f;
             while (!_audio.isPlaying && wait < 2f)
             {
-                wait += Time.unscaledDeltaTime;
+                wait += SessionClock.GameDelta;
                 yield return null;
             }
 
             wait = 0f;
             while (_audio.isPlaying && wait < 40f)
             {
-                wait += Time.unscaledDeltaTime;
+                wait += SessionClock.GameDelta;
                 yield return null;
             }
         }
@@ -1548,13 +1548,13 @@ namespace ChemicalSafety.Presentable
                     pause = 6f;
                 if (pause > 0f)
                 {
-                    pause -= Time.unscaledDeltaTime;
+                    pause -= SessionClock.GameDelta;
                     last = cur;
                     yield return null;
                     continue;
                 }
 
-                cur = Mathf.Clamp01(cur + dir * Time.unscaledDeltaTime / 28f);
+                cur = Mathf.Clamp01(cur + dir * SessionClock.GameDelta / 28f);
                 _sdsScroll.verticalNormalizedPosition = cur;
                 last = cur;
                 if (cur <= 0.001f)

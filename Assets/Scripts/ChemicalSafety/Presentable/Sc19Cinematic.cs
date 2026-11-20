@@ -428,7 +428,7 @@ namespace ChemicalSafety.Presentable
                 }
 
                 yield return null;
-                t += Mathf.Min(UnityEngine.Time.unscaledDeltaTime, 0.1f);
+                t += Mathf.Min(SessionClock.GameDelta, 0.1f);
             }
 
             ApplyTime(Duration);

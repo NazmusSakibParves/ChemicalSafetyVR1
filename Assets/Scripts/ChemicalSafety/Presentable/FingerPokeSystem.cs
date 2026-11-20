@@ -179,6 +179,8 @@ namespace ChemicalSafety.Presentable
                 {
                     if (b == null || !b.IsInteractable() || !b.gameObject.activeInHierarchy)
                         continue;
+                    if (SessionClock.Frozen && b.GetComponentInParent<SessionHud>() == null)
+                        continue; // PAUSE: only the top bar answers
                     var rt = (RectTransform)b.transform;
                     var local = rt.InverseTransformPoint(tip);
                     // canvases face -z in local space: positive depth = in front of the panel (towards the user)
