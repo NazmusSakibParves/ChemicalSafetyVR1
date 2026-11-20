@@ -404,8 +404,9 @@ namespace ChemicalSafety.Presentable
             var coughN = 0;
             var cues = new (float t, string id)[]
             {
-                (0.2f, "w1"), (3.9f, "w2"), (5.6f, "smokeOn"), (7.8f, "w3"), (9.8f, "cough"), (10.7f, "cough"), (11.15f, "gasp"),
-                (11.55f, "thud"), (13.3f, "smokeOff"), (13.4f, "r1"), (13.4f, "hum"), (17.0f, "r2"), (17.2f, "beep"), (19.2f, "r3"), (21.8f, "r4"),
+                // client 2026-11-20: w1+w2 and r2+r3 are recorded as ONE clip each (keys w2 and r3), so the first cue of each pair plays it
+                (0.2f, "w2"), (5.6f, "smokeOn"), (7.8f, "w3"), (9.8f, "cough"), (10.7f, "cough"), (11.15f, "gasp"),
+                (11.55f, "thud"), (13.3f, "smokeOff"), (13.4f, "r1"), (13.4f, "hum"), (17.0f, "r3"), (17.2f, "beep"), (21.8f, "r4"),
                 (22.1f, "pen"), (25.0f, "r5"), (28.3f, "r6"), (28.6f, "clank")
             };
             var cue = 0;
