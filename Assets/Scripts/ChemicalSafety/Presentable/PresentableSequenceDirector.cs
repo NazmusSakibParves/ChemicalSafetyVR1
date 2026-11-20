@@ -699,6 +699,9 @@ namespace ChemicalSafety.Presentable
             yield return FinishAllScenarios();
         }
 
+        /// <summary>Scenario 2 and 3 instruction boxes wear the glass style of Scenario 1 (client 2026-11-20). false = the earlier frame (one-line restore).</summary>
+        private const bool Sc0203GlassCard = true;
+
         // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
         private IEnumerator RunScenario1And2(bool skipSc01)
         {
@@ -849,6 +852,9 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc02Intro");
+            // client 2026-11-20: the Scenario 2 instruction box in the glass style of Scenario 1 (same card, same Continue); only the box, nothing else changes
+            instructionPanel.SetGlass(Sc0203GlassCard);
+            instructionPanel.SetBnBodyMax(Sc0203GlassCard ? 620f : 200f);
             instructionPanel.SetCompactRoomy(true); // the longer Scenario 2 text: more room around it
             _instructionClip = art.voSc02Instruction != null ? art.voSc02Instruction : art.voInstruction;
             instructionPanel.SetContent(Sc02Content.InstructionEnglish, ArtistCard(2, art.bnSc02InstructionPanel));
@@ -877,6 +883,8 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
+            instructionPanel.SetGlass(false); // back to the frame every later part of the scenario had
+            instructionPanel.SetBnBodyMax(200f);
 
             Stage("sc02Explore");
             if (sc02CalloutFlow)
@@ -968,6 +976,9 @@ namespace ChemicalSafety.Presentable
             }
 
             Stage("sc03Intro");
+            // client 2026-11-20: the Scenario 3 instruction box in the glass style of Scenario 1 (only the box)
+            instructionPanel.SetGlass(Sc0203GlassCard);
+            instructionPanel.SetBnBodyMax(Sc0203GlassCard ? 620f : 200f);
             if (ray3)
                 instructionPanel.SetCompactRoomy(true); // same card as Scenario 2 (text size of Scenarios 1-2)
             _instructionClip = art.voSc03Instruction != null ? art.voSc03Instruction : art.voInstruction;
@@ -997,6 +1008,8 @@ namespace ChemicalSafety.Presentable
             yield return instructionPanel.Hide();
             instructionPanel.SetContinueCentered(false);
             EndEyeInstruction();
+            instructionPanel.SetGlass(false); // back to the frame the rest of the scenario had
+            instructionPanel.SetBnBodyMax(200f);
 
             if (ray3)
             {
