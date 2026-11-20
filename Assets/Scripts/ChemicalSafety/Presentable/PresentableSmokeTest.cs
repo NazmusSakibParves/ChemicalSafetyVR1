@@ -3627,12 +3627,13 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 
-            for (var n = 13; n <= 18; n++)
+            var scStart = UnityEditor.EditorPrefs.GetInt("ChemSafetyScCheckStart", 13);
+            for (var n = scStart; n <= 18; n++)
             {
                 yield return WaitStage("sc" + n, 60f);
-                var shots = n == 13;
+                var shots = n == scStart;
                 var settle = 0f;
-                while (n > 13 && runner.Stage == "done" && settle < 30f)
+                while (n > scStart && runner.Stage == "done" && settle < 30f)
                 {
                     settle += Time.unscaledDeltaTime;
                     yield return null;
@@ -3675,14 +3676,32 @@ namespace ChemicalSafety.Presentable
                             sdsTried = true;
                             yield return new WaitForSeconds(1.0f);
                             LayoutCheck("SC" + n + " " + st, runner.MainPanel, true);
+                            yield return Shot("149_sc" + n + "_" + st + "_question");
+                            Say("SC" + n + " " + st + " legibility: " + runner.LegibilityReport());
                             ScSupervisorClear("SC" + n + " " + st, runner);
                             runner.ToggleSds();
                             yield return new WaitForSeconds(0.8f);
                             Say("SC" + n + " " + st + " SDS open = " + runner.SdsOpen + " (expected True)");
                             ScDragScrollCheck("SC" + n + " " + st, runner);
                             ScSupervisorClear("SC" + n + " " + st + " (SDS open)", runner);
-                            if (shots)
-                                yield return Shot("151_sccheck_" + st + "_sds");
+                            if (true)
+                                yield return Shot("151_sc" + n + "_" + st + "_sds");
+                            var sdsWasOpen = runner.SdsOpen;
+                            if (!sdsWasOpen)
+                            {
+                                runner.ToggleSds();
+                                yield return new WaitForSeconds(0.8f);
+                            }
+                            runner.ToggleSdsZoom();
+                            yield return new WaitForSeconds(0.6f);
+                            Say("SC" + n + " " + st + " SDS zoomed = " + runner.SdsZoomed + " (expected True)");
+                            if (n == 18 || n == scStart)
+                                yield return Shot("153_sc" + n + "_" + st + "_sds_zoom");
+                            runner.ToggleSdsZoom();
+                            yield return new WaitForSeconds(0.5f);
+                            Say("SC" + n + " " + st + " SDS zoomed = " + runner.SdsZoomed + " (expected False)");
+                            if (!sdsWasOpen)
+                                runner.ToggleSds();
                             runner.ScrollSds(-0.5f);
                             runner.ToggleSds();
                             yield return new WaitForSeconds(0.6f);
@@ -3696,8 +3715,9 @@ namespace ChemicalSafety.Presentable
                             if (!wrong)
                                 score++;
                             yield return new WaitForSeconds(0.8f);
-                            if (shots)
-                                yield return Shot("152_sccheck_" + st + "_answered");
+                            if (true)
+                                yield return Shot("152_sc" + n + "_" + st + "_answered");
+                            Say("SC" + n + " " + st + " correct row shown = " + runner.CorrectRow + " (0 = A ... 3 = D)");
                         }
                         else if (runner.AnswerLocked)
                         {

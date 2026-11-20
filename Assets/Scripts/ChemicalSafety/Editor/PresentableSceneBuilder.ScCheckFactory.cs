@@ -264,13 +264,13 @@ namespace ChemicalSafety.Editor
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(path) == null)
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (ti != null && (!ti.alphaIsTransparency || ti.wrapMode != TextureWrapMode.Clamp || !ti.mipmapEnabled || ti.maxTextureSize != 1024))
+            if (ti != null && (!ti.alphaIsTransparency || ti.wrapMode != TextureWrapMode.Clamp || !ti.mipmapEnabled || ti.maxTextureSize != 2048 || ti.anisoLevel != 16)) // client 2026-11-20: the printed labels are sharper (3x source, 2048, anisotropic 16)
             {
                 ti.alphaIsTransparency = true;
                 ti.wrapMode = TextureWrapMode.Clamp;
                 ti.mipmapEnabled = true;
-                ti.anisoLevel = 8;
-                ti.maxTextureSize = 1024;
+                ti.anisoLevel = 16;
+                ti.maxTextureSize = 2048;
                 ti.textureCompression = TextureImporterCompression.CompressedHQ;
                 ti.SaveAndReimport();
             }
@@ -403,7 +403,7 @@ namespace ChemicalSafety.Editor
                     bodies.Add(mf);
             }
 
-            var lw = Mathf.Min(wb.size.x * 0.74f, 0.2f);
+            var lw = Mathf.Min(wb.size.x * 0.8f, 0.23f);
             var cy = has ? lb.center.y : wb.min.y + wb.size.y * 0.45f;
             ScConformSticker(bottle, bodies, tex, "ScCheckHclLabelPaper", lw, wb.center.x, cy, wb.max.z, "HclLabelNew");
         }
@@ -529,7 +529,7 @@ namespace ChemicalSafety.Editor
             var labelTex = ScCheckUseDesignerModels ? ScLabelTexture("Assets/Resources/ScCheck/BleachingLabel.png") : null;
             if (labelTex != null)
             {
-                ScConformSticker(g, new List<MeshFilter> { sackGo.GetComponent<MeshFilter>() }, labelTex, "ScCheckBleachLabelPaper", 0.176f,
+                ScConformSticker(g, new List<MeshFilter> { sackGo.GetComponent<MeshFilter>() }, labelTex, "ScCheckBleachLabelPaper", 0.2f,
                     baseAt.x, baseAt.y + 0.17f, baseAt.z + 0.06f, "SackLabel");
                 g.localScale = Vector3.one * 1.15f;
                 return;

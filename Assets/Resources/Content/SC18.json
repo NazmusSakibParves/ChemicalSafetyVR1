@@ -63,18 +63,18 @@
     },
     {
       "key": "Mcq1",
-      "en": "MCQ 1:",
-      "bn": "প্রশ্ন ১:"
+      "en": "MCQ 18.1:",
+      "bn": "প্রশ্ন ১৮.১:"
     },
     {
       "key": "Mcq2",
-      "en": "MCQ 2:",
-      "bn": "প্রশ্ন ২:"
+      "en": "MCQ 18.2:",
+      "bn": "প্রশ্ন ১৮.২:"
     },
     {
       "key": "Mcq3",
-      "en": "MCQ 3:",
-      "bn": "প্রশ্ন ৩:"
+      "en": "MCQ 18.3:",
+      "bn": "প্রশ্ন ১৮.৩:"
     },
     {
       "key": "RefSds",
@@ -333,19 +333,10 @@
         {
           "id": "P5",
           "text": {
-            "en": "Health hazard (Carcinogen)",
-            "bn": "স্বাস্থ্য বিপদ (ক্যান্সারজনক)"
+            "en": "Flame (Flammable)",
+            "bn": "শিখা (দাহ্য)"
           },
-          "image": "ScCheck/SC18/pict_health",
-          "outsider": true
-        },
-        {
-          "id": "P6",
-          "text": {
-            "en": "Skull and crossbones (Acute toxicity)",
-            "bn": "মাথার খুলি ও ক্রসবোন (তীব্র বিষাক্ততা)"
-          },
-          "image": "ScCheck/SC18/pict_skull",
+          "image": "ScCheck/SC18/pict_flame",
           "outsider": true
         }
       ],

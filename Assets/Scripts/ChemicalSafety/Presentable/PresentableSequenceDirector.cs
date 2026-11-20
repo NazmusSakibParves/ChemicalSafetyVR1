@@ -597,7 +597,7 @@ namespace ChemicalSafety.Presentable
                 Loc.SetLanguage(UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? Lang.Bn : Lang.En);
                 if (SessionHud.Instance == null)
                     BeginSession(); // dev shortcut only (see Scenario 5): the top bar exists as in the real flow
-                yield return RunScenarioCheck(13);
+                yield return RunScenarioCheck(UnityEditor.EditorPrefs.GetInt("ChemSafetyScCheckStart", 13)); // dev start: 13 unless a later scenario is tested alone
                 Stage("complete");
                 yield break;
             }

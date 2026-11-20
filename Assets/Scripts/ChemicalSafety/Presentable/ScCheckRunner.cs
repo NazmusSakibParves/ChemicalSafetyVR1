@@ -108,7 +108,7 @@ namespace ChemicalSafety.Presentable
         private const float MainDist = 2.4f; // metres from the eyes to the question + SDS boxes (the new design)
         private const float QuestionW = 2000f, GapW = 90f, SdsW = 1300f; // side by side, as in the client's workflow picture (a small gap) // the SDS panel keeps the earlier 1400 x 1000 px (the whole sheet is visible)
         private static float CanvasW => NewMcqUi ? QuestionW + GapW + SdsW : BigSds ? 2500f : 2200f;
-        private static float CanvasH => NewMcqUi ? 1450f : BigSds ? 1000f : 860f;
+        private static float CanvasH => NewMcqUi ? 1600f : BigSds ? 1000f : 860f;
 
         private static readonly Dictionary<string, Sprite> PictureCache = new Dictionary<string, Sprite>();
         private RectTransform _nextBtn, _sdsPanel, _sdsContent, _roundBtn;
@@ -715,7 +715,8 @@ namespace ChemicalSafety.Presentable
             SetSds(true, true); // the SDS opens by itself beside the question and scrolls slowly so it can be read
             if (_autoScroll != null)
                 StopCoroutine(_autoScroll);
-            _autoScroll = StartCoroutine(AutoScrollSds());
+            if (!NewMcqUi)
+                _autoScroll = StartCoroutine(AutoScrollSds()); // the new plain SDS does not move by itself: the learner scrolls it
             _answered = -1;
             _next = false;
             _locked = false;
@@ -786,21 +787,22 @@ namespace ChemicalSafety.Presentable
         {
             var bn = Localization.Loc.IsBangla;
             // client 2026-11-19: large, clear sizes (every question, every answer and every reason at ONE size)
+            // client 2026-11-20: bigger again (the box has room): readable from 2.4 m in the headset
             FixSize(_title, 56f);
-            FixSize(_mcq, bn ? 38f : 40f);
-            FixSize(_chemLabel, bn ? 38f : 40f);
-            FixSize(_chemName, bn ? 38f : 40f);
-            FixSize(_prompt, bn ? 44f : 46f);
+            FixSize(_mcq, bn ? 38f : 46f);
+            FixSize(_chemLabel, bn ? 38f : 46f);
+            FixSize(_chemName, bn ? 38f : 46f);
+            FixSize(_prompt, bn ? 44f : 54f); // Bangla stays at its earlier size: the longer Bangla lines must fit the box (English is the larger one)
             for (var i = 0; i < 4; i++)
             {
-                FixSize(_optText[i], bn ? 38f : 40f);
+                FixSize(_optText[i], bn ? 38f : 50f);
                 FixSize(_optLetter[i], 60f);
             }
 
             FixSize(_verdict, 34f);
-            FixSize(_reason, bn ? 30f : 32f);
+            FixSize(_reason, bn ? 30f : 38f);
             for (var i = 0; i < 4; i++)
-                FixSize(_optReason[i], bn ? 30f : 32f);
+                FixSize(_optReason[i], bn ? 30f : 38f);
         }
 
         private static void FixSize(TextMeshProUGUI t, float size)
@@ -846,6 +848,159 @@ namespace ChemicalSafety.Presentable
 
         private int _newCount;
 
+        /// <summary>Dev check: the lower and upper edges of the question box and of the SDS sheet panel (world cm).</summary>
+        private string AlignReport()
+        {
+            if (_panelRt == null || _sdsPanel == null)
+                return "";
+            var c = new Vector3[4];
+            _panelRt.GetWorldCorners(c);
+            var bBot = c[0].y;
+            var bTop = c[1].y;
+            _sdsPanel.GetWorldCorners(c);
+            return ", ALIGN box bottom " + (bBot * 100f).ToString("0") + " top " + (bTop * 100f).ToString("0") + " cm | SDS bottom " + (c[0].y * 100f).ToString("0") + " top " + (c[1].y * 100f).ToString("0") + " cm (panel scale " + _sdsPanel.localScale.x.ToString("0.00") + ", rect " + _sdsPanel.rect.height.ToString("0") + " px, box " + _panelRt.rect.height.ToString("0") + " px)";
+        }
+
+        /// <summary>Dev check: the angular size in the headset of the question, answer, reason and SDS body text.</summary>
+        public string LegibilityReport()
+        {
+            if (_main == null || _cam == null)
+                return "n/a";
+            var d = Vector3.Distance(_cam.position, _main.transform.position);
+            var k = _main.transform.lossyScale.y;
+            string Deg(float px) => (2f * Mathf.Atan(px * k * 0.5f / d) * Mathf.Rad2Deg).ToString("0.00");
+            var sheetPx = _sdsContent != null ? _sdsContent.rect.height : 0f;
+            var sp = _sdsSheet != null ? _sdsSheet.sprite : null;
+            var bodyPx = sp != null && sheetPx > 0f ? 30f * sheetPx / sp.rect.height : 0f; // the sheet's body text is ~30 px high in its 1250 x 1705 picture
+            return "dist " + d.ToString("0.00") + " m, scale " + k.ToString("0.00000") + ", answer em " + Deg(_optText[0].fontSize) + " deg, question em " + Deg(_prompt.fontSize)
+                   + " deg, reason em " + Deg(_optReason[0].fontSize) + " deg, SDS body em " + Deg(bodyPx * SdsBase) + " deg, SDS sheet " + sheetPx.ToString("0") + " px tall, box " + (_panelRt != null ? _panelRt.rect.height.ToString("0") : "?") + " px, fit " + _fit.ToString("0.00") + AlignReport();
+        }
+        private const float StandardBoxH = 1230f; // client 2026-11-20: the shorter the box, the larger it can be drawn between the timer bar and the table (text readable)
+        private Image _newFrame, _newUnder;
+        private readonly Image[] _oldLook = new Image[3];
+        private Image _sdsBg;
+        private RectTransform _sdsViewport;
+        private readonly RectTransform[] _sdsArrows = new RectTransform[2];
+
+        // client 2026-11-20: the picture question (Scenario 18 question 2) has the box of the earlier version (glow + dark panel); every other question the new glass box
+        private void SetOldLook(bool old)
+        {
+            if (_newFrame != null)
+                _newFrame.enabled = !old; // the frame is the panel's own Image: only its component is switched
+            if (_newUnder != null)
+                _newUnder.gameObject.SetActive(!old);
+            foreach (var ol in _oldLook)
+                if (ol != null)
+                    ol.gameObject.SetActive(old);
+        }
+
+        // client 2026-11-20: beside EVERY question (Scenarios 13-18) the SDS is the plain sheet without its frame box, as tall as the question box,
+        // the whole sheet fitted into it (no scroll bar)
+        private Scrollbar _sdsBar;
+
+        private void ApplyPlainSds()
+        {
+            if (_sdsBg != null)
+                _sdsBg.enabled = false;
+            if (_refTitle != null)
+                _refTitle.gameObject.SetActive(false);
+            foreach (var a in _sdsArrows)
+                if (a != null)
+                    a.gameObject.SetActive(false);
+            if (_sdsViewport != null)
+            {
+                _sdsViewport.anchorMin = new Vector2(0.02f, 0.02f);
+                _sdsViewport.anchorMax = new Vector2(0.98f, 0.98f);
+                _sdsViewport.offsetMin = Vector2.zero;
+                _sdsViewport.offsetMax = Vector2.zero;
+            }
+
+        }
+
+        private bool _syncingBar;
+
+        // client 2026-11-20: the SDS body text is only ~0.3 deg in the headset: a tap / ray click on the sheet enlarges it (2.2x, over the question box,
+        // centred), a second click returns it
+        private const float SdsZoom = 2.2f;
+        // client 2026-11-20: the sheet at rest is 1.2x larger than its box (lower and left edge fixed: it grows up and to the right), text ~10 px instead of 8
+        private const float SdsBase = 1.2f;
+        private float BaseX() => _sdsPanel != null ? 0.5f * (SdsBase - 1f) * _sdsPanel.rect.width : 0f;
+        private float BaseY() => _sdsPanel != null ? 0.5f * (SdsBase - 1f) * _sdsPanel.rect.height : 0f; // the lower edge stays on the question box's lower edge: it grows upwards
+        private bool _sdsZoomed;
+        private Coroutine _zoomAnim;
+
+        public bool SdsZoomed => _sdsZoomed;
+
+        public void ToggleSdsZoom()
+        {
+            if (_main == null || !_main.gameObject.activeSelf || !_sdsOpen || _sdsPanel == null)
+                return;
+            SetSdsZoom(!_sdsZoomed, false);
+        }
+
+        private void SetSdsZoom(bool on, bool instant)
+        {
+            if (_sdsPanel == null)
+                return;
+            _sdsZoomed = on;
+            var centre = (_sdsPanel.anchorMin.x + _sdsPanel.anchorMax.x) * 0.5f * CanvasW;
+            var toScale = on ? SdsZoom : SdsBase;
+            var toX = on ? 1700f - centre : BaseX();
+            // the top edge of the enlarged sheet stays just under the timer bar (it slides down over the table instead)
+            var toY = BaseY();
+            if (on && _cam != null)
+            {
+                var limitPx = (SessionHud.SafeBarRatio * MainDist - 0.03f) / Mathf.Max(0.0001f, Scale * _fit);
+                toY = -Mathf.Max(0f, _sdsPanel.rect.height * SdsZoom * 0.5f - limitPx + 10f);
+            }
+
+            if (_sdsBacking != null)
+                _sdsBacking.gameObject.SetActive(on); // an opaque backing so the room does not shine through the enlarged sheet
+            if (_zoomAnim != null)
+                StopCoroutine(_zoomAnim);
+            _zoomAnim = null;
+            if (instant || !isActiveAndEnabled)
+            {
+                _sdsPanel.localScale = Vector3.one * toScale;
+                _sdsPanel.anchoredPosition = new Vector2(toX, toY);
+                return;
+            }
+
+            _zoomAnim = StartCoroutine(ZoomAnim(toScale, toX, toY));
+        }
+
+        private Image _sdsBacking;
+
+        private IEnumerator ZoomAnim(float toScale, float toX, float toY)
+        {
+            var from = _sdsPanel.localScale.x;
+            var fromX = _sdsPanel.anchoredPosition.x;
+            var fromY = _sdsPanel.anchoredPosition.y;
+            for (var t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.25f)
+            {
+                var e = Mathf.SmoothStep(0f, 1f, t);
+                _sdsPanel.localScale = Vector3.one * Mathf.Lerp(from, toScale, e);
+                _sdsPanel.anchoredPosition = new Vector2(Mathf.Lerp(fromX, toX, e), Mathf.Lerp(fromY, toY, e));
+                yield return null;
+            }
+
+            _sdsPanel.localScale = Vector3.one * toScale;
+            _sdsPanel.anchoredPosition = new Vector2(toX, toY);
+            _zoomAnim = null;
+        }
+
+        private void SyncSdsBar()
+        {
+            if (_sdsBar == null || _sdsScroll == null || _sdsScroll.content == null)
+                return;
+            _syncingBar = true;
+            var ch = _sdsScroll.content.rect.height;
+            var vh = ((RectTransform)_sdsScroll.viewport).rect.height;
+            _sdsBar.size = ch > 1f ? Mathf.Clamp01(vh / ch) : 1f;
+            _sdsBar.SetValueWithoutNotify(_sdsScroll.verticalNormalizedPosition);
+            _syncingBar = false;
+        }
+
         // client 2026-11-19: the boxes and the NEXT button must never sink into the table: the lower edge of the question box (and of the
         // 1000 px SDS box) stands 10 cm above the table top (the chemical's base), however tall the question box is
         private float MainCenterY()
@@ -867,11 +1022,81 @@ namespace ChemicalSafety.Presentable
 
         private void LayoutNewDynamic(int count, string reasonA, string reasonB, bool reveal = false)
         {
+            _layoutBoost = 0f;
+            LayoutNewDynamicCore(count, reasonA, reasonB, reveal);
+            // client 2026-11-20: whatever is really DRAWN (Bangla pictures may be taller than their measure) must stay inside the box: when the lowest
+            // drawn text edge is below the frame's inner bottom, the box grows by the difference and the layout runs again
+            Canvas.ForceUpdateCanvases();
+            var depth = LowestDrawnDepth();
+            var innerBottom = _panelRt.rect.height - 83f; // the frame's glow below the content
+            if (depth > innerBottom + 1f)
+            {
+                _layoutBoost = depth - innerBottom + 6f;
+                LayoutNewDynamicCore(count, reasonA, reasonB, reveal);
+                _layoutBoost = 0f;
+            }
+
+            RefreshSdsBase(); // the box may have changed its height: the sheet's lower edge follows it exactly
+        }
+
+        private float _layoutBoost;
+
+        // the lowest edge (px below the box's top edge) of the answer and reason texts that are on show, Bangla pictures included
+        private float LowestDrawnDepth()
+        {
+            var deepest = 0f;
+            void Take(Component c)
+            {
+                if (c == null || !c.gameObject.activeInHierarchy)
+                    return;
+                var rts = c.GetComponentsInChildren<RectTransform>(false);
+                var corners = new Vector3[4];
+                foreach (var rt in rts)
+                {
+                    if (rt == null || !rt.gameObject.activeInHierarchy)
+                        continue;
+                    var img = rt.GetComponent<Image>();
+                    if (rt != c.transform && img == null)
+                        continue;
+                    rt.GetWorldCorners(corners);
+                    for (var k = 0; k < 4; k++)
+                    {
+                        var d = -_panelRt.InverseTransformPoint(corners[k]).y;
+                        if (d > deepest)
+                            deepest = d;
+                    }
+                }
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                if (_optText[i] != null && _optText[i].transform.parent.parent.gameObject.activeSelf)
+                    Take(_optText[i]);
+                if (_optReason[i] != null && _optReason[i].gameObject.activeSelf && _reasonShown[i] != null)
+                    Take(_optReason[i]);
+            }
+
+            return deepest;
+        }
+
+        // client 2026-11-20: the SDS stands on the same lower line as the question box (it is larger upwards only)
+        private void RefreshSdsBase()
+        {
+            if (_sdsPanel == null || _sdsZoomed || _zoomAnim != null)
+                return;
+            Canvas.ForceUpdateCanvases();
+            _sdsPanel.localScale = Vector3.one * SdsBase;
+            _sdsPanel.anchoredPosition = new Vector2(_sdsPanel.anchoredPosition.x, BaseY());
+        }
+
+        private void LayoutNewDynamicCore(int count, string reasonA, string reasonB, bool reveal)
+        {
             _newCount = count;
             var picture = false;
             for (var i = 0; i < count; i++)
                 if (_optImg[i] != null && _optImg[i].gameObject.activeSelf)
                     picture = true;
+            SetOldLook(picture);
             var w = QuestionW; // the question panel
             const float topPx = 132f, bottomPx = 83f; // the frame's title strip above the content, its glow below (NEXT hangs under the frame)
             var textW = 0.88f * w;
@@ -912,14 +1137,17 @@ namespace ChemicalSafety.Presentable
                 stripH = verdictH + reasonH;
             }
             var content = chemH + 4f + promptH + 14f + rowsH + stripH;
-            var h = Mathf.Clamp(content + topPx + bottomPx, 600f, 1330f);
+            // client 2026-11-20: ONE standard box size for every question (13-18): the same height, the spare room spread between the rows
+            var h = Mathf.Max(StandardBoxH, Mathf.Clamp(content + topPx + bottomPx, 600f, 1450f)) + _layoutBoost;
+            var extra = picture ? 0f : Mathf.Clamp((h - (content + topPx + bottomPx)) / (count + 2), 0f, 70f);
             _panelRt.sizeDelta = new Vector2(0f, h);
             _panelRt.anchoredPosition = Vector2.zero;
             if (_sdsPanel != null)
             {
                 // the SDS panel is exactly as tall as the question box and its top edge is on the same line (side by side, like the workflow picture)
-                _sdsPanel.anchorMin = new Vector2(_sdsPanel.anchorMin.x, 1f - h / CanvasH);
+                _sdsPanel.anchorMin = new Vector2(_sdsPanel.anchorMin.x, 1f - h / CanvasH); // client 2026-11-20: the same lower line as the question box (the sheet is taller upwards)
                 _sdsPanel.offsetMin = new Vector2(_sdsPanel.offsetMin.x, 0f);
+                _sdsPanel.offsetMax = new Vector2(_sdsPanel.offsetMax.x, 0f); // (the base shift of the sheet moved both edges: the height must not grow from question to question)
                 if (_roundBtn != null)
                     _roundBtn.anchorMin = _roundBtn.anchorMax = new Vector2(1f, 1f - h / CanvasH);
             }
@@ -941,6 +1169,42 @@ namespace ChemicalSafety.Presentable
                 ApplyMainOffset(); // the box grew or shrank: it stays under the timer bar and above the table
             }
 
+            if (picture)
+            {
+                // the earlier box (client 2026-11-20): every part at the old fractions of the panel
+                PlacePx(_title.rectTransform, 0.04f * w, 0.96f * w, 0.015f * h, 0.135f * h, w, h);
+                _chemLabel.gameObject.SetActive(true);
+                _chemName.gameObject.SetActive(true);
+                PlacePx(_chemLabel.rectTransform, 0.05f * w, 0.30f * w, 0.135f * h, 0.225f * h, w, h);
+                PlacePx(_chemName.rectTransform, 0.30f * w, 0.97f * w, 0.135f * h, 0.225f * h, w, h);
+                PlacePx(_mcq.rectTransform, 0.05f * w, 0.21f * w, 0.23f * h, 0.34f * h, w, h);
+                PlacePx(_prompt.rectTransform, 0.21f * w, 0.96f * w, 0.22f * h, 0.385f * h, w, h);
+                const float pgap = 0.014f, px0 = 0.045f;
+                var pw = (0.91f - pgap * 3f) / 4f;
+                for (var i = 0; i < 4; i++)
+                {
+                    PlacePx(_optBg[i].rectTransform, (px0 + i * (pw + pgap)) * w, (px0 + i * (pw + pgap) + pw) * w, 0.40f * h, 0.81f * h, w, h);
+                    _optLetterBox[i].gameObject.SetActive(false);
+                    _optLetter[i].rectTransform.SetParent(_optBg[i].rectTransform, false);
+                    _optLetter[i].rectTransform.anchorMin = new Vector2(0.07f, 0.84f);
+                    _optLetter[i].rectTransform.anchorMax = new Vector2(0.45f, 0.99f);
+                    _optLetter[i].alignment = TextAlignmentOptions.MidlineLeft;
+                }
+
+                var sh = 0.18f * h;
+                PlacePx(_stripRt, 0.04f * w, 0.96f * w, 0.81f * h, 0.81f * h + sh, w, h);
+                var pvf = verdictH / sh;
+                _verdict.rectTransform.anchorMin = new Vector2(0.03f, 1f - pvf);
+                _verdict.rectTransform.anchorMax = new Vector2(0.97f, 1f);
+                _reason.rectTransform.anchorMin = new Vector2(0f, 0f);
+                _reason.rectTransform.anchorMax = new Vector2(1f, 1f - pvf);
+                _verdict.rectTransform.offsetMin = Vector2.zero;
+                _verdict.rectTransform.offsetMax = Vector2.zero;
+                _reason.rectTransform.offsetMin = Vector2.zero;
+                _reason.rectTransform.offsetMax = Vector2.zero;
+                return;
+            }
+
             PlacePx(_title.rectTransform, 0.08f * w, 0.92f * w, 44f, 114f, w, h);
             var y = topPx;
             _chemLabel.gameObject.SetActive(true);
@@ -950,7 +1214,7 @@ namespace ChemicalSafety.Presentable
             y += chemH + 4f;
             PlacePx(_mcq.rectTransform, 0.07f * w, 0.21f * w, y, y + 56f, w, h);
             PlacePx(_prompt.rectTransform, 0.21f * w, 0.95f * w, y, y + promptH, w, h);
-            y += promptH + 14f;
+            y += promptH + 14f + extra;
             for (var i = 0; i < 4; i++)
             {
                 var rt = _optBg[i].rectTransform;
@@ -992,7 +1256,7 @@ namespace ChemicalSafety.Presentable
                     }
                     else if (_optReason[i] != null)
                         _optReason[i].gameObject.SetActive(false);
-                    y += 10f;
+                    y += 10f + extra;
                 }
             }
 
@@ -1126,13 +1390,14 @@ namespace ChemicalSafety.Presentable
         private void SetSds(bool open, bool instant)
         {
             _sdsOpen = open;
+            SetSdsZoom(false, true); // a new question / the toggle button: the sheet is back at its normal size
             ApplyMainOffset();
             _sdsToggleText.text = Str(open ? "HideSds" : "CheckSds");
             if (_sdsAnim != null)
                 StopCoroutine(_sdsAnim);
             if (instant || !isActiveAndEnabled)
             {
-                _sdsPanel.anchoredPosition = new Vector2(open ? 0f : 800f, _sdsPanel.anchoredPosition.y);
+                _sdsPanel.anchoredPosition = new Vector2((open ? 0f : 800f) + BaseX(), _sdsPanel.anchoredPosition.y);
                 _sdsPanel.gameObject.SetActive(open);
                 return;
             }
@@ -1145,7 +1410,7 @@ namespace ChemicalSafety.Presentable
             PresentableFx.Play(PresentableFx.Whoosh, 0.35f);
             _sdsPanel.gameObject.SetActive(true);
             var from = _sdsPanel.anchoredPosition.x;
-            var to = open ? 0f : 800f;
+            var to = (open ? 0f : 800f) + BaseX();
             yield return PresentableFx.Tween(0.35f, t =>
             {
                 _sdsPanel.anchoredPosition = new Vector2(Mathf.Lerp(from, to, t), _sdsPanel.anchoredPosition.y);
@@ -1174,7 +1439,7 @@ namespace ChemicalSafety.Presentable
             var aspect = sp != null ? sp.rect.height / Mathf.Max(1f, sp.rect.width) : 1.34f;
             if (NewMcqUi)
             {
-                // client 2026-11-19: the whole sheet is visible at once (as in the earlier design): the sheet is fitted into the window, no scrolling
+                // client 2026-11-20: the whole sheet is visible at once, plain (no frame box, no scroll bar), as tall as the question box
                 var fitH = Mathf.Min(w * aspect, vp.rect.height);
                 var fitW = fitH / aspect;
                 _sdsContent.sizeDelta = new Vector2(fitW - w, fitH);
@@ -1398,11 +1663,22 @@ namespace ChemicalSafety.Presentable
             if (newUi)
             {
                 // the client's translucent neon frame: the room shows through it (transparent, as in the picture)
-                PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f)), art.roundedSolid, new Color(0.01f, 0.05f, 0.14f, 0.62f), true);
+                _newUnder = PresentableUi.Img(PresentableUi.Rect("Under", panel, new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f)), art.roundedSolid, new Color(0.01f, 0.05f, 0.14f, 0.62f), true);
                 var fr = PresentableUi.Img(panel, frameSp, new Color(1f, 1f, 1f, 0.9f), true);
                 fr.type = Image.Type.Sliced;
                 fr.pixelsPerUnitMultiplier = 1.2f; // the border pieces (title strip, glow) stay the same size however tall the box grows
                 fr.raycastTarget = true;
+                _newFrame = fr;
+                // client 2026-11-20: the picture question (Scenario 18 question 2) keeps the box of the earlier version so the pictograms fit: old glow + dark panel
+                var oldGlow = PresentableUi.Rect("OldGlow", panel, new Vector2(-0.012f, -0.012f), new Vector2(1.012f, 1.012f));
+                _oldLook[0] = PresentableUi.Img(oldGlow, screen, new Color(0.25f, 0.65f, 1f, 0.45f), true);
+                _oldLook[1] = PresentableUi.Img(PresentableUi.Rect("OldUnder", panel, new Vector2(0.004f, 0.004f), new Vector2(0.996f, 0.996f)), art.roundedSolid, new Color(0.02f, 0.07f, 0.15f, 0.80f), true);
+                _oldLook[2] = PresentableUi.Img(PresentableUi.Rect("OldTint", panel, Vector2.zero, Vector2.one), screen, panelTint, true);
+                _oldLook[2].raycastTarget = false;
+                foreach (var ol in _oldLook)
+                    ol.gameObject.SetActive(false);
+                oldGlow.SetAsFirstSibling();
+                _oldLook[1].transform.SetSiblingIndex(1);
             }
             else
             {
@@ -1501,12 +1777,14 @@ namespace ChemicalSafety.Presentable
             _sdsPanel = PresentableUi.Rect("SdsPanel", _main.transform, new Vector2(NewMcqUi ? (QuestionW + GapW) / CanvasW : BigSds ? 0.44f : 0.495f, NewMcqUi ? 1f - 1000f / CanvasH : 0f), new Vector2(1f, 1f));
             _sdsPanel.gameObject.AddComponent<CanvasGroup>();
             var sdsBg = PresentableUi.Img(_sdsPanel, sdsFrame, new Color(0.82f, 0.9f, 1f, 0.97f), false);
+            _sdsBg = sdsBg;
             sdsBg.type = Image.Type.Simple;
             sdsBg.raycastTarget = true;
             // client 2026-11-19: only the question box has the new design; the SDS panel keeps its earlier look (frame, title, window)
             _refTitle = T("RefTitle", _sdsPanel, new Vector2(0.15f, 0.87f), new Vector2(0.90f, 0.94f), 36f, HoloWhite, TextAlignmentOptions.Center, true, 14f);
             // inside the frame picture's visible edge (its left glow edge is at 0.09-0.11 of the width, the right one at 0.955): the sheet must not stick out of the box
             var viewport = PresentableUi.Rect("Viewport", _sdsPanel, new Vector2(0.118f, 0.15f), new Vector2(0.955f, 0.86f));
+            _sdsViewport = viewport;
             PresentableUi.Img(viewport, null, new Color(0f, 0f, 0f, 0.01f), false, true);
             viewport.gameObject.AddComponent<RectMask2D>();
             _sdsContent = PresentableUi.Rect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f));
@@ -1529,10 +1807,20 @@ namespace ChemicalSafety.Presentable
             var upImg = PresentableUi.Img(up, art.roundedSolid, new Color(0.55f, 0.85f, 1f, 0.35f), true, true);
             T("Arrow", up, Vector2.zero, Vector2.one, 34f, HoloWhite, TextAlignmentOptions.Center, true, 14f).text = "^";
             MakeButton("UpBtn", _sdsPanel, up, upImg, () => ScrollSds(0.35f));
+            _sdsArrows[0] = up;
             var down = PresentableUi.Rect("Down", _sdsPanel, new Vector2(0.34f, 0.075f), new Vector2(0.48f, 0.135f));
             var downImg = PresentableUi.Img(down, art.roundedSolid, new Color(0.55f, 0.85f, 1f, 0.35f), true, true);
             T("Arrow", down, Vector2.zero, Vector2.one, 34f, HoloWhite, TextAlignmentOptions.Center, true, 14f).text = "v";
             MakeButton("DownBtn", _sdsPanel, down, downImg, () => ScrollSds(-0.35f));
+            _sdsArrows[1] = down;
+
+            if (NewMcqUi)
+            {
+                ApplyPlainSds();
+                var cover = PresentableUi.Rect("ZoomCover", _sdsPanel, Vector2.zero, Vector2.one);
+                var coverImg = PresentableUi.Img(cover, null, new Color(0f, 0f, 0f, 0.004f), false, true);
+                MakeButton("SdsZoomBtn", _sdsPanel, cover, coverImg, ToggleSdsZoom);
+            }
 
             // the round CHECK SDS toggle overlaps the lower right corner, like the picture
             _roundBtn = PresentableUi.Rect("CheckSds", _main.transform, new Vector2(1f, NewMcqUi ? 1f - 1000f / CanvasH : 0f), new Vector2(1f, NewMcqUi ? 1f - 1000f / CanvasH : 0f));
