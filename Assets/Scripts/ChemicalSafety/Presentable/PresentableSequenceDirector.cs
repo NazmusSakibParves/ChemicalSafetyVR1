@@ -722,6 +722,8 @@ namespace ChemicalSafety.Presentable
         private const bool Sc0203GlassCard = true;
         // Scenario 2 asks only questions 2.1 and 2.2 (2 marks). false = all six chemicals as before. Keep MARKING.json SC02 count in step (2 / 6).
         public const bool Sc02TwoQuestionsOnly = true;
+        // Scenario 7: false = "the fire is out" hero voice (VO_Sc07Hero) is not played after the extinguishing
+        public const bool Sc07HeroVoice = false;
         public const int Sc02QuestionLimit = 2;
 
         // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
@@ -2251,8 +2253,8 @@ namespace ChemicalSafety.Presentable
             yield return fader.FadeTo(1f, 0.3f);
             if (sc07QuestionStand != null)
                 PlaceRig(sc07QuestionStand.position, sc07QuestionStand.forward);
-            if (sc07Crowd != null && sc07HeroWait != null && sc07FireAt != null)
-                sc07Crowd.PlaceHero(sc07HeroWait.position, sc07FireAt.position);
+            if (!Sc07Crowd.NobodyEntersAtFire && sc07Crowd != null && sc07HeroWait != null && sc07FireAt != null)
+                sc07Crowd.PlaceHero(sc07HeroWait.position, sc07FireAt.position); // (with NobodyEntersAtFire the hero first shows up for the extinguishing)
             yield return fader.FadeTo(0f, 0.4f);
             Stage("sc07Question");
             // straight ahead at eye level, 0.7 m: a slightly extended arm reaches it, it is not at the eyes (the right / wrong cards share the canvas)
@@ -2308,9 +2310,12 @@ namespace ChemicalSafety.Presentable
             void OnFireOut() => StartCoroutine(PlayVoice(art.voSc07Hero));
             if (sc07Crowd != null)
             {
-                sc07Crowd.FireOut += OnFireOut;
+                // client 2026-11-21: no hero voice after the fire is out (Sc07HeroVoice = false); the clip and field stay for the switch
+                if (Sc07HeroVoice)
+                    sc07Crowd.FireOut += OnFireOut;
                 yield return sc07Crowd.HeroExtinguish();
-                sc07Crowd.FireOut -= OnFireOut;
+                if (Sc07HeroVoice)
+                    sc07Crowd.FireOut -= OnFireOut;
             }
             yield return fader.FadeTo(1f, 0.35f);
             if (sc07QuestionStand != null)

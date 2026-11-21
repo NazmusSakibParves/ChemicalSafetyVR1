@@ -1451,7 +1451,7 @@ namespace ChemicalSafety.Presentable
             Say("SC07 event over after " + te.ToString("0.0") + " s, fire = " + fire.Intensity.ToString("0.00") + " (expected 1), hero active = " + crowd.Hero.gameObject.activeSelf +
                 " (expected True), hero speed = " + crowd.Hero.Speed.ToString("0.00"));
 
-            Say("SC07 fire exit door open after the flight = " + crowd.FleeDoorOpen + " (expected True), people = " + crowd.Count);
+            Say("SC07 fire exit door open after the flight = " + crowd.FleeDoorOpen + (Sc07Crowd.HeroOnlyEntry ? " (expected False: hero only)" : " (expected True)") + ", people = " + crowd.Count + (Sc07Crowd.HeroOnlyEntry ? " (expected 1 once the scene is rebuilt)" : ""));
             yield return WaitStage("sc07Sds", 20f);
             yield return new WaitForSeconds(1.2f);
             Say("SC07 SDS shown = " + clip7.IsVisible + " (expected True)");
@@ -1627,7 +1627,7 @@ namespace ChemicalSafety.Presentable
             }
 
             Say("SC07 event over after " + te.ToString("0.0") + " s, fire = " + fire.Intensity.ToString("0.00") + " (expected 1), hero active = " + crowd.Hero.gameObject.activeSelf +
-                " (expected True), fire exit door open = " + crowd.FleeDoorOpen + " (expected True)");
+                (Sc07Crowd.NobodyEntersAtFire ? " (expected False: nobody enters)" : " (expected True)") + ", fire exit door open = " + crowd.FleeDoorOpen + (Sc07Crowd.HeroOnlyEntry ? " (expected False: only the hero comes in)" : " (expected True)"));
             var sw = Camera.main.transform.position;
             yield return WaitStage("sc07Walk", 20f);
             yield return WaitStage("sc07Sds", 30f);

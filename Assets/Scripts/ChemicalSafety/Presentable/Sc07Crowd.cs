@@ -169,6 +169,15 @@ namespace ChemicalSafety.Presentable
             return new List<Vector3> { mid + perp * side, to };
         }
 
+        // client 2026-11-21 (40-minute clock): after the fire starts only the hero comes in from the doorway, the four workers who ran in and out
+        // are gone. false = the earlier full event. The builder reads the same switch (it builds only the hero then).
+        public const bool HeroOnlyEntry = true;
+        // client 2026-11-21 (second step): not even the hero runs in. After the fire starts the event is only the burning cabinet, the alarm and the
+        // beacon for a few seconds; the hero first appears when the learner has answered right (Sc07Win places him at the pillar). false = the hero
+        // runs in (HeroOnlyEntry) or the full crowd (HeroOnlyEntry false).
+        public const bool NobodyEntersAtFire = true;
+        private const float NobodyEventSeconds = 3.0f; // the fire ramps up in 3 s (Ignite(3f)): the learner sees it grow
+
         public IEnumerator PlayEvent()
         {
             CaptureCo2();
@@ -183,6 +192,12 @@ namespace ChemicalSafety.Presentable
                 ambience.SetFire(1f);
             }
 
+            if (NobodyEntersAtFire)
+            {
+                yield return PresentableFx.Wait(NobodyEventSeconds);
+                yield break;
+            }
+
             yield return PresentableFx.Wait(0.7f);
 
             var door = doorStart != null ? doorStart.position : transform.position;
@@ -191,6 +206,12 @@ namespace ChemicalSafety.Presentable
             // they come in one after the other, hurrying, each on a lane of his own
             for (var i = 0; i < people.Length; i++)
             {
+                if (HeroOnlyEntry && i > 0)
+                {
+                    arrived[i] = true; // nobody else enters
+                    continue;
+                }
+
                 var p = people[i];
                 if (p == null)
                     continue;
@@ -201,7 +222,8 @@ namespace ChemicalSafety.Presentable
                 var spot = i == 0 ? (heroSpot != null ? heroSpot.position : start) : SpotOf(i - 1, start);
                 p.transform.rotation = Quaternion.LookRotation(Flat(spot - start).sqrMagnitude > 0.01f ? Flat(spot - start).normalized : Vector3.right, Vector3.up);
                 StartCoroutine(Arrive(i, start, spot, firePos, arrived));
-                yield return PresentableFx.Wait(Random.Range(0.25f, 0.5f));
+                if (!HeroOnlyEntry)
+                    yield return PresentableFx.Wait(Random.Range(0.25f, 0.5f));
             }
 
             var wait = 0f;
@@ -209,6 +231,13 @@ namespace ChemicalSafety.Presentable
             {
                 wait += Time.deltaTime;
                 yield return null;
+            }
+
+            if (HeroOnlyEntry)
+            {
+                // the hero is in front of the fire and faces it (Arrive); a short beat, then the next step
+                yield return PresentableFx.Wait(0.6f);
+                yield break;
             }
 
             // they stand and react, each in his own way, for a few seconds

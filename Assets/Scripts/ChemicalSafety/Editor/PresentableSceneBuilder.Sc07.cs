@@ -702,8 +702,10 @@ namespace ChemicalSafety.Editor
             var prefabLo = Sc07MakeHuman("Lo");
             var walkClips = Sc07Clips("Step_Walk_", 6);
             var runClips = Sc07Clips("Step_Run_", 6);
-            refs.people = new Sc07Human[Sc07People.Length];
-            for (var i = 0; i < Sc07People.Length; i++)
+            // client 2026-11-21: only the hero is in the hall (Sc07Crowd.HeroOnlyEntry); the four other workers are not built (Scenario 11 builds its own)
+            var crowdCount = Sc07Crowd.HeroOnlyEntry ? 1 : Sc07People.Length;
+            refs.people = new Sc07Human[crowdCount];
+            for (var i = 0; i < crowdCount; i++)
             {
                 var person = Sc07People[i];
                 var prefab = i == 0 ? prefabHi : prefabLo;

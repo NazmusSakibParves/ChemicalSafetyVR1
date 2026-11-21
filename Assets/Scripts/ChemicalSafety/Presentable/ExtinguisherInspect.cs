@@ -113,6 +113,8 @@ namespace ChemicalSafety.Presentable
         public void Begin()
         {
             RestoreAll();
+            _busy = false; // a jump away mid-hold kills the coroutines: do not start the next visit "busy" or still holding
+            _held = -1;
             CaptureHomes();
             _auto = false;
             AllSeen = false;
@@ -168,6 +170,8 @@ namespace ChemicalSafety.Presentable
         {
             _on = false;
             RestoreAll();
+            _busy = false;
+            _held = -1;
             HideCard();
             if (arrow != null)
                 arrow.gameObject.SetActive(false);

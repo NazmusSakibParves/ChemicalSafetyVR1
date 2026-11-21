@@ -130,12 +130,14 @@ namespace ChemicalSafety.Presentable
             {
                 scorch.enabled = true;
                 var c = scorch.sharedMaterial != null ? scorch.sharedMaterial.GetColor("_BaseColor") : Color.white;
-                var pb = new MaterialPropertyBlock();
+                var pb = _scorchBlock ??= new MaterialPropertyBlock(); // one block, reused (this runs every frame while the fire fades)
                 scorch.GetPropertyBlock(pb);
                 pb.SetColor("_BaseColor", new Color(c.r, c.g, c.b, Mathf.Clamp01(0.15f + i * 0.85f) * c.a));
                 scorch.SetPropertyBlock(pb);
             }
         }
+
+        private MaterialPropertyBlock _scorchBlock;
 
         private static void SetPlaying(ParticleSystem ps, bool on)
         {
