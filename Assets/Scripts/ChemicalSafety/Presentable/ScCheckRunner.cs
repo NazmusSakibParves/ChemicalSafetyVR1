@@ -106,6 +106,10 @@ namespace ChemicalSafety.Presentable
         public Action<Sprite> SheetChanged;
         // the new design: question panel 1250 px, a 700 px gap (the chemical stands in it, the top bar stays clear), SDS panel 1250 px
         private const float MainDist = 2.4f; // metres from the eyes to the question + SDS boxes (the new design)
+        // client 2026-11-21: in the headset the question box (with the SDS) opened against the table; it opens 12 cm higher, same size, so the options, the
+        // reasons and NEXT show. 12 cm is the room under the top bar: more would cover the question text. The picture question (Scenario 18 question 2) keeps its height.
+        private const float McqRaise = 0.12f;
+        private static readonly Vector3[] Corners = new Vector3[4];
         private const float QuestionW = 2000f, GapW = 90f, SdsW = 1300f; // side by side, as in the client's workflow picture (a small gap) // the SDS panel keeps the earlier 1400 x 1000 px (the whole sheet is visible)
         private static float CanvasW => NewMcqUi ? QuestionW + GapW + SdsW : BigSds ? 2500f : 2200f;
         private static float CanvasH => NewMcqUi ? 1600f : BigSds ? 1000f : 860f;
@@ -410,16 +414,44 @@ namespace ChemicalSafety.Presentable
                 // the panels stand beside the chemical (it is in the 70 cm gap) with their lower edge level with its head; the top bar is clear of them
                 // because they are 35 cm and more off the middle
                 // top edge 62 cm over the eyes (about 13 degrees up at 2.6 m, under the top bar's level at the sides), the boxes hang down beside the chemical
-                pos.y = MainCenterY();
+                pos.y = MainCenterY(); // the small McqRaise is added below
             }
 
+            if (NewMcqUi && t == _main.transform && !PictureQuestionShown())
+                pos.y += McqRaise;
             t.SetPositionAndRotation(pos, Quaternion.LookRotation(toAnchor, Vector3.up));
+
             if (t == _main.transform)
             {
                 _mainBase = pos;
                 _mainRight = Vector3.Cross(Vector3.up, toAnchor);
                 ApplyMainOffset();
             }
+        }
+
+        // client 2026-11-21: the next-scenario popup stands a little higher (up to 12 cm), but never beyond the top bar's comfort limit: a low seated head
+        // already has it high, a standing head gets the full lift
+        private const float ResultsRaise = 0.12f;
+
+        private void RaiseResults()
+        {
+            if (_cam == null || _results == null)
+                return;
+            ((RectTransform)_results.transform).GetWorldCorners(Corners);
+            var top = Mathf.Max(Mathf.Max(Corners[0].y, Corners[1].y), Mathf.Max(Corners[2].y, Corners[3].y));
+            var limit = _cam.position.y + SessionHud.SafeBarRatio * MainDist - 0.03f;
+            var lift = Mathf.Clamp(limit - top, 0f, ResultsRaise);
+            if (lift > 0f)
+                _results.transform.position += Vector3.up * lift;
+        }
+
+        // true while the open question is a picture question (an answer shows a picture instead of text: Scenario 18 question 2)
+        private bool PictureQuestionShown()
+        {
+            for (var i = 0; i < 4; i++)
+                if (_optImg[i] != null && _optImg[i].gameObject.activeSelf && _optBg[i] != null && _optBg[i].transform.parent.gameObject.activeSelf)
+                    return true;
+            return false;
         }
 
         private Vector3 _mainBase, _mainRight;
@@ -1288,14 +1320,26 @@ namespace ChemicalSafety.Presentable
                 PresentableFx.Haptic(true, right ? 0.5f : 0.9f, 0.18f);
             }
 
+            // client 2026-11-21: as Scenario 1, the right answer turns green and ALL the wrong answers turn red (a picture question keeps its earlier look)
+            var allWrongRed = !PictureQuestionShown();
+            // the answer sprite is cyan (no red in it), so a red tint cannot make it red: the wrong rows use the red box of Scenario 1 (Mcq_BoxRed)
+            var redBox = allWrongRed && art != null ? art.mcqBoxRed : null;
             for (var i = 0; i < 4; i++)
             {
                 if (!_optBg[i].transform.parent.gameObject.activeSelf)
                     continue;
                 if (NewMcqUi && _ansOn != null)
                 {
-                    _optBg[i].sprite = i == _correctShown || i == row ? _ansOn : _ansOff;
-                    _optBg[i].color = i == _correctShown ? new Color(0.45f, 1f, 0.6f, 0.9f) : i == row ? new Color(1f, 0.45f, 0.45f, 0.9f) : new Color(1f, 1f, 1f, 0.45f);
+                    var wrongRed = i != _correctShown && (allWrongRed || i == row);
+                    if (wrongRed && redBox != null)
+                    {
+                        _optBg[i].sprite = redBox;
+                        _optBg[i].color = new Color(1f, 1f, 1f, 0.9f);
+                        continue;
+                    }
+
+                    _optBg[i].sprite = i == _correctShown || wrongRed ? _ansOn : _ansOff;
+                    _optBg[i].color = i == _correctShown ? new Color(0.45f, 1f, 0.6f, 0.9f) : wrongRed ? new Color(1f, 0.45f, 0.45f, 0.9f) : new Color(1f, 1f, 1f, 0.45f);
                     continue;
                 }
 
@@ -1473,6 +1517,7 @@ namespace ChemicalSafety.Presentable
             _resMsg.text = Str(score >= 2 ? (last ? "ResultGoodLast" : "ResultGood") : (last ? "ResultLowLast" : "ResultLow"));
             _resNextText.text = Str("NextRound");
             PlaceAbove(_results.transform, 0.52f);
+            RaiseResults();
             _results.gameObject.SetActive(true);
             _next = false;
             if (supervisor != null)
