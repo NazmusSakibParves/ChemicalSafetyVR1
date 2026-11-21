@@ -676,6 +676,131 @@ namespace ChemicalSafety.Editor
             return mesh;
         }
 
+        // client 2026-11-22: the labels of the acid can and the water jug used to be flat cards at the highest point of the curved body, so away from
+        // that point they floated off the plastic. This builds a label that follows the body: a grid of vertices, each one dropped onto the real surface
+        // by a ray (along -Z for the face toward +Z, along +Z for the back face) and lifted a few mm along the surface normal. The result is parented to
+        // the can and moves with it. With Sc06ConformLabels = false the old flat cards are built.
+        private const bool Sc06ConformLabels = true;
+
+        private static Transform Sc06ConformLabel(string name, Transform owner, float cx, float cy, Vector2 size, bool front, Material mat, float fallbackZ,
+            float lift = 0.0025f, int nx = 24, int ny = 16)
+        {
+            // world-space triangles of the body (not caps or other labels)
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            foreach (var mf in owner.GetComponentsInChildren<MeshFilter>(false))
+            {
+                if (!Sc06BodyVertex(mf))
+                    continue;
+                var m = mf.transform.localToWorldMatrix;
+                var baseIndex = verts.Count;
+                foreach (var v in mf.sharedMesh.vertices)
+                    verts.Add(m.MultiplyPoint3x4(v));
+                foreach (var ix in mf.sharedMesh.triangles)
+                    tris.Add(baseIndex + ix);
+            }
+
+            var bounds = Sc06Bounds(owner);
+            var dir = front ? new Vector3(0f, 0f, -1f) : new Vector3(0f, 0f, 1f);
+            var toViewer = -dir;
+            var oz = front ? bounds.max.z + 0.3f : bounds.min.z - 0.3f;
+            var pos = new Vector3[(nx + 1) * (ny + 1)];
+            var nrm = new Vector3[pos.Length];
+            var uv = new Vector2[pos.Length];
+            for (var j = 0; j <= ny; j++)
+            {
+                for (var i = 0; i <= nx; i++)
+                {
+                    var x = cx + (i / (float)nx - 0.5f) * size.x;
+                    var y = cy + (j / (float)ny - 0.5f) * size.y;
+                    var origin = new Vector3(x, y, oz);
+                    var bestT = float.MaxValue;
+                    var bestN = toViewer;
+                    for (var t = 0; t < tris.Count; t += 3)
+                    {
+                        var a = verts[tris[t]];
+                        var e1 = verts[tris[t + 1]] - a;
+                        var e2 = verts[tris[t + 2]] - a;
+                        var pv = Vector3.Cross(dir, e2);
+                        var det = Vector3.Dot(e1, pv);
+                        if (Mathf.Abs(det) < 1e-9f)
+                            continue;
+                        var inv = 1f / det;
+                        var tv = origin - a;
+                        var u = Vector3.Dot(tv, pv) * inv;
+                        if (u < 0f || u > 1f)
+                            continue;
+                        var qv = Vector3.Cross(tv, e1);
+                        var w = Vector3.Dot(dir, qv) * inv;
+                        if (w < 0f || u + w > 1f)
+                            continue;
+                        var hitT = Vector3.Dot(e2, qv) * inv;
+                        if (hitT > 0f && hitT < bestT)
+                        {
+                            bestT = hitT;
+                            var n = Vector3.Cross(e1, e2).normalized;
+                            bestN = Vector3.Dot(n, toViewer) >= 0f ? n : -n;
+                        }
+                    }
+
+                    var k = j * (nx + 1) + i;
+                    if (bestT < float.MaxValue)
+                    {
+                        var hit = origin + dir * bestT;
+                        pos[k] = hit + bestN * lift;
+                        nrm[k] = bestN;
+                    }
+                    else
+                    {
+                        pos[k] = new Vector3(x, y, fallbackZ + (front ? lift : -lift)); // no surface under this point: stay flat
+                        nrm[k] = toViewer;
+                    }
+
+                    uv[k] = new Vector2(front ? 1f - i / (float)nx : i / (float)nx, j / (float)ny); // front: the viewer's right is -X
+                }
+            }
+
+            var idx = new List<int>();
+            for (var j = 0; j < ny; j++)
+            {
+                for (var i = 0; i < nx; i++)
+                {
+                    var a = j * (nx + 1) + i;
+                    var b = a + 1;
+                    var c = a + (nx + 1);
+                    var d = c + 1;
+                    AddFacing(idx, pos, a, c, b, toViewer);
+                    AddFacing(idx, pos, b, c, d, toViewer);
+                }
+            }
+
+            var go = new GameObject(name);
+            go.transform.SetParent(owner, true);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity); // world-aligned, so the world-space vertices below are the local ones
+            go.transform.localScale = Vector3.one / Mathf.Max(0.0001f, owner.lossyScale.x);
+            var mesh = new Mesh { name = name + "Mesh" };
+            mesh.SetVertices(pos);
+            mesh.SetNormals(nrm);
+            mesh.SetUVs(0, uv);
+            mesh.SetTriangles(idx, 0);
+            mesh.RecalculateBounds();
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            return go.transform;
+        }
+
+        // one triangle wound so that its front (clockwise, as Unity wants it) looks toward the viewer
+        private static void AddFacing(List<int> idx, Vector3[] pos, int p0, int p1, int p2, Vector3 toViewer)
+        {
+            var face = Vector3.Cross(pos[p1] - pos[p0], pos[p2] - pos[p0]);
+            if (Vector3.Dot(face, toViewer) >= 0f)
+                idx.AddRange(new[] { p0, p1, p2 });
+            else
+                idx.AddRange(new[] { p0, p2, p1 });
+        }
+
         // Vertices of the body in a band: the BACK (min z), like Sc06FrontZ for the other face.
         private static float Sc06BackZ(Transform root, float y, float halfBand, float cx, float halfW, float fallback)
         {
@@ -851,10 +976,17 @@ namespace ChemicalSafety.Editor
                 var lw = Mathf.Min(0.34f, ab.size.x * 0.86f);
                 var ly = ab.min.y + ab.size.y * 0.42f;
                 var fz = Sc06FrontZ(acid, ly, lw * 0.5f, ab.center.x, lw * 0.5f, ab.max.z);
-                var lq = QuadObj("AcidLabel", room, new Vector3(ab.center.x, ly, fz + 0.0022f), new Vector3(0f, 180f, 0f),
-                    new Vector2(lw, lw * 0.75f), Sc06LabelPaper("Sc06LabelAcid", aLabelTex));
-                lq.transform.SetParent(acid, true);
-                Object.DestroyImmediate(lq.GetComponent<Collider>());
+                if (Sc06ConformLabels)
+                {
+                    Sc06ConformLabel("AcidLabel", acid, ab.center.x, ly, new Vector2(lw, lw * 0.75f), true, Sc06LabelPaper("Sc06LabelAcid", aLabelTex), fz);
+                }
+                else
+                {
+                    var lq = QuadObj("AcidLabel", room, new Vector3(ab.center.x, ly, fz + 0.0022f), new Vector3(0f, 180f, 0f),
+                        new Vector2(lw, lw * 0.75f), Sc06LabelPaper("Sc06LabelAcid", aLabelTex));
+                    lq.transform.SetParent(acid, true);
+                    Object.DestroyImmediate(lq.GetComponent<Collider>());
+                }
             }
 
             // the glb's shader makes the acid can look like dark brass under room light: matte, light plastic like the picture
@@ -923,16 +1055,24 @@ namespace ChemicalSafety.Editor
                 var wl = Mathf.Min(0.32f, wbb.size.x * 0.84f);
                 var wy = wbb.min.y + wbb.size.y * 0.42f;
                 var wz = Sc06FrontZ(water, wy, wl * 0.5f, wbb.center.x, wl * 0.5f, wbb.max.z);
-                var wq = QuadObj("WaterLabel", room, new Vector3(wbb.center.x, wy, wz + 0.0022f), new Vector3(0f, 180f, 0f),
-                    new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
-                wq.transform.SetParent(water, true);
-                Object.DestroyImmediate(wq.GetComponent<Collider>());
                 // the same label on the back face: when the jug turns its neck toward the jar to pour, this one faces the learner
                 var wzb = Sc06BackZ(water, wy, wl * 0.5f, wbb.center.x, wl * 0.5f, wbb.min.z);
-                var wqb = QuadObj("WaterLabelBack", room, new Vector3(wbb.center.x, wy, wzb - 0.0022f), Vector3.zero,
-                    new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
-                wqb.transform.SetParent(water, true);
-                Object.DestroyImmediate(wqb.GetComponent<Collider>());
+                if (Sc06ConformLabels)
+                {
+                    Sc06ConformLabel("WaterLabel", water, wbb.center.x, wy, new Vector2(wl, wl * 0.62f), true, Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex), wz);
+                    Sc06ConformLabel("WaterLabelBack", water, wbb.center.x, wy, new Vector2(wl, wl * 0.62f), false, Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex), wzb);
+                }
+                else
+                {
+                    var wq = QuadObj("WaterLabel", room, new Vector3(wbb.center.x, wy, wz + 0.0022f), new Vector3(0f, 180f, 0f),
+                        new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
+                    wq.transform.SetParent(water, true);
+                    Object.DestroyImmediate(wq.GetComponent<Collider>());
+                    var wqb = QuadObj("WaterLabelBack", room, new Vector3(wbb.center.x, wy, wzb - 0.0022f), Vector3.zero,
+                        new Vector2(wl, wl * 0.62f), Sc06LabelPaperOneSided("Sc06LabelWaterOne", wLabelTex));
+                    wqb.transform.SetParent(water, true);
+                    Object.DestroyImmediate(wqb.GetComponent<Collider>());
+                }
             }
 
             // blue caps (come off during the pour) and the spouts (the cap end of each can)
