@@ -18,6 +18,8 @@ namespace ChemicalSafety.Presentable
         [Tooltip("true: SnapTo and Follow do nothing, the table keeps its built height (no drifting world in the headset).")]
         [SerializeField] private bool fixedHeight;
 
+        private const float MaxSeatedDrop = 0.10f;
+
         private float _top;
         private bool _init;
 
@@ -38,6 +40,22 @@ namespace ChemicalSafety.Presentable
             if (fixedHeight)
                 return;
             Apply(Mathf.Clamp(headY - belowHead, minTop, maxTop));
+        }
+
+        /// <summary>
+        /// Scenario 4, once at the start while the screen is black: a SEATED head gets a slightly lower table (head height minus <c>belowHead</c>, never
+        /// below <c>minTop</c>); a standing head (or the editor camera) keeps the built height. It never raises the table and never follows the head
+        /// afterwards, so nothing drifts in the headset. Works with <c>fixedHeight</c> on.
+        /// </summary>
+        public void FitToSeat(float headY)
+        {
+            Ensure();
+            // at most 10 cm lower than built: the lower shelf and rails of the table stay clear of the floor and the table keeps its proportions
+            var lowest = Mathf.Max(minTop, builtTopY - MaxSeatedDrop);
+            var target = Mathf.Min(builtTopY, Mathf.Max(lowest, headY - belowHead));
+            if (target >= _top - 0.01f)
+                return;
+            Apply(target);
         }
 
         /// <summary>Eases toward a sit or stand change. Ignores shifts smaller than the dead zone.</summary>

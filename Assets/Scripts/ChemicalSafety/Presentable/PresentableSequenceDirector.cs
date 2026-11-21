@@ -432,18 +432,37 @@ namespace ChemicalSafety.Presentable
 #endif
         }
 
-        private IEnumerator SwitchOffOtherRooms(GameObject keep)
+        // Scenarios 8, 9 and 10 on the ray play in the shared factory room (envSc06) and never turn envSc08 / 09 / 10 on: after a NEXT / BACK jump the
+        // old single-room wait ran into its 30 s limit and then switched the shared room off too (2026-11-21: the environment vanished 30 s after the jump).
+        // The keep list holds every room the scenario may really use.
+        private IEnumerator SwitchOffOtherRooms(params GameObject[] keep)
         {
             var waited = 0f;
-            while (keep != null && !keep.activeInHierarchy && waited < 30f)
+            while (waited < 30f && WaitingForRoom(keep))
             {
                 waited += SessionClock.GameDelta;
                 yield return null;
             }
 
             foreach (var e in new[] { envSc01, envSc02, envSc03, envSc04, envSc05, envSc06, envSc07, envSc08, envSc09, envSc10, envSc11, envSc12, envScCheck, envSc19, envSc20, envSc21, envSc22 })
-                if (e != null && e != keep)
+                if (e != null && System.Array.IndexOf(keep, e) < 0)
                     e.SetActive(false);
+        }
+
+        // true while none of the rooms to keep is on yet (nothing to wait for when the list holds no room at all)
+        private static bool WaitingForRoom(GameObject[] keep)
+        {
+            var any = false;
+            foreach (var k in keep)
+            {
+                if (k == null)
+                    continue;
+                if (k.activeInHierarchy)
+                    return false;
+                any = true;
+            }
+
+            return any;
         }
 
         // the scenario by its number: the chain of each scenario carries on with the next ones by itself, as in the normal flow
@@ -459,7 +478,7 @@ namespace ChemicalSafety.Presentable
             // room of the scenario is on, then every other room is switched off (each scenario hides the rooms before it, never the first one)
             var targetRoom = n == 3 ? envSc03 : n == 4 ? envSc04 : n == 5 ? envSc05 : n == 6 ? envSc06 : n == 7 ? envSc07 : n == 8 ? envSc08
                 : n == 9 ? envSc09 : n == 10 ? envSc10 : n == 11 ? envSc11 : n == 12 ? envSc12 : n == 19 ? envSc19 : n == 20 ? envSc20 : n == 21 ? envSc21 : n == 22 ? envSc22 : envScCheck;
-            StartCoroutine(SwitchOffOtherRooms(targetRoom));
+            StartCoroutine(n >= 8 && n <= 10 ? SwitchOffOtherRooms(targetRoom, envSc06) : SwitchOffOtherRooms(targetRoom));
             PresentableInput.ActiveScenario = n;
             switch (n)
             {
@@ -1183,6 +1202,10 @@ namespace ChemicalSafety.Presentable
             clipboard.SetSheet(art.sdsSc04);
             clipboard.SetVisible(false);
             PlaceRig(spawnSc04.position, spawnSc04.forward);
+            // client 2026-11-21: a seated learner finds the bench too high: lower it a little for a low head (once, screen still black); a standing head
+            // keeps the built height
+            if (gloveBench != null && _cam != null)
+                gloveBench.FitToSeat(_cam.position.y);
             yield return fader.FadeTo(0f, 0.9f);
 
             // controller ray (as Scenarios 1-3): head free, card world-fixed, no arrows, glove properties run by themselves
@@ -2847,7 +2870,20 @@ namespace ChemicalSafety.Presentable
                 yield return PresentableFx.Wait(1.2f);
 
                 Stage("sc09Gate");
-                Sc04PopupPose(-0.95f, 0.12f, 1.6f, out var gatePos, out var gateRot);
+                Sc04PopupPose(-0.95f, 0f, 1.6f, out var gatePos, out var gateRot);
+                if (_cam != null)
+                {
+                    // client 2026-11-21: the Scenario 9 gate card opens exactly at the learner's eye height, straight ahead of where they face
+                    // (it was 7 cm above the eye line, and the props push-out could still move it)
+                    gatePos.y = _cam.position.y;
+                    var gateDrag = sc09GateRay.GetComponent<DraggablePanel>();
+                    if (gateDrag != null)
+                        gateDrag.SkipPushOut = true;
+                    var toGate = Flat(gatePos - _cam.position);
+                    Debug.Log("[Gate] sc09 card y=" + gatePos.y.ToString("0.00") + " eye y=" + _cam.position.y.ToString("0.00") + " offAxisDeg=" +
+                              Vector3.Angle(Flat(_cam.forward), toGate).ToString("0") + " dist=" + toGate.magnitude.ToString("0.00"));
+                }
+
                 var choice = 0; // 1 = PREVIEW, 2 = NEXT
                 void OnBack() => choice = 1;
                 void OnNext() => choice = 2;
@@ -4029,7 +4065,14 @@ namespace ChemicalSafety.Presentable
                 return;
             // Scenarios 13-18 (new design): the question and SDS panels stand beside the chemical, clear of the top bar, so they are not lowered
             if (instructionPanel != null && instructionPanel.gameObject.activeInHierarchy)
+            {
                 LowerBelowBar(instructionPanel.transform, instructionPanel.TopWorldY);
+                // 2026-11-21 (client): in Scenario 4 the card and its Continue button must never sink into the bench. For a seated head the band between the
+                // bench and the top bar is smaller than the card, the bar rule above won and pushed the card into the table: the bench wins here (same 16 cm
+                // clearance as the question box, KeepAboveBench). Nothing moves when the card is already clear (standing head, editor height).
+                if (sc == 4 && PresentableInput.RayActive)
+                    Sc04KeepAboveTable(instructionPanel.transform, instructionPanel.BottomExtentMeters, 0.16f);
+            }
             // the question box of Scenario 1 and of Scenario 4 (above the bench: the bench top is the lower limit, see Sc04QuestionScale)
             var guarded = sc == 1 ? mcqSc01 : (sc == 4 ? mcqSc04 : (sc == 5 ? mcqSc05 : (sc == 6 ? mcqSc06 : (sc == 7 ? mcqSc07 : (sc == 8 ? mcqSc08 : (sc == 9 ? mcqSc09 : (sc == 10 ? mcqSc10 : (sc == 11 ? mcqSc11 : (sc == 12 ? mcqSc12 : (sc == 19 ? mcqSc19 : (sc == 20 ? mcqSc20 : (sc == 21 ? mcqSc21 : (sc == 22 ? mcqSc22 : null)))))))))))));
             if (guarded != null)

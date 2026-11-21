@@ -46,6 +46,7 @@ namespace ChemicalSafety.Presentable
         {
             All.Remove(this);
             _moved = false;
+            _mover = null;
             Dragging = false;
         }
 
@@ -99,7 +100,10 @@ namespace ChemicalSafety.Presentable
         private void Update()
         {
             if (_moved && (!Shown() || _scenario != PresentableInput.ActiveScenario))
+            {
                 _moved = false;
+                _mover = null;
+            }
             if (!PresentableInput.RayActive)
                 return;
             if (Shown())
@@ -120,7 +124,7 @@ namespace ChemicalSafety.Presentable
                 return;
             if (_moved)
             {
-                transform.SetPositionAndRotation(_pos, _rot);
+                (_mover != null ? _mover : transform).SetPositionAndRotation(_pos, _rot);
                 return;
             }
 
@@ -150,16 +154,17 @@ namespace ChemicalSafety.Presentable
             if (c == null || cam == null)
                 return;
             var rt = (RectTransform)c.transform;
+            var m = Mover; // the card itself (for a gate card the host is far away: the push direction must come from the card, not from the host)
             for (var i = 0; i < MaxSteps; i++)
             {
                 if (!OverlapsProp(rt, cam.transform))
                     return;
                 var head = cam.transform.position;
-                var toHead = new Vector3(head.x - transform.position.x, 0f, head.z - transform.position.z);
+                var toHead = new Vector3(head.x - m.position.x, 0f, head.z - m.position.z);
                 if (toHead.magnitude > MinHeadDistance + StepMetres)
-                    transform.position += toHead.normalized * StepMetres;
+                    m.position += toHead.normalized * StepMetres;
                 else
-                    transform.position += Vector3.up * StepMetres;
+                    m.position += Vector3.up * StepMetres;
             }
         }
 
@@ -245,20 +250,23 @@ namespace ChemicalSafety.Presentable
         public void BeginDrag(Vector3 origin, Vector3 hitPoint)
         {
             Dragging = true;
+            var m = Mover;
+            _mover = m;
             _grabDist = Vector3.Distance(origin, hitPoint);
-            _grabOffset = transform.position - hitPoint;
-            _pos = transform.position;
-            _rot = transform.rotation;
+            _grabOffset = m.position - hitPoint;
+            _pos = m.position;
+            _rot = m.rotation;
             _scenario = PresentableInput.ActiveScenario;
             _moved = true;
 
             // head-locked bar (client 2026-11-20, smooth drag): work in the head's own frame on the plane the bar sits on, so a still hand never
             // moves the bar and a moving hand moves it one to one, whatever the head does meanwhile
+            // (the bar's position is the bar's own canvas, not its host object: the host sits at the world origin)
             var cam = OnHeadOffset != null ? Camera.main : null;
             if (cam != null)
             {
                 var inv = Quaternion.Inverse(cam.transform.rotation);
-                var bar = inv * (transform.position - cam.transform.position);
+                var bar = inv * (m.position - cam.transform.position);
                 _headPlaneZ = bar.z;
                 var o = inv * (origin - cam.transform.position);
                 var d = inv * (hitPoint - origin).normalized;
@@ -305,9 +313,25 @@ namespace ChemicalSafety.Presentable
             var look = new Vector3(target.x - head.x, 0f, target.z - head.z);
             if (look.sqrMagnitude > 0.0001f)
                 _rot = Quaternion.LookRotation(look, Vector3.up);
-            transform.SetPositionAndRotation(_pos, _rot);
+            (_mover != null ? _mover : transform).SetPositionAndRotation(_pos, _rot);
         }
 
         public void EndDrag() => Dragging = false;
+
+        // What a drag moves. Almost every popup is its own host (the host IS the card), then it is the host as always. A gate card (Sc06Gate) is a child
+        // canvas that the scenario opens at a world pose far from its host object: rotating / moving the HOST swung the card out of the view
+        // (2026-11-21: the Scenario 9 gate "vanished" when dragged), so for such hosts the card (canvas) itself is moved.
+        private Transform _mover;
+
+        private Transform Mover
+        {
+            get
+            {
+                var c = FindCanvas();
+                if (c == null || c.transform == transform)
+                    return transform;
+                return (c.transform.position - transform.position).sqrMagnitude > 0.25f ? c.transform : transform;
+            }
+        }
     }
 }
