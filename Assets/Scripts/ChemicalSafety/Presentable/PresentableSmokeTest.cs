@@ -2195,11 +2195,15 @@ namespace ChemicalSafety.Presentable
             Say("SC09 accident: jar broken = " + splash.JarBroken + " (expected True), visor dirty = " + visor.Dirty + " (expected True), strength = " + visor.Strength.ToString("0.00"));
             yield return Shot("106_sc09_visor");
             yield return WaitStage("sc09Spill", 20f);
-            yield return new WaitForSeconds(2.5f);
-            yield return Shot("107_sc09_spill_card");
-            var ip2 = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
-            if (ip2 != null)
-                LayoutCheck("SC09 spill card", ip2.transform);
+            if (!PresentableSequenceDirector.Sc09ShortFlow)
+            {
+                yield return new WaitForSeconds(2.5f);
+                yield return Shot("107_sc09_spill_card");
+                var ip2 = FindFirstObjectByType<InstructionPanelView>(FindObjectsInactive.Include);
+                if (ip2 != null)
+                    LayoutCheck("SC09 spill card", ip2.transform);
+            }
+
             yield return WaitStage("sc09Sds", 40f);
             yield return new WaitForSeconds(1.8f);
             Say("SC09 SDS visible = " + clipboard.IsVisible + " (expected True)");
@@ -2211,7 +2215,7 @@ namespace ChemicalSafety.Presentable
                 yield return null;
             }
 
-            Say("SC09 SDS hid by itself after " + sw.ToString("0.0") + " s (expected: after its voice + 2 s)");
+            Say("SC09 SDS hid by itself after " + sw.ToString("0.0") + (PresentableSequenceDirector.Sc09ShortFlow ? " s (expected: when the spill voice ends, no second instruction box)" : " s (expected: after its voice + 2 s)"));
             yield return WaitStage("sc09Walk", 30f);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("109_sc09_turning");

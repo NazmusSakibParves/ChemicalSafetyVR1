@@ -66,6 +66,7 @@ namespace ChemicalSafety.Presentable
         private Quaternion _acidHomeRot;
         private Vector3 _liquidBaseScale = Vector3.one;
         private MaterialPropertyBlock _liquidBlock;
+        private MaterialPropertyBlock _topBlock;
         private LineRenderer _stream;
         private ParticleSystem _burst;
         private ParticleSystem _faceSpray;
@@ -465,7 +466,7 @@ namespace ChemicalSafety.Presentable
 
             if (liquidTop != null)
             {
-                var b = new MaterialPropertyBlock();
+                var b = _topBlock ??= new MaterialPropertyBlock(); // one block, reused (this runs every frame of the pour)
                 b.SetColor("_BaseColor", new Color(Mathf.Lerp(acidColor.r, 1f, 0.35f), Mathf.Lerp(acidColor.g, 1f, 0.35f), Mathf.Lerp(acidColor.b, 1f, 0.35f), 0.85f));
                 liquidTop.SetPropertyBlock(b);
             }

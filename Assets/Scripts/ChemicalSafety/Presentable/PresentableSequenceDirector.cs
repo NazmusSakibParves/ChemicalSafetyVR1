@@ -726,6 +726,10 @@ namespace ChemicalSafety.Presentable
         public const bool Sc07HeroVoice = false;
         // Scenario 8: true = fume hood and exhaust fan switch on together, the fan voice is not played (false = the earlier two steps)
         public const bool Sc08FanWithHood = true;
+        // Scenario 9: the short ray flow (no second instruction box, SDS opens by itself, no Sds / Walk / Push / Back voice); false = the earlier flow
+        public static readonly bool Sc09ShortFlow = true;
+        // the shower keeps running this many seconds after the flush voice has ended
+        public const float Sc09FlushTailSeconds = 3f;
         public const int Sc02QuestionLimit = 2;
 
         // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
@@ -2890,45 +2894,83 @@ namespace ChemicalSafety.Presentable
                 while (!sc09Auto.Splashed)
                     yield return null;
 
-                // the voiced "INSTRUCTIONS" card hides by itself when its voice ends
-                Stage("sc09Spill");
-                yield return PresentableFx.Wait(0.9f);
-                yield return Sc09RayCard(Sc09Content.RaySpill, art.bnSc09RaySpill, art.voSc09RaySpill);
+                if (Sc09ShortFlow)
+                {
+                    // client 2026-11-22 (40-minute clock): no second instruction box, the SDS opens by itself while the spill voice plays (X closes it any
+                    // time), no Sds / Walk / Push / Back voice. The spill voice ends the stage, then the glide to the shower, the plate is pressed by itself
+                    // and the water runs while the flush voice plays, then the glide back without a voice.
+                    Stage("sc09Spill");
+                    yield return PresentableFx.Wait(0.9f); // the drops settle on the visor, as before
+                    Stage("sc09Sds");
+                    clipboard.SetVisible(true);
+                    yield return PlayVoice(art.voSc09RaySpill);
+                    clipboard.SetVisible(false); // no-op when X closed it already; it must not ride along on the hand during the glide
+                    while (!sc09Auto.Finished)
+                        yield return null;
 
-                // the safety data sheet opens with its voice and hides 2 s after it
-                Stage("sc09Sds");
-                clipboard.SetVisible(true);
-                yield return PlayVoice(art.voSc09Sds);
-                yield return PresentableFx.Wait(2f);
-                clipboard.SetVisible(false);
-                while (!sc09Auto.Finished)
-                    yield return null;
+                    Stage("sc09Walk");
+                    yield return GlideTurn(sc09ShowerStandRay.position, sc09ShowerStandRay.forward, sc09GlideSeconds, 1f);
+                    yield return PresentableFx.Wait(0.5f);
 
-                // turned round to the right, to the emergency shower behind the table
-                Stage("sc09Walk");
-                var walkVoice = StartCoroutine(PlayVoice(art.voSc09RayWalk));
-                yield return GlideTurn(sc09ShowerStandRay.position, sc09ShowerStandRay.forward, sc09GlideSeconds, 1f);
-                yield return walkVoice;
-                yield return PresentableFx.Wait(0.4f);
+                    Stage("sc09Wash");
+                    sc09ShowerRay.Push(); // the plate is pressed by itself, the water follows at once
+                    var flushClip = LocalizedClip(art.voSc09Flush);
+                    var flushLen = flushClip != null ? flushClip.length : 11f;
+                    StartCoroutine(PlayVoice(art.voSc09Flush));
+                    // water for the whole flush voice plus Sc09FlushTailSeconds (RunWash itself adds 0.25 s before and about 1.1 s after the wash time)
+                    yield return sc09ShowerRay.RunWash(Mathf.Max(3f, flushLen + Sc09FlushTailSeconds - 1.4f));
+                    Stage("sc09WashDone");
+                    yield return PresentableFx.Wait(0.3f);
+                    sc09ShowerRay.StopWater();
+                    sc09ShowerRay.HideHolo();
+                    StopVoice();
 
-                Stage("sc09Wash");
-                var pushVoice = StartCoroutine(PlayVoice(art.voSc09RayPush));
-                sc09ShowerRay.Push(); // the plate is pressed by itself
-                yield return pushVoice;
-                StartCoroutine(PlayVoice(art.voSc09Flush));
-                yield return sc09ShowerRay.RunWash();
-                Stage("sc09WashDone");
-                yield return PresentableFx.Wait(0.8f);
-                sc09ShowerRay.StopWater();
-                sc09ShowerRay.HideHolo();
-                StopVoice();
+                    Stage("sc09Back");
+                    yield return GlideTurn(sc09NearStand.position, sc09NearStand.forward, sc09GlideSeconds, -1f);
+                    yield return PresentableFx.Wait(1.2f);
+                }
+                else
+                {
+                    // the voiced "INSTRUCTIONS" card hides by itself when its voice ends
+                    Stage("sc09Spill");
+                    yield return PresentableFx.Wait(0.9f);
+                    yield return Sc09RayCard(Sc09Content.RaySpill, art.bnSc09RaySpill, art.voSc09RaySpill);
 
-                // back to the table: the acid can, the broken jar and the acid on the table and the floor
-                Stage("sc09Back");
-                var backVoice = StartCoroutine(PlayVoice(art.voSc09RayBack));
-                yield return GlideTurn(sc09NearStand.position, sc09NearStand.forward, sc09GlideSeconds, -1f);
-                yield return backVoice;
-                yield return PresentableFx.Wait(1.2f);
+                    // the safety data sheet opens with its voice and hides 2 s after it
+                    Stage("sc09Sds");
+                    clipboard.SetVisible(true);
+                    yield return PlayVoice(art.voSc09Sds);
+                    yield return PresentableFx.Wait(2f);
+                    clipboard.SetVisible(false);
+                    while (!sc09Auto.Finished)
+                        yield return null;
+
+                    // turned round to the right, to the emergency shower behind the table
+                    Stage("sc09Walk");
+                    var walkVoice = StartCoroutine(PlayVoice(art.voSc09RayWalk));
+                    yield return GlideTurn(sc09ShowerStandRay.position, sc09ShowerStandRay.forward, sc09GlideSeconds, 1f);
+                    yield return walkVoice;
+                    yield return PresentableFx.Wait(0.4f);
+
+                    Stage("sc09Wash");
+                    var pushVoice = StartCoroutine(PlayVoice(art.voSc09RayPush));
+                    sc09ShowerRay.Push(); // the plate is pressed by itself
+                    yield return pushVoice;
+                    StartCoroutine(PlayVoice(art.voSc09Flush));
+                    yield return sc09ShowerRay.RunWash();
+                    Stage("sc09WashDone");
+                    yield return PresentableFx.Wait(0.8f);
+                    sc09ShowerRay.StopWater();
+                    sc09ShowerRay.HideHolo();
+                    StopVoice();
+
+                    // back to the table: the acid can, the broken jar and the acid on the table and the floor
+                    Stage("sc09Back");
+                    var backVoice = StartCoroutine(PlayVoice(art.voSc09RayBack));
+                    yield return GlideTurn(sc09NearStand.position, sc09NearStand.forward, sc09GlideSeconds, -1f);
+                    yield return backVoice;
+                    yield return PresentableFx.Wait(1.2f);
+                }
 
                 Stage("sc09Gate");
                 Sc04PopupPose(-0.95f, 0f, 1.6f, out var gatePos, out var gateRot);

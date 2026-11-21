@@ -184,8 +184,9 @@ namespace ChemicalSafety.Presentable
         }
 
         /// <summary>Water on: all the jets, the loop; then the shield is washed over <c>washSeconds</c>; the text shows halfway.</summary>
-        public IEnumerator RunWash()
+        public IEnumerator RunWash(float seconds = -1f)
         {
+            var washFor = seconds > 0f ? seconds : washSeconds; // the short Scenario 9 flow passes its own length (the flush voice + 3 s)
             yield return PresentableFx.Wait(0.25f);
             if (_water != null)
                 foreach (var p in _water)
@@ -207,9 +208,9 @@ namespace ChemicalSafety.Presentable
             }
 
             if (visor != null)
-                yield return visor.Wash(washSeconds);
+                yield return visor.Wash(washFor);
             else
-                yield return PresentableFx.Wait(washSeconds);
+                yield return PresentableFx.Wait(washFor);
             WashDone = true;
             Washed?.Invoke();
         }
