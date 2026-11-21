@@ -715,7 +715,8 @@ namespace ChemicalSafety.Presentable
             var stand = Get<Transform>(_director, "sc02RayStand").position;
             Say("SC02 stand: head " + Vector2.Distance(new Vector2(head.x, head.z), new Vector2(stand.x, stand.z)).ToString("0.00") + " m off the stand");
             yield return Shot("11_sc02_stand");
-            for (var n = 1; n <= 6; n++)
+            var sc02Last = PresentableSequenceDirector.Sc02TwoQuestionsOnly ? PresentableSequenceDirector.Sc02QuestionLimit : 6;
+            for (var n = 1; n <= sc02Last; n++)
             {
                 yield return WaitStage("sc02Callout" + n, 120f);
                 var w = 0f;
@@ -745,7 +746,7 @@ namespace ChemicalSafety.Presentable
                 }
 
                 Say("SC02 Q" + n + " reveal: reasons shown = " + reasons + "/4");
-                if (n == 6)
+                if (n == sc02Last)
                 {
                     var nw = 0f;
                     var nextOn = false;

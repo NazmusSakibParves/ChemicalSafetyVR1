@@ -720,6 +720,9 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Scenario 2 and 3 instruction boxes wear the glass style of Scenario 1 (client 2026-11-20). false = the earlier frame (one-line restore).</summary>
         private const bool Sc0203GlassCard = true;
+        // Scenario 2 asks only questions 2.1 and 2.2 (2 marks). false = all six chemicals as before. Keep MARKING.json SC02 count in step (2 / 6).
+        public const bool Sc02TwoQuestionsOnly = true;
+        public const int Sc02QuestionLimit = 2;
 
         // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
         private IEnumerator RunScenario1And2(bool skipSc01)
@@ -1130,31 +1133,42 @@ namespace ChemicalSafety.Presentable
             rotation = Quaternion.LookRotation(Flat(position - cam), Vector3.up);
         }
 
+        // client 2026-11-21: Scenario 3 is cut short (40-minute game): from Continue to the question box about 3-4 s, no voice on the drum report,
+        // no emergency-protocol card after the right answer (the two yellow stickers stay). false = the previous long flow with both voices.
+        private const bool Sc03Quick = true;
+        private const float Sc03QuickScanSeconds = 0.9f;
+        private const float Sc03QuickReportSpeed = 1.8f;
+        private const float Sc03QuickReportHold = 0.7f;
+
         private IEnumerator RunSc03RayFlow()
         {
             Stage("sc03Inspect");
             var stand = sc03RayStand != null ? sc03RayStand : sc03InspectStand;
             PresentableFx.Play(PresentableFx.Whoosh, 0.6f);
-            yield return fader.FadeTo(1f, 0.35f);
+            yield return fader.FadeTo(1f, Sc03Quick ? 0.2f : 0.35f);
             PlaceRig(stand.position, Flat(stand.forward));
             clipboard.SetVisible(false);
-            yield return fader.FadeTo(0f, 0.5f);
+            yield return fader.FadeTo(0f, Sc03Quick ? 0.3f : 0.5f);
 
             // one stand for everything: the whole room and the drum in view, then it goes on by itself (no touch and hold)
-            yield return PresentableFx.Wait(sc03AutoScanDelay);
+            if (!Sc03Quick)
+                yield return PresentableFx.Wait(sc03AutoScanDelay);
             Stage("sc03Scan");
-            yield return sc03Inspect.AutoScan(sc03AutoScanSeconds);
-            yield return PresentableFx.Wait(0.4f);
+            yield return sc03Inspect.AutoScan(Sc03Quick ? Sc03QuickScanSeconds : sc03AutoScanSeconds);
+            if (!Sc03Quick)
+                yield return PresentableFx.Wait(0.4f);
 
             Stage("sc03Report");
             Sc03PopupPose(1.45f, 0.45f, out var cardPos, out var cardRot);
             sc03Inspect.SetCardPose(cardPos, cardRot, 3.2f);
-            yield return sc03Inspect.ShowReport(false);
+            yield return sc03Inspect.ShowReport(false, Sc03Quick ? Sc03QuickReportSpeed : 1f);
             var t0 = Time.time;
-            yield return PlayVoice(art.voSc03Inspect);
-            while (Time.time - t0 < sc03ReportMinSeconds)
+            if (!Sc03Quick)
+                yield return PlayVoice(art.voSc03Inspect); // quick flow: no voice on the drum report
+            var hold = Sc03Quick ? Sc03QuickReportHold : sc03ReportMinSeconds;
+            while (Time.time - t0 < hold)
                 yield return null;
-            yield return sc03Inspect.HideReport();
+            yield return sc03Inspect.HideReport(Sc03Quick ? Sc03QuickReportSpeed : 1f);
             sc03Inspect.ClearCardPose();
 
             Stage("sc03Question");
@@ -1170,6 +1184,24 @@ namespace ChemicalSafety.Presentable
         private IEnumerator Sc03ProtocolRoutine()
         {
             _sc03Protocol = true;
+            if (Sc03Quick)
+            {
+                // no protocol card and no protocol narration: the shared "correct" line and the client's explanation play as before,
+                // the two yellow stickers fly in under the drum meanwhile; NEXT waits for both
+                if (_sc03Prot == null)
+                    _sc03Prot = Sc03Protocol.Create(art, envSc03 != null ? envSc03.transform : null, true);
+                yield return PresentableFx.Wait(1.0f);
+                var anchorQ = sc03Inspect.LabelAnchor;
+                var drumQ = sc03Detonation != null && sc03Detonation.Drum != null ? sc03Detonation.Drum.position : anchorQ.position - anchorQ.forward * 0.29f;
+                var sticks = StartCoroutine(_sc03Prot.PlayStickersOnly(drumQ, anchorQ));
+                yield return PlayVoice(art.voCorrect);
+                if (art.artistSc03RightWhy != null)
+                    yield return PlayVoice(art.artistSc03RightWhy);
+                yield return sticks;
+                _sc03Protocol = false;
+                yield break;
+            }
+
             if (_sc03Prot == null)
                 _sc03Prot = Sc03Protocol.Create(art, envSc03 != null ? envSc03.transform : null);
             yield return PresentableFx.Wait(1.0f);
@@ -3384,6 +3416,7 @@ namespace ChemicalSafety.Presentable
 
         private Sc02Callout _sc02Callout;
         private bool _sc02Placing;
+        private int _sc02Total;
 
         private IEnumerator RunSc02Callouts()
         {
@@ -3412,6 +3445,9 @@ namespace ChemicalSafety.Presentable
             for (var i = 0; i < inspect.Count; i++)
                 order.Add(i);
             order.Sort((a, b) => Vector3.Dot(inspect.ModelOf(a).position, right).CompareTo(Vector3.Dot(inspect.ModelOf(b).position, right)));
+            if (Sc02TwoQuestionsOnly)
+                order.RemoveAll(i => i >= Sc02QuestionLimit); // only chemicals 0 and 1 (questions 2.1, 2.2); the last one shows NEXT
+            _sc02Total = order.Count;
 
             SessionResults.BeginScenario("SC02", Loc.Suffix());
             yield return PresentableFx.Wait(sc02FirstCalloutDelay);
@@ -3466,7 +3502,7 @@ namespace ChemicalSafety.Presentable
             mcqSc02.SetWorldScale(s);
             _sc02Callout.Follower = mcqSc02.transform;
             mcqSc02.EmbeddedResult += _sc02Callout.ShowResult;
-            yield return _sc02Callout.Open(top, center, Sc02Content.ChemChip(n + 1, inspect.Count), Sc02Content.ChemName(chem),
+            yield return _sc02Callout.Open(top, center, Sc02Content.ChemChip(n + 1, _sc02Total > 0 ? _sc02Total : inspect.Count), Sc02Content.ChemName(chem),
                 Sc02Content.ChemProps(chem), icon, s);
 
             _sc02Placing = false;

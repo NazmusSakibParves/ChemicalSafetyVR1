@@ -151,8 +151,9 @@ namespace ChemicalSafety.Presentable
 
         /// <summary>Ring, enlarged label scan and the typed report card; returns once the card is complete.
         /// <paramref name="withContinue"/> false (ray flow): no Continue button, the director hides the card by itself.</summary>
-        public IEnumerator ShowReport(bool withContinue = true)
+        public IEnumerator ShowReport(bool withContinue = true, float speed = 1f)
         {
+            var k = 1f / Mathf.Max(0.5f, speed); // speed > 1 = the same animation, shorter
             Build();
             _continued = false;
             DisarmTouch();
@@ -171,13 +172,13 @@ namespace ChemicalSafety.Presentable
             _scan.gameObject.SetActive(true);
             var ringBase = _ring.localScale;
             var scanBase = _scan.localScale;
-            yield return PresentableFx.Tween(0.55f, t =>
+            yield return PresentableFx.Tween(0.55f * k, t =>
             {
                 _ringGroup.alpha = Mathf.Clamp01(t * 2f);
                 _ring.localScale = ringBase * Mathf.LerpUnclamped(1.35f, 1f, t);
             }, PresentableFx.EaseOutBack);
             _pulseOn = true;
-            yield return PresentableFx.Tween(0.45f, t =>
+            yield return PresentableFx.Tween(0.45f * k, t =>
             {
                 _scanGroup.alpha = Mathf.Clamp01(t * 2f);
                 _scan.localScale = scanBase * Mathf.LerpUnclamped(1.25f, 1f, t);
@@ -193,8 +194,8 @@ namespace ChemicalSafety.Presentable
             }
 
             PresentableFx.Play(PresentableFx.Chime, 0.3f);
-            yield return PresentableFx.Tween(0.3f, t => _cardGroup.alpha = t);
-            yield return PresentableFx.Tween(0.9f, t =>
+            yield return PresentableFx.Tween(0.3f * k, t => _cardGroup.alpha = t);
+            yield return PresentableFx.Tween(0.9f * k, t =>
             {
                 for (var i = 0; i < _rows.Length; i++)
                     _rows[i].maxVisibleCharacters = Mathf.CeilToInt(t * totals[i]);
@@ -214,12 +215,12 @@ namespace ChemicalSafety.Presentable
             }, PresentableFx.EaseOutBack);
         }
 
-        public IEnumerator HideReport()
+        public IEnumerator HideReport(float speed = 1f)
         {
             var ringA = _ringGroup.alpha;
             var scanA = _scanGroup.alpha;
             var cardA = _cardGroup.alpha;
-            yield return PresentableFx.Tween(0.35f, t =>
+            yield return PresentableFx.Tween(0.35f / Mathf.Max(0.5f, speed), t =>
             {
                 _ringGroup.alpha = Mathf.Lerp(ringA, 0f, t);
                 _scanGroup.alpha = Mathf.Lerp(scanA, 0f, t);

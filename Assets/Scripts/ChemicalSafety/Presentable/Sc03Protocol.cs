@@ -79,14 +79,42 @@ namespace ChemicalSafety.Presentable
         private float _t;
         private Color _tone = Cyan;
 
-        public static Sc03Protocol Create(PresentableArt art, Transform parent)
+        // client 2026-11-21: the protocol card is dropped, only the two yellow stickers stay. In that mode only the stickers are built
+        // (no panel, seal, rings or path canvases: less memory) and Update does nothing.
+        private bool _stickersOnly;
+
+        public static Sc03Protocol Create(PresentableArt art, Transform parent, bool stickersOnly = false)
         {
             var go = new GameObject("Sc03Protocol");
             go.transform.SetParent(parent, false);
             var p = go.AddComponent<Sc03Protocol>();
             p._art = art;
+            p._stickersOnly = stickersOnly;
             p.Build();
             return p;
+        }
+
+        /// <summary>Only the two yellow warning stickers fly in and stick under the drum (same animation and place as in <see cref="Play"/>).</summary>
+        public IEnumerator PlayStickersOnly(Vector3 drumCentre, Transform label)
+        {
+            Build();
+            PlaceStickers(drumCentre, label);
+            foreach (var st in _stk)
+                st.gameObject.SetActive(false);
+            yield return Seal();
+        }
+
+        private void PlaceStickers(Vector3 drumCentre, Transform label)
+        {
+            var aisle = new Vector3(label.forward.x, 0f, label.forward.z).normalized;
+            // the sticker goes on the front edge of the shelf the drum stands on (the shelf front is 0.34 m from the drum's centre axis,
+            // its top is the drum's base): centred on the front beam / deck edge, facing the aisle, a few mm proud of the metal
+            _stkOut = aisle;
+            var stickerCentre = new Vector3(drumCentre.x, label.position.y - 0.53f - 0.085f, drumCentre.z) + aisle * (0.32f + 0.0175f + 0.006f);
+            var along = Vector3.Cross(Vector3.up, aisle); // the learner's left when facing the shelf
+            _stkPos[0] = stickerCentre + along * 0.235f;  // left: CAUTION / DANGER
+            _stkPos[1] = stickerCentre - along * 0.235f;  // right: DO NOT OPEN
+            _stkRot = Quaternion.LookRotation(-aisle, Vector3.up);
         }
 
         // ------------------------------------------------------------------ build
@@ -118,6 +146,14 @@ namespace ChemicalSafety.Presentable
             if (_built)
                 return;
             _built = true;
+            if (_stickersOnly)
+            {
+                BuildStickers();
+                foreach (var st in _stk)
+                    st.gameObject.SetActive(false);
+                return;
+            }
+
             _vGradient = Gradient(false);
             _hGradient = Gradient(true);
             BuildPanel();
@@ -445,14 +481,7 @@ namespace ChemicalSafety.Presentable
             var floorY = drumCentre.y - 0.46f;
             _floorRing.SetPositionAndRotation(new Vector3(drumCentre.x, floorY + 0.01f, drumCentre.z), Quaternion.Euler(90f, 0f, 0f));
             _seal.position = drumCentre + aisle * 0.42f + Vector3.up * 0.12f;
-            // the sticker goes on the front edge of the shelf the drum stands on (the shelf front is 0.34 m from the drum's centre axis,
-            // its top is the drum's base): centred on the front beam / deck edge, facing the aisle, a few mm proud of the metal
-            _stkOut = aisle;
-            var stickerCentre = new Vector3(drumCentre.x, label.position.y - 0.53f - 0.085f, drumCentre.z) + aisle * (0.32f + 0.0175f + 0.006f);
-            var along = Vector3.Cross(Vector3.up, aisle); // the learner's left when facing the shelf
-            _stkPos[0] = stickerCentre + along * 0.235f;  // left: CAUTION / DANGER
-            _stkPos[1] = stickerCentre - along * 0.235f;  // right: DO NOT OPEN
-            _stkRot = Quaternion.LookRotation(-aisle, Vector3.up);
+            PlaceStickers(drumCentre, label);
 
             var start = new Vector3(drumCentre.x + aisle.x * 0.8f, 0.02f, drumCentre.z + aisle.z * 0.8f);
             var end = new Vector3(exitTarget.x, 0.02f, exitTarget.z);
@@ -731,7 +760,7 @@ namespace ChemicalSafety.Presentable
 
         private void Update()
         {
-            if (!_built || (!_running && !_seal.gameObject.activeSelf))
+            if (!_built || _stickersOnly || (!_running && !_seal.gameObject.activeSelf))
                 return;
             _t += Time.deltaTime;
             if (_cam == null && Camera.main != null)

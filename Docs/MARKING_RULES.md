@@ -4,7 +4,7 @@
 - 22 scenarios, **40 minutes in total**. The clock starts after the login, the pause button stops it. At 00:00 a "Time's up" toast with voice-over appears, then the result card.
 - **1 mark per MCQ.** Right on the first try = 1, wrong (or wrong first, then right) = 0.
   - Scenario 1, 3-12: 1 MCQ each (Scenario 12 is multi-select: exact right set = 1).
-  - Scenario 2: 6 MCQs = 6 marks.
+  - Scenario 2: 2 MCQs (2.1 and 2.2) = 2 marks (switch `Sc02TwoQuestionsOnly`; false = 6 MCQs, set MARKING.json back to 6).
   - Scenarios 13-18: 3 MCQs each = 3 marks.
   - Scenarios 19-22: 1 MCQ each = 1 mark (Scenario 22, the last one, ends with a FINISH button that opens the scorecard).
 - Scenarios not reached count 0 and their MCQs are shown as incorrect on the result card.
@@ -16,7 +16,7 @@
 - মোট ২২টি সিনারিও, **সব মিলিয়ে ৪০ মিনিট**। লগইনের পর ঘড়ি শুরু হয়, পজ বাটনে ঘড়ি থামে। ০০:০০ হলে "সময় শেষ" টোস্ট ও ভয়েস-ওভার আসে, তারপর রেজাল্ট কার্ড।
 - **প্রতিটি MCQ-তে ১ নম্বর।** প্রথমবারেই সঠিক হলে ১, ভুল হলে (বা আগে ভুল পরে সঠিক) ০।
   - সিনারিও ১, ৩-১২: প্রতিটিতে ১টি MCQ (সিনারিও ১২ মাল্টি-সিলেক্ট: ঠিক সঠিক সেট = ১)।
-  - সিনারিও ২: ৬টি MCQ = ৬ নম্বর।
+  - সিনারিও ২: ২টি MCQ (২.১ ও ২.২) = ২ নম্বর।
   - সিনারিও ১৩-১৮: প্রতিটিতে ৩টি MCQ = ৩ নম্বর।
   - সিনারিও ১৯-২১: প্রতিটিতে ১টি MCQ = ১ নম্বর। সিনারিও ২২ (এখনো বানানো হয়নি): একই নিয়ম।
 - যে সিনারিওতে পৌঁছানো যায়নি তার নম্বর ০, রেজাল্ট কার্ডে সেই MCQ গুলো ভুল হিসেবে দেখায়।
