@@ -176,7 +176,8 @@ namespace ChemicalSafety.Presentable
         // beacon for a few seconds; the hero first appears when the learner has answered right (Sc07Win places him at the pillar). false = the hero
         // runs in (HeroOnlyEntry) or the full crowd (HeroOnlyEntry false).
         public const bool NobodyEntersAtFire = true;
-        private const float NobodyEventSeconds = 3.0f; // the fire ramps up in 3 s (Ignite(3f)): the learner sees it grow
+        private const float ExtinguishTailSeconds = 0.2f;
+        private const float NobodyEventSeconds = 2.0f; // client: 2 s. The fire keeps ramping (Ignite(3f)) while the learner is carried to the pillar (1.8 s), so it is at full size when the learner arrives
 
         public IEnumerator PlayEvent()
         {
@@ -514,7 +515,8 @@ namespace ChemicalSafety.Presentable
             _sweepDeg = 0f;
             RestoreHorn();
             UpdateHose();
-            yield return PresentableFx.Wait(1.2f);
+            // the hero only stands there now: client 2026-11-22, one second less (was 1.2 s)
+            yield return PresentableFx.Wait(ExtinguishTailSeconds);
         }
 
         /// <summary>Metres between the hose end at the valve and the horn: more than a few centimetres while the hero holds the horn free.</summary>
