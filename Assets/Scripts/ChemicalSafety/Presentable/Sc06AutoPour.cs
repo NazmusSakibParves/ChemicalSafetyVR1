@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ChemicalSafety.Presentable
@@ -52,6 +53,16 @@ namespace ChemicalSafety.Presentable
         private bool _captured;
         private Vector3 _liquidBaseScale = Vector3.one;
         private float _level;
+
+        // The acid pour copies the Scenario 8 technique (Sc08AutoDilute.Pour): the spout offset in WORLD units (the can root is scaled 1.8), the spout
+        // hovers just above the jar mouth, slightly behind its axis so the stream falls straight down, and the can is lifted only as far as its
+        // lowest part over the jar needs. The water jug keeps its previous pose.
+        private const float JarFootprint = 0.118f;
+        private const float AcidHover = 0.09f;
+        private const float AcidEndAngle = 112f;
+        [SerializeField] private float pourBackShift = 0.07f;
+        private readonly List<Vector3> _corners = new List<Vector3>(512);
+        private float _surfaceShift;
         private MaterialPropertyBlock _liquidBlock;
 
         public bool Running { get; private set; }
@@ -216,23 +227,40 @@ namespace ChemicalSafety.Presentable
                 yield return LiftCapOff(); // unscrewed and set down beside the can (animated, no voice), while the can still stands upright
             var toward = Flat(target.position - slot.position).normalized;
             var axis = Vector3.Cross(Vector3.up, toward);
+            // acid: world-unit offset (the scaled can root made the old value too small, the neck missed the jar); water: as before
             var spoutLocal = item.InverseTransformPoint(spout.position); // at rest, upright
+            if (acidPour)
+                spoutLocal = Vector3.Scale(spoutLocal, item.lossyScale);
             // the lip (the cap end of a jerry can) is not at the centre: turn the container so that its lip faces the jar, then lean it
             var lipFlat = new Vector3(spoutLocal.x, 0f, spoutLocal.z);
             var yaw = lipFlat.magnitude > 0.02f ? Vector3.SignedAngle(lipFlat, toward, Vector3.up) : 0f;
             var yawRot = Quaternion.AngleAxis(yaw, Vector3.up);
             // hover height: the lower rim of the leaning container must clear the jar's rim even at the steepest lean
-            var radius = 0.12f;
-            var bounds = new Bounds(item.position, Vector3.zero);
-            foreach (var r in item.GetComponentsInChildren<Renderer>(false))
-                bounds.Encapsulate(r.bounds);
-            radius = Mathf.Max(0.08f, Mathf.Max(bounds.extents.x, bounds.extents.z));
-            var mouth = jarMouth.position + Vector3.up * (0.05f + radius * 0.97f);
+            Vector3 mouth;
+            if (acidPour)
+            {
+                mouth = jarMouth.position + Vector3.up * AcidHover + Vector3.back * pourBackShift;
+                _surfaceShift = pourBackShift;
+                CollectCorners(item); // the cap is already off, it is not part of the can any more
+            }
+            else
+            {
+                var radius = 0.12f;
+                var bounds = new Bounds(item.position, Vector3.zero);
+                foreach (var r in item.GetComponentsInChildren<Renderer>(false))
+                    bounds.Encapsulate(r.bounds);
+                radius = Mathf.Max(0.08f, Mathf.Max(bounds.extents.x, bounds.extents.z));
+                mouth = jarMouth.position + Vector3.up * (0.05f + radius * 0.97f);
+                _surfaceShift = 0f;
+            }
 
             Pose PoseAt(float angle)
             {
                 var rot = Quaternion.AngleAxis(angle, axis) * yawRot;
-                return new Pose(mouth - rot * spoutLocal, rot);
+                var pos = mouth - rot * spoutLocal;
+                if (acidPour)
+                    pos.y += RequiredLift(rot, pos, item.lossyScale); // nothing of the can may dip into the jar
+                return new Pose(pos, rot);
             }
 
             var startPos = item.position;
@@ -259,7 +287,7 @@ namespace ChemicalSafety.Presentable
             for (var t = 0f; t < pourSeconds; t += Time.deltaTime)
             {
                 var k = t / pourSeconds;
-                var angle = Mathf.Lerp(52f, 76f, Mathf.SmoothStep(0f, 1f, k));
+                var angle = Mathf.Lerp(52f, acidPour ? AcidEndAngle : 76f, Mathf.SmoothStep(0f, 1f, k));
                 var pose = PoseAt(angle);
                 item.SetPositionAndRotation(pose.position, pose.rotation);
                 var surface = LiquidSurface(Mathf.Lerp(levelFrom, levelTo, k));
@@ -378,7 +406,46 @@ namespace ChemicalSafety.Presentable
         private Vector3 LiquidSurface(float level)
         {
             var basePos = liquid != null ? liquid.position : jarMouth.position;
-            return new Vector3(jarMouth.position.x, basePos.y + liquidFullHeight * Mathf.Clamp01(level), jarMouth.position.z);
+            return new Vector3(jarMouth.position.x, basePos.y + liquidFullHeight * Mathf.Clamp01(level), jarMouth.position.z - _surfaceShift);
+        }
+
+        private void CollectCorners(Transform item)
+        {
+            _corners.Clear();
+            foreach (var r in item.GetComponentsInChildren<Renderer>(false))
+            {
+                if (r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer)
+                    continue;
+                // a dense grid over each part's box: an edge can cross the jar between two corners that are both outside it
+                var b = r.localBounds;
+                const int n = 6;
+                for (var ix = 0; ix < n; ix++)
+                    for (var iy = 0; iy < n; iy++)
+                        for (var iz = 0; iz < n; iz++)
+                        {
+                            var f = new Vector3(ix / (n - 1f) * 2f - 1f, iy / (n - 1f) * 2f - 1f, iz / (n - 1f) * 2f - 1f);
+                            var c = b.center + Vector3.Scale(b.extents, f);
+                            _corners.Add(item.InverseTransformPoint(r.transform.TransformPoint(c)));
+                        }
+            }
+        }
+
+        // How much higher the can has to be so that every part of it above the jar's opening stays clear of the rim.
+        private float RequiredLift(Quaternion rot, Vector3 basePos, Vector3 scale)
+        {
+            var axis = jarMouth.position;
+            var lift = 0f;
+            foreach (var c in _corners)
+            {
+                var w = basePos + rot * Vector3.Scale(c, scale);
+                var dx = w.x - axis.x;
+                var dz = w.z - axis.z;
+                if (Mathf.Sqrt(dx * dx + dz * dz) > JarFootprint)
+                    continue;
+                lift = Mathf.Max(lift, axis.y + 0.03f - w.y);
+            }
+
+            return lift;
         }
 
         private void SetLevel(float level, float mix)

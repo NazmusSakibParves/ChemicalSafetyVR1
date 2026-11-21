@@ -1748,6 +1748,8 @@ namespace ChemicalSafety.Presentable
         [Tooltip("On = after the containers stand in the hood the learner is carried by a slow glide in front of the fume hood for the pour, and back to the table afterwards (as in Scenario 8). Off = stays at the start spot.")]
         [SerializeField] private bool sc06MoveToHood = true;
         [SerializeField] private float sc06GlideSeconds = 4.5f;
+        // true = fume hood and exhaust fan switch on together and the fan voice is not played; false = the earlier two steps (Scenario 8 is separate)
+        public const bool Sc06FanWithHood = true;
 
         // Automatic demonstration 3 s after the instruction: hood on (green lamp), exhaust fan on (fan spins), the sash opens, the three
         // containers go into the hood one after another and the jar is filled. "PREVIEW" on the gate card plays it all again.
@@ -1766,11 +1768,21 @@ namespace ChemicalSafety.Presentable
 
                 Stage("sc06Hood");
                 lab.Toggle(0);
-                yield return PlayVoice(art.voSc06AutoHood);
-                yield return PresentableFx.Wait(0.5f);
-                Stage("sc06Fan");
-                lab.Toggle(1);
-                yield return PlayVoice(art.voSc06AutoFan);
+                if (Sc06FanWithHood)
+                {
+                    // client 2026-11-21: the room exhaust fan starts together with the hood, during the hood voice; its own voice is dropped
+                    lab.Toggle(1);
+                    yield return PlayVoice(art.voSc06AutoHood);
+                }
+                else
+                {
+                    yield return PlayVoice(art.voSc06AutoHood);
+                    yield return PresentableFx.Wait(0.5f);
+                    Stage("sc06Fan");
+                    lab.Toggle(1);
+                    yield return PlayVoice(art.voSc06AutoFan);
+                }
+
                 yield return PresentableFx.Wait(0.8f);
                 lab.OpenSash();
                 yield return PresentableFx.Wait(0.2f);

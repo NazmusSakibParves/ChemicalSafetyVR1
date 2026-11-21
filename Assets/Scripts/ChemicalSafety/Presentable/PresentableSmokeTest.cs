@@ -319,10 +319,11 @@ namespace ChemicalSafety.Presentable
             yield return Shot("61_sc06_room");
             yield return WaitStage("sc06Hood", 30f);
             yield return new WaitForSeconds(1.4f);
-            Say("SC06 auto: hood on = " + lab.HoodOn + " (expected True), fan on = " + lab.LevOn + " (expected False yet)");
+            Say("SC06 auto: hood on = " + lab.HoodOn + " (expected True), fan on = " + lab.LevOn + (PresentableSequenceDirector.Sc06FanWithHood ? " (expected True: together with the hood)" : " (expected False yet)"));
             yield return Shot("62_sc06_hood_on");
-            yield return WaitStage("sc06Fan", 30f);
-            yield return new WaitForSeconds(3.2f);
+            if (!PresentableSequenceDirector.Sc06FanWithHood)
+                yield return WaitStage("sc06Fan", 30f);
+            yield return new WaitForSeconds(PresentableSequenceDirector.Sc06FanWithHood ? 1.5f : 3.2f);
             Say("SC06 auto: fan on = " + lab.LevOn + ", fan speed = " + (fan != null ? fan.Speed01.ToString("0.00") : "n/a") + " (expected > 0)");
             if (fan == null || fan.Speed01 < 0.05f)
                 Debug.LogError("[SMOKE] SC06: the exhaust fan did not start turning");
@@ -354,6 +355,8 @@ namespace ChemicalSafety.Presentable
                     shotPour = true;
                     yield return new WaitForSeconds(2.2f);
                     yield return Shot("65_sc06_pour");
+                    yield return new WaitForSeconds(3.4f); // the can is tilted over the jar by now
+                    yield return Shot("65b_sc06_pour_tilt");
                     Say("SC06 auto: jar level while pouring acid = " + auto.Level.ToString("0.00"));
                     var hz = Camera.main.transform.position.z;
                     Say("SC06 pour view: head z = " + hz.ToString("0.00") + " (expected well behind the table, in front of the hood, z < 0)");
