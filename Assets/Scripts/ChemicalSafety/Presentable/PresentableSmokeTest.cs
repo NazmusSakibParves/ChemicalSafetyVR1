@@ -1834,9 +1834,10 @@ namespace ChemicalSafety.Presentable
                 Debug.LogError("[SMOKE] SC08: the PPE items were not all taken automatically");
             yield return WaitStage("sc08Hood", 30f);
             yield return new WaitForSeconds(1.4f);
-            Say("SC08 auto: hood on = " + lab.HoodOn + " (expected True)");
-            yield return WaitStage("sc08Fan", 30f);
-            yield return new WaitForSeconds(3.2f);
+            Say("SC08 auto: hood on = " + lab.HoodOn + " (expected True), fan on = " + lab.LevOn + (PresentableSequenceDirector.Sc08FanWithHood ? " (expected True: together with the hood)" : " (expected False yet)"));
+            if (!PresentableSequenceDirector.Sc08FanWithHood)
+                yield return WaitStage("sc08Fan", 30f);
+            yield return new WaitForSeconds(PresentableSequenceDirector.Sc08FanWithHood ? 1.5f : 3.2f);
             Say("SC08 auto: fan on = " + lab.LevOn + ", fan speed = " + (fan != null ? fan.Speed01.ToString("0.00") : "n/a") + " (expected > 0)");
             if (fan == null || fan.Speed01 < 0.05f)
                 Debug.LogError("[SMOKE] SC08: the exhaust fan did not start turning");

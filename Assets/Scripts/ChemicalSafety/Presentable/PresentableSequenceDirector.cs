@@ -724,6 +724,8 @@ namespace ChemicalSafety.Presentable
         public const bool Sc02TwoQuestionsOnly = true;
         // Scenario 7: false = "the fire is out" hero voice (VO_Sc07Hero) is not played after the extinguishing
         public const bool Sc07HeroVoice = false;
+        // Scenario 8: true = fume hood and exhaust fan switch on together, the fan voice is not played (false = the earlier two steps)
+        public const bool Sc08FanWithHood = true;
         public const int Sc02QuestionLimit = 2;
 
         // Scenarios 1 and 2 (the original text of the start of MainFlow, unchanged; skipSc01 starts at Scenario 2 after a Previous / Next jump).
@@ -2365,11 +2367,21 @@ namespace ChemicalSafety.Presentable
 
                 Stage("sc08Hood");
                 lab.Toggle(0);
-                yield return PlayVoice(art.voSc06AutoHood);
-                yield return PresentableFx.Wait(0.5f);
-                Stage("sc08Fan");
-                lab.Toggle(1);
-                yield return PlayVoice(art.voSc06AutoFan);
+                if (Sc08FanWithHood)
+                {
+                    // client 2026-11-22: the room exhaust fan starts together with the hood, during the hood voice; the fan voice is not played here
+                    lab.Toggle(1);
+                    yield return PlayVoice(art.voSc06AutoHood);
+                }
+                else
+                {
+                    yield return PlayVoice(art.voSc06AutoHood);
+                    yield return PresentableFx.Wait(0.5f);
+                    Stage("sc08Fan");
+                    lab.Toggle(1);
+                    yield return PlayVoice(art.voSc06AutoFan);
+                }
+
                 yield return PresentableFx.Wait(0.8f);
                 lab.OpenSash();
                 yield return PresentableFx.Wait(0.2f);
