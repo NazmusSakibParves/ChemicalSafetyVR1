@@ -88,6 +88,9 @@ namespace ChemicalSafety.Presentable
             _mat.SetFloat(StrengthId, _strength);
         }
 
+        /// <summary>Builds the 1 MB droplet mask, the material and the (inactive) quad now, behind the black fade, so the first splash does not have to (a one-time CPU hitch at the accident). Safe to call again.</summary>
+        public void Prewarm() => Build();
+
         public void Hide()
         {
             StopAllCoroutines();

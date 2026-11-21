@@ -2764,6 +2764,7 @@ namespace ChemicalSafety.Presentable
                 sc08PpeRay.SetStationVisible(false);
             sc09Auto.ResetAll();
             sc09VisorRay.Hide();
+            sc09VisorRay.Prewarm(); // the screen is still black: the droplet mask is made now, not at the first splash
             if (sc09ShowerMount != null)
                 sc09ShowerMount.SetActive(true); // the shower only exists in Scenario 9
             sc09ShowerRay.ResetAll();
