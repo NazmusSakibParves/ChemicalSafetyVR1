@@ -25,3 +25,11 @@
 *.aab
 crashlytics-build.properties
 .cursor/
+
+# Unity / tool noise that must not be in the client repository (2026-11-22)
+.utmp/
+Assets/_Recovery/
+Assets/_Recovery.meta
+__pycache__/
+*.pyc
+Docs/SmokeShots_*/
