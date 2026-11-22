@@ -41,6 +41,24 @@ namespace ChemicalSafety.Editor
             AssetDatabase.SaveAssets();
         }
 
+        /// <summary>
+        /// Called by the Presentable APK build (ChemicalSafetyApkBuilder) so that EVERY build, also one made from a fresh clone, has the same two
+        /// Player Settings as the delivered APK: Unity's own "Made with Unity" splash off and the Android app icon set. The ProjectSettings file
+        /// itself is not committed (Unity rewrites it), the intro scene and the icon pictures are. Never throws into the build: a missing picture
+        /// only skips the icon.
+        /// </summary>
+        public static void ApplyBuildBranding()
+        {
+            PlayerSettings.SplashScreen.show = false;
+            var ok = AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "AppIcon.png") != null
+                     && AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "AppIcon_Adaptive_Fg.png") != null
+                     && AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "AppIcon_Adaptive_Bg.png") != null;
+            if (ok)
+                ApplyIcons();
+            else
+                Debug.LogWarning("[SPLASH] App icon pictures not found in " + Dir + ": the icon was left as it is.");
+        }
+
         private static void ApplyIcons()
         {
             var app = AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "AppIcon.png");

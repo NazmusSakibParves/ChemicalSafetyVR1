@@ -63,6 +63,19 @@ namespace ChemicalSafety.Editor
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             EditorUserBuildSettings.buildAppBundle = false;
 
+            // Presentable only (the Learning build stays as it was): Unity splash off + the app icon, the same as the delivered APK.
+            if (scene == PresentableScene)
+            {
+                try
+                {
+                    SplashSetup.ApplyBuildBranding();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning("[ChemicalSafety] Branding (splash off + app icon) skipped: " + e.Message);
+                }
+            }
+
             var abs = Path.GetFullPath(Path.Combine(Application.dataPath, "..", output));
             Directory.CreateDirectory(Path.GetDirectoryName(abs));
 
