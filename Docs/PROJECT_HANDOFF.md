@@ -1,6 +1,6 @@
 # ChemicalSafetyVR1 — Project Handoff & Memory
 
-**Last updated:** 2026-10-17 (see section 14 for the current Presentable state)  
+**Last updated:** 2026-11-23 (see section 14.47 for the current Presentable HUD bar)  
 **Purpose:** Take this folder to another PC / new Cursor chat and recover full context: what was built, how to run it, what was planned, and what remains.
 
 **Project path (authoring machine):** `E:\WorkArea\VR\ChemicalSafetyVR1`  
@@ -1020,3 +1020,13 @@ Client folder `Scene22 workflow` (`scene01-07.jpg` = the hall and story steps, `
 - **Production test 2026-11-23 (user authorised, Training ID 1)**: Bangla full smoke (`DONE runtime errors/exceptions = 0`), the result was saved offline as 3 `.pending` files (the original + 2 copies with new client_submission_ids, 52 KB each, 156 KB total), config `production`, app started: ONE call `POST https://gizvr.sensor.buzz/api/v1/results/batch` -> `201 {"total":3,"created":3,"duplicates":0,"items":[{"created":true,"summary":{"client_submission_id":...,"participant_id":...,"attempts_stored":22,"answers_stored":35}}, ...]}`. The first try with a bare JSON array was refused with 422 (data kept, no loss) and led to the `{"submissions":[...]}` fix. The answer is per result (`items[].created`, `duplicates` counter); a failed item's shape is still unknown (`ParseFailedIds` reads flat objects with a failure flag, a 2xx whose text reports an error is never taken as success). Server limit seen: at most 25 results per request (we send at most 5 / 200 KB).
 - **Config state**: the production APK of 2026-11-23 was built with `active = production`; the COMMITTED default is `stage` (so a build from a fresh clone never sends to production by accident). Ask the user stage or production before every APK build, then set it with the menu **Chemical Safety/Presentable/API Server**.
 - **Cut-off partial sessions and the Back-to-Home fade** are untested on a device; the Quest memory over 50-100 sessions is not measured.
+
+### 14.47 SessionHud: read-only scenario chip + slightly lower bar (2026-11-23, branch `feature/Implement-Final-feedback-and-issues-cutting-gameplay-for-timerage`)
+- **What**: top head-locked bar is now `BACK | NEXT | PAUSE | timer | scenario`. The scenario chip is read-only (same timer frame art, bold HudOverlay font): EN `Scenario: N`, BN `সিনারিওঃ N` from `ScenarioNav.Current`. Gap after the timer matches Pause→Timer (60 px). Bar glass widens and the control cluster shifts left so the bar stays centred on the head (`offset.x = 0`).
+- **Files**: `Presentable/SessionHud.cs`, `Resources/Content/GENERAL.json` (`BarScenario` + `BarScenarioLabels` 1–22 for BnAuto), `Resources/BnAuto/*` (Bangla chip images; without them BnTmp draws an empty frame).
+- **One-line revert**:
+  - `ShowScenarioChip = false` → old bar (no chip, old `BarW` / centres)
+  - `LowerBarSlightly = false` → visual Y back to `0.42` (2026-11-20 place)
+- **Layout safety**: `LayoutBarY` stays `0.46`, so `SafeBarRatio` / instruction / MCQ clearance is unchanged. Only `DefaultBarOffset.y` is `0.38` when `LowerBarSlightly` is on (~4 cm lower for VR visibility).
+- **Bangla note**: Domain Reload OFF keeps BnTmp’s static index; after adding BnAuto PNGs clear that cache or re-enter Play so the chip text appears.
+- **Smoke**: Bangla SC01 / SC07 / SC12 showed `সিনারিওঃ 1` / `7` / `12` on the bar; gameplay / MCQ / animation untouched.

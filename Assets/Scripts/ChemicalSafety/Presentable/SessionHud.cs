@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace ChemicalSafety.Presentable
 {
     /// <summary>
-    /// Client design "BACK | NEXT | PAUSE | timer": one glass control bar fixed at the TOP-CENTRE of the view (it follows the head, so it stays
+    /// Client design "BACK | NEXT | PAUSE | timer | scenario": one glass control bar fixed at the TOP-CENTRE of the view (it follows the head, so it stays
     /// in the same place when the learner turns, sits or stands; a little above the eye line so no head tilt is needed). The learner can
     /// drag it with the controller ray (hold the trigger on the bar, not on a button); the new place is kept for the session.
     /// Back / Next go to <see cref="ScenarioNav"/>, Pause / Resume to <see cref="SessionClock"/>. Also hosts the milestone flash and the
@@ -16,12 +16,17 @@ namespace ChemicalSafety.Presentable
     /// </summary>
     public sealed class SessionHud : MonoBehaviour
     {
+        // false = old bar without the read-only scenario chip (BarW and button centres as before).
+        private const bool ShowScenarioChip = true;
+        // false = DefaultBarOffset.y stays 0.42 (2026-11-20 place). LayoutBarY stays 0.46 either way so cards / MCQs do not move.
+        private const bool LowerBarSlightly = true;
+
         // metres in the view: right, up, forward of the head. Default = top centre, ~24 degrees above (it was 29 and fell outside a normal game view) the eye line (2026-11-17: it used to sit at ~10 degrees
         // and ran through every instruction card / MCQ box / popup, whose top edges reach 17-31 degrees). Quest vertical field of view is about +-48 degrees.
         // 2026-11-20 (client): the bar sits a little lower (0.46 -> 0.42). Every card / box keeps the layout it had with the bar at 0.46 (LayoutBarY),
         // and never follows a bar the learner has dragged.
         private const float LayoutBarY = 0.46f;
-        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, 0.42f, 0.9f); // 2026-11-18: a little higher (was 0.40) so the cards / boxes under it have room
+        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, LowerBarSlightly ? 0.38f : 0.42f, 0.9f);
         private static Vector3 _barOffset = DefaultBarOffset; // survives a re-created bar (jump), reset by ResetBarPosition
         private static readonly Vector3 ToastOffset = new Vector3(0f, 0.02f, 1.5f);
 
@@ -29,14 +34,22 @@ namespace ChemicalSafety.Presentable
 
         public event Action TimeUp;
 
-        private const float BarW = 960f;
+        private const float BaseBarW = 960f;
+        private const float ScenarioChipW = 300f;
+        // Same as the gap between Pause (right 223) and Timer (left 283).
+        private const float ChipGap = 60f;
         private const float BarH = 120f;
-        private const float BarScale = 0.00085f; // 0.82 m wide at 0.9 m, ~50 degrees
+        private const float BarScale = 0.00085f; // 0.82 m wide at 0.9 m, ~50 degrees (BaseBarW)
+
+        private static float BarW => ShowScenarioChip ? BaseBarW + ScenarioChipW + ChipGap : BaseBarW;
+        // Keep the control cluster centred in the wider glass when the chip is on.
+        private static float LayoutShiftX => ShowScenarioChip ? -(ScenarioChipW + ChipGap) * 0.5f : 0f;
 
         private Transform _cam;
         private Transform _timerRoot;
         private Transform _toastRoot;
         private TextMeshProUGUI _time;
+        private TextMeshProUGUI _scenario;
         private TextMeshProUGUI _pauseText;
         private Image _pauseIcon;
         private Image _pauseFrame;
@@ -50,6 +63,7 @@ namespace ChemicalSafety.Presentable
         private CanvasGroup _nextGroup;
         private float _born;
         private int _lastWholeSecond = -1;
+        private int _lastScenario = int.MinValue;
         private bool _five, _one;
         private CanvasGroup _timerGroup;
         private CanvasGroup _toastGroup;
@@ -154,6 +168,7 @@ namespace ChemicalSafety.Presentable
 
         private void Build()
         {
+            var sx = LayoutShiftX;
             var tr = new GameObject("Bar");
             tr.transform.SetParent(transform, false);
             _timerRoot = tr.transform;
@@ -167,18 +182,19 @@ namespace ChemicalSafety.Presentable
                 new Color(1f, 1f, 1f, 0.55f), raycast: true);
 
             // buttons, left to right as in the design (centres measured from the bar centre)
-            _backRt = MakeButton(host, "Back", -362f, 196f, HudArt.Get("Ui/Hud/06_back_chevrons_icon"), true, Loc.T("GENERAL", "BarBack"),
+            _backRt = MakeButton(host, "Back", -362f + sx, 196f, HudArt.Get("Ui/Hud/06_back_chevrons_icon"), true, Loc.T("GENERAL", "BarBack"),
                 () => { if (!_busy && _visible) ScenarioNav.RequestPrevious(); }, out _, out _, out _);
             _backGroup = _backRt.gameObject.AddComponent<CanvasGroup>();
-            var nextRt = MakeButton(host, "Next", -150f, 200f, HudArt.Get("Ui/Hud/07_next_chevrons_icon"), false, Loc.T("GENERAL", "BarNext"),
+            var nextRt = MakeButton(host, "Next", -150f + sx, 200f, HudArt.Get("Ui/Hud/07_next_chevrons_icon"), false, Loc.T("GENERAL", "BarNext"),
                 () => { if (!_busy && _visible) ScenarioNav.RequestNext(); }, out _, out _, out _);
             _nextGroup = nextRt.gameObject.AddComponent<CanvasGroup>();
             _pauseSprite = HudArt.Get("Ui/Hud/08_pause_icon");
             _playSprite = PlaySprite();
-            MakeButton(host, "Pause", 107f, 232f, _pauseSprite, false, Loc.T("GENERAL", "BarPause"), TogglePause, out _pauseText, out _pauseIcon, out _pauseFrame);
+            MakeButton(host, "Pause", 107f + sx, 232f, _pauseSprite, false, Loc.T("GENERAL", "BarPause"), TogglePause, out _pauseText, out _pauseIcon, out _pauseFrame);
 
             // timer
-            var timerRt = PresentableUi.Centered("Timer", host, new Vector2(369f, 0f), new Vector2(172f, 74f));
+            var timerX = 369f + sx;
+            var timerRt = PresentableUi.Centered("Timer", host, new Vector2(timerX, 0f), new Vector2(172f, 74f));
             _timerFrame = PresentableUi.Img(timerRt, HudArt.Get("Ui/Hud/05_timer_display_frame"), new Color(1f, 1f, 1f, 0.95f));
             var clockRt = PresentableUi.Centered("Time", timerRt, new Vector2(0f, 1f), new Vector2(124f, 50f));
             _time = PresentableUi.Text(clockRt, SessionClock.Format(SessionClock.LimitSeconds), 52f, Color.white, TextAlignmentOptions.Center, true);
@@ -186,6 +202,21 @@ namespace ChemicalSafety.Presentable
             _time.enableAutoSizing = true;
             _time.fontSizeMax = 52f;
             _time.fontSizeMin = 28f;
+
+            // read-only scenario chip: same gap after the timer as Pause→Timer (ChipGap), same frame / bold look as the clock
+            if (ShowScenarioChip)
+            {
+                var scenarioX = timerX + 172f * 0.5f + ChipGap + ScenarioChipW * 0.5f;
+                var scenarioRt = PresentableUi.Centered("Scenario", host, new Vector2(scenarioX, 0f), new Vector2(ScenarioChipW, 74f));
+                PresentableUi.Img(scenarioRt, HudArt.Get("Ui/Hud/05_timer_display_frame"), new Color(1f, 1f, 1f, 0.95f));
+                var labelRt = PresentableUi.Centered("Label", scenarioRt, new Vector2(0f, 1f), new Vector2(ScenarioChipW - 36f, 50f));
+                _scenario = PresentableUi.Text(labelRt, FormatScenario(ScenarioNav.Current), 40f, Color.white, TextAlignmentOptions.Center, true);
+                _scenario.textWrappingMode = TextWrappingModes.NoWrap;
+                _scenario.enableAutoSizing = true;
+                _scenario.fontSizeMax = 40f;
+                _scenario.fontSizeMin = 22f;
+                _lastScenario = ScenarioNav.Current;
+            }
 
             // milestone flash below the bar ("5 MINUTES LEFT")
             var fl = PresentableUi.Centered("Flash", host, new Vector2(0f, -96f), new Vector2(700f, 60f));
@@ -231,6 +262,19 @@ namespace ChemicalSafety.Presentable
             _audio.spatialBlend = 0f;
         }
 
+        private static string FormatScenario(int n) => string.Format(Loc.T("GENERAL", "BarScenario"), n);
+
+        private void RefreshScenarioLabel()
+        {
+            if (_scenario == null)
+                return;
+            var n = ScenarioNav.Current;
+            if (n == _lastScenario)
+                return;
+            _lastScenario = n;
+            _scenario.text = FormatScenario(n);
+        }
+
         private void TogglePause()
         {
             SessionClock.SetPaused(!SessionClock.Paused);
@@ -245,6 +289,7 @@ namespace ChemicalSafety.Presentable
                 var remaining = SessionClock.Remaining;
                 var paused = SessionClock.Paused;
                 _time.text = SessionClock.Format(remaining);
+                RefreshScenarioLabel();
 
                 var calm = Color.white;
                 var warn = new Color(1f, 0.82f, 0.4f, 1f);

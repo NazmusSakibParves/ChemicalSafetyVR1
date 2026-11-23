@@ -83,6 +83,7 @@
     { "key": "BarNext", "en": "NEXT", "bn": "পরবর্তী" },
     { "key": "BarPause", "en": "PAUSE", "bn": "বিরতি" },
     { "key": "BarResume", "en": "RESUME", "bn": "চালু করুন" },
+    { "key": "BarScenario", "en": "Scenario: {0}", "bn": "সিনারিওঃ {0}" },
     { "key": "ScTitle", "en": "TRAINEE PERFORMANCE SCORECARD", "bn": "প্রশিক্ষণার্থীর পারফরম্যান্স স্কোরকার্ড" },
     { "key": "ScTrainingId", "en": "TRAINING ID:", "bn": "ট্রেনিং আইডি:" },
     { "key": "ScName", "en": "TRAINEE NAME", "bn": "প্রশিক্ষণার্থীর নাম" },
@@ -95,6 +96,23 @@
     { "key": "ScMinutes", "en": "Minutes", "bn": "মিনিট" }
   ],
   "arrays": [
+    {
+      "key": "BarScenarioLabels",
+      "en": [
+        "Scenario: 1", "Scenario: 2", "Scenario: 3", "Scenario: 4", "Scenario: 5",
+        "Scenario: 6", "Scenario: 7", "Scenario: 8", "Scenario: 9", "Scenario: 10",
+        "Scenario: 11", "Scenario: 12", "Scenario: 13", "Scenario: 14", "Scenario: 15",
+        "Scenario: 16", "Scenario: 17", "Scenario: 18", "Scenario: 19", "Scenario: 20",
+        "Scenario: 21", "Scenario: 22"
+      ],
+      "bn": [
+        "সিনারিওঃ 1", "সিনারিওঃ 2", "সিনারিওঃ 3", "সিনারিওঃ 4", "সিনারিওঃ 5",
+        "সিনারিওঃ 6", "সিনারিওঃ 7", "সিনারিওঃ 8", "সিনারিওঃ 9", "সিনারিওঃ 10",
+        "সিনারিওঃ 11", "সিনারিওঃ 12", "সিনারিওঃ 13", "সিনারিওঃ 14", "সিনারিওঃ 15",
+        "সিনারিওঃ 16", "সিনারিওঃ 17", "সিনারিওঃ 18", "সিনারিওঃ 19", "সিনারিওঃ 20",
+        "সিনারিওঃ 21", "সিনারিওঃ 22"
+      ]
+    }
   ],
   "questions": []
 }
