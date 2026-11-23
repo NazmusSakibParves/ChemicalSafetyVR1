@@ -7890,6 +7890,8 @@ namespace ChemicalSafety.Presentable
                 growBox = PresentableInput.RayActive,
                 // the Scenario 7 question is long (3 lines at this size): the header strip is larger than in the other scenarios so all of it fits
                 headerScale = PresentableInput.RayActive ? 1.45f : 1f,
+                maxGrow = PresentableInput.RayActive ? 3.8f : 1f, // Bangla reasons under every row: room so a line never climbs onto the option above
+                extraPad = PresentableInput.RayActive && Loc.IsBangla ? 40f : 0f,
                 minAspect = 1.7f, // a little less spare height: the gaps between the options are smaller (client 2026-11-19)
                 whiteHeader = PresentableInput.RayActive
             };
