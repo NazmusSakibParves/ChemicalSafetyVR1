@@ -4,7 +4,7 @@
   {
    "key": "InstructionEnglish",
    "en": "Be extremely cautious if you notice crystals or solid deposits on an expired organic peroxide drum. The risk of crystallization and the relevant preventive protocols are detailed in Section 7 (Handling and Storage) and Section 10 (Stability and Reactivity) of the SDS.",
-   "bn": "মেয়াদ উত্তীর্ণ অর্গানিক পারঅক্সাইডের ড্রামে স্ফটিক বা দানার মতো পদার্থ জমে থাকতে দেখলে অত্যন্ত সতর্ক থাকুন। SDS-এর ধারা ৭ (Handling and Storage – পরিচালনা ও সংরক্ষণ) এবং ধারা ১০ (Stability and Reactivity – স্থিতিশীলতা ও বিক্রিয়াশীলতা) এ Crystallization এর ঝুঁকি প্রতিরোধের প্রোটোকলগুলো বিস্তারিতভাবে উল্লেখ করা আছে।"
+   "bn": "মেয়াদ উত্তীর্ণ অর্গানিক পারঅক্সাইডের ড্রামে স্ফটিক বা দানার মতো পদার্থ জমে থাকতে দেখলে অত্যন্ত সতর্ক থাকুন। SDS-এর ধারা ৭ (Handling and Storage) এবং ধারা ১০ (Stability and Reactivity) এ Crystallization এর ঝুঁকি প্রতিরোধের প্রোটোকলগুলো বিস্তারিতভাবে উল্লেখ করা আছে।"
   },
   {
    "key": "SdsHint",
@@ -38,8 +38,8 @@
   },
   {
    "key": "QuestionPrompt",
-   "en": "Question 3: What is the correct immediate action?",
-   "bn": "প্রশ্ন ৩: সঠিক তাৎক্ষণিক পদক্ষেপ কোনটি?"
+   "en": "You are a factory worker. You notice a drum of expired organic peroxide with crystals (crystallization) forming on its surface. What should you do?",
+   "bn": "আপনি একজন সাধারণ শ্রমিক। আপনি মেয়াদ উত্তীর্ন একটি অর্গানিক পারঅক্সাইডের ড্রাম দেখলেন। ড্রামটির গায়ে স্ফটিক (Crystallization) জমে আছে। এখন কী করবেন?"
   },
   {
    "key": "CorrectTitle",

@@ -44,7 +44,7 @@
     {
       "key": "QuestionPrompt",
       "en": "You are a factory worker. During work, a fire breaks out on your factory floor involving electrical equipment and flammable solvents. Which type of fire extinguisher would you use to put out this fire?",
-      "bn": "আপনি একজন কারখানা শ্রমিক। কাজ চলাকালীন আপনার ফ্লোরে বৈদ্যুতিক যন্ত্রপাতি ও দাহ্য সলভেন্টে আগুন লেগেছে! এই আগুন নেভানোর জন্য আপনি কোন ধরনের অগ্নিনির্বাপক যন্ত্র (Fire Extinguisher) ব্যবহার করবেন?"
+      "bn": "আপনি একজন কারখানা শ্রমিক। কাজ চলাকালীন আপনার ফ্লোরে বৈদ্যুতিক যন্ত্রপাতি ও দাহ্য সলভেন্টে আগুন লেগেছে! আগুন নেভানোর জন্য আপনি কোন ধরনের অগ্নিনির্বাপক যন্ত্র ব্যবহার করবেন?"
     },
     {
       "key": "CorrectTitle",

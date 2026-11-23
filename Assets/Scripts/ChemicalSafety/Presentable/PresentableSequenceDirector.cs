@@ -8022,6 +8022,7 @@ namespace ChemicalSafety.Presentable
             {
                 header = Sc03Content.QuestionHeader,
                 prompt = Sc03Content.QuestionPrompt,
+                longPrompt = true, // the new prompt is 3-4 lines; let the header shrink before it spills
                 correctIndex = Sc03Content.CorrectIndex,
                 correctTitle = Sc03Content.CorrectTitle,
                 nextLabel = Sc03Content.FinishLabel,
@@ -8033,6 +8034,10 @@ namespace ChemicalSafety.Presentable
                 tagWrong = Sc03Content.TagWrong,
                 largeText = true, // client: the same text sizes as Scenarios 1-2
                 growBox = true,
+                // taller header strip so the long Bangla (and English) prompt stays inside the pane with clear margins
+                headerScale = ray ? (Loc.IsBangla ? 2.5f : 1.45f) : 1f,
+                extraPad = ray && Loc.IsBangla ? 40f : 0f,
+                whiteHeader = ray,
                 holdNext = ray ? (System.Func<bool>)(() => _sc03Protocol) : null
             };
         }

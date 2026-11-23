@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "When pouring concentrated hydrochloric acid, protect your hands from chemical contact by wearing gloves suitable for the acid concentration and task. Thin disposable or cotton gloves are not safe for this work. Check the SDS to identify the appropriate type of gloves that provides adequate hand protection.",
-   "bn": "ঘন হাইড্রোক্লোরিক অ্যাসিড ঢালার সময় হাতকে রাসায়নিকের সংস্পর্শ থেকে সুরক্ষিত রাখতে হবে। এ জন্য অ্যাসিডের ঘনত্ব ও কাজের ধরন অনুযায়ী উপযুক্ত রাসায়নিক-প্রতিরোধী গ্লাভস ব্যবহার করুন। পাতলা ডিসপোজেবল গ্লাভস বা সুতির গ্লাভস এ কাজে নিরাপদ নয়। SDS এর তথ্য অনুযায়ী কোন ধরনের গ্লাভস হাতের জন্যে নিরাপদ তা দেখে নিন।"
+   "en": "When pouring concentrated hydrochloric acid, protect your hands from chemical contact by wearing gloves suitable for the acid concentration and task. Check the SDS to identify the appropriate type of gloves that provides adequate hand protection.",
+   "bn": "ঘন হাইড্রোক্লোরিক অ্যাসিড ঢালার সময় হাতকে রাসায়নিকের সংস্পর্শ থেকে সুরক্ষিত রাখতে হবে। এ জন্য অ্যাসিডের ঘনত্ব ও কাজের ধরন অনুযায়ী উপযুক্ত রাসায়নিক-প্রতিরোধী গ্লাভস ব্যবহার করুন। SDS এর তথ্য অনুযায়ী কোন ধরনের গ্লাভস হাতের জন্যে নিরাপদ তা দেখে নিন।"
   },
   {
    "key": "QuestionHeader",

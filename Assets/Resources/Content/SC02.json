@@ -3,8 +3,8 @@
  "strings": [
   {
    "key": "InstructionEnglish",
-   "en": "Before storing new chemicals, review each chemical’s SDS. Not all chemicals are safe to store together. Follow the chemical compatibility chart, keep incompatible chemicals separate, and store together only those confirmed to be compatible.",
-   "bn": "নতুন কেমিক্যাল স্টোরেজ ক্যাবিনেটে রাখার আগে প্রতিটির SDS পরীক্ষা করুন। সব কেমিক্যাল একসঙ্গে রাখা নিরাপদ নয়। তাই কেমিক্যাল কম্প্যাটিবিলিটি চার্ট অনুসরণ করে অসামঞ্জস্যপূর্ণ কেমিক্যাল আলাদা রাখুন এবং নিরাপদে একসঙ্গে রাখা যায় এমন কেমিক্যাল একই স্থানে সংরক্ষণ করুন।"
+   "en": "Before storing new chemicals, review each chemical’s SDS. Follow the chemical compatibility chart, keep incompatible chemicals separate, and store together only those confirmed to be compatible.",
+   "bn": "নতুন কেমিক্যাল স্টোরেজ ক্যাবিনেটে রাখার আগে প্রতিটির SDS পরীক্ষা করুন। কেমিক্যাল কম্প্যাটিবিলিটি চার্ট অনুসরণ করে অসামঞ্জস্যপূর্ণ কেমিক্যাল আলাদা রাখুন এবং নিরাপদে একসঙ্গে রাখা যায় এমন কেমিক্যাল একই স্থানে সংরক্ষণ করুন।"
   },
   {
    "key": "PlaceHint",

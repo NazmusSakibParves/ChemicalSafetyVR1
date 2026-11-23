@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "InstructionEnglish",
-      "en": "Your floor manager has requested a drum of Cleaning Solvent for the production floor. Check its label before transport. Ensure the label is clear and the chemical name and hazard information match the SDS. Never transport a drum with a faded, missing, or incorrect label.",
-      "bn": "আপনার ফ্লোর ম্যানেজার প্রোডাকশন ফ্লোরের জন্য এক ড্রাম ক্লিনিং সলভেন্ট চেয়েছেন। পরিবহনের আগে লেবেল পরীক্ষা করুন। লেবেলের লিখা স্পষ্ট আছে কি না এবং রাসায়নিকের নাম ও তথ্য SDS-এর সঙ্গে মিল আছে কি না সেটি নিশ্চিত করুন। অস্পষ্ট, লেবেলবিহীন বা ভুল তথ্যযুক্ত ড্রাম পরিবহন করবেন না।"
+      "en": "Your floor manager has requested a drum of Cleaning Solvent for the production floor. Check its label before transport. Ensure the label is clear and the chemical name and hazard information match the SDS.",
+      "bn": "আপনার ফ্লোর ম্যানেজার প্রোডাকশন ফ্লোরের জন্য এক ড্রাম ক্লিনিং সলভেন্ট চেয়েছেন। পরিবহনের আগে লেবেল পরীক্ষা করুন। লেবেলের লেখা স্পষ্ট আছে কি না এবং রাসায়নিকের নাম ও তথ্য SDS-এর সঙ্গে মিল আছে কি না সেটি নিশ্চিত করুন।"
     },
     {
       "key": "WelcomeSub",
@@ -13,8 +13,8 @@
     },
     {
       "key": "InstructionSub",
-      "en": "Your floor manager has requested a drum of Cleaning Solvent for the production floor. Check its label before transport. Ensure the label is clear and the chemical name and hazard information match the SDS. Never transport a drum with a faded, missing, or incorrect label.",
-      "bn": "আপনার ফ্লোর ম্যানেজার প্রোডাকশন ফ্লোরের জন্য এক ড্রাম ক্লিনিং সলভেন্ট চেয়েছেন। পরিবহনের আগে লেবেল পরীক্ষা করুন। লেবেলের লিখা স্পষ্ট আছে কি না এবং রাসায়নিকের নাম ও তথ্য SDS-এর সঙ্গে মিল আছে কি না সেটি নিশ্চিত করুন। অস্পষ্ট, লেবেলবিহীন বা ভুল তথ্যযুক্ত ড্রাম পরিবহন করবেন না।"
+      "en": "Your floor manager has requested a drum of Cleaning Solvent for the production floor. Check its label before transport. Ensure the label is clear and the chemical name and hazard information match the SDS.",
+      "bn": "আপনার ফ্লোর ম্যানেজার প্রোডাকশন ফ্লোরের জন্য এক ড্রাম ক্লিনিং সলভেন্ট চেয়েছেন। পরিবহনের আগে লেবেল পরীক্ষা করুন। লেবেলের লেখা স্পষ্ট আছে কি না এবং রাসায়নিকের নাম ও তথ্য SDS-এর সঙ্গে মিল আছে কি না সেটি নিশ্চিত করুন।"
     },
     {
       "key": "ContinueHint",
@@ -49,7 +49,7 @@
     {
       "key": "QuestionPrompt",
       "en": "Which drum is safe and compliant to transport?",
-      "bn": "নিয়ম অনুযায়ী পরিবহনের জন্য কোন ড্রামটি নিরাপদে নেওয়া যাবে?"
+      "bn": "নিয়ম অনুযায়ী পরিবহনের জন্য কোন ড্রামটি নিরাপদে নেওয়া যাবে?"
     },
     {
       "key": "CorrectTitle",
