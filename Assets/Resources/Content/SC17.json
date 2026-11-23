@@ -48,13 +48,13 @@
     },
     {
       "key": "ChemName",
-      "en": "Hydrogen Peroxide (H₂O₂)",
-      "bn": "হাইড্রোজেন পারঅক্সাইড (H₂O₂)"
+      "en": "Hydrogen Peroxide",
+      "bn": "হাইড্রোজেন পারঅক্সাইড"
     },
     {
       "key": "BottleTitle",
-      "en": "Chemical Name: Hydrogen Peroxide (H₂O₂)",
-      "bn": "রাসায়নিকের নাম: হাইড্রোজেন পারঅক্সাইড (H₂O₂)"
+      "en": "Chemical Name: Hydrogen Peroxide",
+      "bn": "রাসায়নিকের নাম: হাইড্রোজেন পারঅক্সাইড"
     },
     {
       "key": "ChemLabel",
