@@ -332,6 +332,7 @@ namespace ChemicalSafety.Presentable
             DraggablePanel.Attach(mcqSc19);
             DraggablePanel.Attach(sc20Gate);
             DraggablePanel.Attach(mcqSc20);
+            ScCheckRunner.SharedCorrect = () => LocalizedClip(art.voCorrect);
             ScCheckRunner.MainVoiceStop = () =>
             {
                 if (voice != null)
@@ -549,6 +550,7 @@ namespace ChemicalSafety.Presentable
             ResultCardView.Show(_cam, ResultSummary.Compute(), () => _homePressed = true);
             while (!_homePressed)
                 yield return null;
+            yield return fader.FadeTo(1f, 0.3f); // black before the scene is loaded again: the hard cut and the load hitch are not seen
             GoHome();
         }
 
@@ -561,6 +563,7 @@ namespace ChemicalSafety.Presentable
             PresentableInput.ActiveScenario = 0;
             FingerPokeSystem.ClearAll();
             DraggablePanel.All.Clear();
+            ResultPaths.ForgetAll(); // the finished session's file path is not needed any more (the upload queue keeps its own paths)
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (scene.buildIndex >= 0)
                 UnityEngine.SceneManagement.SceneManager.LoadScene(scene.buildIndex);
@@ -576,6 +579,7 @@ namespace ChemicalSafety.Presentable
             fader.SetImmediate(1f);
             yield return null;
             yield return null;
+            System.GC.Collect(); // black screen, new login: sweep the managed garbage of the session before
             ResultUploader.RetryPending(); // results that could not be sent last time (no network)
 
 #if UNITY_EDITOR
@@ -1143,7 +1147,11 @@ namespace ChemicalSafety.Presentable
 
         // client 2026-11-21: Scenario 3 is cut short (40-minute game): from Continue to the question box about 3-4 s, no voice on the drum report,
         // no emergency-protocol card after the right answer (the two yellow stickers stay). false = the previous long flow with both voices.
-        private const bool Sc03Quick = true;
+        public const bool Sc03Quick = true;
+        // 2026-11-22: the Drum Inspection Report popup is hidden, the question opens right after the scan (client). false = old behaviour.
+        public const bool Sc03HideReport = true;
+        // 2026-11-23: the right-answer explanation of Scenarios 19-22 (English and Bangla) already begins with "Correct!": the shared line is not played before it. false = old behaviour.
+        public const bool Sc1922RightStartsWithCorrect = true;
         private const float Sc03QuickScanSeconds = 0.9f;
         private const float Sc03QuickReportSpeed = 1.8f;
         private const float Sc03QuickReportHold = 0.7f;
@@ -1166,18 +1174,21 @@ namespace ChemicalSafety.Presentable
             if (!Sc03Quick)
                 yield return PresentableFx.Wait(0.4f);
 
-            Stage("sc03Report");
-            Sc03PopupPose(1.45f, 0.45f, out var cardPos, out var cardRot);
-            sc03Inspect.SetCardPose(cardPos, cardRot, 3.2f);
-            yield return sc03Inspect.ShowReport(false, Sc03Quick ? Sc03QuickReportSpeed : 1f);
-            var t0 = Time.time;
-            if (!Sc03Quick)
-                yield return PlayVoice(art.voSc03Inspect); // quick flow: no voice on the drum report
-            var hold = Sc03Quick ? Sc03QuickReportHold : sc03ReportMinSeconds;
-            while (Time.time - t0 < hold)
-                yield return null;
-            yield return sc03Inspect.HideReport(Sc03Quick ? Sc03QuickReportSpeed : 1f);
-            sc03Inspect.ClearCardPose();
+            if (!(Sc03Quick && Sc03HideReport))
+            {
+                Stage("sc03Report");
+                Sc03PopupPose(1.45f, 0.45f, out var cardPos, out var cardRot);
+                sc03Inspect.SetCardPose(cardPos, cardRot, 3.2f);
+                yield return sc03Inspect.ShowReport(false, Sc03Quick ? Sc03QuickReportSpeed : 1f);
+                var t0 = Time.time;
+                if (!Sc03Quick)
+                    yield return PlayVoice(art.voSc03Inspect); // quick flow: no voice on the drum report
+                var hold = Sc03Quick ? Sc03QuickReportHold : sc03ReportMinSeconds;
+                while (Time.time - t0 < hold)
+                    yield return null;
+                yield return sc03Inspect.HideReport(Sc03Quick ? Sc03QuickReportSpeed : 1f);
+                sc03Inspect.ClearCardPose();
+            }
 
             Stage("sc03Question");
             // beside the drum, at eye height: the drum and the label stay in view
@@ -1391,9 +1402,9 @@ namespace ChemicalSafety.Presentable
         [Header("Scenario 4 (ray)")]
         [Tooltip("Glass instruction card like Scenario 1.")]
         [SerializeField] private bool sc04GlassCard = true;
-        [SerializeField] private float sc04FirstGloveDelay = 3.5f;
+        [SerializeField] private float sc04FirstGloveDelay = 0.3f;
         [SerializeField] private float sc04GloveMinSeconds = 5f;
-        [SerializeField] private float sc04BetweenGloves = 0.6f;
+        [SerializeField] private float sc04BetweenGloves = 0.1f;
         [SerializeField] private float sc04PopupScale = 1.85f;
 
         // Popups beside the table, high and to the right of the learner's view: gloves and bottle stay clear.
@@ -1672,9 +1683,9 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float sc05CardScale = 0.9f;
         [SerializeField] private float sc05CardLeft = 0.85f;
         [SerializeField] private float sc05CardUp = 0.28f;
-        [SerializeField] private float sc05FirstMaskDelay = 3.5f;
+        [SerializeField] private float sc05FirstMaskDelay = 0.3f;
         [SerializeField] private float sc05MaskMinSeconds = 5f;
-        [SerializeField] private float sc05BetweenMasks = 0.6f;
+        [SerializeField] private float sc05BetweenMasks = 0.1f;
         [SerializeField] private float sc05PopupScale = 1.85f;
 
         // The small instruction card: eye level in front, then to the left and up, turned to the learner.
@@ -3410,7 +3421,7 @@ namespace ChemicalSafety.Presentable
         [SerializeField] private float rayPanelLeftSc01; // set by the scene builder (Sc01CardsLeftOffset), 0 = centred
         [Tooltip("Scenario 2: the card is centred on the eyes.")]
         [SerializeField] private float rayPanelRiseSc02 = 0f;
-        [SerializeField] private float rayStartDelay = 5f;
+        [SerializeField] private float rayStartDelay = 3f; // 2026-11-22: was 5 s (client: shorter wait before the Scenario 1 question)
 
         private bool _sc01Moved;
         private bool _sc01Moving;
@@ -4811,7 +4822,8 @@ namespace ChemicalSafety.Presentable
             {
                 // the client's own explanation lines, already in the selected language
                 // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
-                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                if (!(correct && Sc1922RightStartsWithCorrect))
+                    yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc19Vo(correct ? "Right" : "Wrong"));
                 // the same ending as every other scenario: "... click Next to go to Scenario twenty" (missing clip = silence, as before)
                 var sc19Next = Sc19Vo(correct ? "Complete" : "WrongNext");
@@ -4828,7 +4840,8 @@ namespace ChemicalSafety.Presentable
             {
                 // the client's own explanation lines, already in the selected language, then the same ending as every other scenario
                 // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
-                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                if (!(correct && Sc1922RightStartsWithCorrect))
+                    yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc20Vo(correct ? "Right" : "Wrong"));
                 var sc20Next = Sc20Vo(correct ? "Complete" : "WrongNext");
                 if (sc20Next != null)
@@ -4845,7 +4858,8 @@ namespace ChemicalSafety.Presentable
                 // the client's own explanation lines, already in the selected language, then the same ending as every other scenario
                 StopVoice();
                 // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
-                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                if (!(correct && Sc1922RightStartsWithCorrect))
+                    yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc21Vo(correct ? "Right" : "Wrong"));
                 var sc21Next = Sc21Vo(correct ? "Complete" : "WrongNext");
                 if (sc21Next != null)
@@ -4862,7 +4876,8 @@ namespace ChemicalSafety.Presentable
                 // the client's explanation line, then the congratulation: "Click Finish to see the scorecard" (the same line after a wrong answer)
                 StopVoice();
                 // client 2026-11-19: as Scenarios 4-12 - the shared right / wrong line first, then the client's explanation
-                yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
+                if (!(correct && Sc1922RightStartsWithCorrect))
+                    yield return PlayVoice(correct ? art.voCorrect : art.voAnswerWrongSee);
                 yield return PlayVoiceAsIs(Sc22Vo(correct ? "Right" : "Wrong"));
                 var sc22End = Sc22Vo("Congrats");
                 if (sc22End != null)

@@ -244,6 +244,14 @@ namespace ChemicalSafety.Presentable
                 _audio.Stop();
         }
 
+        // 2026-11-23: the right-answer explanation of Scenarios 13 and 15 does not begin with "Correct!": there the SHARED line (VO_Correct / VO_Correct_bn,
+        // in the selected language, as in Scenarios 1-12) is played first. Scenarios 14 and 16-18 already begin with it and play only the explanation.
+        // false = old behaviour (explanation only).
+        private const bool Sc1315SharedCorrectFirst = true;
+
+        /// <summary>Set by the director: the shared "Correct!" clip of the selected language (null = none).</summary>
+        public static System.Func<AudioClip> SharedCorrect;
+
         private IEnumerator SayAnswer(bool right, int q)
         {
             var why = (right ? "RightWhy" : "WrongWhy") + (q + 1);
@@ -251,6 +259,13 @@ namespace ChemicalSafety.Presentable
             // "Correct!" line would be heard twice); a wrong answer: the "not quite" line, then the explanation
             if (right && Clip(why) != null)
             {
+                if (Sc1315SharedCorrectFirst && (_sc == "SC13" || _sc == "SC15"))
+                {
+                    var shared = SharedCorrect != null ? SharedCorrect() : null;
+                    if (shared != null)
+                        yield return SayClip(shared);
+                }
+
                 yield return Say(why);
                 yield break;
             }
@@ -269,6 +284,11 @@ namespace ChemicalSafety.Presentable
                 yield break;
             }
 
+            yield return SayClip(clip);
+        }
+
+        private IEnumerator SayClip(AudioClip clip)
+        {
             if (_audio == null)
             {
                 _audio = gameObject.AddComponent<AudioSource>();

@@ -1,0 +1,17 @@
+{
+  "active": "stage",
+  "profiles": [
+    {
+      "name": "stage",
+      "baseUrl": "http://52.89.166.172/api/v1/",
+      "batchPath": "results/batch",
+      "apiKey": "ddf75eceff87883b79af6b87e25d6a84a635c0e7ecaa6fcda822c555cc2f5c57"
+    },
+    {
+      "name": "production",
+      "baseUrl": "https://gizvr.sensor.buzz/api/v1/",
+      "batchPath": "results/batch",
+      "apiKey": "ddf75eceff87883b79af6b87e25d6a84a635c0e7ecaa6fcda822c555cc2f5c57"
+    }
+  ]
+}

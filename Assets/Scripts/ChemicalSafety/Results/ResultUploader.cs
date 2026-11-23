@@ -7,10 +7,12 @@ using UnityEngine.Networking;
 namespace ChemicalSafety.Results
 {
     /// <summary>
-    /// Sends the finished submission to POST {BaseUrl}/api/v1/results (all scenarios done, or the 40-minute time-out), offline first:
-    /// the result is saved on the device (results/TrainingID/date/Name_time.json + a .pending sidecar with the API body) BEFORE anything
-    /// else, then <see cref="ResultOutbox"/> sends it in the background with at most 2 requests at once, jittered back-off, a pause when
+    /// Sends the finished submission to POST {server}/results/batch (the server comes from <see cref="ResultApiConfig"/>: stage or production),
+    /// all scenarios done, or the 40-minute time-out), offline first: the result is saved on the device (results/TrainingID/date/Name_time.json,
+    /// the Excel copy .csv, and a .pending sidecar with the API body) BEFORE anything else, then <see cref="ResultOutbox"/> sends the waiting
+    /// results in the background in small batches (1 person at first, up to 5), one request at a time, jittered back-off, a pause when
     /// the server is overloaded, and a re-scan every 45 s and when the connection comes back. The game never waits for the network.
+    /// A session that was cut off (app closed before the end) is kept as a .partial body at every save and is sent as an interrupted result at the next start.
     /// The same client_submission_id is re-sent on every retry; the backend answers 200 for a repeat and stores nothing twice.
     /// </summary>
     public sealed class ResultUploader : MonoBehaviour
@@ -21,9 +23,6 @@ namespace ChemicalSafety.Results
         /// <summary>false = only the sample fields go to the API. true = also email, phone, totals and per-answer extras (when the backend accepts them).</summary>
         public const bool SendExtras = false;
 
-        public static string BaseUrl = "http://52.89.166.172";
-        private const string Path = "/api/v1/results";
-        private const string ApiKey = "ddf75eceff87883b79af6b87e25d6a84a635c0e7ecaa6fcda822c555cc2f5c57";
         private const float ScanEvery = 45f;
 
         private static ResultUploader _inst;
@@ -60,6 +59,9 @@ namespace ChemicalSafety.Results
                 if (!File.Exists(json))
                     ResultPaths.WriteAtomic(json, SubmissionExport.ToJson(s));
                 ResultPaths.WriteAtomic(ResultOutbox.PendingOf(json), SubmissionExport.ToApiJson(s, SendExtras));
+                var partial = ResultOutbox.PartialOf(json);
+                if (File.Exists(partial))
+                    File.Delete(partial); // the finished body replaces the "cut off" one
             }
             catch (Exception e)
             {
@@ -88,7 +90,13 @@ namespace ChemicalSafety.Results
             var i = Inst;
             try
             {
+                var recovered = ResultPaths.RecoverTemps(ResultPaths.Root); // a write that was cut by a crash
+                if (recovered > 0)
+                    Debug.Log("[Upload] recovered " + recovered + " result file(s) from an interrupted write");
                 Migrate(ResultPaths.Root);
+                var promoted = PromoteCutOffSessions(ResultPaths.Root);
+                if (promoted > 0)
+                    Debug.Log("[Upload] " + promoted + " cut-off session(s) will be sent as interrupted results");
                 var pruned = i._outbox.PruneSent();
                 if (pruned > 0)
                     Debug.Log("[Upload] removed " + pruned + " old accepted results");
@@ -116,6 +124,44 @@ namespace ChemicalSafety.Results
             if (_inst == null)
                 return UploadStatus.Saved;
             return _inst._outbox.Status(ResultPaths.For(s));
+        }
+
+        /// <summary>
+        /// A session whose app was closed before the end leaves X.json.partial (the API body of what was answered). At the next start it becomes
+        /// X.json.pending, so the answers reach the server as an interrupted result. The session that is running now is never touched.
+        /// </summary>
+        public static int PromoteCutOffSessions(string root)
+        {
+            if (!Directory.Exists(root))
+                return 0;
+            string live = null;
+            var cur = SessionResults.Current;
+            if (cur != null && cur.training_id > 0)
+                live = ResultPaths.For(cur);
+            var n = 0;
+            foreach (var f in Directory.GetFiles(root, "*.partial", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var json = f.Substring(0, f.Length - ".partial".Length);
+                    if (File.Exists(ResultOutbox.PendingOf(json)) || File.Exists(ResultOutbox.SentOf(json)))
+                    {
+                        File.Delete(f); // the finished (or already sent) result wins
+                        continue;
+                    }
+
+                    if (live != null && string.Equals(live, json, StringComparison.Ordinal))
+                        continue;
+                    File.Move(f, ResultOutbox.PendingOf(json));
+                    n++;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[Upload] cut-off session " + f + ": " + e.Message);
+                }
+            }
+
+            return n;
         }
 
         // ------------------------------------------------------------------ old layout (results/<guid>.json) -> new layout
@@ -232,12 +278,20 @@ namespace ChemicalSafety.Results
 
             private static IEnumerator Run(byte[] body, int timeoutSeconds, Action<UploadReply> done)
             {
-                using (var req = new UnityWebRequest(BaseUrl + Path, UnityWebRequest.kHttpVerbPOST))
+                var url = ResultApiConfig.BatchUrl;
+                if (string.IsNullOrEmpty(url))
+                {
+                    // no valid server profile: nothing is sent, the results stay on the device and are retried later
+                    done(new UploadReply { network = true, text = "no api config" });
+                    yield break;
+                }
+
+                using (var req = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
                 {
                     req.uploadHandler = new UploadHandlerRaw(body);
                     req.downloadHandler = new DownloadHandlerBuffer();
                     req.SetRequestHeader("Content-Type", "application/json");
-                    req.SetRequestHeader("x-api-key", ApiKey);
+                    req.SetRequestHeader("x-api-key", ResultApiConfig.ApiKey);
                     req.timeout = timeoutSeconds;
                     yield return req.SendWebRequest();
                     var r = new UploadReply { code = (int)req.responseCode, text = req.downloadHandler != null ? req.downloadHandler.text : string.Empty };

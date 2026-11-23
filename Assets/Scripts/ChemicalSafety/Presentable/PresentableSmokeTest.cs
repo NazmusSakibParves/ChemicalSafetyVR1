@@ -643,10 +643,13 @@ namespace ChemicalSafety.Presentable
             yield return WaitStage("sc03Scan", 40f);
             yield return new WaitForSeconds(1.3f);
             yield return Shot("sc03r_scan");
-            yield return WaitStage("sc03Report", 40f);
-            yield return new WaitForSeconds(4.5f);
-            Say("SC03 report visible = " + sc03.ReportVisible + " (no touch and hold, no Continue)");
-            yield return Shot("sc03r_report");
+            if (!(PresentableSequenceDirector.Sc03Quick && PresentableSequenceDirector.Sc03HideReport))
+            {
+                yield return WaitStage("sc03Report", 40f);
+                yield return new WaitForSeconds(4.5f);
+                Say("SC03 report visible = " + sc03.ReportVisible + " (no touch and hold, no Continue)");
+                yield return Shot("sc03r_report");
+            }
             yield return WaitStage("sc03Question", 60f);
             var w = 0f;
             while (!mcq3.IsOpen && w < 25f)

@@ -109,15 +109,48 @@ namespace ChemicalSafety.Results
 
         public void Save(Submission submission)
         {
+            string json;
             try
             {
-                // results/<TrainingID>/<yyyy-MM-dd>/<Name>_<yyyyMMdd-HHmmss>.json, written atomically (tmp file, then move)
-                ResultPaths.WriteAtomic(ResultPaths.For(submission), SubmissionExport.ToJson(submission));
+                // results/<TrainingID>/<yyyy-MM-dd>/<Name>_<yyyyMMdd-HHmmss>.json, written atomically (tmp file, then swap)
+                json = ResultPaths.For(submission);
+                ResultPaths.WriteAtomic(json, SubmissionExport.ToJson(submission));
             }
             catch (Exception e)
             {
                 Debug.LogError("[Results] save failed: " + e.Message);
+                return;
             }
+
+            // the Excel copy (same name, .csv, UTF-8 with BOM): never allowed to disturb the game or the upload
+            try
+            {
+                ResultPaths.WriteAtomic(ResultPaths.CsvOf(json), CsvExport.ToCsv(submission), true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Results] csv copy failed: " + e.Message);
+            }
+
+            // a session cut off before its end (app closed): its API body is kept as .partial and is sent at the next start as an interrupted result
+            try
+            {
+                if (SessionResults.UploadAllowed && submission.training_id > 0 && HasAnswer(submission) && string.IsNullOrEmpty(submission.completed_at))
+                    ResultPaths.WriteAtomic(ResultOutbox.PartialOf(json), SubmissionExport.ToApiJson(submission, ResultUploader.SendExtras));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Results] partial copy failed: " + e.Message);
+            }
+        }
+
+        private static bool HasAnswer(Submission s)
+        {
+            foreach (var a in s.attempts)
+                foreach (var an in a.answers)
+                    if (!string.IsNullOrEmpty(an.selected_option))
+                        return true;
+            return false;
         }
     }
 
