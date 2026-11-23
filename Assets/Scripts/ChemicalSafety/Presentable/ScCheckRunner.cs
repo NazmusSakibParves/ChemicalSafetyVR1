@@ -102,6 +102,9 @@ namespace ChemicalSafety.Presentable
         /// </summary>
         public const bool ClipboardOnX = true;
 
+        // client 2026-11-23: the instruction box comes in every Scenario 13-18 (Continue, then the questions). false = only Scenario 13 (old flow)
+        public const bool InstructionEveryScenario = true;
+
         /// <summary>Raised with the sheet of the current question (the director puts it on the left-hand clipboard).</summary>
         public Action<Sprite> SheetChanged;
         // the new design: question panel 1250 px, a 700 px gap (the chemical stands in it, the top bar stays clear), SDS panel 1250 px
@@ -363,7 +366,7 @@ namespace ChemicalSafety.Presentable
 
             // 1. instruction: the same glass card as Scenarios 6 / 8 / 9 (shown by the director, left side), then the learner is taken to the table
             Stage = "intro";
-            if (n == 13)
+            if (n == 13 || InstructionEveryScenario)
                 yield return Card(CardMode.Instruction, "Instruction", Str("Next")); // 14-18 go straight to the chemical (the rules were told once)
             // 2. the chemical's name is only SPOKEN (no card), the chemical stands on the table in front of the learner
             Stage = "bottle";

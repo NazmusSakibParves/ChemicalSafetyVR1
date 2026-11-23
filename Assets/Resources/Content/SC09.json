@@ -83,8 +83,8 @@
     },
     {
       "key": "RayInstruction",
-      "en": "If a chemical splashes into your eyes or onto your face during work, taking immediate emergency action is critical. Follow the SDS instructions to identify the correct emergency decontamination procedure and select the appropriate action.",
-      "bn": "কাজের সময় কেমিক্যাল চোখে বা মুখে ছিটকে পড়লে দ্রুত জরুরি ব্যবস্থা নেওয়া অত্যন্ত গুরুত্বপূর্ণ। এ ধরনের পরিস্থিতিতে জরুরি ডিকন্টামিনেশন পদ্ধতি জানতে SDS-এর নির্দেশনা অনুসরণ করুন এবং উপযুক্ত ব্যবস্থা নির্বাচন করুন।"
+      "en": "If a chemical splashes into your eyes or onto your face, act immediately. Follow the SDS instructions for proper emergency decontamination.",
+      "bn": "কাজের সময় কেমিক্যাল চোখে বা মুখে লাগলে দ্রুত জরুরি ব্যবস্থা নিন। SDS-এর নির্দেশনা মেনে সঠিকভাবে আক্রান্ত স্থান ধুয়ে ফেলুন।"
     },
     {
       "key": "RaySpill",

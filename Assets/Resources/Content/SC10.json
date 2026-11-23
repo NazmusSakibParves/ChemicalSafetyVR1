@@ -138,8 +138,8 @@
     },
     {
       "key": "RayInstruction",
-      "en": "A bottle of acid has broken, spilling its contents onto the laboratory floor. Attempting to clean up a chemical spill incorrectly can cause accidents and serious health risks. Follow the SDS instructions and select the appropriate method for safe spill cleanup.",
-      "bn": "ল্যাবে অ্যাসিডের বোতল ভেঙে মেঝেতে ছড়িয়ে পড়েছে। অ্যাসিড ছড়িয়ে পড়লে ভুলভাবে পরিষ্কার করার চেষ্টা করলে দুর্ঘটনা ও গুরুতর স্বাস্থ্যঝুঁকি তৈরি হতে পারে। SDS-এর নির্দেশনা অনুসরণ করে নিরাপদে ভাঙা কাচ ও অ্যাসিড পরিষ্কারের উপযুক্ত পদ্ধতিটি বেছে নিন।"
+      "en": "An acid bottle has broken in the lab. Incorrect cleanup can cause accidents and serious harm. Follow the SDS instructions and choose the safe method for cleaning up the acid and broken glass.",
+      "bn": "ল্যাবে অ্যাসিডের বোতল ভেঙে মেঝেতে পড়েছে। ভুলভাবে পরিষ্কার করলে দুর্ঘটনা ও গুরুতর ক্ষতি হতে পারে। SDS-এর নির্দেশনা মেনে নিরাপদে অ্যাসিড ও ভাঙা কাচ পরিষ্কারের পদ্ধতি বেছে নিন।"
     },
     {
       "key": "RayGateTitle",

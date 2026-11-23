@@ -117,13 +117,13 @@
       "key": "OptionLabels",
       "en": [
         "Pour it quickly on the open bench to finish faster.",
-        "Move the operation under the Local Exhaust Ventilation (LEV) hood and turn it on.",
+        "Move the operation under the Fume hood and turn it on.",
         "We will use a different safe chemical instead of this one.",
         "Open a nearby window."
       ],
       "bn": [
         "তাড়াতাড়ি কাজ শেষ করতে খোলা টেবিলে দ্রুত ঢালব।",
-        "কাজটি LEV হুডের নিচে করব এবং বাষ্প টেনে নেওয়ার ব্যবস্থা চালু করব।",
+        "কাজটি ফিউম হুডের নিচে করব এবং বাষ্প টেনে নেওয়ার ব্যবস্থা চালু করব।",
         "এই ক্যামিকেলের পরিবর্তে অন্য নিরাপদ ক্যামিকেল ব্যবহার করব।",
         "পাশের জানালা খুলে দেব।"
       ]
@@ -132,13 +132,13 @@
       "key": "OptionFeedback",
       "en": [
         "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor.",
-        "Working under the running fume / LEV hood captures the vapor at the source.",
+        "Working under the running Fume hood captures the vapor at the source.",
         "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor.",
         "Ceiling fans and open windows just spread toxic/flammable vapors across the factory floor."
       ],
       "bn": [
         "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।",
-        "চালু ফিউম / LEV হুডের নিচে কাজ করলে বাষ্প উৎসেই ধরা পড়ে।",
+        "চালু ফিউম হুডের নিচে কাজ করলে বাষ্প উৎসেই ধরা পড়ে।",
         "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।",
         "সিলিং ফ্যান বা খোলা জানালা বিষাক্ত বা আগুন ধরতে পারে এমন বাষ্প কারখানার অন্য জায়গায় ছড়িয়ে দিতে পারে।"
       ]

@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "RayInstruction",
-      "en": "You have been asked to enter an empty chemical storage tank to inspect a valve. Even if the tank is empty, it may contain toxic gases, have an oxygen-deficient atmosphere, or present other hazards. Before entering, follow the SDS, confined-space entry permit requirements, and factory safety procedures to select the necessary precautions.",
-      "bn": "একটি খালি রাসায়নিক পদার্থ সংরক্ষণ ট্যাংকের ভেতরে ভালভ পরীক্ষা করতে বলা হয়েছে। ট্যাংক খালি থাকলেও ভেতরে বিষাক্ত গ্যাস, অক্সিজেনের ঘাটতি বা অন্যান্য বিপজ্জনক পরিবেশ থাকতে পারে। প্রবেশের আগে SDS, কনফাইন্ড স্পেস এন্ট্রি পারমিট এবং কারখানার নিরাপত্তা নির্দেশনা অনুসরণ করে প্রয়োজনীয় সতর্কতামূলক ব্যবস্থা নির্বাচন করুন।"
+      "en": "You have been asked to enter an empty chemical storage tank to inspect a valve. An empty chemical tank may still contain toxic gases or have low oxygen levels. Before entry, follow the SDS, confined-space permit, and factory safety procedures.",
+      "bn": "একটি খালি রাসায়নিক পদার্থ সংরক্ষণ ট্যাংকের ভেতরে ভালভ পরীক্ষা করতে বলা হয়েছে। খালি রাসায়নিক ট্যাংকের ভেতরেও বিষাক্ত গ্যাস বা অক্সিজেনের ঘাটতি থাকতে পারে। প্রবেশের আগে SDS, কনফাইন্ড স্পেস পারমিট ও কারখানার নিরাপত্তা নির্দেশনা মেনে সতর্কতামূলক ব্যবস্থা নিন।"
     },
     {
       "key": "GateTitle",

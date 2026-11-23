@@ -128,8 +128,8 @@
     },
     {
       "key": "RayInstruction",
-      "en": "Before handling a corrosive chemical, it is essential to ensure your safety. Using incorrect PPE can cause harm to your skin, eyes, and respiratory system. Carefully review the safety instructions in the SDS of the relevant chemical and select the appropriate Personal Protective Equipment (PPE) for the task.",
-      "bn": "রাসায়নিক পদার্থ নিয়ে কাজ শুরু করার আগে নিজের সুরক্ষা নিশ্চিত করা জরুরি। ভুল PPE ব্যবহার করলে ত্বক, চোখ ও শ্বাসতন্ত্রের ক্ষতি হতে পারে। সংশ্লিষ্ট রাসায়নিক পদার্থের SDS-এর নিরাপত্তা নির্দেশনা ভালোভাবে পড়ে কাজের জন্য উপযুক্ত সুরক্ষা সরঞ্জাম (PPE) নির্বাচন করুন।"
+      "en": "Before handling chemicals, check the SDS and select the correct PPE. Incorrect PPE can harm your skin, eyes, and respiratory system.",
+      "bn": "রাসায়নিক পদার্থ নিয়ে কাজের আগে SDS পড়ে উপযুক্ত PPE নির্বাচন করুন। ভুল PPE ত্বক, চোখ ও শ্বাসতন্ত্রের ক্ষতি করতে পারে।"
     },
     {
       "key": "TagRequired",

@@ -27,10 +27,29 @@ namespace ChemicalSafety.Presentable
         private static readonly int[] CutFrames = { 0, 228, 267, 349, 373, 505, 590 };
         private const int MaskCutFrame = 505;   // the worker has the respirator from this cut on
         /// <summary>Film time (s) of the voice-over lines.</summary>
-        private static readonly (float t, string id)[] Cues =
+        // client 2026-11-23: voice lines dropped to shorten the scenario (the audio files stay in Resources/Sc21Vo).
+        // Sc21ShortVoice: n5 and n6 are dropped; false = they play again (old flow).
+        // Sc21PlayN2: n2 ("the JHA form is blank") is dropped; set true and it plays again at 9.7 s, nothing else to change.
+        public const bool Sc21ShortVoice = true;
+        public const bool Sc21PlayN2 = false;
+
+        private static readonly (float t, string id)[] Cues = BuildCues();
+
+        private static (float t, string id)[] BuildCues()
         {
-            (0.4f, "n1"), (9.7f, "n2"), (12.3f, "n3"), (14.6f, "n4"), (18.2f, "n5"), (24.8f, "n6")
-        };
+            var list = new System.Collections.Generic.List<(float t, string id)> { (0.4f, "n1") };
+            if (Sc21PlayN2)
+                list.Add((9.7f, "n2"));
+            list.Add((12.3f, "n3"));
+            list.Add((14.6f, "n4"));
+            if (!Sc21ShortVoice)
+            {
+                list.Add((18.2f, "n5"));
+                list.Add((24.8f, "n6"));
+            }
+
+            return list.ToArray();
+        }
 
         [SerializeField] private Transform filmRoot;
         [SerializeField] private GameObject safeShower;   // the emergency shower: it comes when the worker gets the respirator (the cut at 21.0 s)

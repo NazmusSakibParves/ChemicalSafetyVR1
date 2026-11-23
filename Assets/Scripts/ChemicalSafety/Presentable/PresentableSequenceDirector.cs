@@ -732,6 +732,7 @@ namespace ChemicalSafety.Presentable
         public const bool Sc08FanWithHood = true;
         // Scenario 9: the short ray flow (no second instruction box, SDS opens by itself, no Sds / Walk / Push / Back voice); false = the earlier flow
         public static readonly bool Sc09ShortFlow = true;
+        public static readonly bool Sc1922AutoSds = false; // client 2026-11-23: true = Scenarios 19-22 open the data sheet by themselves after the instruction (old)
         // the shower keeps running this many seconds after the flush voice has ended
         public const float Sc09FlushTailSeconds = 3f;
         public const int Sc02QuestionLimit = 2;
@@ -6557,11 +6558,14 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet: it opens by itself and closes again
-            Stage("sc19Sds");
+            // client 2026-11-23: no automatic data sheet any more (Continue starts the film); the left X button opens / hides it, without voice.
+            // Sc1922AutoSds = true brings the old automatic sheet with its voice back
             var sds = Resources.Load<Sprite>("Sc19/Sc19_Sds");
             if (sds != null)
-            {
                 clipboard.SetSheet(sds);
+            if (Sc1922AutoSds && sds != null)
+            {
+                Stage("sc19Sds");
                 StartCoroutine(Sc19Voice(Loc.T("SC19", "SdsHint"), Sc19Vo("Sds")));
                 clipboard.SetVisible(true);
                 var wait = 0f;
@@ -6783,11 +6787,14 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
-            Stage("sc20Sds");
+            // client 2026-11-23: no automatic data sheet any more (Continue starts the film); the left X button opens / hides it, without voice.
+            // Sc1922AutoSds = true brings the old automatic sheet with its voice back
             var sds = Resources.Load<Sprite>("Sc20/Sc20_Sds");
             if (sds != null)
-            {
                 clipboard.SetSheet(sds);
+            if (Sc1922AutoSds && sds != null)
+            {
+                Stage("sc20Sds");
                 StartCoroutine(Sc20Voice(Loc.T("SC20", "SdsHint"), Sc20Vo("Sds")));
                 clipboard.SetVisible(true);
                 var wait = 0f;
@@ -6958,7 +6965,7 @@ namespace ChemicalSafety.Presentable
             {
                 clipboard.SetSuspended(true); // the SDS is only beside the options; the X button belongs to that panel
             }
-            if (n > 13 && scCheck.ViewStand != null)
+            if (n > 13 && !ScCheckRunner.InstructionEveryScenario && scCheck.ViewStand != null)
                 PlaceRig(scCheck.ViewStand.position, scCheck.ViewStand.forward); // no instruction again: straight in front of the table
             else
                 PlaceRig(spawnScCheck.position, spawnScCheck.forward);
@@ -7039,11 +7046,14 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
-            Stage("sc21Sds");
+            // client 2026-11-23: no automatic data sheet any more (Continue starts the film); the left X button opens / hides it, without voice.
+            // Sc1922AutoSds = true brings the old automatic sheet with its voice back
             var sds = Resources.Load<Sprite>("Sc21/Sc21_Sds");
             if (sds != null)
-            {
                 clipboard.SetSheet(sds);
+            if (Sc1922AutoSds && sds != null)
+            {
+                Stage("sc21Sds");
                 StartCoroutine(Sc21Voice(Loc.T("SC21", "SdsHint"), Sc21Vo("Sds")));
                 clipboard.SetVisible(true);
                 var wait = 0f;
@@ -7283,11 +7293,14 @@ namespace ChemicalSafety.Presentable
             instructionPanel.SetBnBodyMax(200f);
 
             // 2. the safety data sheet of this scenario (the client's own): it opens by itself and closes again
-            Stage("sc22Sds");
+            // client 2026-11-23: no automatic data sheet any more (Continue starts the film); the left X button opens / hides it, without voice.
+            // Sc1922AutoSds = true brings the old automatic sheet with its voice back
             var sds = Resources.Load<Sprite>("Sc22/Sc22_Sds");
             if (sds != null)
-            {
                 clipboard.SetSheet(sds);
+            if (Sc1922AutoSds && sds != null)
+            {
+                Stage("sc22Sds");
                 StartCoroutine(Sc22Voice(Loc.T("SC22", "SdsHint"), Sc22Vo("Sds")));
                 clipboard.SetVisible(true);
                 var wait = 0f;

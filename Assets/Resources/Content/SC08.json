@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "InstructionEnglish",
-      "en": "Great care must be taken when diluting concentrated sulfuric acid in the laboratory. Mixing it incorrectly can generate intense heat and cause acid splashes that may result in severe burns. Select the correct method for diluting the acid by following the SDS instructions.",
-      "bn": "ল্যাবে ঘন সালফিউরিক অ্যাসিড পাতলা করার সময় খুব সতর্ক থাকতে হবে। ভুল পদ্ধতিতে মেশালে প্রচুর তাপ তৈরি হয়ে অ্যাসিড ছিটকে মারাত্মক পোড়া সৃষ্টি করতে পারে। SDS-এর নির্দেশনা মেনে সঠিকভাবে অ্যাসিড পাতলা করার পদ্ধতিটি বেছে নিন।"
+      "en": "Incorrectly diluting concentrated sulfuric acid can generate intense heat and cause severe burns from splashes. Always follow the SDS instructions for safe dilution.",
+      "bn": "ঘন সালফিউরিক অ্যাসিড পাতলা করার সময় ভুলভাবে মেশালে প্রচণ্ড তাপ তৈরি হয়ে অ্যাসিড ছিটকে মারাত্মক পোড়া সৃষ্টি করতে পারে। SDS-এর নির্দেশনা মেনে সঠিক পদ্ধতিতে অ্যাসিড পাতলা করুন।"
     },
     {
       "key": "PpeHint",

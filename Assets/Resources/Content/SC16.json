@@ -8,8 +8,8 @@
     },
     {
       "key": "InstructionEnglish",
-      "en": "You are a factory worker. Before handling hydrogen peroxide, carefully review its SDS. Wear the required chemical-resistant gloves, protective clothing, goggles, and face shield as specified in the SDS.",
-      "bn": "আপনি একজন কারখানার শ্রমিক। হাইড্রোজেন পারঅক্সাইড নিয়ে কাজ শুরু করার আগে SDS ভালোভাবে পড়ুন। SDS-এর নির্দেশনা অনুযায়ী প্রয়োজনীয় রাসায়নিক-প্রতিরোধী গ্লাভস, সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড পরুন।"
+      "en": "You are a factory worker. Before handling hydrogen peroxide, review its SDS. Wear chemical-resistant gloves, protective clothing, goggles, and a face shield as specified.",
+      "bn": "আপনি একজন কারখানার শ্রমিক। হাইড্রোজেন পারঅক্সাইড ব্যবহারের আগে SDS পড়ুন। নির্দেশনা অনুযায়ী রাসায়নিক-প্রতিরোধী গ্লাভস, সুরক্ষা পোশাক, গগলস ও ফেস শিল্ড পরুন।"
     },
     {
       "key": "Instructions",

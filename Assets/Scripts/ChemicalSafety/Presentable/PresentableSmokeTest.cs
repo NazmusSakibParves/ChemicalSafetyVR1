@@ -3093,9 +3093,12 @@ namespace ChemicalSafety.Presentable
                 LayoutCheck("SC19 instruction card", ip.transform);
             yield return RayIntroContinue("SC19");
 
-            yield return WaitStage("sc19Sds", 30f);
-            yield return new WaitForSeconds(1.6f);
-            yield return Shot("191_sc19_sds");
+            if (PresentableSequenceDirector.Sc1922AutoSds)
+            {
+                yield return WaitStage("sc19Sds", 30f);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot("191_sc19_sds");
+            }
 
             yield return WaitStage("sc19Film", 40f);
             var shot = 0;
@@ -3208,9 +3211,12 @@ namespace ChemicalSafety.Presentable
                 LayoutCheck("SC20 instruction card", ip.transform);
             yield return RayIntroContinue("SC20");
 
-            yield return WaitStage("sc20Sds", 30f);
-            yield return new WaitForSeconds(1.6f);
-            yield return Shot("201_sc20_sds");
+            if (PresentableSequenceDirector.Sc1922AutoSds)
+            {
+                yield return WaitStage("sc20Sds", 30f);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot("201_sc20_sds");
+            }
 
             yield return WaitStage("sc20Film", 40f);
             // close-ups of the spill: ten pictures a little over a tenth of a second apart, from the moment of the trip
@@ -3373,9 +3379,12 @@ namespace ChemicalSafety.Presentable
                 LayoutCheck("SC21 instruction card", ip.transform);
             yield return RayIntroContinue("SC21");
 
-            yield return WaitStage("sc21Sds", 30f);
-            yield return new WaitForSeconds(1.6f);
-            yield return Shot("211_sc21_sds");
+            if (PresentableSequenceDirector.Sc1922AutoSds)
+            {
+                yield return WaitStage("sc21Sds", 30f);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot("211_sc21_sds");
+            }
 
             yield return WaitStage("sc21Film", 40f);
             // the controllers must not move the learner: every locomotion provider is off while the scenario runs, the head can still turn
@@ -3495,9 +3504,12 @@ namespace ChemicalSafety.Presentable
                 LayoutCheck("SC22 instruction card", ip.transform);
             yield return RayIntroContinue("SC22");
 
-            yield return WaitStage("sc22Sds", 30f);
-            yield return new WaitForSeconds(1.6f);
-            yield return Shot("211_sc22_sds");
+            if (PresentableSequenceDirector.Sc1922AutoSds)
+            {
+                yield return WaitStage("sc22Sds", 30f);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot("211_sc22_sds");
+            }
 
             yield return WaitStage("sc22Film", 40f);
             // the controllers must not move the learner: every locomotion provider is off while the scenario runs, the head can still turn

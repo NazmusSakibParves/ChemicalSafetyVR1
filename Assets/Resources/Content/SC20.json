@@ -3,8 +3,8 @@
   "strings": [
     {
       "key": "RayInstruction",
-      "en": "During chemical transfer, a corrosive liquid can be splashed onto your arm and clothing. Immediate and appropriate action is essential, as continued contact with the chemical can cause serious injury. Follow the SDS instructions and the factory’s emergency safety procedures to select the appropriate immediate response.",
-      "bn": "রাসায়নিক পদার্থ স্থানান্তরের সময় ক্ষয়কারী তরল হাতে ও পোশাকে ছিটকে পড়তে পারে। এ ধরনের দুর্ঘটনায় দ্রুত ও সঠিক ব্যবস্থা নেওয়া জরুরি, কারণ রাসায়নিক পদার্থ ত্বকের সংস্পর্শে থাকলে গুরুতর ক্ষতি হতে পারে। SDS-এর নির্দেশনা ও কারখানার জরুরি নিরাপত্তা পদ্ধতি অনুসরণ করে তাৎক্ষণিক করণীয়টি নির্বাচন করুন।"
+      "en": "During chemical transfer, corrosive liquid may splash onto your skin and clothing, causing serious injury. Follow the SDS and factory emergency procedures to take immediate action.",
+      "bn": "রাসায়নিক পদার্থ স্থানান্তরের সময় ক্ষয়কারী তরল হাতে ও পোশাকে ছিটকে পড়তে পারে। এতে গুরুতর ক্ষতি হতে পারে। SDS ও কারখানার জরুরি নির্দেশনা মেনে দ্রুত সঠিক ব্যবস্থা নিন।"
     },
     {
       "key": "GateTitle",
