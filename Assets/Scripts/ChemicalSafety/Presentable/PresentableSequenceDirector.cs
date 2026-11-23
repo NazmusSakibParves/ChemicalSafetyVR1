@@ -551,6 +551,25 @@ namespace ChemicalSafety.Presentable
             while (!_homePressed)
                 yield return null;
             yield return fader.FadeTo(1f, 0.3f); // black before the scene is loaded again: the hard cut and the load hitch are not seen
+            if (BackToHomeQuitsApp)
+            {
+                // client 2026-11-23: Back to Home leaves the app for the Quest home. The result is already on disk (.pending), the upload gets a few seconds
+                // to finish while the screen is black; if it does not (no network) the file is sent at the next start. The process end frees every cache.
+                var upWait = 0f;
+                while (upWait < BackToHomeUploadWaitSeconds && ResultUploader.StatusOf(SessionResults.Current) == UploadStatus.Waiting)
+                {
+                    upWait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                Application.Quit();
+#endif
+                yield break;
+            }
+
             GoHome();
         }
 
@@ -733,6 +752,10 @@ namespace ChemicalSafety.Presentable
         // Scenario 9: the short ray flow (no second instruction box, SDS opens by itself, no Sds / Walk / Push / Back voice); false = the earlier flow
         public static readonly bool Sc09ShortFlow = true;
         public static readonly bool Sc1922AutoSds = false; // client 2026-11-23: true = Scenarios 19-22 open the data sheet by themselves after the instruction (old)
+        public static readonly bool Sc07AutoSds = false; // client 2026-11-23: true = Scenario 7 shows the data sheet by itself for 2 s before the extinguishers (old)
+        public static readonly bool Sc12AutoSds = false; // client 2026-11-23: true = Scenario 12 shows the data sheet by itself with its voice (old)
+        public static readonly bool BackToHomeQuitsApp = true; // client 2026-11-23: Back to Home leaves for the Quest home (false = the login screen again, GoHome)
+        private const float BackToHomeUploadWaitSeconds = 8f;
         // the shower keeps running this many seconds after the flush voice has ended
         public const float Sc09FlushTailSeconds = 3f;
         public const int Sc02QuestionLimit = 2;
@@ -2037,11 +2060,15 @@ namespace ChemicalSafety.Presentable
             var again = true;
             while (again)
             {
-                Stage("sc07Sds");
-                clipboard.SetVisible(true);
-                yield return PresentableFx.Wait(sc07SdsSeconds);
-                clipboard.SetVisible(false);
-                yield return PresentableFx.Wait(0.6f);
+                // client 2026-11-23: no automatic data sheet any more; the left X button opens / hides it (Sc07AutoSds = true brings the 2 s sheet back)
+                if (Sc07AutoSds)
+                {
+                    Stage("sc07Sds");
+                    clipboard.SetVisible(true);
+                    yield return PresentableFx.Wait(sc07SdsSeconds);
+                    clipboard.SetVisible(false);
+                    yield return PresentableFx.Wait(0.6f);
+                }
 
                 Stage("sc07Explore");
                 extinguishers.BeginAuto();
@@ -6365,23 +6392,27 @@ namespace ChemicalSafety.Presentable
 
                 first = false;
 
-                // 1. the safety data sheet opens by itself, then closes again
-                Stage("sc12Sds");
-                StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
-                clipboard.SetVisible(true);
-                var sdsWait = 0f;
-                var sdsMax = Mathf.Max(6f, art.voSc12Sds != null ? art.voSc12Sds.length + 2f : 6f);
-                while (clipboard.IsVisible && sdsWait < sdsMax)
+                // 1. client 2026-11-23: no automatic data sheet any more; the left X button opens / hides it (no voice).
+                // Sc12AutoSds = true brings the old sheet with its voice back
+                if (Sc12AutoSds)
                 {
-                    sdsWait += SessionClock.GameDelta;
-                    yield return null;
-                }
+                    Stage("sc12Sds");
+                    StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
+                    clipboard.SetVisible(true);
+                    var sdsWait = 0f;
+                    var sdsMax = Mathf.Max(6f, art.voSc12Sds != null ? art.voSc12Sds.length + 2f : 6f);
+                    while (clipboard.IsVisible && sdsWait < sdsMax)
+                    {
+                        sdsWait += SessionClock.GameDelta;
+                        yield return null;
+                    }
 
-                clipboard.SetVisible(false);
-                StopAllVoiceCoroutines();
-                StopVoice();
-                subtitle.Hide();
-                yield return PresentableFx.Wait(0.5f);
+                    clipboard.SetVisible(false);
+                    StopAllVoiceCoroutines();
+                    StopVoice();
+                    subtitle.Hide();
+                    yield return PresentableFx.Wait(0.5f);
+                }
 
                 // 2. four pick rounds, no clicks: a wrong pick (red card, the item goes back), then the right one (green card, worn)
                 void OnPicked(int r, int option, bool right)
@@ -7448,20 +7479,23 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator Sc12Round()
         {
-            // 1. the safety data sheet
-            Stage("sc12Sds");
-            StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
-            clipboard.SetVisible(true);
-            var sdsWait = 0f;
-            while (clipboard.IsVisible && sdsWait < 12f)
+            // 1. the safety data sheet (client 2026-11-23: only with Sc12AutoSds, otherwise the left X button opens / hides it)
+            if (Sc12AutoSds)
             {
-                sdsWait += SessionClock.GameDelta;
-                yield return null;
-            }
+                Stage("sc12Sds");
+                StartCoroutine(SubtitledVoice(null, Sc12Content.SdsHint, art.voSc12Sds));
+                clipboard.SetVisible(true);
+                var sdsWait = 0f;
+                while (clipboard.IsVisible && sdsWait < 12f)
+                {
+                    sdsWait += SessionClock.GameDelta;
+                    yield return null;
+                }
 
-            clipboard.SetVisible(false);
-            StopVoice();
-            yield return PresentableFx.Wait(0.4f);
+                clipboard.SetVisible(false);
+                StopVoice();
+                yield return PresentableFx.Wait(0.4f);
+            }
 
             // 2. stand on the green arrow in front of the lockers
             Stage("sc12Stand");

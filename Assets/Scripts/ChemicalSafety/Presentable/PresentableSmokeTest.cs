@@ -1633,18 +1633,35 @@ namespace ChemicalSafety.Presentable
                 (Sc07Crowd.NobodyEntersAtFire ? " (expected False: nobody enters)" : " (expected True)") + ", fire exit door open = " + crowd.FleeDoorOpen + (Sc07Crowd.HeroOnlyEntry ? " (expected False: only the hero comes in)" : " (expected True)"));
             var sw = Camera.main.transform.position;
             yield return WaitStage("sc07Walk", 20f);
-            yield return WaitStage("sc07Sds", 30f);
+            if (PresentableSequenceDirector.Sc07AutoSds)
+                yield return WaitStage("sc07Sds", 30f);
+            else
+                yield return WaitStage("sc07Explore", 30f);
             var moved = Vector3.Distance(sw, Camera.main.transform.position);
             Say("SC07 auto walk to the extinguisher pillar: moved " + moved.ToString("0.0") + " m (expected > 2)");
             if (moved < 2f)
                 Debug.LogError("[SMOKE] SC07: the player was not walked to the extinguisher pillar");
-            yield return new WaitForSeconds(0.7f);
-            Say("SC07 SDS shown by itself = " + clip7.IsVisible + " (expected True)");
-            yield return Shot("64_sc07_sds");
-            yield return new WaitForSeconds(2.2f);
-            Say("SC07 SDS hid by itself after about 2 s = " + (!clip7.IsVisible) + " (expected True)");
-            if (clip7.IsVisible)
-                Debug.LogError("[SMOKE] SC07: the SDS did not hide by itself");
+            if (PresentableSequenceDirector.Sc07AutoSds)
+            {
+                yield return new WaitForSeconds(0.7f);
+                Say("SC07 SDS shown by itself = " + clip7.IsVisible + " (expected True)");
+                yield return Shot("64_sc07_sds");
+                yield return new WaitForSeconds(2.2f);
+                Say("SC07 SDS hid by itself after about 2 s = " + (!clip7.IsVisible) + " (expected True)");
+                if (clip7.IsVisible)
+                    Debug.LogError("[SMOKE] SC07: the SDS did not hide by itself");
+            }
+            else
+            {
+                // no automatic sheet: the left X button shows it and hides it again, without voice
+                clip7.Toggle();
+                yield return new WaitForSeconds(0.5f);
+                Say("SC07 X opens the SDS = " + clip7.IsVisible + " (expected True)");
+                yield return Shot("64_sc07_sds");
+                clip7.Toggle();
+                yield return new WaitForSeconds(0.3f);
+                Say("SC07 X hides the SDS = " + (!clip7.IsVisible) + " (expected True)");
+            }
             yield return WaitStage("sc07Explore", 20f);
             for (var round = 0; round < 2; round++)
             {
@@ -1689,8 +1706,11 @@ namespace ChemicalSafety.Presentable
                     LayoutCheck("SC07 gate", gate.Card);
                     yield return Shot("69_sc07_gate");
                     Click(gate.transform, "BackButton");
-                    yield return WaitStage("sc07Sds", 15f);
-                    Say("SC07 BACK: the SDS shows again from the start of the inspection");
+                    if (PresentableSequenceDirector.Sc07AutoSds)
+                    {
+                        yield return WaitStage("sc07Sds", 15f);
+                        Say("SC07 BACK: the SDS shows again from the start of the inspection");
+                    }
                     yield return WaitStage("sc07Explore", 20f);
                 }
                 else
@@ -3786,10 +3806,13 @@ namespace ChemicalSafety.Presentable
             {
                 var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
                 var shots = round == 0;
-                yield return WaitStage("sc12Sds", 40f);
-                yield return new WaitForSeconds(1.8f);
-                if (shots)
-                    yield return Shot("132_sc12_ray_sds");
+                if (PresentableSequenceDirector.Sc12AutoSds)
+                {
+                    yield return WaitStage("sc12Sds", 40f);
+                    yield return new WaitForSeconds(1.8f);
+                    if (shots)
+                        yield return Shot("132_sc12_ray_sds");
+                }
                 for (var pick = 0; pick < 4; pick++)
                 {
                     yield return WaitStage("sc12Pick" + pick, 40f);
@@ -3897,11 +3920,14 @@ namespace ChemicalSafety.Presentable
             {
                 var tag = round == 0 ? "round 1" : "round 2 (after BACK)";
                 var shots = round == 0;
-                yield return WaitStage("sc12Sds", 40f);
-                yield return new WaitForSeconds(1.8f);
-                Say("SC12 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
-                if (shots)
-                    yield return Shot("132_sc12_sds");
+                if (PresentableSequenceDirector.Sc12AutoSds)
+                {
+                    yield return WaitStage("sc12Sds", 40f);
+                    yield return new WaitForSeconds(1.8f);
+                    Say("SC12 " + tag + ": SDS visible = " + clipboard.IsVisible + " (expected True)");
+                    if (shots)
+                        yield return Shot("132_sc12_sds");
+                }
 
                 yield return WaitStage("sc12Stand", 40f);
                 yield return new WaitForSeconds(1.5f);
@@ -4339,7 +4365,7 @@ namespace ChemicalSafety.Presentable
                 login.SubmitForTest("Rahim", "0171234567", ChemicalSafety.Localization.Lang.Bn);
                 yield return new WaitForSeconds(0.8f);
                 yield return Shot("00_login_bn_errors");
-                Say("login: +88 phone accepted = " + login.SubmitForTest("Rahim Uddin", "+8801712345678", UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? ChemicalSafety.Localization.Lang.Bn : ChemicalSafety.Localization.Lang.En));
+                Say("login: +88 phone accepted = " + login.SubmitForTest(UnityEditor.EditorPrefs.GetString("ChemSafetySmokeName", "Rahim Uddin"), "+8801712345678", UnityEditor.EditorPrefs.GetBool("ChemSafetySmokeBangla", false) ? ChemicalSafety.Localization.Lang.Bn : ChemicalSafety.Localization.Lang.En));
                 yield return WaitStage("salam", 30f);
             }
 
