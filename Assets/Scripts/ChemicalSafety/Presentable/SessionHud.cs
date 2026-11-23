@@ -26,7 +26,8 @@ namespace ChemicalSafety.Presentable
         // 2026-11-20 (client): the bar sits a little lower (0.46 -> 0.42). Every card / box keeps the layout it had with the bar at 0.46 (LayoutBarY),
         // and never follows a bar the learner has dragged.
         private const float LayoutBarY = 0.46f;
-        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, LowerBarSlightly ? 0.38f : 0.42f, 0.9f);
+        // LowerBarSlightly: 0.39 look-check (revert target 0.42 via false; first lower pass was 0.38).
+        private static readonly Vector3 DefaultBarOffset = new Vector3(0f, LowerBarSlightly ? 0.39f : 0.42f, 0.9f);
         private static Vector3 _barOffset = DefaultBarOffset; // survives a re-created bar (jump), reset by ResetBarPosition
         private static readonly Vector3 ToastOffset = new Vector3(0f, 0.02f, 1.5f);
 

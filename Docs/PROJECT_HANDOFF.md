@@ -1027,6 +1027,6 @@ Client folder `Scene22 workflow` (`scene01-07.jpg` = the hall and story steps, `
 - **One-line revert**:
   - `ShowScenarioChip = false` → old bar (no chip, old `BarW` / centres)
   - `LowerBarSlightly = false` → visual Y back to `0.42` (2026-11-20 place)
-- **Layout safety**: `LayoutBarY` stays `0.46`, so `SafeBarRatio` / instruction / MCQ clearance is unchanged. Only `DefaultBarOffset.y` is `0.38` when `LowerBarSlightly` is on (~4 cm lower for VR visibility).
+- **Layout safety**: `LayoutBarY` stays `0.46`, so `SafeBarRatio` / instruction / MCQ clearance is unchanged. Only `DefaultBarOffset.y` is `0.39` when `LowerBarSlightly` is on (first lower pass was `0.38`; revert target `0.42` via `LowerBarSlightly = false`). Quest check pending.
 - **Bangla note**: Domain Reload OFF keeps BnTmp’s static index; after adding BnAuto PNGs clear that cache or re-enter Play so the chip text appears.
 - **Smoke**: Bangla SC01 / SC07 / SC12 showed `সিনারিওঃ 1` / `7` / `12` on the bar; gameplay / MCQ / animation untouched.
