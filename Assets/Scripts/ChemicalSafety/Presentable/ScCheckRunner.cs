@@ -108,6 +108,19 @@ namespace ChemicalSafety.Presentable
         /// <summary>Raised with the sheet of the current question (the director puts it on the left-hand clipboard).</summary>
         public Action<Sprite> SheetChanged;
         // the new design: question panel 1250 px, a 700 px gap (the chemical stands in it, the top bar stays clear), SDS panel 1250 px
+        // client 2026-11-24: the question / SDS / result popups stand IN FRONT of the table (they used to land behind it and their lower part hid behind the
+        // table and the bottle). Same angular size, nearer; if the learner stands too close the rig steps back a little. false = the old 2.4 m behind the table
+        private const bool PopupsInFront = true;
+        private const float TableFrontOffset = 0.5f; // chemAnchor -> the table's learner-side edge (table half depth 0.47 + margin; the same room for SC13-18)
+        private const float AnchorAboveTable = 0.46f; // the anchor stands 0.46 m over the table top (builder)
+        private const float FrontMargin = 0.15f;
+        private const float MinDist = 1.3f; // nearest comfortable distance for the popups
+        private const float MaxStepBack = 0.9f;
+        private float _dist = MainDist; // the distance used for the current placement
+        private float _k = 1f; // _dist / MainDist: the canvases scale with it so they look the same size
+        private Vector3 _stepEye; // the head position after a step back that is still gliding
+        private float _stepUntil;
+        public System.Action<Vector3> StepBack; // the director glides the rig to this head position (x, z)
         private const float MainDist = 2.4f; // metres from the eyes to the question + SDS boxes (the new design)
         // client 2026-11-21: in the headset the question box (with the SDS) opened against the table; it opens 12 cm higher, same size, so the options, the
         // reasons and NEXT show. 12 cm is the room under the top bar: more would cover the question text. The picture question (Scenario 18 question 2) keeps its height.
@@ -421,11 +434,34 @@ namespace ChemicalSafety.Presentable
                 return;
             }
 
-            var toAnchor = Vector3.ProjectOnPlane(chemAnchor.position - _cam.position, Vector3.up);
+            var eye = _cam.position;
+            _dist = MainDist;
+            _k = 1f;
+            if (PopupsInFront && NewMcqUi && (_main != null && (t == _main.transform || (_results != null && t == _results.transform))))
+            {
+                if (Time.time < _stepUntil)
+                    eye = new Vector3(_stepEye.x, eye.y, _stepEye.z); // a step back is still gliding: place for where the head will be
+                var away = Vector3.ProjectOnPlane(eye - chemAnchor.position, Vector3.up);
+                var d = away.magnitude;
+                var deficit = Mathf.Clamp(MinDist - (d - TableFrontOffset - FrontMargin), 0f, MaxStepBack);
+                if (deficit > 0.01f && away.sqrMagnitude > 0.01f && StepBack != null)
+                {
+                    eye += away.normalized * deficit;
+                    d += deficit;
+                    _stepEye = eye;
+                    _stepUntil = Time.time + 1.2f;
+                    StepBack(eye);
+                }
+
+                _dist = Mathf.Clamp(d - TableFrontOffset - FrontMargin, MinDist, MainDist);
+                _k = _dist / MainDist;
+            }
+
+            var toAnchor = Vector3.ProjectOnPlane(chemAnchor.position - eye, Vector3.up);
             if (toAnchor.sqrMagnitude < 0.01f)
                 toAnchor = Vector3.ProjectOnPlane(_cam.forward, Vector3.up);
             toAnchor.Normalize();
-            var pos = _cam.position + toAnchor * (NewMcqUi ? MainDist : 1.6f); // 1.6 m (the new design: 2.4 m: not on the eyes, still easy to point at with the ray) from the eyes, in line with the chemical, so it reads big and sits above it
+            var pos = eye + toAnchor * (NewMcqUi ? _dist : 1.6f); // 1.6 m (the new design: 2.4 m: not on the eyes, still easy to point at with the ray) from the eyes, in line with the chemical, so it reads big and sits above it
             // client: popups open at eye level in free space; only lifted when eye level would put the card into the chemical
             pos.y = Mathf.Max(_cam.position.y + 0.03f, chemAnchor.position.y + 0.05f + heightMeters * 0.5f);
             if (NewMcqUi && _main != null && t == _main.transform)
@@ -441,7 +477,7 @@ namespace ChemicalSafety.Presentable
             }
 
             if (NewMcqUi && t == _main.transform && !PictureQuestionShown())
-                pos.y += McqRaise;
+                pos.y += McqRaise * _k; // the lift scales with the distance (same angle)
             t.SetPositionAndRotation(pos, Quaternion.LookRotation(toAnchor, Vector3.up));
 
             if (t == _main.transform)
@@ -462,7 +498,7 @@ namespace ChemicalSafety.Presentable
                 return;
             ((RectTransform)_results.transform).GetWorldCorners(Corners);
             var top = Mathf.Max(Mathf.Max(Corners[0].y, Corners[1].y), Mathf.Max(Corners[2].y, Corners[3].y));
-            var limit = _cam.position.y + SessionHud.SafeBarRatio * MainDist - 0.03f;
+            var limit = _cam.position.y + SessionHud.SafeBarRatio * _dist - 0.03f;
             var lift = Mathf.Clamp(limit - top, 0f, ResultsRaise);
             if (lift > 0f)
                 _results.transform.position += Vector3.up * lift;
@@ -487,8 +523,8 @@ namespace ChemicalSafety.Presentable
             if (_main == null || chemAnchor == null || _mainRight == Vector3.zero)
                 return;
             // the gap between the question panel and the SDS panel stands over the chemical; SDS hidden: the question panel does
-            var openShift = NewMcqUi ? (CanvasW * 0.5f - (QuestionW + GapW * 0.5f)) * Scale * _fit : BigSds ? 0.14f : 0f; // the new design: the gap between the panels is the middle of the canvas // the new design: the gap between the two panels is at 0.505 of the canvas
-            var closedShift = NewMcqUi ? (CanvasW * 0.5f - QuestionW * 0.5f) * Scale * _fit : BigSds ? 0.58f : 0.46f;
+            var openShift = NewMcqUi ? (CanvasW * 0.5f - (QuestionW + GapW * 0.5f)) * Scale * _k * _fit : BigSds ? 0.14f : 0f; // the new design: the gap between the panels is the middle of the canvas // the new design: the gap between the two panels is at 0.505 of the canvas
+            var closedShift = NewMcqUi ? (CanvasW * 0.5f - QuestionW * 0.5f) * Scale * _k * _fit : BigSds ? 0.58f : 0.46f;
             _main.transform.position = _mainBase + _mainRight * (_sdsOpen ? openShift : closedShift);
         }
 
@@ -1005,7 +1041,7 @@ namespace ChemicalSafety.Presentable
             var toY = BaseY();
             if (on && _cam != null)
             {
-                var limitPx = (SessionHud.SafeBarRatio * MainDist - 0.03f) / Mathf.Max(0.0001f, Scale * _fit);
+                var limitPx = (SessionHud.SafeBarRatio * _dist - 0.03f) / Mathf.Max(0.0001f, Scale * _k * _fit);
                 toY = -Mathf.Max(0f, _sdsPanel.rect.height * SdsZoom * 0.5f - limitPx + 10f);
             }
 
@@ -1061,16 +1097,16 @@ namespace ChemicalSafety.Presentable
         private float MainCenterY()
         {
             var hh = _panelRt != null ? _panelRt.rect.height + 6f + 112f : 1000f; // the box + the NEXT button under it (the SDS is as tall as the box)
-            var tableTop = chemAnchor != null ? chemAnchor.position.y : _cam.position.y - 0.7f;
+            var tableTop = chemAnchor != null ? chemAnchor.position.y - (PopupsInFront ? AnchorAboveTable : 0f) : _cam.position.y - 0.7f; // in front of the table the real table top is the limit
             // client 2026-11-19: the boxes stand UNDER the timer bar and ABOVE the table: if the room between them is less than the boxes need,
             // the pair is scaled down as much as needed (never below 55 %)
-            var barY = _cam.position.y + SessionHud.SafeBarRatio * MainDist - 0.03f;
+            var barY = _cam.position.y + SessionHud.SafeBarRatio * _dist - 0.03f;
             // client 2026-11-19: at the user's EYE LEVEL: the pair is centred on the eyes, so its half-height is limited by the bar above and the table below
             var eyeY = _cam.position.y;
             var avail = 2f * Mathf.Min(barY - eyeY, eyeY - (tableTop + 0.10f));
-            _fit = Mathf.Clamp(avail / (hh * Scale), 0.55f, 1f);
-            var top = eyeY + hh * Scale * _fit * 0.5f;
-            return top - CanvasH * 0.5f * Scale * _fit;
+            _fit = Mathf.Clamp(avail / (hh * Scale * _k), 0.55f, 1f);
+            var top = eyeY + hh * Scale * _k * _fit * 0.5f;
+            return top - CanvasH * 0.5f * Scale * _k * _fit;
         }
         private readonly TextMeshProUGUI[] _optReason = new TextMeshProUGUI[4]; // the reason under an answer (client 2026-11-19: as Scenarios 1-12)
         private readonly string[] _reasonShown = new string[4];
@@ -1220,7 +1256,7 @@ namespace ChemicalSafety.Presentable
             {
                 _mainBase.y = MainCenterY();
                 if (_main != null)
-                    _main.transform.localScale = Vector3.one * (Scale * _fit);
+                    _main.transform.localScale = Vector3.one * (Scale * _k * _fit);
                 ApplyMainOffset(); // the box grew or shrank: it stays under the timer bar and above the table
             }
 
@@ -1574,7 +1610,7 @@ namespace ChemicalSafety.Presentable
 
         private IEnumerator PopIn(Transform t, float to)
         {
-            var baseScale = t.GetComponent<Canvas>() != null ? Vector3.one * (Scale * (_main != null && t == _main.transform ? _fit : 1f)) : Vector3.one;
+            var baseScale = t.GetComponent<Canvas>() != null ? Vector3.one * (Scale * (_main != null && t == _main.transform ? _k * _fit : (_results != null && t == _results.transform ? _k : 1f))) : Vector3.one;
             var g = t.GetComponent<CanvasGroup>();
             yield return PresentableFx.Tween(0.3f, k =>
             {

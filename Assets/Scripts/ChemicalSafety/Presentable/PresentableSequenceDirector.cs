@@ -547,10 +547,30 @@ namespace ChemicalSafety.Presentable
             Stage("result");
             PresentableFx.Play(PresentableFx.Success);
             _homePressed = false;
-            ResultCardView.Show(_cam, ResultSummary.Compute(), () => _homePressed = true);
-            while (!_homePressed)
+            var resultCard = ResultCardView.Show(_cam, ResultSummary.Compute(), () => _homePressed = true);
+            // client 2026-11-24: the scorecard stays 5 s, then the credits follow whether Back to Home was pressed or not (the click skips the wait)
+            var cardAge = 0f;
+            while (!_homePressed && !(CreditsSplash.Enabled && BackToHomeQuitsApp && cardAge >= ScorecardSeconds))
+            {
+                cardAge += Time.unscaledDeltaTime;
                 yield return null;
+            }
+
             yield return fader.FadeTo(1f, 0.3f); // black before the scene is loaded again: the hard cut and the load hitch are not seen
+            if (BackToHomeQuitsApp && CreditsSplash.Enabled)
+            {
+                if (resultCard != null)
+                    resultCard.Close(); // the card is gone before the credits (its textures are then freed with the caches)
+                // the white credits (text, logos) run while the upload finishes; then the caches are dropped and the app leaves for the Quest home
+                yield return CreditsSplash.Play(_cam, () => ResultUploader.StatusOf(SessionResults.Current) == UploadStatus.Waiting, BackToHomeUploadWaitSeconds);
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                Application.Quit();
+#endif
+                yield break;
+            }
+
             if (BackToHomeQuitsApp)
             {
                 // client 2026-11-23: Back to Home leaves the app for the Quest home. The result is already on disk (.pending), the upload gets a few seconds
@@ -754,6 +774,7 @@ namespace ChemicalSafety.Presentable
         public static readonly bool Sc1922AutoSds = false; // client 2026-11-23: true = Scenarios 19-22 open the data sheet by themselves after the instruction (old)
         public static readonly bool Sc07AutoSds = false; // client 2026-11-23: true = Scenario 7 shows the data sheet by itself for 2 s before the extinguishers (old)
         public static readonly bool Sc12AutoSds = false; // client 2026-11-23: true = Scenario 12 shows the data sheet by itself with its voice (old)
+        private const float ScorecardSeconds = 5f; // the scorecard stays this long, then the credits (client 2026-11-24)
         public static readonly bool BackToHomeQuitsApp = true; // client 2026-11-23: Back to Home leaves for the Quest home (false = the login screen again, GoHome)
         private const float BackToHomeUploadWaitSeconds = 8f;
         // the shower keeps running this many seconds after the flush voice has ended
@@ -7002,6 +7023,7 @@ namespace ChemicalSafety.Presentable
                 PlaceRig(spawnScCheck.position, spawnScCheck.forward);
             yield return fader.FadeTo(0f, 0.9f);
             scCheck.InstructionRoutine = ScCheckInstruction;
+            scCheck.StepBack = head => StartCoroutine(Glide(head, 0.8f)); // popups in front of the table: a learner who stands too close is moved back a little
             yield return scCheck.Run(n, _cam);
             Stage("sc" + n + "Done");
             if (n < 18)

@@ -53,7 +53,7 @@ namespace ChemicalSafety.Editor
             mso.FindProperty("fogStart").floatValue = 9f;
             mso.FindProperty("fogEnd").floatValue = 40f;
             mso.FindProperty("sunIntensity").floatValue = 0.0f;
-            mso.FindProperty("reflectionIntensity").floatValue = 0.35f;
+            mso.FindProperty("reflectionIntensity").floatValue = ScCheckSmoothEnv ? 0.15f : 0.35f; // client 2026-11-24: less sky shine on the walls = calmer picture
             mso.ApplyModifiedPropertiesWithoutUndo();
 
             // the copy is a static picture: no scripts (Scenario 6 logic must not run twice), no switched-off pieces of the old lab, no old probe
@@ -101,6 +101,8 @@ namespace ChemicalSafety.Editor
             foreach (var l in room.GetComponentsInChildren<Light>(true))
                 if (l.name == "TableSpot")
                     l.intensity = 4.5f;
+            if (ScCheckSmoothEnv)
+                ScCheckCalmRoom(room);
 
             // learner spot: the same as Scenarios 8 / 9 / 10 in this room
             var spawnPos = new Vector3(ScOx + 1.2f, 0f, 3.0f);
@@ -539,6 +541,62 @@ namespace ChemicalSafety.Editor
             ScLabelText(plate, "BLEACHING POWDER", 0.5f, new Color(0.08f, 0.08f, 0.1f), 0f, 0.03f, 0.18f);
             ScLabelText(plate, "Ca(ClO)2", 0.7f, new Color(0.7f, 0.1f, 0.1f), 0.03f, -0.01f, 0.12f);
             g.localScale = Vector3.one * 1.15f;
+        }
+
+        // client 2026-11-24: Scenarios 13-18 shimmered ("waves" near the SDS). false = the old look exactly (then Build Presentable Scene). No memory / APK change:
+        // only material values (own copies of the wall / floor materials, the shared SC06/8/9/10 ones are untouched) and the floor decal heights
+        private const bool ScCheckSmoothEnv = true;
+
+        private static void ScCheckCalmRoom(Transform room)
+        {
+            var clones = new Dictionary<Material, Material>();
+            foreach (var r in room.GetComponentsInChildren<Renderer>(true))
+            {
+                var ms = r.sharedMaterials;
+                var changed = false;
+                for (var i = 0; i < ms.Length; i++)
+                {
+                    var src = ms[i];
+                    if (src == null)
+                        continue;
+                    var n = src.name;
+                    float smooth, bump;
+                    if (n.EndsWith("Sc06FacFloor")) { smooth = 0.10f; bump = 0.5f; }
+                    else if (n.EndsWith("Sc06FacWall") || n.EndsWith("Sc06FacCeil") || n.EndsWith("Sc06FacBand")) { smooth = 0.06f; bump = 0.6f; }
+                    else continue;
+                    if (!clones.TryGetValue(src, out var c))
+                    {
+                        var path = GenDir + "/M_ScChk_" + n.Replace("M_", "") + ".mat";
+                        c = AssetDatabase.LoadAssetAtPath<Material>(path);
+                        if (c == null)
+                        {
+                            c = new Material(src);
+                            AssetDatabase.CreateAsset(c, path);
+                        }
+                        else
+                        {
+                            c.CopyPropertiesFromMaterial(src);
+                        }
+
+                        c.SetFloat("_Smoothness", smooth);
+                        c.SetFloat("_BumpScale", bump);
+                        EditorUtility.SetDirty(c);
+                        clones[src] = c;
+                    }
+
+                    ms[i] = c;
+                    changed = true;
+                }
+
+                if (changed)
+                    r.sharedMaterials = ms;
+                // floor decals 0.3 mm apart z-fight at a distance: spread them over six levels, 2 mm apart
+                if (r.name.StartsWith("FloorBlot") && int.TryParse(r.name.Substring(9), out var k))
+                {
+                    var p = r.transform.position;
+                    r.transform.position = new Vector3(p.x, 0.012f + (k % 6) * 0.002f, p.z);
+                }
+            }
         }
     }
 }

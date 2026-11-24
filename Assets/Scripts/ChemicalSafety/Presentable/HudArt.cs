@@ -8,6 +8,12 @@ namespace ChemicalSafety.Presentable
     {
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
+        /// <summary>Drops the cached sprites so Resources.UnloadUnusedAssets can free them (called once, right before the app quits).</summary>
+        public static void ClearCache()
+        {
+            Cache.Clear();
+        }
+
         /// <param name="path">Resources path without extension, e.g. "Ui/Hud/02_back_button_frame".</param>
         /// <param name="border">9-slice border in texture pixels (left, bottom, right, top), zero = plain sprite.</param>
         public static Sprite Get(string path, Vector4 border = default)

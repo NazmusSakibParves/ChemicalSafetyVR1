@@ -36,15 +36,27 @@ namespace ChemicalSafety.Presentable
         public event Action TimeUp;
 
         private const float BaseBarW = 960f;
-        private const float ScenarioChipW = 300f;
-        // Same as the gap between Pause (right 223) and Timer (left 283).
-        private const float ChipGap = 60f;
+        // client 2026-11-24: ONE gap between all the bar's elements (the Back -> Next gap), clear space between the glass edge and the first / last
+        // element, a narrower scenario chip. false = the old layout (hand-typed centres, chip 300, gap 60).
+        private const bool EvenBarGaps = true;
+        private const float BarGap = 14f;
+        private const float BarPad = 48f;
+        private const float ScenarioChipW = EvenBarGaps ? 240f : 300f;
+        // Same as the gap between Pause (right 223) and Timer (left 283) in the old layout.
+        private const float ChipGap = EvenBarGaps ? BarGap : 60f;
         private const float BarH = 120f;
         private const float BarScale = 0.00085f; // 0.82 m wide at 0.9 m, ~50 degrees (BaseBarW)
 
-        private static float BarW => ShowScenarioChip ? BaseBarW + ScenarioChipW + ChipGap : BaseBarW;
+        // the even layout: pad + Back 196 + Next 200 + Pause 232 + Timer 172 (+ chip) + the gaps + pad
+        private const float EvenCoreW = 196f + 200f + 232f + 172f;
+        private static float BarW => EvenBarGaps
+            ? BarPad * 2f + EvenCoreW + BarGap * 3f + (ShowScenarioChip ? BarGap + ScenarioChipW : 0f)
+            : ShowScenarioChip ? BaseBarW + ScenarioChipW + ChipGap : BaseBarW;
         // Keep the control cluster centred in the wider glass when the chip is on.
-        private static float LayoutShiftX => ShowScenarioChip ? -(ScenarioChipW + ChipGap) * 0.5f : 0f;
+        private static float LayoutShiftX => EvenBarGaps ? 0f : ShowScenarioChip ? -(ScenarioChipW + ChipGap) * 0.5f : 0f;
+
+        // x centre of an element: the old hand-typed centre, or (even layout) a running position from the left edge, one BarGap apart
+        private static float BarX(float oldCentre, float leftOffset, float w) => EvenBarGaps ? -BarW * 0.5f + BarPad + leftOffset + w * 0.5f : oldCentre;
 
         private Transform _cam;
         private Transform _timerRoot;
@@ -183,18 +195,18 @@ namespace ChemicalSafety.Presentable
                 new Color(1f, 1f, 1f, 0.55f), raycast: true);
 
             // buttons, left to right as in the design (centres measured from the bar centre)
-            _backRt = MakeButton(host, "Back", -362f + sx, 196f, HudArt.Get("Ui/Hud/06_back_chevrons_icon"), true, Loc.T("GENERAL", "BarBack"),
+            _backRt = MakeButton(host, "Back", BarX(-362f + sx, 0f, 196f), 196f, HudArt.Get("Ui/Hud/06_back_chevrons_icon"), true, Loc.T("GENERAL", "BarBack"),
                 () => { if (!_busy && _visible) ScenarioNav.RequestPrevious(); }, out _, out _, out _);
             _backGroup = _backRt.gameObject.AddComponent<CanvasGroup>();
-            var nextRt = MakeButton(host, "Next", -150f + sx, 200f, HudArt.Get("Ui/Hud/07_next_chevrons_icon"), false, Loc.T("GENERAL", "BarNext"),
+            var nextRt = MakeButton(host, "Next", BarX(-150f + sx, 196f + BarGap, 200f), 200f, HudArt.Get("Ui/Hud/07_next_chevrons_icon"), false, Loc.T("GENERAL", "BarNext"),
                 () => { if (!_busy && _visible) ScenarioNav.RequestNext(); }, out _, out _, out _);
             _nextGroup = nextRt.gameObject.AddComponent<CanvasGroup>();
             _pauseSprite = HudArt.Get("Ui/Hud/08_pause_icon");
             _playSprite = PlaySprite();
-            MakeButton(host, "Pause", 107f + sx, 232f, _pauseSprite, false, Loc.T("GENERAL", "BarPause"), TogglePause, out _pauseText, out _pauseIcon, out _pauseFrame);
+            MakeButton(host, "Pause", BarX(107f + sx, 196f + 200f + BarGap * 2f, 232f), 232f, _pauseSprite, false, Loc.T("GENERAL", "BarPause"), TogglePause, out _pauseText, out _pauseIcon, out _pauseFrame);
 
             // timer
-            var timerX = 369f + sx;
+            var timerX = BarX(369f + sx, 196f + 200f + 232f + BarGap * 3f, 172f);
             var timerRt = PresentableUi.Centered("Timer", host, new Vector2(timerX, 0f), new Vector2(172f, 74f));
             _timerFrame = PresentableUi.Img(timerRt, HudArt.Get("Ui/Hud/05_timer_display_frame"), new Color(1f, 1f, 1f, 0.95f));
             var clockRt = PresentableUi.Centered("Time", timerRt, new Vector2(0f, 1f), new Vector2(124f, 50f));

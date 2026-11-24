@@ -98,6 +98,7 @@ namespace ChemicalSafety.Presentable
         private static readonly Color Label = new Color(0.62f, 0.9f, 0.96f, 1f);
         private static readonly Color Value = new Color(0.96f, 1f, 1f, 1f);
         private static readonly Color Cyan = new Color(0.45f, 0.92f, 1f, 1f);
+        private static readonly Color TitleRed = new Color(1f, 0.27f, 0.27f, 1f);
 
         private Action _onHome;
         private ResultSummary _s;
@@ -216,7 +217,7 @@ namespace ChemicalSafety.Presentable
             var slash = At(host, "Slash", 560f, 118f, 3f, 78f);
             slash.localRotation = Quaternion.Euler(0f, 0f, 16f);
             PresentableUi.Img(slash, null, new Color(Cyan.r, Cyan.g, Cyan.b, 0.8f));
-            T(host, G("ScTitle"), 945f, 120f, 680f, 48f, 40f, Cyan, true, TextAlignmentOptions.Center);
+            T(host, G("ScTitle"), 945f, 120f, 680f, 48f, 40f, TitleRed, true, TextAlignmentOptions.Center); // client 2026-11-24: the scorecard title in red
 
             // ---- left panel: training id, trainee, contact
             TL(host, G("ScTrainingId"), 126f, 242f, 235f, 38f, 30f, Label, false);
@@ -235,8 +236,8 @@ namespace ChemicalSafety.Presentable
             // completed scenarios + bar
             Icon(host, "clipboard", 704f, 214f, 46f);
             TL(host, G("ScCompleted"), 760f, 214f, 330f, 36f, 28f, Label, false);
-            _completedTxt = T(host, "0/" + s.totalScenarios, 1138f, 214f, 110f, 38f, 28f, Value, true, TextAlignmentOptions.Center);
-            _completedPct = T(host, "0%", 1236f, 214f, 80f, 38f, 28f, Value, true, TextAlignmentOptions.Center);
+            // client 2026-11-24: ONE box "21/22 (95%)" (the two side-by-side boxes read as "21/2295%"); _completedPct stays as an unused field
+            _completedTxt = T(host, "0/" + s.totalScenarios + " (0%)", 1188f, 214f, 200f, 38f, 28f, Value, true, TextAlignmentOptions.Center);
             _barA = Bar(host, "scenarios_empty_bar", 1011f, 268f, 560f, 0.03f, 0.96f, 0.24f, 0.58f);
 
             // total correct + gauge
@@ -423,8 +424,7 @@ namespace ChemicalSafety.Presentable
             var eT = Ease((age - 1.1f) / 1.2f);
             var eM = Ease((age - 1.4f) / 1.4f);
             SetBar(_barA, pA * eA);
-            _completedTxt.text = Mathf.RoundToInt(s.completedScenarios * eA) + "/" + s.totalScenarios;
-            _completedPct.text = Mathf.RoundToInt(pA * 100f * eA) + "%";
+            _completedTxt.text = Mathf.RoundToInt(s.completedScenarios * eA) + "/" + s.totalScenarios + " (" + Mathf.RoundToInt(pA * 100f * eA) + "%)";
             _gauge.fillAmount = pC * eC;
             _correctTxt.text = Mathf.RoundToInt(s.correct * eC) + "/" + s.maxMarks;
             _timeTxt.text = SessionClock.Format(s.seconds * eT);

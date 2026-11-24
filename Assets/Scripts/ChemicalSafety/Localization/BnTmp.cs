@@ -27,6 +27,12 @@ namespace ChemicalSafety.Localization
 
         private static Dictionary<string, int[]> _index;
         private static readonly Dictionary<string, Sprite> SpriteCache = new Dictionary<string, Sprite>();
+
+        /// <summary>Drops the cached Bangla sprites so Resources.UnloadUnusedAssets can free them (called once, right before the app quits).</summary>
+        public static void ClearSpriteCache()
+        {
+            SpriteCache.Clear();
+        }
         private static readonly HashSet<string> Requested = new HashSet<string>();
         private static readonly Regex SizeTag = new Regex(@"^\s*<size=(\d+(?:\.\d+)?)%>(.*?)(</size>)?\s*$", RegexOptions.Compiled);
 
